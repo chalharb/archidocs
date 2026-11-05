@@ -186,6 +186,21 @@ describe("reload without restart (RELI-14) and stale handling (RELI-02, RELI-04)
     expect(seen).toEqual([2]);
   });
 
+  it("reports unreadable files deterministically (FAIL-06)", async () => {
+    const { chmod } = await import("node:fs/promises");
+    await chmod(path.join(ws.dir, ENTITY_FILE), 0o000);
+    const snap = (await repo.reload()).snapshot;
+    await chmod(path.join(ws.dir, ENTITY_FILE), 0o644);
+    expect(snap.status).toBe("stale");
+    expect(snap.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "FS_READ_ERROR",
+        file: ENTITY_FILE,
+        message: `Permission denied: ${ENTITY_FILE}`,
+      }),
+    );
+  });
+
   it("never crashes on malformed or hostile files (FAIL-01)", async () => {
     await writeFile(path.join(ws.dir, "evil.yaml"), "a: !!python/object:os.system ls\n");
     await writeFile(path.join(ws.dir, "big.yaml"), `a: "${"x".repeat(2 * 1024 * 1024)}"\n`);
@@ -200,6 +215,15 @@ describe("reload without restart (RELI-14) and stale handling (RELI-02, RELI-04)
 });
 
 describe("file watching (RELI-01, RELI-03)", () => {
+  it("picks up changes made while the watcher was starting", async () => {
+    await writeFile(
+      path.join(ws.dir, ENTITY_FILE),
+      (await text(ENTITY_FILE)).replace("name: Customer", "name: Early"),
+    );
+    await repo.startWatching();
+    expect(repo.snapshot().model.entities.customer!.name).toBe("Early");
+  });
+
   it("detects external edits and refreshes the model automatically", async () => {
     await repo.startWatching();
     await repo.startWatching(); // idempotent
@@ -221,6 +245,17 @@ describe("file watching (RELI-01, RELI-03)", () => {
     const batches: string[][] = [];
     const watcher = watchWorkspace(repo.root.realPath, (p) => batches.push(p), { debounceMs: 100 });
     await watcher.ready;
+    // Under heavy load the OS watcher can go live slightly after 'ready'; wait for a probe event.
+    await waitFor(
+      async () => {
+        await ws.write("probe.yaml", `p: ${Date.now()}\n`);
+        await new Promise((r) => setTimeout(r, 150));
+        expect(batches.flat()).toContain("probe.yaml");
+      },
+      10_000,
+      0,
+    );
+    batches.length = 0;
     await ws.write(".archidoc/drafts/x.json", "{}");
     await ws.write("notes.txt", "x");
     await ws.write("a.yaml", "a: 1\n");

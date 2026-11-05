@@ -239,6 +239,8 @@ export class WorkspaceRepository {
     if (this.watcher) return;
     this.watcher = watchWorkspace(this.root.realPath, () => void this.reload(), this.options.watch);
     await this.watcher.ready;
+    // Close the startup race: pick up anything that changed before the watcher was live.
+    await this.reload();
   }
 
   async close(): Promise<void> {
