@@ -230,7 +230,10 @@ test.describe("editing the scratch workspace", () => {
   test("E2E-02: drag and align nodes, save, reload and verify positions", async ({
     page,
     request,
+    baseURL,
   }) => {
+    // Start from the generated layout, so the first save creates the file.
+    await resetScratch(request, baseURL!, ["diagrams/containers.layout.yaml"]);
     await page.goto(diagramUrl("scratch", "containers", "edit"));
     await waitForDiagram(page);
     const before = await diagramView(request, "scratch", "containers");

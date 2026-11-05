@@ -1,4 +1,4 @@
-import { cp, readdir, readFile } from "node:fs/promises";
+import { cp, readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { revisionOf } from "@/server/persistence/revision";
 import { tempDir, type TempDir } from "./tmp";
@@ -8,10 +8,14 @@ export const SAMPLE_WORKSPACE = path.resolve(
   "../../examples/sample-workspace",
 );
 
-/** Copy the sample workspace into a fresh temp directory. */
-export async function copySampleWorkspace(): Promise<TempDir> {
+/** Layout file to omit when a test needs a diagram that has never been saved. */
+export const CONTAINERS_LAYOUT = "diagrams/containers.layout.yaml";
+
+/** Copy the sample workspace into a fresh temp directory, minus any `without` paths. */
+export async function copySampleWorkspace(options: { without?: string[] } = {}): Promise<TempDir> {
   const t = await tempDir();
   await cp(SAMPLE_WORKSPACE, t.dir, { recursive: true });
+  for (const rel of options.without ?? []) await rm(path.join(t.dir, rel));
   return t;
 }
 

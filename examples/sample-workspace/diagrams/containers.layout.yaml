@@ -1,0 +1,26 @@
+# Diagram layout overrides managed by Architecture Docs.
+# Presentation only: canonical entities and relationships live in the other YAML files.
+apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: containers
+settings:
+  direction: DOWN
+nodes:
+  card-network:
+    x: 380
+    y: 400
+  customer:
+    x: -220
+    y: 20
+  ledger-db:
+    x: -280
+    y: 400
+  payments-api:
+    x: 40
+    y: 400
+  support-agent:
+    x: 320
+    y: 20
+  web-shop:
+    x: 45.33
+    y: 212

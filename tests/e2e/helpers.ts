@@ -7,14 +7,22 @@ export const ROOT = process.cwd();
 export const SAMPLE_DIR = path.join(ROOT, "examples/sample-workspace");
 export const SCRATCH_DIR = path.join(ROOT, ".e2e-workspaces/scratch");
 
-/** Restore the scratch workspace to a copy of the sample and make the server reload it. */
-export async function resetScratch(request: APIRequestContext, baseURL: string): Promise<void> {
+/**
+ * Restore the scratch workspace to a copy of the sample, minus any `without` paths,
+ * and make the server reload it.
+ */
+export async function resetScratch(
+  request: APIRequestContext,
+  baseURL: string,
+  without: string[] = [],
+): Promise<void> {
   const layouts = (await readdir(path.join(SCRATCH_DIR, "diagrams"))).filter((f) =>
     f.endsWith(".layout.yaml"),
   );
   await Promise.all(layouts.map((f) => rm(path.join(SCRATCH_DIR, "diagrams", f))));
   await rm(path.join(SCRATCH_DIR, ".archidoc"), { recursive: true, force: true });
   await cp(SAMPLE_DIR, SCRATCH_DIR, { recursive: true });
+  await Promise.all(without.map((rel) => rm(path.join(SCRATCH_DIR, rel))));
   const res = await request.post("/api/workspaces/scratch/reload", {
     headers: { origin: baseURL, "content-type": "application/json" },
   });

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { normalize } from "@/domain/normalize";
 import { parseResources } from "@/domain/parse";
 import type { ArchitectureModel } from "@/domain/model";
-import { copySampleWorkspace, hashTree } from "../../../tests/helpers/workspace";
+import { CONTAINERS_LAYOUT, copySampleWorkspace, hashTree } from "../../../tests/helpers/workspace";
 import type { TempDir } from "../../../tests/helpers/tmp";
 import { nodeAtomicWriteOps } from "../fs/atomic-write";
 import { WorkspaceRoot } from "../fs/workspace-root";
@@ -19,7 +19,8 @@ let model: ArchitectureModel;
 const MAX = 1024 * 1024;
 
 beforeEach(async () => {
-  ws = await copySampleWorkspace();
+  // "containers" starts unsaved so the create-file paths are exercised.
+  ws = await copySampleWorkspace({ without: [CONTAINERS_LAYOUT] });
   root = await WorkspaceRoot.open(ws.dir);
   model = (await loadWorkspace(root)).model;
 });

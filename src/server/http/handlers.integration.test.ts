@@ -1,7 +1,7 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { copySampleWorkspace } from "../../../tests/helpers/workspace";
+import { CONTAINERS_LAYOUT, copySampleWorkspace } from "../../../tests/helpers/workspace";
 import type { TempDir } from "../../../tests/helpers/tmp";
 import { WorkspaceService, getHttpDeps, getWorkspaceService } from "../service";
 import {
@@ -24,7 +24,8 @@ let service: WorkspaceService;
 let deps: HttpDeps;
 
 beforeEach(async () => {
-  ws = await copySampleWorkspace();
+  // "containers" starts unsaved so saves can use a null base revision.
+  ws = await copySampleWorkspace({ without: [CONTAINERS_LAYOUT] });
   service = new WorkspaceService({
     workspaces: [
       { key: "sample", root: ws.dir },

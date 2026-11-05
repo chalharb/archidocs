@@ -1,0 +1,27 @@
+# Diagram layout overrides managed by Architecture Docs.
+# Presentation only: canonical entities and relationships live in the other YAML files.
+apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: payments-api-components
+settings:
+  nodeSpacing: 10
+  layerSpacing: 30
+  edgeType: straight
+  gridSize: 30
+  animateEdges: true
+nodes:
+  fraud-checker:
+    x: 30
+    y: 300
+  ledger-db:
+    x: 300
+    y: 300
+  ledger-repository:
+    x: 300
+    y: 150
+  payment-controller:
+    x: 30
+    y: 150
+  web-shop:
+    x: 30
+    y: -30

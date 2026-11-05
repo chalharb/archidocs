@@ -43,7 +43,11 @@ describe("loading the example workspace (P0-10, DOD-14)", () => {
     expect(new Set(Object.values(m.diagrams).map((d) => d.diagramType))).toEqual(
       new Set(["c4-context", "c4-container", "c4-component", "network", "deployment", "custom"]),
     );
-    expect(Object.keys(m.layouts)).toEqual(["system-context"]);
+    expect(Object.keys(m.layouts).sort()).toEqual([
+      "containers",
+      "payments-api-components",
+      "system-context",
+    ]);
     expect(
       Object.values(m.collections)
         .map((c) => c.kind)
@@ -99,8 +103,11 @@ describe("loading the example workspace (P0-10, DOD-14)", () => {
       draft: null,
     });
     const containers = (await repo.diagramView("containers"))!;
-    expect(containers.settings.sources.direction).toBe("diagram");
-    expect(containers.persistence.revision).toBeNull();
+    expect(containers.settings.settings.direction).toBe("DOWN");
+    expect(containers.settings.sources.direction).toBe("layout");
+    const network = (await repo.diagramView("network-topology"))!;
+    expect(network.settings.sources.edgeType).toBe("diagram");
+    expect(network.persistence.revision).toBeNull();
     expect(await repo.diagramView("nope")).toBeNull();
   });
 
@@ -278,6 +285,8 @@ describe("file watching (RELI-01, RELI-03)", () => {
 });
 
 describe("saving layouts through the repository (P0-12)", () => {
+  const rev = async (id: string) => (await repo.diagramView(id))!.persistence.revision;
+
   it("saves, reloads and keeps positions; only the layout file changes", async () => {
     const before = await hashTree(ws.dir);
     const view = (await repo.diagramView("containers"))!;
@@ -298,7 +307,11 @@ describe("saving layouts through the repository (P0-12)", () => {
   });
 
   it("retains manual positions across unrelated model reloads (LAYOUT-16/17)", async () => {
-    await repo.saveLayout("containers", { nodes: { "web-shop": { x: 40, y: 80 } } }, null);
+    await repo.saveLayout(
+      "containers",
+      { nodes: { "web-shop": { x: 40, y: 80 } } },
+      await rev("containers"),
+    );
     const diagramFile = "diagrams/containers.yaml";
     await writeFile(
       path.join(ws.dir, diagramFile),
@@ -314,7 +327,11 @@ describe("saving layouts through the repository (P0-12)", () => {
   });
 
   it("reports orphaned overrides after a node is removed (LAYOUT-18)", async () => {
-    await repo.saveLayout("containers", { nodes: { "card-network": { x: 1, y: 1 } } }, null);
+    await repo.saveLayout(
+      "containers",
+      { nodes: { "card-network": { x: 1, y: 1 } } },
+      await rev("containers"),
+    );
     const diagramFile = "diagrams/containers.yaml";
     await writeFile(
       path.join(ws.dir, diagramFile),
@@ -355,7 +372,8 @@ describe("saving layouts through the repository (P0-12)", () => {
       },
     });
     const edit = { nodes: { "web-shop": { x: 7, y: 7 } } };
-    const err = await failing.saveLayout("containers", edit, null).catch((e: LayoutSaveError) => e);
+    const base = await rev("containers");
+    const err = await failing.saveLayout("containers", edit, base).catch((e: LayoutSaveError) => e);
     expect(err).toMatchObject({ code: "WRITE_FAILED" });
     await failing.close();
 
@@ -363,10 +381,10 @@ describe("saving layouts through the repository (P0-12)", () => {
     const view = (await repo.diagramView("containers"))!;
     expect(view.persistence.draft).toMatchObject({
       status: "recoverable",
-      draft: { layout: edit, baseRevision: null },
+      draft: { layout: edit, baseRevision: base },
     });
 
-    await repo.saveLayout("containers", edit, null);
+    await repo.saveLayout("containers", edit, base);
     expect((await repo.diagramView("containers"))!.persistence.draft).toBeNull();
   });
 
@@ -399,9 +417,10 @@ describe("saving layouts through the repository (P0-12)", () => {
   });
 
   it("serializes concurrent saves so the second sees the first's revision", async () => {
+    const base = await rev("containers");
     const [a, b] = await Promise.allSettled([
-      repo.saveLayout("containers", { nodes: { "web-shop": { x: 1, y: 1 } } }, null),
-      repo.saveLayout("containers", { nodes: { "web-shop": { x: 2, y: 2 } } }, null),
+      repo.saveLayout("containers", { nodes: { "web-shop": { x: 1, y: 1 } } }, base),
+      repo.saveLayout("containers", { nodes: { "web-shop": { x: 2, y: 2 } } }, base),
     ]);
     expect(a.status).toBe("fulfilled");
     expect(b).toMatchObject({ status: "rejected", reason: { code: "CONFLICT" } });
