@@ -7,8 +7,10 @@
 import { diagnostic, sortDiagnostics, type Diagnostic } from "@/domain/diagnostics";
 import { resolveDiagram, type ResolvedDiagram } from "@/domain/diagram-resolve";
 import { lookup } from "@/domain/graph-index";
+import { elkPositionGenerator } from "@/domain/layout/elk";
 import {
-  resolveLayout,
+  resolveLayoutAsync,
+  type AsyncPositionGenerator,
   type PositionGenerator,
   type ResolvedLayout,
 } from "@/domain/layout/positions";
@@ -32,7 +34,8 @@ export interface RepositoryOptions {
   load?: LoadOptions;
   now?: () => Date;
   writeOps?: AtomicWriteOps;
-  generator?: PositionGenerator;
+  /** Overrides the ELK.js generator for nodes without saved positions. */
+  generator?: PositionGenerator | AsyncPositionGenerator;
   watch?: { debounceMs?: number; usePolling?: boolean };
 }
 
@@ -148,11 +151,11 @@ export class WorkspaceRepository {
       diagram: def.layout,
       layout: saved?.settings,
     });
-    const { diagnostics: layoutDiagnostics, ...layout } = resolveLayout({
+    const { diagnostics: layoutDiagnostics, ...layout } = await resolveLayoutAsync({
       diagram: resolved.diagram,
       ...(saved ? { layout: saved } : {}),
       settings: settings.settings,
-      ...(this.options.generator ? { generator: this.options.generator } : {}),
+      generator: this.options.generator ?? elkPositionGenerator(resolved.diagram),
     });
     const target = layoutTarget(model, diagramId)!;
     const revision = snap.files[target.path]?.revision ?? null;

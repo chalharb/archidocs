@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LAYOUT-04/05/06 ELK.js automatic layout > is reproducible for identical input (LAYOUT-21) 1`] = `"{"sys":{"x":12,"y":217,"width":248,"height":300},"b":{"x":36,"y":273,"width":200,"height":100},"c":{"x":36,"y":393,"width":200,"height":100},"a":{"x":36,"y":12,"width":200,"height":100}}"`;

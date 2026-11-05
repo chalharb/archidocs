@@ -30,10 +30,25 @@ export interface GeneratorInput {
   settings: LayoutSettings;
   /** Boxes already occupied by manual positions. */
   occupied: readonly Box[];
+  /** Node ID of each `occupied` box, in the same order. */
+  occupiedIds?: readonly string[];
+}
+
+/** A generated position; generators may also size nodes (e.g. boundaries, LAYOUT-14). */
+export interface GeneratedPosition {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
 }
 
 /** Produces positions for nodes without manual placement. Must be deterministic. */
-export type PositionGenerator = (input: GeneratorInput) => Record<string, { x: number; y: number }>;
+export type PositionGenerator = (input: GeneratorInput) => Record<string, GeneratedPosition>;
+
+/** Asynchronous variant, used by the ELK.js engine (LAYOUT-04). */
+export type AsyncPositionGenerator = (
+  input: GeneratorInput,
+) => Promise<Record<string, GeneratedPosition>>;
 
 export function overlaps(a: Box, b: Box): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -90,19 +105,23 @@ export interface ResolvedLayout {
   diagnostics: Diagnostic[];
 }
 
-export function resolveLayout(input: {
+interface LayoutInput {
   diagram: ResolvedDiagram;
   layout?: CanonicalDiagramLayout;
   settings: LayoutSettings;
-  generator?: PositionGenerator;
-}): ResolvedLayout {
-  const { diagram, settings } = input;
-  const layout = input.layout;
-  const generator = input.generator ?? gridPositionGenerator;
+}
+
+interface LayoutPlan {
+  positions: Record<string, Placement>;
+  manual: Array<[string, Box]>;
+  pending: ResolvedNode[];
+  generatorInput: GeneratorInput;
+}
+
+function planLayout({ diagram, layout, settings }: LayoutInput): LayoutPlan {
   const positions: Record<string, Placement> = {};
   const manual: Array<[string, Box]> = [];
   const pending: ResolvedNode[] = [];
-
   for (const node of diagram.nodes) {
     const saved = layout?.nodes[node.id];
     if (saved) {
@@ -118,23 +137,54 @@ export function resolveLayout(input: {
       pending.push(node);
     }
   }
+  return {
+    positions,
+    manual,
+    pending,
+    generatorInput: {
+      nodes: pending,
+      edges: diagram.edges,
+      settings,
+      occupied: manual.map(([, b]) => b),
+      occupiedIds: manual.map(([id]) => id),
+    },
+  };
+}
 
-  const generated =
-    pending.length > 0
-      ? generator({
-          nodes: pending,
-          edges: diagram.edges,
-          settings,
-          occupied: manual.map(([, b]) => b),
-        })
-      : {};
+/** True when `outer` is an ancestor boundary of `inner` in the diagram. */
+function containsNode(diagram: ResolvedDiagram, outer: string, inner: string): boolean {
+  const byId = new Map(diagram.nodes.map((n) => [n.id, n]));
+  let current = byId.get(inner)?.boundary;
+  const seen = new Set<string>();
+  while (current !== undefined && !seen.has(current)) {
+    if (current === outer) return true;
+    seen.add(current);
+    current = byId.get(current)?.boundary;
+  }
+  return false;
+}
+
+function finishLayout(
+  { diagram, layout, settings }: LayoutInput,
+  plan: LayoutPlan,
+  generated: Record<string, GeneratedPosition>,
+): ResolvedLayout {
+  const { positions, manual, pending } = plan;
   const collisions: Array<[string, string]> = [];
   const diagnostics: Diagnostic[] = [];
   for (const node of pending) {
     const p = generated[node.id] ?? { x: 0, y: 0 };
-    const box = { x: p.x, y: p.y, width: settings.nodeWidth, height: settings.nodeHeight };
+    const box = {
+      x: p.x,
+      y: p.y,
+      width: p.width ?? settings.nodeWidth,
+      height: p.height ?? settings.nodeHeight,
+    };
     positions[node.id] = { ...box, source: "generated" };
     for (const [manualId, manualBox] of manual) {
+      // A boundary is meant to overlap the nodes it contains.
+      if (containsNode(diagram, manualId, node.id) || containsNode(diagram, node.id, manualId))
+        continue;
       if (overlaps(box, manualBox)) {
         collisions.push([node.id, manualId]);
         diagnostics.push(
@@ -169,4 +219,21 @@ export function resolveLayout(input: {
     collisions,
     diagnostics,
   };
+}
+
+export function resolveLayout(
+  input: LayoutInput & { generator?: PositionGenerator },
+): ResolvedLayout {
+  const plan = planLayout(input);
+  const generator = input.generator ?? gridPositionGenerator;
+  return finishLayout(input, plan, plan.pending.length > 0 ? generator(plan.generatorInput) : {});
+}
+
+/** Like `resolveLayout`, with an asynchronous generator such as ELK.js (LAYOUT-04). */
+export async function resolveLayoutAsync(
+  input: LayoutInput & { generator: AsyncPositionGenerator | PositionGenerator },
+): Promise<ResolvedLayout> {
+  const plan = planLayout(input);
+  const generated = plan.pending.length > 0 ? await input.generator(plan.generatorInput) : {};
+  return finishLayout(input, plan, generated);
 }

@@ -27,6 +27,12 @@ export interface ResolvedNode {
   technology?: string;
   description?: string;
   parentEntityId?: string;
+  /**
+   * View-instance ID of the boundary node that contains this node (LAYOUT-14):
+   * the nearest ancestor entity shown in the diagram, when it has exactly one
+   * view instance.
+   */
+  boundary?: string;
   /** Effective style (DIAG-11). */
   style: EffectiveElementStyle;
 }
@@ -115,6 +121,21 @@ export function resolveDiagram(
       style: effectiveElementStyle(model, entity),
     });
   });
+
+  // Nested boundaries (LAYOUT-14): contain each node in its nearest shown ancestor.
+  for (const node of nodes) {
+    const seen = new Set<string>([node.entityId]);
+    let ancestor = model.entities[node.entityId]?.parent;
+    while (ancestor !== undefined && !seen.has(ancestor)) {
+      seen.add(ancestor);
+      const instances = instancesOf.get(ancestor);
+      if (instances) {
+        if (instances.length === 1) node.boundary = instances[0]!;
+        break;
+      }
+      ancestor = model.entities[ancestor]?.parent;
+    }
+  }
 
   const edges: ResolvedEdge[] = [];
   const edgeIds = new Set<string>();
