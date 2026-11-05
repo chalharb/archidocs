@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Addition |
 | **Proposed** | 2026-11-05 by Claude, at Logan Harber's request |
-| **Decided** | |
+| **Decided** | 2026-11-05 by Logan Harber |
 | **Baseline** | PRD v1.6 (with ADD-001) |
 | **Affected IDs** | DIAG-11 (new), DIAG-01..05, LAYOUT-22, VR-01..09 |
 | **PRD sections** | §2.2, §3, §7 (visual regression) |
@@ -80,11 +80,15 @@ Resolved styles are added to the renderable data from diagram resolution (P0-07)
 - **Tests.** Schema tests for each new field and value, resolution tests for inheritance and overrides, and visual-regression baselines (VR-01..09) captured with the styled components.
 - **Example workspace.** Update it to give people, databases, queues and front ends their shapes and distinct colours per system boundary, so it doubles as a style showcase.
 
+## Decision
+
+Accepted as written: element-level styles live on types and entities in the canonical YAML, not in a separate `Theme` resource. Diagram-specific presentation stays in `.layout.yaml`.
+
 ## Checklist updates
 
-On acceptance:
+Done on acceptance (2026-11-05):
 
-- [ ] Add DIAG-11 to `docs/checklists/02-diagrams.md` with "(added by ADD-004)"
-- [ ] Note "(styled per ADD-004)" on VR-01..09 in `docs/checklists/06-testing.md`
-- [ ] Record DIAG-11 in the allocated-IDs table (reserved on proposal)
-- [ ] Ran `scripts/prd-progress.sh --write`
+- [x] Added DIAG-11 to `docs/checklists/02-diagrams.md` with "(added by ADD-004)"
+- [x] Noted "(styled per ADD-004)" on VR-01..09 in `docs/checklists/06-testing.md`
+- [x] Recorded DIAG-11 in the allocated-IDs table
+- [x] Ran `scripts/prd-progress.sh --write`

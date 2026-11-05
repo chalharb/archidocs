@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Addition |
 | **Proposed** | 2026-11-05 by Claude, at Logan Harber's request |
-| **Decided** | |
+| **Decided** | 2026-11-05 by Logan Harber |
 | **Baseline** | PRD v1.6 (with ADD-001) |
 | **Affected IDs** | LAYOUT-25 (new), LAYOUT-15, PREC-01/02, BENCH-04, VR-01..09 |
 | **PRD sections** | §2.3, §4, §7, §8 |
@@ -61,8 +61,8 @@ Effective value per edge: the edge's `animated` if set, otherwise the resolved `
 
 ## Checklist updates
 
-On acceptance:
+Done on acceptance (2026-11-05):
 
-- [ ] Add LAYOUT-25 to `docs/checklists/03-layout.md` with "(added by ADD-005)"
-- [ ] Record LAYOUT-25 in the allocated-IDs table (reserved on proposal)
-- [ ] Ran `scripts/prd-progress.sh --write`
+- [x] Added LAYOUT-25 to `docs/checklists/03-layout.md` with "(added by ADD-005)"
+- [x] Recorded LAYOUT-25 in the allocated-IDs table
+- [x] Ran `scripts/prd-progress.sh --write`

@@ -25,6 +25,7 @@ Source: PRD §2.3, §4. Conventions: [checklists/README.md](README.md).
   - [ ] Phase 1: shown in the editor
 - [ ] **LAYOUT-14** `P1` `Phase 1` — Nested boundaries and grouping
 - [ ] **LAYOUT-15** `P0` `Phase 1` — Export PNG and SVG diagrams
+- [ ] **LAYOUT-25** `P1` `Phase 1` — Optional animated edge direction flow; off by default, per-diagram and per-edge, respects reduced motion, static in exports (added by ADD-005)
 
 ## Layout precedence (§4)
 

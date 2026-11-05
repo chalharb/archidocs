@@ -20,6 +20,7 @@ DIAG-08 and DIAG-09 are resolved in Phase 0 (epic P0-07) and rendered in Phase 1
 - [ ] **DIAG-10** `P0` `Phase 1` — Display validation and stale-model diagnostics
   - [x] Phase 0: stale/invalid status and diagnostics in API and status page — src/components/workspace-summary.test.tsx (376c8e5)
   - [ ] Phase 1: diagnostics in the diagram viewer
+- [ ] **DIAG-11** `P0` `Phase 1` — Element and relationship styles (shape, colour, line) on types with per-element overrides, resolved through type inheritance (added by ADD-004)
 
 ## MVP scope boundary
 

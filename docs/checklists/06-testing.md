@@ -79,12 +79,12 @@ Source: PRD §7. Conventions: [checklists/README.md](README.md).
 
 Pinned browsers, deterministic fixtures, consistent fonts, fixed viewports.
 
-- [ ] **VR-01** — C4 System Context
-- [ ] **VR-02** — C4 Container
-- [ ] **VR-03** — C4 Component
-- [ ] **VR-04** — Network topology
-- [ ] **VR-05** — Deployment architecture
-- [ ] **VR-06** — Alternative edge styles
-- [ ] **VR-07** — Nested boundaries
-- [ ] **VR-08** — Large diagrams
-- [ ] **VR-09** — Error and diagnostic states
+- [ ] **VR-01** — C4 System Context (styled per ADD-004)
+- [ ] **VR-02** — C4 Container (styled per ADD-004)
+- [ ] **VR-03** — C4 Component (styled per ADD-004)
+- [ ] **VR-04** — Network topology (styled per ADD-004)
+- [ ] **VR-05** — Deployment architecture (styled per ADD-004)
+- [ ] **VR-06** — Alternative edge styles (styled per ADD-004)
+- [ ] **VR-07** — Nested boundaries (styled per ADD-004)
+- [ ] **VR-08** — Large diagrams (styled per ADD-004)
+- [ ] **VR-09** — Error and diagnostic states (styled per ADD-004)
