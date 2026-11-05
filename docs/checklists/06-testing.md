@@ -10,7 +10,7 @@ Source: PRD §7. Conventions: [checklists/README.md](README.md).
 - [x] **LAYER-04** — Integration: Vitest + temp directories — ✅ vitest `integration` project, tests/helpers/tmp.ts (0b9418e)
 - [x] **LAYER-05** — Component: React Testing Library — ✅ src/components/workspace-summary.test.tsx (376c8e5)
 - [x] **LAYER-06** — Browser E2E: Playwright — ✅ playwright.config.ts, tests/e2e/smoke.spec.ts (0a913ee)
-- [ ] **LAYER-07** — Visual regression: Playwright
+- [x] **LAYER-07** — Visual regression: Playwright — ✅ tests/e2e/visual.spec.ts, playwright.config.ts (05ad960)
 - [x] **LAYER-08** — Accessibility: axe-core — ✅ @axe-core/playwright in tests/e2e/smoke.spec.ts (0a913ee)
 - [x] **LAYER-09** — Performance: benchmarks — ✅ tests/bench/workspace.bench.ts, tests/integration/performance.test.ts (88dcfeb)
 
@@ -69,22 +69,22 @@ Source: PRD §7. Conventions: [checklists/README.md](README.md).
 
 ## Phase 1 E2E workflows (Playwright)
 
-- [ ] **E2E-01** — Load a valid YAML workspace and render a diagram
-- [ ] **E2E-02** — Drag and align nodes, save, reload, verify positions
-- [ ] **E2E-03** — Change layout direction, spacing, and edge styles
-- [ ] **E2E-04** — Modify YAML externally and verify reload behavior
-- [ ] **E2E-05** — Export PNG and SVG and validate output
+- [x] **E2E-01** — Load a valid YAML workspace and render a diagram — ✅ tests/e2e/editor.spec.ts › E2E-01 (3765da0)
+- [x] **E2E-02** — Drag and align nodes, save, reload, verify positions — ✅ tests/e2e/editor.spec.ts › E2E-02 (3765da0)
+- [x] **E2E-03** — Change layout direction, spacing, and edge styles — ✅ tests/e2e/editor.spec.ts › E2E-03 (3765da0)
+- [x] **E2E-04** — Modify YAML externally and verify reload behavior — ✅ tests/e2e/editor.spec.ts › E2E-04 (3765da0)
+- [x] **E2E-05** — Export PNG and SVG and validate output — ✅ tests/e2e/editor.spec.ts › E2E-05 (3765da0)
 
 ## Visual regression snapshots
 
 Pinned browsers, deterministic fixtures, consistent fonts, fixed viewports.
 
-- [ ] **VR-01** — C4 System Context (styled per ADD-004)
-- [ ] **VR-02** — C4 Container (styled per ADD-004)
-- [ ] **VR-03** — C4 Component (styled per ADD-004)
-- [ ] **VR-04** — Network topology (styled per ADD-004)
-- [ ] **VR-05** — Deployment architecture (styled per ADD-004)
-- [ ] **VR-06** — Alternative edge styles (styled per ADD-004)
-- [ ] **VR-07** — Nested boundaries (styled per ADD-004)
-- [ ] **VR-08** — Large diagrams (styled per ADD-004)
-- [ ] **VR-09** — Error and diagnostic states (styled per ADD-004)
+- [x] **VR-01** — C4 System Context (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-01 (05ad960)
+- [x] **VR-02** — C4 Container (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-02 (05ad960)
+- [x] **VR-03** — C4 Component (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-03 (05ad960)
+- [x] **VR-04** — Network topology (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-04 (05ad960)
+- [x] **VR-05** — Deployment architecture (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-05 (05ad960)
+- [x] **VR-06** — Alternative edge styles (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-06 (05ad960)
+- [x] **VR-07** — Nested boundaries (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-07 (05ad960)
+- [x] **VR-08** — Large diagrams (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-08 (05ad960)
+- [x] **VR-09** — Error and diagnostic states (styled per ADD-004) — ✅ tests/e2e/visual.spec.ts › VR-09 (05ad960)
