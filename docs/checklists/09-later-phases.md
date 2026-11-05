@@ -10,14 +10,15 @@ Detailed items are in checklists 02, 03, 06 (E2E/VR), and 07.
 
 ## Phase 2 — Architecture Documentation and ADRs
 
-Detailed requirements are proposed in [ADD-009](../addenda/ADD-009-phase-2-documentation-and-adrs.md) (Proposed). Once accepted, these outline items point to its DOC-, ADR- and other new items.
+Detailed items are in checklist [10](10-documentation.md), plus SEC-11..12 (05), TEST-08, E2E-06..08 and VR-10..11 (06), and BENCH-07 (07), per [ADD-009](../addenda/ADD-009-phase-2-documentation-and-adrs.md). Tick each outline item when the items it maps to are done.
 
-- [ ] **PH2-01** — Markdown documents
-- [ ] **PH2-02** — Structured ADRs
-- [ ] **PH2-03** — Entity traceability
-- [ ] **PH2-04** — ADR supersession
-- [ ] **PH2-05** — Reverse references
-- [ ] **PH2-06** — Documentation navigation
+- [ ] **PH2-01** — Markdown documents (→ DOC-01, DOC-02, DOC-06)
+- [ ] **PH2-02** — Structured ADRs (→ ADR-01, ADR-02)
+- [ ] **PH2-03** — Entity traceability (→ DOC-03, DOC-04)
+- [ ] **PH2-04** — ADR supersession (→ ADR-03, ADR-05)
+- [ ] **PH2-05** — Reverse references (→ DOC-05)
+- [ ] **PH2-06** — Documentation navigation (→ DOC-06, ADR-04)
+- [ ] **PH2-EXIT** — A user can write architecture documentation and decisions in Markdown that link to the YAML model, and navigate between documents, decisions, entities and diagrams in both directions, without the app modifying any canonical file (added by ADD-009)
 
 ## Phase 3 — Advanced Diagrams and Flows
 

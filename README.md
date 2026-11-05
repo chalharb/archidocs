@@ -8,7 +8,7 @@ Requirements live in [`docs/`](docs/README.md) (baseline PRD v1.7). Phase 0
 (the YAML model foundation) and Phase 1 (diagram viewer and layout editor) are
 implemented; see [`docs/phase-0-acceptance.md`](docs/phase-0-acceptance.md) and
 [`docs/phase-1-acceptance.md`](docs/phase-1-acceptance.md). Phase 2
-(documentation and ADRs) is being specified in
+(documentation and ADRs) is in progress; its requirements are in
 [ADD-009](docs/addenda/ADD-009-phase-2-documentation-and-adrs.md).
 
 ## Getting started

@@ -21,7 +21,8 @@ docs/
     ├── 06-testing.md
     ├── 07-performance.md
     ├── 08-ci-quality-gates.md
-    └── 09-later-phases.md
+    ├── 09-later-phases.md
+    └── 10-documentation.md   ← Phase 2 documents and ADRs (ADD-009)
 ```
 
 ---
@@ -59,6 +60,8 @@ docs/
 | `PERF-` | Performance | §8 | 07 |
 | `P0-` | Phase 0 backlog epics | §9 | 00 |
 | `CI-` | CI quality gates (IDs assigned in checklist; PRD §10 lists them unnumbered) | §10 | 08 |
+| `DOC-` | Markdown documents, traceability and navigation (ADD-009) | §11 | 10 |
+| `ADR-` | Architecture decision records (ADD-009) | §11 | 10 |
 
 IDs are permanent. A removed requirement keeps its ID with status "Removed by ADD-NNN"; the ID is never reused.
 

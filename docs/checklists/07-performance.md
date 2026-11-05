@@ -20,3 +20,7 @@ Source: PRD §8. Conventions: [checklists/README.md](README.md). Targets are pro
   - [x] Graph resolution, loading and saving: budget tests fail CI on regression — tests/integration/performance.test.ts (88dcfeb)
   - [x] Rendering (Phase 1)
 - [x] **PERF-05** — Reference hardware and test conditions documented — ✅ docs/performance.md › Reference machine (88dcfeb)
+
+## Phase 2 (added by ADD-009)
+
+- [ ] **BENCH-07** `Phase 2` — Load 100 entities and 200 Markdown resources in under 1.5 s, cold (added by ADD-009)

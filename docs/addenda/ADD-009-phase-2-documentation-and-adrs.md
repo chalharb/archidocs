@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Addition |
 | **Proposed** | 2026-11-05 by Claude, at Logan Harber's request |
-| **Decided** | |
+| **Decided** | 2026-11-05 by Logan Harber |
 | **Baseline** | PRD v1.7 |
 | **Affected IDs** | DOC-01..09 (new), ADR-01..05 (new), SEC-11..12 (new), TEST-08 (new), E2E-06..08 (new), VR-10..11 (new), BENCH-07 (new), PH2-01..06, PH2-EXIT (new), RELI-01..05, MODEL-07, DIAG-07 |
 | **PRD sections** | §2, §3, §5, §6, §7, §8, §11 |
@@ -171,12 +171,16 @@ Each has the default this addendum assumes.
 - **UI:** new routes and an extended inspector. Diagram pages gain a documentation section. No change to the layout editor.
 - **Unchanged:** nothing in Phases 0 and 1 changes behaviour. Existing workspaces without Markdown resources load exactly as before.
 
+## Decision
+
+Accepted as written, including the default answer to every open question: front matter in the Markdown file, read-only documentation, plain Markdown ignored, no embedded diagrams, the fixed status set, and filters instead of full-text search.
+
 ## Checklist updates
 
-To do on acceptance:
+Done on acceptance (2026-11-05):
 
-- [ ] Create `docs/checklists/10-documentation.md` with DOC-01..09 and ADR-01..05, each "(added by ADD-009)"
-- [ ] Add SEC-11..12 to `05-security.md`; TEST-08, E2E-06..08 and VR-10..11 to `06-testing.md`; BENCH-07 to `07-performance.md`
-- [ ] In `09-later-phases.md`, add PH2-EXIT and point PH2-01..06 at the new items
-- [ ] Add `DOC-` and `ADR-` to the ID families in `docs/README.md`, and record all new IDs in the allocated-IDs table
-- [ ] Run `scripts/prd-progress.sh --write`
+- [x] Created `docs/checklists/10-documentation.md` with DOC-01..09 and ADR-01..05, each "(added by ADD-009)"
+- [x] Added SEC-11..12 to `05-security.md`; TEST-08, E2E-06..08 and VR-10..11 to `06-testing.md`; BENCH-07 to `07-performance.md`
+- [x] In `09-later-phases.md`, added PH2-EXIT and pointed PH2-01..06 at the new items
+- [x] Added `DOC-` and `ADR-` to the ID families in `docs/README.md`, and recorded all new IDs in the allocated-IDs table
+- [x] Ran `scripts/prd-progress.sh --write`

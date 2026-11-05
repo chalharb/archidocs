@@ -88,3 +88,17 @@ Pinned browsers, deterministic fixtures, consistent fonts, fixed viewports.
 - [x] **VR-07** — Nested boundaries (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-07 (view route c9848eb)
 - [x] **VR-08** — Large diagrams (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-08 (view route c9848eb)
 - [x] **VR-09** — Error and diagnostic states (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-09 (view route c9848eb)
+
+## Phase 2 (added by ADD-009)
+
+- [ ] **TEST-08** Documentation (added by ADD-009)
+  - [ ] Front-matter parsing: valid, missing, malformed, wrong kind, unsupported version, limits
+  - [ ] Reference and link resolution, including broken links with line numbers
+  - [ ] Supersession consistency warnings and cycles
+  - [ ] Reverse-reference indexing, independent of file order
+  - [ ] Sanitisation fixtures (SEC-11) and image confinement (SEC-12)
+- [ ] **E2E-06** — Open a document, follow an entity link to its diagram, and return through the inspector's reverse references (added by ADD-009)
+- [ ] **E2E-07** — Filter the decision log by status and entity, and follow a supersession chain both ways (added by ADD-009)
+- [ ] **E2E-08** — Edit a decision externally and see it reload; break its front matter and see the last valid version with diagnostics (added by ADD-009)
+- [ ] **VR-10** — Document page (added by ADD-009)
+- [ ] **VR-11** — Decision page with a superseded banner (added by ADD-009)

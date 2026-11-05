@@ -12,3 +12,8 @@ Source: PRD §6. Conventions: [checklists/README.md](README.md). All items are P
 - [x] **SEC-08** — Credentials and secrets aren't stored in architecture YAML (documented guidance, plus detection if feasible) — ✅ README security guidance + SECRET_SUSPECTED warnings, src/domain/validate.test.ts › secret detection (0f11a18)
 - [x] **SEC-09** — All filesystem access via server-side repository services — ✅ ESLint no-restricted-imports outside src/server (5fa9462); all routes go through WorkspaceService (58c2506)
 - [x] **SEC-10** — Unauthenticated instance not exposed publicly (guarded config and docs warning) — ✅ Host allow-list in src/proxy.ts and handlers, README warning; request-guard.test.ts, tests/e2e/smoke.spec.ts › SEC-10 (58c2506, 0a913ee)
+
+## Phase 2 (added by ADD-009)
+
+- [ ] **SEC-11** `P0` `Phase 2` — Markdown rendered to sanitised HTML: no raw HTML, only safe link schemes, no remote loading, XSS fixture suite (added by ADD-009)
+- [ ] **SEC-12** `P1` `Phase 2` — Workspace images served through the repository, confined to the workspace, type- and size-limited; SVG never inlined; remote images render as links (added by ADD-009)
