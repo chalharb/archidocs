@@ -41,7 +41,9 @@ test.describe("smoke", () => {
   });
 
   test("non-loopback Host headers are rejected (SEC-10)", async ({ request }) => {
-    const res = await request.get("/api/workspaces", { headers: { host: "attacker.example:3100" } });
+    const res = await request.get("/api/workspaces", {
+      headers: { host: "attacker.example:3100" },
+    });
     expect(res.status()).toBe(403);
     const page = await request.get("/", { headers: { host: "attacker.example" } });
     expect(page.status()).toBe(403);

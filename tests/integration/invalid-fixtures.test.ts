@@ -19,7 +19,9 @@ const COVERED_ELSEWHERE: Partial<Record<DiagnosticCode, string>> = {
 };
 
 describe("P0-10 invalid-input fixtures", async () => {
-  const dirs = (await readdir(FIXTURES, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+  const dirs = (await readdir(FIXTURES, { withFileTypes: true }))
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
 
   it("every diagnostic code has a fixture or a documented test", () => {
     const missing = DIAGNOSTIC_CODES.filter((c) => !dirs.includes(c) && !(c in COVERED_ELSEWHERE));
