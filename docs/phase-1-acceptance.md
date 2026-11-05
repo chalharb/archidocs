@@ -3,7 +3,7 @@
 **Exit criterion (PRD §11):** a user can visually arrange YAML-defined
 architecture diagrams without modifying the canonical architecture model.
 
-Effective requirements: baseline PRD + ADD-001..007. Nested-boundary semantics
+Effective requirements: baseline PRD + ADD-001..008. Nested-boundary semantics
 follow [ADD-006](addenda/ADD-006-nested-boundary-semantics.md). Per-item
 evidence is in the [checklists](checklists/README.md).
 
@@ -20,7 +20,7 @@ unsaved changes (DIAG-12, ADD-007). Between them, a user can:
 - See C4 context, container and component, network, deployment and custom diagrams with LikeC4-style nodes: shapes and colours come from `style` on types and entities (ADD-004). Nested boundaries are drawn from `parent` (LAYOUT-14).
 - Inspect a node or edge and jump to other diagrams that show the same entity (DIAG-07).
 - Drag, multi-select (Shift, Ctrl or Cmd), align, distribute and snap to a configurable grid; undo and redo every step (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y).
-- Change direction, node and layer spacing, the default edge style and animation, then **Re-layout all** with ELK. Override style and animation per edge.
+- Change direction, node and layer spacing, the default edge style and animation, then **Re-layout all** with ELK. Override style and animation per edge. Show or hide the minimap (LAYOUT-26).
 - **Save layout** (Ctrl/Cmd+S) to the diagram's `.layout.yaml`. Only presentation is written; canonical YAML is never touched (LAYOUT-22).
 - Edit YAML in another editor: the open diagram reloads, keeping unsaved layout edits on top (RELI-01..04). Invalid edits show the last valid model with diagnostics (DIAG-10).
 - Export the whole diagram as PNG or SVG, always static (LAYOUT-15, LAYOUT-25).

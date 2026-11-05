@@ -15,7 +15,7 @@ Source: PRD §2.3, §4. Conventions: [checklists/README.md](README.md).
   - [x] Phase 0: deterministic `.layout.yaml` read/write round-trip and safe save — src/domain/layout/layout.test.ts, persistence.integration.test.ts (f7d9d3d, 61a78db)
   - [x] Phase 1: editor saves manual overrides
 - [x] **LAYOUT-09** `P0` `Phase 1` — Undo/redo layout operations — ✅ tests/e2e/editor.spec.ts › E2E-02 undo/redo, src/editor/history.test.ts (3765da0, 58feec7)
-- [x] **LAYOUT-10** `P0` `Phase 1` — Minimap, zoom, pan, and fit-to-view — ✅ tests/e2e/editor.spec.ts › LAYOUT-10 (dbbdea6)
+- [x] **LAYOUT-10** `P0` `Phase 1` — Minimap (optional, see LAYOUT-26), zoom, pan, and fit-to-view (amended by ADD-008) — ✅ tests/e2e/editor.spec.ts › LAYOUT-10 (dbbdea6)
 - [x] **LAYOUT-11** `P0` `Phase 0–1` — Preserve compatible positions when models change — ✅ tests/e2e/editor.spec.ts › E2E-04 keeps unsaved edits, src/editor/state.test.ts › rebases (3765da0, 58feec7)
   - [x] Phase 0: reconciliation keeps compatible positions — repository.integration.test.ts (88ddabb)
   - [x] Phase 1: editor behaviour
@@ -26,6 +26,7 @@ Source: PRD §2.3, §4. Conventions: [checklists/README.md](README.md).
 - [x] **LAYOUT-14** `P1` `Phase 1` — Nested boundaries and grouping (clarified by ADD-006) — ✅ src/domain/layout/elk.test.ts › LAYOUT-14, tests/e2e/editor.spec.ts › LAYOUT-14, tests/e2e/visual.spec.ts › VR-07 (b24fe50, 3765da0, 05ad960)
 - [x] **LAYOUT-15** `P0` `Phase 1` — Export PNG and SVG diagrams — ✅ tests/e2e/editor.spec.ts › E2E-05, src/components/diagram/export.test.tsx (3765da0, 02f134d)
 - [x] **LAYOUT-25** `P1` `Phase 1` — Optional animated edge direction flow; off by default, per-diagram and per-edge, respects reduced motion, static in exports (added by ADD-005) — ✅ src/domain/layout/layout.test.ts › LAYOUT-25, tests/e2e/editor.spec.ts › LAYOUT-25 reduced motion and E2E-05 static export, tests/e2e/performance.spec.ts › BENCH-04 (ada00ff, 3765da0, 2df0b27)
+- [x] **LAYOUT-26** `P1` `Phase 1` — Show or hide the minimap; shown by default, configurable per workspace, diagram and layout file (added by ADD-008) — ✅ src/domain/layout/layout.test.ts › LAYOUT-26, src/components/diagram/diagram-editor.test.tsx › LAYOUT-26, tests/e2e/editor.spec.ts › LAYOUT-26 (284e1fe)
 
 ## Layout precedence (§4)
 
