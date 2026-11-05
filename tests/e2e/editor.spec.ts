@@ -135,11 +135,19 @@ test.describe("read-only viewing", () => {
     await expect(page.locator(".react-flow__edge")).toHaveCount(5);
     await expect(page.locator(".react-flow__handle.connectable")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /add|delete|remove|new/i })).toHaveCount(0);
-    // DIAG-12: nodes can't be moved in the view.
-    const before = (await node(page, "payments-api").boundingBox())!;
+    // DIAG-12: nodes can't be moved in the view (dragging pans the canvas instead).
+    const offset = async () => {
+      const [a, b] = await Promise.all([
+        node(page, "payments-api").boundingBox(),
+        node(page, "web-shop").boundingBox(),
+      ]);
+      return { dx: a!.x - b!.x, dy: a!.y - b!.y };
+    };
+    const before = await offset();
     await drag(page, "payments-api", 0, 120);
-    const after = (await node(page, "payments-api").boundingBox())!;
-    expect(after.y).toBeCloseTo(before.y, 0);
+    const after = await offset();
+    expect(after.dx).toBeCloseTo(before.dx, 0);
+    expect(after.dy).toBeCloseTo(before.dy, 0);
   });
 
   for (const mode of ["view", "edit"] as const) {
