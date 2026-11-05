@@ -13,6 +13,7 @@ Changes, pivots, and clarifications to the [baseline PRD v1.6](../Archidocs-prd.
 | [ADD-003](ADD-003-defer-github-ci.md) | Defer GitHub-hosted CI until the repository is pushed to GitHub | Accepted | 2026-11-05 | CI-01..08, CI-REQ, P0-13, DOD-13 |
 | [ADD-004](ADD-004-element-and-relationship-styles.md) | Element and relationship styles (shapes, colours, line styles) | Accepted | 2026-11-05 | DIAG-11 (new), DIAG-01..05, LAYOUT-22, VR-01..09 |
 | [ADD-005](ADD-005-animated-edge-flow.md) | Optional animated edge direction flow | Accepted | 2026-11-05 | LAYOUT-25 (new), LAYOUT-15, PREC-01/02, BENCH-04, VR-01..09 |
+| [ADD-006](ADD-006-nested-boundary-semantics.md) | Nested boundary membership and layout coordinates | Proposed | 2026-11-05 | LAYOUT-14, LAYOUT-08, LAYOUT-24 |
 
 ## Allocated requirement IDs
 
