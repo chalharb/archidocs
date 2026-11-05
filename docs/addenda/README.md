@@ -17,6 +17,7 @@ Changes, pivots, and clarifications to the [baseline PRD v1.7](../Archidocs-prd.
 | [ADD-007](ADD-007-separate-view-and-edit-routes.md) | Separate routes for viewing and editing diagrams | Consolidated into v1.7 | 2026-11-05 | DIAG-12 (new), DIAG-07, DIAG-10, LAYOUT-01..15, LAYOUT-25, SCOPE-01, E2E-01..05, VR-01..09 |
 | [ADD-008](ADD-008-optional-minimap.md) | Optional minimap | Consolidated into v1.7 | 2026-11-05 | LAYOUT-26 (new), LAYOUT-10, PREC-01/02 |
 | [ADD-009](ADD-009-phase-2-documentation-and-adrs.md) | Phase 2 requirements: architecture documentation and ADRs | Accepted | 2026-11-05 | DOC-01..09, ADR-01..05, SEC-11..12, TEST-08, E2E-06..08, VR-10..11, BENCH-07, PH2-EXIT (all new); PH2-01..06, RELI-01..05, MODEL-07, DIAG-07 |
+| [ADD-010](ADD-010-hosted-read-only-mode.md) | Hosted read-only mode (Vercel) | Accepted | 2026-11-05 | SEC-13 (new), SEC-01, SEC-10, RELI-01, LAYOUT-08, DIAG-12, RELI-11 |
 
 ## Allocated requirement IDs
 
@@ -29,7 +30,7 @@ New IDs introduced by addenda are recorded here so nobody allocates the same ID 
 | DIAG | 01–10; DIAG-11 (ADD-004); DIAG-12 (ADD-007) | DIAG-13 |
 | LAYOUT | 01–24; LAYOUT-25 (ADD-005); LAYOUT-26 (ADD-008) | LAYOUT-27 |
 | RELI | 01–14; RELI-15 (ADD-002) | RELI-16 |
-| SEC | 01–10; SEC-11..12 (ADD-009) | SEC-13 |
+| SEC | 01–10; SEC-11..12 (ADD-009); SEC-13 (ADD-010) | SEC-14 |
 | TEST | 01–07; TEST-08 (ADD-009) | TEST-09 |
 | PERF | 01–05 | PERF-06 |
 | CI | 01–08 (assigned in checklist 08) | CI-09 |

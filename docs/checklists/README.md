@@ -21,13 +21,13 @@ Checkbox version of the effective requirements (baseline PRD v1.7 + accepted [ad
 | [02-diagrams](02-diagrams.md) | 12 | 13 | 92% |
 | [03-layout](03-layout.md) | 29 | 29 | 100% |
 | [04-reliability](04-reliability.md) | 21 | 21 | 100% |
-| [05-security](05-security.md) | 11 | 12 | 91% |
+| [05-security](05-security.md) | 12 | 13 | 92% |
 | [06-testing](06-testing.md) | 39 | 40 | 97% |
 | [07-performance](07-performance.md) | 11 | 12 | 91% |
 | [08-ci-quality-gates](08-ci-quality-gates.md) | 0 | 0 | 0% |
 | [09-later-phases](09-later-phases.md) | 7 | 25 | 28% |
 | [10-documentation](10-documentation.md) | 14 | 14 | 100% |
-| **Total** | **200** | **222** | **90%** |
+| **Total** | **201** | **223** | **90%** |
 <!-- PROGRESS:END -->
 
 Regenerate with `scripts/prd-progress.sh --write`.
