@@ -38,8 +38,9 @@ export async function waitForQuiet(request: APIRequestContext, workspace: string
   }
 }
 
-export function diagramUrl(workspace: string, diagram: string) {
-  return `/workspaces/${workspace}/diagrams/${diagram}`;
+/** The read-only view route, or the layout editor with `mode: "edit"` (DIAG-12). */
+export function diagramUrl(workspace: string, diagram: string, mode: "view" | "edit" = "view") {
+  return `/workspaces/${workspace}/diagrams/${diagram}${mode === "edit" ? "/edit" : ""}`;
 }
 
 /** Wait until the diagram has rendered its nodes and edges and fonts are ready. */

@@ -38,8 +38,10 @@ test.describe("read-only viewing", () => {
     await expect(page.getByTestId("node-ledger-db")).toHaveAttribute("data-shape", "cylinder");
     await expect(page.getByTestId("node-web-shop")).toHaveAttribute("data-shape", "browser");
     await expect(page.getByTestId("node-customer")).toHaveAttribute("data-shape", "person");
-    const details = page.getByRole("complementary", { name: "Diagram details" });
-    await expect(details.getByText("No problems found.")).toBeVisible();
+    // DIAG-12: the view has no layout controls; diagnostics collapse to an indicator.
+    await expect(page.getByRole("button", { name: "No problems" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save layout" })).toHaveCount(0);
+    await expect(page.getByLabel("Direction")).toHaveCount(0);
   });
 
   test("DIAG-09: renders several view instances of one entity", async ({ page }) => {
@@ -86,6 +88,9 @@ test.describe("read-only viewing", () => {
   test("DIAG-10 / LAYOUT-13: shows diagnostics and orphaned layout overrides", async ({ page }) => {
     await page.goto(diagramUrl("visual", "broken"));
     await waitForDiagram(page, { edges: false });
+    const indicator = page.getByRole("button", { name: /^\d+ problems?$/ });
+    await expect(indicator).toHaveAttribute("aria-expanded", "false");
+    await indicator.click();
     const details = page.getByRole("complementary", { name: "Diagram details" });
     await expect(details.getByText("Orphaned layout overrides")).toBeVisible();
     await expect(details.getByText(/no longer in this diagram/)).toContainText("'removed-node'");
@@ -130,16 +135,24 @@ test.describe("read-only viewing", () => {
     await expect(page.locator(".react-flow__edge")).toHaveCount(5);
     await expect(page.locator(".react-flow__handle.connectable")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /add|delete|remove|new/i })).toHaveCount(0);
+    // DIAG-12: nodes can't be moved in the view.
+    const before = (await node(page, "payments-api").boundingBox())!;
+    await drag(page, "payments-api", 0, 120);
+    const after = (await node(page, "payments-api").boundingBox())!;
+    expect(after.y).toBeCloseTo(before.y, 0);
   });
 
-  test("diagram page has no automatically detectable accessibility violations", async ({
-    page,
-  }) => {
-    await page.goto(diagramUrl("acme", "containers"));
-    await waitForDiagram(page);
-    const results = await new AxeBuilder({ page }).analyze();
-    expect(results.violations).toEqual([]);
-  });
+  for (const mode of ["view", "edit"] as const) {
+    test(`diagram ${mode} page has no automatically detectable accessibility violations`, async ({
+      page,
+    }) => {
+      await page.goto(diagramUrl("acme", "containers", mode));
+      await waitForDiagram(page);
+      await node(page, "payments-api").click(); // include the details panel
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+  }
 
   test("E2E-05: exports PNG and SVG of the whole diagram, statically", async ({ page }) => {
     await page.goto(diagramUrl("visual", "edge-styles"));
@@ -210,7 +223,7 @@ test.describe("editing the scratch workspace", () => {
     page,
     request,
   }) => {
-    await page.goto(diagramUrl("scratch", "containers"));
+    await page.goto(diagramUrl("scratch", "containers", "edit"));
     await waitForDiagram(page);
     const before = await diagramView(request, "scratch", "containers");
     expect(before.persistence.revision).toBeNull();
@@ -265,7 +278,7 @@ test.describe("editing the scratch workspace", () => {
   });
 
   test("E2E-03: change layout direction, spacing and edge styles", async ({ page, request }) => {
-    await page.goto(diagramUrl("scratch", "containers"));
+    await page.goto(diagramUrl("scratch", "containers", "edit"));
     await waitForDiagram(page);
     const details = page.getByRole("complementary", { name: "Diagram details" });
     const layout = details.getByRole("region", { name: "Layout" });
@@ -311,8 +324,41 @@ test.describe("editing the scratch workspace", () => {
     expect(view.layout.edgeAnimated["shop-api"]).toBe(true);
   });
 
-  test("E2E-04: reloads when YAML changes externally, keeping unsaved edits", async ({ page }) => {
+  test("DIAG-12: view, edit, and Done with unsaved changes", async ({ page, request }) => {
     await page.goto(diagramUrl("scratch", "containers"));
+    await waitForDiagram(page);
+    await page.getByRole("link", { name: "Edit layout" }).click();
+    await expect(page).toHaveURL(/\/diagrams\/containers\/edit$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Edit layout: Payments — Containers",
+    );
+    await waitForDiagram(page);
+
+    // Leaving with unsaved changes asks first.
+    await drag(page, "customer", 0, 120);
+    await page.getByRole("button", { name: "Done" }).click();
+    const prompt = page.getByRole("alertdialog");
+    await expect(prompt).toContainText("Unsaved layout changes.");
+    await prompt.getByRole("button", { name: "Keep editing" }).click();
+    await expect(prompt).toHaveCount(0);
+    await expect(page).toHaveURL(/\/edit$/);
+
+    await page.getByRole("button", { name: "Done" }).click();
+    await page.getByRole("button", { name: "Save and close" }).click();
+    await expect(page).toHaveURL(/\/diagrams\/containers$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Payments — Containers");
+    const view = await diagramView(request, "scratch", "containers");
+    expect(view.layout.positions.customer!.source).toBe("manual");
+
+    // Without changes, Done returns straight away.
+    await page.getByRole("link", { name: "Edit layout" }).click();
+    await waitForDiagram(page);
+    await page.getByRole("button", { name: "Done" }).click();
+    await expect(page).toHaveURL(/\/diagrams\/containers$/);
+  });
+
+  test("E2E-04: reloads when YAML changes externally, keeping unsaved edits", async ({ page }) => {
+    await page.goto(diagramUrl("scratch", "containers", "edit"));
     await waitForDiagram(page);
     const systems = path.join(SCRATCH_DIR, "model/payments/systems.yaml");
     const original = await readFile(systems, "utf8");

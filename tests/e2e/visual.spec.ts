@@ -8,9 +8,17 @@
 import { expect, test, type Page } from "@playwright/test";
 import { diagramUrl, waitForDiagram } from "./helpers";
 
-async function snapshot(page: Page, workspace: string, diagram: string, name: string) {
-  await page.goto(diagramUrl(workspace, diagram));
+/** Snapshots are taken on the read-only view route unless stated (ADD-007). */
+async function snapshot(
+  page: Page,
+  workspace: string,
+  diagram: string,
+  name: string,
+  opts: { mode?: "view" | "edit"; diagnostics?: boolean } = {},
+) {
+  await page.goto(diagramUrl(workspace, diagram, opts.mode));
   await waitForDiagram(page, { edges: diagram !== "broken" });
+  if (opts.diagnostics) await page.getByRole("button", { name: /problems?$/ }).click();
   await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: false });
 }
 
@@ -40,7 +48,11 @@ test.describe("visual regression", () => {
     await snapshot(page, "large", "bench", "vr-08-large");
   });
   test("VR-09 error and diagnostic states", async ({ page }) => {
-    await snapshot(page, "visual", "broken", "vr-09-diagnostics");
+    await snapshot(page, "visual", "broken", "vr-09-diagnostics", { diagnostics: true });
+    await snapshot(page, "visual", "broken", "vr-09-diagnostics-editor", { mode: "edit" });
+  });
+  test("ADD-007: layout editor chrome", async ({ page }) => {
+    await snapshot(page, "acme", "containers", "add-007-editor", { mode: "edit" });
   });
   test("ADD-005: an animated edge is static under reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });

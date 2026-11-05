@@ -58,7 +58,7 @@ test.describe("performance budgets (medium diagram)", () => {
   test("BENCH-04: drags nodes at about 60 FPS, with and without animated edges", async ({
     page,
   }) => {
-    await page.goto(diagramUrl("large", "bench"));
+    await page.goto(diagramUrl("large", "bench", "edit"));
     await waitForDiagram(page);
     const still = await dragFrames(page, "e0042");
     console.log(
