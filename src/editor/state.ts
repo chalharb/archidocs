@@ -136,13 +136,24 @@ export function resizeNode(doc: EditorDoc, id: string, box: Box): EditorDoc {
   };
 }
 
+/**
+ * Save the given nodes' current positions as manual overrides. Aligned or
+ * distributed nodes are pinned even if they didn't move, so the arrangement
+ * survives later changes to generated positions.
+ */
+function pin(doc: EditorDoc, ids: readonly string[]): EditorDoc {
+  const extra = ids.filter((id) => doc.boxes[id] && !doc.placed.includes(id));
+  return extra.length === 0 ? doc : { ...doc, placed: sorted([...doc.placed, ...extra]) };
+}
+
 export function alignNodes(
   doc: EditorDoc,
   diagram: ResolvedDiagram,
   ids: readonly string[],
   mode: AlignMode,
 ): EditorDoc {
-  return moveNodes(doc, diagram, align(doc.boxes, ids, mode));
+  const moves = align(doc.boxes, ids, mode);
+  return pin(moveNodes(doc, diagram, moves), Object.keys(moves));
 }
 
 export function distributeNodes(
@@ -151,7 +162,8 @@ export function distributeNodes(
   ids: readonly string[],
   axis: DistributeAxis,
 ): EditorDoc {
-  return moveNodes(doc, diagram, distribute(doc.boxes, ids, axis));
+  const moves = distribute(doc.boxes, ids, axis);
+  return pin(moveNodes(doc, diagram, moves), Object.keys(moves));
 }
 
 /** Replace every position with freshly generated ones (Re-layout All, LAYOUT-12/20). */

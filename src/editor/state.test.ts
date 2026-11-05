@@ -148,6 +148,17 @@ describe("editor document", () => {
     expect(resizeNode(r, "ghost", { x: 0, y: 0, width: 1, height: 1 })).toBe(r);
   });
 
+  it("pins every aligned or distributed node, including those that didn't move", () => {
+    const v = view({ nodes: { a: { x: 0, y: 0 } } });
+    const doc = docFromView(v);
+    const aligned = alignNodes(doc, v.diagram, ["a", "u"], "left");
+    expect(aligned.placed).toEqual(["a", "u"]);
+    const already = alignNodes(aligned, v.diagram, ["a", "u"], "left");
+    expect(already).toBe(aligned);
+    const spread = distributeNodes(doc, v.diagram, ["a", "b", "u"], "horizontal");
+    expect(spread.placed).toEqual(["a", "b", "u"]);
+  });
+
   it("re-layout places every node", () => {
     const v = view();
     const doc = docFromView(v);

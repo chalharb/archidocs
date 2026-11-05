@@ -281,3 +281,58 @@ describe("LAYOUT-24 partial regeneration", () => {
     expect(nearestFreeSlot(box, [{ ...box }], 10)).toEqual(moved);
   });
 });
+
+describe("ELK generator edge cases", () => {
+  it("skips self-loops, dangling edges and edges between a boundary and its contents", async () => {
+    const d = chainDiagram(true);
+    const edges = [
+      ...d.edges,
+      { ...d.edges[0]!, id: "self", source: "a", target: "a" },
+      { ...d.edges[0]!, id: "dangling", source: "a", target: "ghost" },
+      { ...d.edges[0]!, id: "child-to-boundary", source: "c", target: "sys" },
+    ];
+    const out = await layoutAll({ nodes: d.nodes, edges, settings: S });
+    expect(Object.keys(out).sort()).toEqual(["a", "b", "c", "sys"]);
+  });
+
+  it("ignores boundaries that are not in the diagram", async () => {
+    const d = chainDiagram();
+    const nodes = d.nodes.map((n) => (n.id === "b" ? { ...n, boundary: "missing" } : n));
+    const out = await layoutAll({ nodes, edges: d.edges, settings: S });
+    expect(out.b).toBeDefined();
+  });
+
+  it("avoids occupied boxes without IDs and tolerates IDs ELK did not place", async () => {
+    const d = chainDiagram();
+    const full = await layoutAll({ nodes: d.nodes, edges: d.edges, settings: S });
+    const generate = elkPositionGenerator(d);
+    const occupied = [{ ...full.a!, width: 200, height: 100 }];
+    const anonymous = await generate({ nodes: d.nodes, edges: d.edges, settings: S, occupied });
+    expect(overlaps({ ...anonymous.a!, width: 200, height: 100 }, occupied[0]!)).toBe(false);
+    const unknown = await generate({
+      nodes: d.nodes,
+      edges: d.edges,
+      settings: S,
+      occupied,
+      occupiedIds: ["not-in-diagram"],
+    });
+    expect(unknown).toEqual(anonymous);
+  });
+
+  it("evicts old cache entries and stays correct", async () => {
+    const d = chainDiagram();
+    const generate = elkPositionGenerator(d);
+    const first = await generate({ nodes: d.nodes, edges: d.edges, settings: S, occupied: [] });
+    for (let i = 0; i < 70; i++) {
+      await generate({
+        nodes: d.nodes,
+        edges: d.edges,
+        settings: { ...S, nodeSpacing: 10 + i },
+        occupied: [],
+      });
+    }
+    expect(await generate({ nodes: d.nodes, edges: d.edges, settings: S, occupied: [] })).toEqual(
+      first,
+    );
+  });
+});

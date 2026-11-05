@@ -198,3 +198,14 @@ describe("DIAG-11 effective style resolution", () => {
     ]);
   });
 });
+
+describe("style merging", () => {
+  it("treats explicitly undefined keys as not set", () => {
+    expect(
+      effectiveElementStyle(
+        { entityTypes: {} },
+        { type: "x", style: { shape: undefined, color: "red" } },
+      ),
+    ).toEqual({ shape: "rectangle", color: "red" });
+  });
+});
