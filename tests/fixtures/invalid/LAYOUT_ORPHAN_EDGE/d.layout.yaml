@@ -1,0 +1,5 @@
+apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: d
+edges:
+  removed-edge: {type: step}

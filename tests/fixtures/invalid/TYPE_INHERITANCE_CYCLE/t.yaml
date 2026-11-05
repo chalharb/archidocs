@@ -1,0 +1,11 @@
+apiVersion: archdocs/v1
+kind: EntityType
+id: x
+name: X
+extends: y
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: y
+name: Y
+extends: x

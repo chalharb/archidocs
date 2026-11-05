@@ -1,0 +1,21 @@
+apiVersion: archdocs/v1
+kind: EntityType
+id: t
+name: T
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: db
+name: DB
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: u
+name: Uses
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: reads
+name: Reads
+sources: [t]
+targets: [db]

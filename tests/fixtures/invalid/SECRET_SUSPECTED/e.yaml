@@ -1,0 +1,7 @@
+apiVersion: archdocs/v1
+kind: Entity
+id: a
+name: A
+type: t
+properties:
+  dbPassword: hunter2

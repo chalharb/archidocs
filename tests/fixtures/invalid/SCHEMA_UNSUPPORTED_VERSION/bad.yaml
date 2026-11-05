@@ -1,0 +1,5 @@
+apiVersion: archdocs/v2
+kind: Entity
+id: a
+name: A
+type: t

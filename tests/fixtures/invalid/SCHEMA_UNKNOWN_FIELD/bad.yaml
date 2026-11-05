@@ -1,0 +1,5 @@
+apiVersion: archdocs/v1
+kind: EntityType
+id: t
+name: T
+colour: red

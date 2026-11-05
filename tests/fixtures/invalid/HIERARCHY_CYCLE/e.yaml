@@ -1,0 +1,6 @@
+apiVersion: archdocs/v1
+kind: EntitySet
+id: es
+entities:
+  - {id: a, name: A, type: t, parent: b}
+  - {id: b, name: B, type: t, parent: a}

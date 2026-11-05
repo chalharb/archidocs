@@ -1,0 +1,5 @@
+apiVersion: archdocs/v1
+kind: RelationshipSet
+id: rs
+relationships:
+  - {id: ab, type: u, source: a, target: b}

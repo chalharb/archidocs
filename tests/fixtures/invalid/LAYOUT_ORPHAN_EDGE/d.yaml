@@ -1,0 +1,6 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: d
+name: D
+diagramType: custom
+nodes: [{entity: a}]

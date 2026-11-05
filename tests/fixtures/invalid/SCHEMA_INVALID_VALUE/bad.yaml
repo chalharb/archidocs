@@ -1,0 +1,4 @@
+apiVersion: archdocs/v1
+kind: EntityType
+id: "bad id!"
+name: T

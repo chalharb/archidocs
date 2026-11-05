@@ -1,0 +1,3 @@
+apiVersion: archdocs/v1
+kind: Entitty
+id: a

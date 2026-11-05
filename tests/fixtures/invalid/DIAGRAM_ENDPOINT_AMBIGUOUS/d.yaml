@@ -1,0 +1,7 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: d
+name: D
+diagramType: custom
+nodes: [{entity: a}, {id: b1, entity: b}, {id: b2, entity: b}]
+edges: [{relationship: ab}]

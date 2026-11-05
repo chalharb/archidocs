@@ -1,0 +1,5 @@
+apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: d
+nodes:
+  renamed-node: {x: 0, y: 0}
