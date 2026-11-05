@@ -305,6 +305,8 @@ describe("documents and decisions (DOC-01, ADR-01, ADD-009)", () => {
       diagrams: [],
       properties: {},
       body: { text: "# Body\n", line: 8 },
+      links: [],
+      headings: [{ depth: 1, text: "Body", line: 8 }],
     });
     expect(model.decisions["adr-1"]).toMatchObject({
       status: "accepted",

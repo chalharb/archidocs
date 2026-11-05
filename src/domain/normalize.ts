@@ -8,6 +8,7 @@
  * diagnostics that point back to it.
  */
 import { diagnostic, type Diagnostic } from "./diagnostics";
+import { analyzeMarkdown } from "./markdown";
 import { compareSources, sortRecord } from "./order";
 import {
   emptyModel,
@@ -144,6 +145,11 @@ export function normalize(parsed: readonly ParsedResource[]): {
 
   const ordered = [...parsed].sort((a, b) => compareSources(a.source, b.source));
 
+  const markdown = (body: ParsedResource["body"], file: string) => {
+    const b = body ?? { text: "", line: 1 };
+    return { body: b, ...analyzeMarkdown(b, file) };
+  };
+
   for (const { resource, source, body } of ordered) {
     switch (resource.kind) {
       case "Workspace":
@@ -263,7 +269,7 @@ export function normalize(parsed: readonly ParsedResource[]): {
             entities: [...(resource.entities ?? [])],
             diagrams: [...(resource.diagrams ?? [])],
             properties: { ...(resource.properties ?? {}) },
-            body: body ?? { text: "", line: 1 },
+            ...markdown(body, source.file),
           });
         }
         break;
@@ -281,7 +287,7 @@ export function normalize(parsed: readonly ParsedResource[]): {
             diagrams: [...(resource.diagrams ?? [])],
             supersedes: [...(resource.supersedes ?? [])],
             properties: { ...(resource.properties ?? {}) },
-            body: body ?? { text: "", line: 1 },
+            ...markdown(body, source.file),
           });
         }
         break;

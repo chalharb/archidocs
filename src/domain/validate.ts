@@ -10,6 +10,7 @@ import {
   type Severity,
 } from "./diagnostics";
 import { resolveDiagram } from "./diagram-resolve";
+import { validateDocumentation } from "./documentation";
 import { effectiveConstraints, findCycles, isSubtypeOf } from "./hierarchy";
 import { sourceKey, type ArchitectureModel, type ModelCategory } from "./model";
 import type { CustomProperties, JsonValue } from "./resources";
@@ -297,6 +298,9 @@ export function validateModel(model: ArchitectureModel): Diagnostic[] {
       }
     }
   }
+
+  // --- Documents and decisions (ADD-009) -------------------------------------
+  out.push(...validateDocumentation(model));
 
   return sortDiagnostics(out);
 }

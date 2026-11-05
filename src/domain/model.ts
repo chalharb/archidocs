@@ -18,6 +18,7 @@ import type {
   RelationshipStyle,
   SourceRef,
 } from "./resources";
+import type { DocHeading, DocLink } from "./markdown";
 
 export interface CanonicalWorkspace {
   id: string;
@@ -130,6 +131,9 @@ export interface CanonicalDocument {
   diagrams: string[];
   properties: CustomProperties;
   body: MarkdownBody;
+  /** Model and Markdown-file links in the body (DOC-04). */
+  links: DocLink[];
+  headings: DocHeading[];
 }
 
 /** An architecture decision record (ADR-01). */
@@ -146,6 +150,8 @@ export interface CanonicalDecision {
   supersedes: string[];
   properties: CustomProperties;
   body: MarkdownBody;
+  links: DocLink[];
+  headings: DocHeading[];
 }
 
 export type ModelCategory =

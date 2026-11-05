@@ -59,6 +59,21 @@ describe("loading the example workspace (P0-10, DOD-14)", () => {
     expect(m.decisions["adr-0002"]!.supersedes).toEqual(["adr-0001"]);
     expect(m.sources["document:payments-overview"]!.file).toBe("docs/payments-overview.md");
     expect(snap.files["README.md"]).toBeDefined();
+    // Every sample link resolves (no diagnostics above), and reverse references are indexed (DOC-05).
+    const links = [...Object.values(m.documents), ...Object.values(m.decisions)].flatMap(
+      (d) => d.links,
+    );
+    expect(new Set(links.map((l) => l.kind))).toEqual(
+      new Set(["entity", "diagram", "decision", "document", "file"]),
+    );
+    expect(snap.index.entityDocuments["ledger-db"]).toEqual([
+      "payments-overview",
+      "payments-runbook",
+    ]);
+    expect(snap.index.entityDocuments["card-network"]).toEqual(["payments-overview"]);
+    expect(snap.index.entityDecisions["ledger-db"]).toEqual(["adr-0001", "adr-0002"]);
+    expect(snap.index.diagramDocuments.containers).toEqual(["payments-overview"]);
+    expect(snap.index.supersededBy).toEqual({ "adr-0001": ["adr-0002"] });
     expect(staleNotice(snap)).toBeNull();
   });
 
