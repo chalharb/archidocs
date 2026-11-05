@@ -15,6 +15,7 @@ import {
   type ResolvedLayout,
 } from "@/domain/layout/positions";
 import { resolveLayoutSettings, type ResolvedSettings } from "@/domain/layout/settings";
+import type { LayoutSettings } from "@/domain/resources";
 import { sourceKey, type CanonicalEntity, type CanonicalRelationship } from "@/domain/model";
 import { WorkspaceRoot } from "../fs/workspace-root";
 import type { AtomicWriteOps } from "../fs/atomic-write";
@@ -43,6 +44,8 @@ export interface DiagramView {
   modelStatus: ModelStatus;
   diagram: ResolvedDiagram;
   settings: ResolvedSettings;
+  /** Settings without the layout file's overrides (what the editor falls back to). */
+  inheritedSettings: LayoutSettings;
   layout: Omit<ResolvedLayout, "diagnostics">;
   /** Overrides currently saved in the layout file, as the editor's starting point. */
   saved: LayoutEdit;
@@ -170,6 +173,10 @@ export class WorkspaceRepository {
       modelStatus: snap.status,
       diagram: resolved.diagram,
       settings,
+      inheritedSettings: resolveLayoutSettings({
+        workspace: model.workspace?.layoutDefaults,
+        diagram: def.layout,
+      }).settings,
       layout,
       saved: {
         settings: { ...(saved?.settings ?? {}) },
