@@ -44,6 +44,8 @@ export interface DiagramView {
   diagram: ResolvedDiagram;
   settings: ResolvedSettings;
   layout: Omit<ResolvedLayout, "diagnostics">;
+  /** Overrides currently saved in the layout file, as the editor's starting point. */
+  saved: LayoutEdit;
   diagnostics: Diagnostic[];
   /** RELI-10: saved layout file vs autosaved draft (unsaved editor state lives in the client). */
   persistence: {
@@ -169,6 +171,11 @@ export class WorkspaceRepository {
       diagram: resolved.diagram,
       settings,
       layout,
+      saved: {
+        settings: { ...(saved?.settings ?? {}) },
+        nodes: { ...(saved?.nodes ?? {}) },
+        edges: { ...(saved?.edges ?? {}) },
+      },
       diagnostics: sortDiagnostics([
         ...resolved.diagnostics,
         ...fileDiagnostics,

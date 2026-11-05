@@ -263,3 +263,60 @@ export function discardDraft(
     return new Response(null, { status: 204, headers: NO_STORE });
   })(request, deps);
 }
+
+/** How often an idle event stream sends a keep-alive comment. */
+export const EVENTS_KEEPALIVE_MS = 15_000;
+
+/**
+ * Server-sent events announcing workspace changes (RELI-01..04 in the editor).
+ * Sends the current version immediately, then one event per model change.
+ */
+export function workspaceEvents(request: Request, deps: HttpDeps, params: { workspace: string }) {
+  return guarded(async () => {
+    const r = await repositoryFor(deps, params.workspace);
+    if (!r.ok) return r.response;
+    const repo = r.repo;
+    const encoder = new TextEncoder();
+    let cleanup = () => {};
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const send = (text: string) => {
+          try {
+            controller.enqueue(encoder.encode(text));
+          } catch {
+            cleanup();
+          }
+        };
+        const event = () => {
+          const snap = repo.snapshot();
+          send(
+            `event: change\ndata: ${JSON.stringify({ version: snap.version, status: snap.status })}\n\n`,
+          );
+        };
+        event();
+        const unsubscribe = repo.onChange(event);
+        const timer = setInterval(() => send(": keep-alive\n\n"), EVENTS_KEEPALIVE_MS);
+        cleanup = () => {
+          clearInterval(timer);
+          unsubscribe();
+          try {
+            controller.close();
+          } catch {
+            // already closed
+          }
+        };
+        request.signal.addEventListener("abort", () => cleanup(), { once: true });
+      },
+      cancel() {
+        cleanup();
+      },
+    });
+    return new Response(stream, {
+      headers: {
+        "content-type": "text/event-stream",
+        "cache-control": "no-store",
+        connection: "keep-alive",
+      },
+    });
+  })(request, deps);
+}

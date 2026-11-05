@@ -1,4 +1,4 @@
-import { readFile, rm } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { copySampleWorkspace } from "../../../tests/helpers/workspace";
@@ -14,6 +14,8 @@ import {
   reloadWorkspace,
   saveDraft,
   saveLayout,
+  workspaceEvents,
+  EVENTS_KEEPALIVE_MS,
   type HttpDeps,
 } from "./handlers";
 
@@ -321,5 +323,63 @@ describe("WorkspaceService", () => {
     const a = getWorkspaceService();
     expect(getWorkspaceService()).toBe(a);
     expect(getHttpDeps()).toEqual({ service: a, allowedHosts: a.config.allowedHosts });
+  });
+});
+
+describe("workspace change events", () => {
+  async function readEvent(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<string> {
+    const { value } = await reader.read();
+    return new TextDecoder().decode(value);
+  }
+
+  it("streams the current version, then one event per change, and stops on abort", async () => {
+    const abort = new AbortController();
+    const req = new Request(`${BASE}/api/workspaces/sample/events`, {
+      headers: { host: "localhost:3000" },
+      signal: abort.signal,
+    });
+    const res = await workspaceEvents(req, deps, S);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    const reader = res.body!.getReader();
+    const first = await readEvent(reader);
+    expect(first).toMatch(/^event: change\ndata: \{"version":1,"status":"valid"\}\n\n$/);
+
+    const file = path.join(ws.dir, "workspace.yaml");
+    const text = await readFile(file, "utf8");
+    await writeFile(file, text.replace("ACME Payments Architecture", "ACME Renamed"));
+    await reloadWorkspace(send("POST", "/api/workspaces/sample/reload"), deps, S);
+    expect(await readEvent(reader)).toContain('"version":2');
+
+    abort.abort();
+    expect((await reader.read()).done).toBe(true);
+  });
+
+  it("sends keep-alive comments and tolerates cancellation", async () => {
+    vi.useFakeTimers();
+    try {
+      const res = await workspaceEvents(get("/api/workspaces/sample/events"), deps, S);
+      const reader = res.body!.getReader();
+      await readEvent(reader);
+      vi.advanceTimersByTime(EVENTS_KEEPALIVE_MS);
+      expect(await readEvent(reader)).toBe(": keep-alive\n\n");
+      await reader.cancel();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("returns 404 for unknown workspaces and rejects foreign hosts", async () => {
+    expect(
+      (await workspaceEvents(get("/api/workspaces/x/events"), deps, { workspace: "x" })).status,
+    ).toBe(404);
+    expect(
+      (
+        await workspaceEvents(
+          get("/api/workspaces/sample/events", { host: "evil.example" }),
+          deps,
+          S,
+        )
+      ).status,
+    ).toBe(403);
   });
 });
