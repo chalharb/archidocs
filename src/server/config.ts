@@ -14,6 +14,8 @@ export interface AppConfig {
   allowedHosts: string[];
   watch: boolean;
   maxFileBytes: number;
+  /** Hosted read-only mode (SEC-13, ADD-010): no layout saves or drafts. */
+  readOnly: boolean;
 }
 
 export class ConfigError extends Error {
@@ -30,6 +32,11 @@ export const DEFAULT_WORKSPACE = "examples/sample-workspace";
  * ARCHIDOC_ALLOWED_HOSTS: comma-separated extra hostnames.
  * ARCHIDOC_WATCH: "0"/"false" disables file watching.
  * ARCHIDOC_MAX_FILE_BYTES: per-file size limit.
+ * ARCHIDOC_READ_ONLY: "1"/"true" disables every write.
+ *
+ * On Vercel (VERCEL is set) the app runs in hosted read-only mode (ADD-010):
+ * read-only and not watching unless overridden, and the deployment's own
+ * hostnames are allowed automatically.
  */
 export function readConfig(
   env: Record<string, string | undefined> = process.env,
@@ -57,13 +64,46 @@ export function readConfig(
   if (!Number.isInteger(maxFileBytes) || maxFileBytes <= 0 || maxFileBytes > 64 * 1024 * 1024) {
     throw new ConfigError("ARCHIDOC_MAX_FILE_BYTES must be a positive integer up to 64 MiB");
   }
+  const hosted = isHosted(env);
   return {
     workspaces,
-    allowedHosts: (env.ARCHIDOC_ALLOWED_HOSTS ?? "")
-      .split(",")
-      .map((h) => h.trim().toLowerCase())
-      .filter(Boolean),
-    watch: !["0", "false", "no"].includes((env.ARCHIDOC_WATCH ?? "").trim().toLowerCase()),
+    allowedHosts: allowedHostsFromEnv(env),
+    watch: flag(env.ARCHIDOC_WATCH, !hosted),
     maxFileBytes,
+    readOnly: flag(env.ARCHIDOC_READ_ONLY, hosted),
   };
+}
+
+/** Running on Vercel (ADD-010). */
+export function isHosted(env: Record<string, string | undefined>): boolean {
+  return Boolean(env.VERCEL?.trim());
+}
+
+function flag(value: string | undefined, fallback: boolean): boolean {
+  const v = (value ?? "").trim().toLowerCase();
+  if (["1", "true", "yes"].includes(v)) return true;
+  if (["0", "false", "no"].includes(v)) return false;
+  return fallback;
+}
+
+/** Vercel system variables naming this deployment's hostnames. */
+const VERCEL_HOST_VARS = ["VERCEL_URL", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"];
+
+/**
+ * Hostnames accepted besides loopback (SEC-10): ARCHIDOC_ALLOWED_HOSTS, plus on
+ * Vercel the deployment's own hostnames (ADD-010). Shared with the proxy.
+ */
+export function allowedHostsFromEnv(env: Record<string, string | undefined>): string[] {
+  const explicit = (env.ARCHIDOC_ALLOWED_HOSTS ?? "").split(",");
+  const vercel = isHosted(env) ? VERCEL_HOST_VARS.map((v) => env[v] ?? "") : [];
+  const hosts = [...explicit, ...vercel]
+    .map((h) =>
+      h
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/.*$/, ""),
+    )
+    .filter(Boolean);
+  return [...new Set(hosts)];
 }

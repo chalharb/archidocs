@@ -39,6 +39,7 @@ export class WorkspaceService {
               ...DEFAULT_LOAD_OPTIONS,
               parseLimits: { ...DEFAULT_PARSE_LIMITS, maxBytes: this.config.maxFileBytes },
             },
+            readOnly: this.config.readOnly,
             ...this.repoOptions,
           });
           if (this.config.watch) await repository.startWatching();

@@ -32,10 +32,28 @@ in YAML.
 | `ARCHIDOC_WATCH`          | on                          | Set to `0` to disable reloading on external file changes.                                                   |
 | `ARCHIDOC_MAX_FILE_BYTES` | `1048576`                   | Per-file YAML size limit.                                                                                   |
 | `ARCHIDOC_ALLOWED_HOSTS`  | _(none)_                    | Extra hostnames accepted besides loopback.                                                                  |
+| `ARCHIDOC_READ_ONLY`      | off (on when hosted)        | Set to `1` to refuse every write (layout saves and drafts).                                                 |
+
+## Deploying to Vercel
+
+The app can be deployed to Vercel as a **read-only viewer** (hosted read-only
+mode, [ADD-010](docs/addenda/ADD-010-hosted-read-only-mode.md)). Import the
+repository in Vercel and deploy; no settings are required.
+
+- The workspaces in `ARCHIDOC_WORKSPACES` (default `examples/sample-workspace`)
+  are bundled at build time, so they must live inside the repository. Their
+  `.yaml`, `.yml` and `.md` files are deployed; local `.archidoc/` drafts are not.
+- On Vercel the app is read-only and doesn't watch files. **Edit layout** is
+  disabled; edit locally, commit and redeploy instead.
+- The deployment's own `*.vercel.app` hostnames are accepted automatically. Add
+  custom domains to `ARCHIDOC_ALLOWED_HOSTS`.
+- **Anyone who can reach the deployment can read the architecture.** For
+  private architecture, turn on Vercel Deployment Protection.
 
 ## Security
 
-> **Do not expose this server to a network.** The MVP has no authentication.
+> **Do not expose a writable server to a network.** The app has no authentication.
+> The only supported hosted setup is the read-only Vercel deployment above.
 > `pnpm dev` and `pnpm start` bind to `127.0.0.1`, and every request whose
 > `Host` header is not a loopback address is rejected (this also blocks DNS
 > rebinding). `ARCHIDOC_ALLOWED_HOSTS` weakens that protection; only use it on

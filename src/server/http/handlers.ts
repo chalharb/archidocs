@@ -276,6 +276,9 @@ export function workspaceEvents(request: Request, deps: HttpDeps, params: { work
     const r = await repositoryFor(deps, params.workspace);
     if (!r.ok) return r.response;
     const repo = r.repo;
+    // Nothing can change in hosted read-only mode without watching (ADD-010).
+    // 204 tells EventSource clients to stop reconnecting, so no function stays open.
+    if (repo.readOnly && !deps.service.config.watch) return new Response(null, { status: 204 });
     const encoder = new TextEncoder();
     let cleanup = () => {};
     const stream = new ReadableStream<Uint8Array>({

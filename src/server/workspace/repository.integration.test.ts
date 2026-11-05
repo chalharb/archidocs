@@ -472,3 +472,28 @@ describe("saving layouts through the repository (P0-12)", () => {
     expect(await text("diagrams/containers.layout.yaml")).toContain("x: 1");
   });
 });
+
+describe("SEC-13 hosted read-only mode (ADD-010)", () => {
+  it("reports layouts as not writable and refuses every write without touching files", async () => {
+    const ro = await WorkspaceRepository.open("ro", ws.dir, { readOnly: true });
+    try {
+      expect(ro.readOnly).toBe(true);
+      const view = (await ro.diagramView("containers"))!;
+      expect(view.persistence).toMatchObject({
+        writable: false,
+        notWritableReason: expect.stringMatching(/read-only/),
+        layoutFile: "diagrams/containers.layout.yaml",
+      });
+      const before = await hashTree(ws.dir);
+      for (const attempt of [
+        ro.saveLayout("containers", view.saved, view.persistence.revision),
+        ro.saveDraft("containers", view.saved, null),
+        ro.discardDraft("containers"),
+      ])
+        await expect(attempt).rejects.toMatchObject({ code: "NOT_WRITABLE" });
+      expect(await hashTree(ws.dir)).toEqual(before);
+    } finally {
+      await ro.close();
+    }
+  });
+});

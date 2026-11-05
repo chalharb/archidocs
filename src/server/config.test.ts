@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { ConfigError, DEFAULT_WORKSPACE, readConfig } from "./config";
+import { ConfigError, DEFAULT_WORKSPACE, allowedHostsFromEnv, readConfig } from "./config";
 
 describe("readConfig", () => {
   it("defaults to the sample workspace, watching on, no extra hosts", () => {
@@ -9,6 +9,7 @@ describe("readConfig", () => {
       allowedHosts: [],
       watch: true,
       maxFileBytes: 1024 * 1024,
+      readOnly: false,
     });
   });
 
@@ -41,6 +42,46 @@ describe("readConfig", () => {
   ])("rejects invalid configuration %j", (env, message) => {
     expect(() => readConfig(env)).toThrow(ConfigError);
     expect(() => readConfig(env)).toThrow(message);
+  });
+});
+
+describe("SEC-13 hosted read-only mode (ADD-010)", () => {
+  const VERCEL = {
+    VERCEL: "1",
+    VERCEL_URL: "archidoc-abc123.vercel.app",
+    VERCEL_BRANCH_URL: "archidoc-git-main.vercel.app",
+    VERCEL_PROJECT_PRODUCTION_URL: "archidoc.vercel.app",
+  };
+
+  it("is read-only, not watching, and allows the deployment's own hosts on Vercel", () => {
+    const c = readConfig({ ...VERCEL, ARCHIDOC_ALLOWED_HOSTS: "docs.example.com" });
+    expect(c.readOnly).toBe(true);
+    expect(c.watch).toBe(false);
+    expect(c.allowedHosts).toEqual([
+      "docs.example.com",
+      "archidoc-abc123.vercel.app",
+      "archidoc-git-main.vercel.app",
+      "archidoc.vercel.app",
+    ]);
+  });
+
+  it("can be overridden explicitly", () => {
+    const c = readConfig({ ...VERCEL, ARCHIDOC_READ_ONLY: "false", ARCHIDOC_WATCH: "1" });
+    expect(c.readOnly).toBe(false);
+    expect(c.watch).toBe(true);
+    expect(readConfig({ ARCHIDOC_READ_ONLY: "yes" }).readOnly).toBe(true);
+    expect(readConfig({ ARCHIDOC_READ_ONLY: "maybe" }).readOnly).toBe(false);
+  });
+
+  it("ignores Vercel host variables off Vercel, and normalises hosts", () => {
+    expect(allowedHostsFromEnv({ VERCEL_URL: "x.vercel.app" })).toEqual([]);
+    expect(
+      allowedHostsFromEnv({
+        VERCEL: "1",
+        VERCEL_URL: "https://X.vercel.app/path",
+        ARCHIDOC_ALLOWED_HOSTS: "x.vercel.app, ",
+      }),
+    ).toEqual(["x.vercel.app"]);
   });
 });
 

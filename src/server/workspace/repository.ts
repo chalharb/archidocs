@@ -39,7 +39,12 @@ export interface RepositoryOptions {
   /** Overrides the ELK.js generator for nodes without saved positions. */
   generator?: PositionGenerator | AsyncPositionGenerator;
   watch?: { debounceMs?: number; usePolling?: boolean };
+  /** Hosted read-only mode (SEC-13, ADD-010): refuse every write. */
+  readOnly?: boolean;
 }
+
+export const READ_ONLY_REASON =
+  "This deployment is read-only; run Architecture Docs locally to edit layouts";
 
 export interface DiagramView {
   modelStatus: ModelStatus;
@@ -167,7 +172,9 @@ export class WorkspaceRepository {
       settings: settings.settings,
       generator: this.options.generator ?? elkPositionGenerator(resolved.diagram),
     });
-    const target = layoutTarget(model, diagramId)!;
+    const target = this.options.readOnly
+      ? { path: layoutTarget(model, diagramId)!.path, writable: false, reason: READ_ONLY_REASON }
+      : layoutTarget(model, diagramId)!;
     const revision = snap.files[target.path]?.revision ?? null;
     const layoutSource = model.sources[sourceKey("layout", diagramId)];
     const fileDiagnostics = snap.diagnostics.filter(
@@ -213,6 +220,7 @@ export class WorkspaceRepository {
     baseRevision: Revision | null,
   ): Promise<{ path: string; revision: Revision; snapshot: WorkspaceSnapshot }> {
     return this.serialize(async () => {
+      this.assertWritable();
       const model = this.snapshot().model;
       let written;
       try {
@@ -245,6 +253,7 @@ export class WorkspaceRepository {
     baseRevision: Revision | null,
   ): Promise<LayoutDraft> {
     return this.serialize(async () => {
+      this.assertWritable();
       if (!this.snapshot().model.diagrams[diagramId]) {
         throw new LayoutSaveError("DIAGRAM_NOT_FOUND", `Unknown diagram '${diagramId}'`);
       }
@@ -253,7 +262,18 @@ export class WorkspaceRepository {
   }
 
   discardDraft(diagramId: string): Promise<void> {
-    return this.serialize(() => this.drafts.discard(diagramId));
+    return this.serialize(async () => {
+      this.assertWritable();
+      await this.drafts.discard(diagramId);
+    });
+  }
+
+  get readOnly(): boolean {
+    return this.options.readOnly ?? false;
+  }
+
+  private assertWritable(): void {
+    if (this.options.readOnly) throw new LayoutSaveError("NOT_WRITABLE", READ_ONLY_REASON);
   }
 
   /** Start reacting to external file changes (RELI-01..04). */

@@ -34,6 +34,7 @@ beforeEach(async () => {
     allowedHosts: [],
     watch: false,
     maxFileBytes: 1024 * 1024,
+    readOnly: false,
   });
   deps = { service, allowedHosts: [] };
 });
@@ -310,6 +311,7 @@ describe("WorkspaceService", () => {
         allowedHosts: [],
         watch: true,
         maxFileBytes: 1e6,
+        readOnly: false,
       },
       {
         watch: { debounceMs: 20 },
@@ -366,6 +368,27 @@ describe("workspace change events", () => {
       await reader.cancel();
     } finally {
       vi.useRealTimers();
+    }
+  });
+
+  it("answers 204 in hosted read-only mode without watching, so clients stop reconnecting", async () => {
+    const hosted = new WorkspaceService({
+      workspaces: [{ key: "sample", root: ws.dir }],
+      allowedHosts: [],
+      watch: false,
+      maxFileBytes: 1e6,
+      readOnly: true,
+    });
+    try {
+      const res = await workspaceEvents(
+        get("/api/workspaces/sample/events"),
+        { service: hosted, allowedHosts: [] },
+        S,
+      );
+      expect(res.status).toBe(204);
+      expect(res.body).toBeNull();
+    } finally {
+      await hosted.close();
     }
   });
 

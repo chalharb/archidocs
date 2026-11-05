@@ -3,12 +3,10 @@
  * route runs (SEC-10, DNS-rebinding protection). Handlers re-check as defence in depth.
  */
 import { NextResponse, type NextRequest } from "next/server";
+import { allowedHostsFromEnv } from "@/server/config";
 import { checkHost } from "@/server/http/request-guard";
 
-const allowedHosts = (process.env.ARCHIDOC_ALLOWED_HOSTS ?? "")
-  .split(",")
-  .map((h) => h.trim().toLowerCase())
-  .filter(Boolean);
+const allowedHosts = allowedHostsFromEnv(process.env);
 
 export function proxy(request: NextRequest) {
   const result = checkHost(request.headers, allowedHosts);
