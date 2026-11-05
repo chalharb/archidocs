@@ -1,0 +1,14 @@
+# Deliberately broken: an unknown entity, an endpoint that isn't shown, and an
+# orphaned layout override, so the editor shows diagnostics (VR-09).
+apiVersion: archdocs/v1
+kind: Diagram
+id: broken
+name: Diagnostics
+diagramType: custom
+nodes:
+  - entity: s-rect
+  - entity: s-person
+  - entity: does-not-exist
+edges:
+  - relationship: e-straight
+  - relationship: e-bezier

@@ -1,0 +1,23 @@
+apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: edge-styles
+settings:
+  edgeType: smoothstep
+nodes:
+  s-rect: { x: 0, y: 0 }
+  s-person: { x: 360, y: 160 }
+  s-cyl: { x: 0, y: 320 }
+  s-storage: { x: 360, y: 480 }
+  s-queue: { x: 720, y: 0 }
+  s-browser: { x: 1080, y: 160 }
+  s-mobile: { x: 720, y: 320 }
+  s-muted: { x: 1080, y: 480 }
+  s-gray: { x: 0, y: 680 }
+  s-blue: { x: 360, y: 680 }
+  s-sky: { x: 720, y: 680 }
+edges:
+  e-straight: { type: straight }
+  e-bezier: { type: bezier }
+  e-step: { type: step }
+  e-smooth: { type: smoothstep }
+  e-animated: { type: straight, animated: true }

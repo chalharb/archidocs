@@ -1,0 +1,7 @@
+apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: broken
+nodes:
+  s-rect: { x: 0, y: 0 }
+  s-person: { x: 0, y: 240 }
+  removed-node: { x: 400, y: 0 }

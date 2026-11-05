@@ -1,0 +1,24 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: edge-styles
+name: Shapes and edge styles
+diagramType: custom
+nodes:
+  - entity: s-rect
+  - entity: s-person
+  - entity: s-cyl
+  - entity: s-storage
+  - entity: s-queue
+  - entity: s-browser
+  - entity: s-mobile
+  - entity: s-muted
+  - entity: s-gray
+  - entity: s-blue
+  - entity: s-sky
+edges:
+  - relationship: e-straight
+  - relationship: e-bezier
+  - relationship: e-step
+  - relationship: e-smooth
+  - relationship: e-animated
+  - relationship: e-dotted

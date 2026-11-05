@@ -1,0 +1,84 @@
+apiVersion: archdocs/v1
+kind: EntitySet
+id: shapes
+name: One element per shape and colour
+entities:
+  - { id: s-rect, name: Rectangle, type: element, technology: Default, style: { color: primary } }
+  - { id: s-person, name: Person, type: element, style: { shape: person, color: green } }
+  - {
+      id: s-cyl,
+      name: Cylinder,
+      type: element,
+      technology: PostgreSQL,
+      style: { shape: cylinder, color: indigo },
+    }
+  - { id: s-storage, name: Storage, type: element, style: { shape: storage, color: slate } }
+  - {
+      id: s-queue,
+      name: Queue,
+      type: element,
+      technology: Kafka,
+      style: { shape: queue, color: amber },
+    }
+  - { id: s-browser, name: Browser, type: element, style: { shape: browser, color: secondary } }
+  - { id: s-mobile, name: Mobile, type: element, style: { shape: mobile, color: red } }
+  - {
+      id: s-muted,
+      name: Muted,
+      type: element,
+      description: A muted element with a description that wraps onto more lines.,
+      style: { color: muted },
+    }
+  - { id: s-gray, name: Gray, type: element, style: { color: gray } }
+  - { id: s-blue, name: Blue, type: element, style: { color: blue } }
+  - { id: s-sky, name: Sky, type: element, style: { color: sky } }
+---
+apiVersion: archdocs/v1
+kind: EntitySet
+id: nested
+name: Three levels of nesting
+entities:
+  - { id: platform, name: Platform, type: system, style: { color: slate } }
+  - { id: shop, name: Shop, type: system, parent: platform }
+  - {
+      id: shop-web,
+      name: Storefront,
+      type: container,
+      parent: shop,
+      technology: Next.js,
+      style: { shape: browser },
+    }
+  - { id: shop-api, name: Shop API, type: container, parent: shop, technology: Go }
+  - { id: api-orders, name: Orders, type: component, parent: shop-api }
+  - { id: api-cart, name: Cart, type: component, parent: shop-api }
+  - { id: billing, name: Billing, type: system, parent: platform, style: { color: green } }
+  - { id: visitor, name: Visitor, type: element, style: { shape: person, color: green } }
+---
+apiVersion: archdocs/v1
+kind: RelationshipSet
+id: rels
+relationships:
+  - { id: e-straight, type: uses, source: s-rect, target: s-person, description: straight }
+  - {
+      id: e-bezier,
+      type: calls,
+      source: s-cyl,
+      target: s-storage,
+      description: bezier,
+      technology: SQL,
+    }
+  - { id: e-step, type: streams, source: s-queue, target: s-browser, description: step }
+  - {
+      id: e-smooth,
+      type: uses,
+      source: s-mobile,
+      target: s-muted,
+      description: smoothstep,
+      style: { color: red },
+    }
+  - { id: e-animated, type: calls, source: s-gray, target: s-blue, description: animated }
+  - { id: e-dotted, type: uses, source: s-blue, target: s-sky, style: { line: dotted } }
+  - { id: v-web, type: uses, source: visitor, target: shop-web, description: Browses }
+  - { id: web-api, type: calls, source: shop-web, target: shop-api, technology: HTTPS }
+  - { id: orders-cart, type: calls, source: api-orders, target: api-cart }
+  - { id: api-billing, type: streams, source: shop-api, target: billing, description: Invoices }

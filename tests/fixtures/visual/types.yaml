@@ -1,0 +1,41 @@
+apiVersion: archdocs/v1
+kind: EntityType
+id: element
+name: Element
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: system
+name: System
+extends: element
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: container
+name: Container
+extends: element
+style: { color: blue }
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: component
+name: Component
+extends: element
+style: { color: sky }
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: uses
+name: Uses
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: calls
+name: Calls
+style: { line: solid }
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: streams
+name: Streams to
+style: { line: dotted, color: amber }

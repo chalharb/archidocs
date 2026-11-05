@@ -1,0 +1,19 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: nested
+name: Nested boundaries
+diagramType: c4-container
+nodes:
+  - entity: visitor
+  - entity: platform
+  - entity: shop
+  - entity: shop-web
+  - entity: shop-api
+  - entity: api-orders
+  - entity: api-cart
+  - entity: billing
+edges:
+  - relationship: v-web
+  - relationship: web-api
+  - relationship: orders-cart
+  - relationship: api-billing

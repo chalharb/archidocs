@@ -5,15 +5,17 @@ test.describe("smoke", () => {
   test("home page shows the example workspace as valid", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Architecture Docs");
-    const card = page.getByRole("heading", { level: 2, name: /ACME Payments Architecture/ });
-    await expect(card).toContainText("Valid");
-    await expect(page.getByText("No problems found.")).toBeVisible();
-    await expect(page.getByText("Production Deployment")).toBeVisible();
+    const heading = page.getByRole("heading", { level: 2, name: /ACME Payments Architecture/ });
+    await expect(heading).toHaveCount(2); // the sample and its scratch copy
+    const card = page.locator('[data-slot="card"]', { hasText: "Workspace acme" });
+    await expect(card.getByRole("heading", { level: 2 })).toContainText("Valid");
+    await expect(card.getByText("No problems found.")).toBeVisible();
+    await expect(card.getByRole("link", { name: "Production Deployment" })).toBeVisible();
   });
 
   test("home page has no automatically detectable accessibility violations", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
   });
