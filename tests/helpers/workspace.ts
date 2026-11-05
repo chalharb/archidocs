@@ -8,13 +8,16 @@ export const SAMPLE_WORKSPACE = path.resolve(
   "../../examples/sample-workspace",
 );
 
+/** Skip local app state (drafts) left in the sample by running the app against it. */
+export const skipAppState = (src: string) => path.basename(src) !== ".archidoc";
+
 /** Layout file to omit when a test needs a diagram that has never been saved. */
 export const CONTAINERS_LAYOUT = "diagrams/containers.layout.yaml";
 
 /** Copy the sample workspace into a fresh temp directory, minus any `without` paths. */
 export async function copySampleWorkspace(options: { without?: string[] } = {}): Promise<TempDir> {
   const t = await tempDir();
-  await cp(SAMPLE_WORKSPACE, t.dir, { recursive: true });
+  await cp(SAMPLE_WORKSPACE, t.dir, { recursive: true, filter: skipAppState });
   for (const rel of options.without ?? []) await rm(path.join(t.dir, rel));
   return t;
 }

@@ -21,7 +21,11 @@ export async function resetScratch(
   );
   await Promise.all(layouts.map((f) => rm(path.join(SCRATCH_DIR, "diagrams", f))));
   await rm(path.join(SCRATCH_DIR, ".archidoc"), { recursive: true, force: true });
-  await cp(SAMPLE_DIR, SCRATCH_DIR, { recursive: true });
+  // Skip local app state (drafts) left in the sample by running the app against it.
+  await cp(SAMPLE_DIR, SCRATCH_DIR, {
+    recursive: true,
+    filter: (src) => path.basename(src) !== ".archidoc",
+  });
   await Promise.all(without.map((rel) => rm(path.join(SCRATCH_DIR, rel))));
   const res = await request.post("/api/workspaces/scratch/reload", {
     headers: { origin: baseURL, "content-type": "application/json" },

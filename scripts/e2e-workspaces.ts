@@ -16,6 +16,8 @@ await cp(
   path.join(E2E_DIR, "scratch"),
   {
     recursive: true,
+    // Skip local app state (drafts) left in the sample by running the app against it.
+    filter: (src) => path.basename(src) !== ".archidoc",
   },
 );
 await writeBenchWorkspace(path.join(E2E_DIR, "large"));
