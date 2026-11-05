@@ -33,6 +33,7 @@ Detailed items are in checklists 02, 03, 06 (E2E/VR), and 07.
 - [ ] **PH4-04** — Git branches and commits
 - [ ] **PH4-05** — PR integration
 - [ ] **PH4-06** — Validation workflows
+- [ ] **RELI-15** `P1` `Phase 4` — Distinguish Git-committed revisions from saved but uncommitted file revisions (added by ADD-002)
 
 ## Phase 5 — Team Collaboration
 

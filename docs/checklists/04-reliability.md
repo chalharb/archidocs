@@ -16,9 +16,7 @@ Source: PRD §5. Conventions: [checklists/README.md](README.md). All items are P
 
 - [x] **RELI-08** — Temporary files + atomic replacement where supported — ✅ src/server/fs/fs.integration.test.ts › atomicWriteFile (0b9418e)
 - [x] **RELI-09** — Validate proposed changes before writing — ✅ persistence.integration.test.ts › prepareLayout: validate before write (61a78db)
-- [ ] **RELI-10** — Distinguish unsaved editor state, autosaved drafts, and Git-committed revisions
-  - [x] Autosaved drafts vs saved file revisions — persistence.integration.test.ts (61a78db)
-  - [ ] Git-committed revisions — deferral proposed in ADD-002 (Proposed)
+- [x] **RELI-10** — Distinguish unsaved editor state, autosaved drafts, and saved file revisions (content hashes) (amended by ADD-002) — ✅ drafts in .archidoc/drafts with base revision; `persistence.revision`/`persistence.draft` per diagram; src/server/persistence/persistence.integration.test.ts › drafts, repository.integration.test.ts (61a78db, 88ddabb)
 - [x] **RELI-11** — Recover compatible autosaved drafts after interruption — ✅ repository.integration.test.ts › keeps a recoverable draft (88ddabb)
 - [x] **RELI-12** — Preserve valid files when a write fails — ✅ fs.integration.test.ts › failure injection, persistence.integration.test.ts › preserves the previous file (0b9418e, 61a78db)
 - [x] **RELI-13** — Detect orphaned architecture and diagram references after deletion — ✅ repository.integration.test.ts › deleted file → missing-reference diagnostics (88ddabb)

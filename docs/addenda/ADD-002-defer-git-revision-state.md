@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Deferral |
 | **Proposed** | 2026-11-05 by Claude (Phase 0 implementation) |
-| **Decided** | |
+| **Decided** | 2026-11-05 by Logan Harber |
 | **Baseline** | PRD v1.6 |
-| **Affected IDs** | RELI-10 |
+| **Affected IDs** | RELI-10, RELI-15 (new) |
 | **PRD sections** | §5, §11 |
 
 ## Context
@@ -26,7 +26,11 @@ Knowing whether the saved file matches a *Git commit* requires reading the repos
 
 > **Before:** Distinguish unsaved editor state, autosaved drafts, and Git-committed revisions.
 
-> **After:** Distinguish unsaved editor state, autosaved drafts, and saved file revisions (content hashes). Distinguishing Git-committed revisions is deferred to Phase 4.
+> **After:** Distinguish unsaved editor state, autosaved drafts, and saved file revisions (content hashes). Distinguishing Git-committed revisions is deferred to Phase 4 (RELI-15).
+
+### RELI-15 (new)
+
+> Distinguish Git-committed revisions from saved but uncommitted file revisions — Priority: P1, Phase 4
 
 ## Consequences
 
@@ -35,8 +39,8 @@ Knowing whether the saved file matches a *Git commit* requires reading the repos
 
 ## Checklist updates
 
-On acceptance:
+Done on acceptance (2026-11-05):
 
-- [ ] Amend RELI-10 in `docs/checklists/04-reliability.md` with "(amended by ADD-002)" and tick it with the existing evidence
-- [ ] Add a Phase 4 item for Git-committed revision state to `docs/checklists/09-later-phases.md`
-- [ ] Ran `scripts/prd-progress.sh --write`
+- [x] Amended RELI-10 in `docs/checklists/04-reliability.md` with "(amended by ADD-002)" and ticked it with the existing evidence
+- [x] Added RELI-15 to the Phase 4 section of `docs/checklists/09-later-phases.md` and to the allocated-IDs table
+- [x] Ran `scripts/prd-progress.sh --write`

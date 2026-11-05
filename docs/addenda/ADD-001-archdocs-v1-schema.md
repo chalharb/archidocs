@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Clarification |
 | **Proposed** | 2026-11-05 by Claude (Phase 0 implementation) |
-| **Decided** | |
+| **Decided** | 2026-11-05 by Logan Harber |
 | **Baseline** | PRD v1.6 |
 | **Affected IDs** | MODEL-01..10, SCHEMA-01..09, LAYOUT-08, LAYOUT-18, LAYOUT-23, SEC-06, SEC-08 |
 | **PRD sections** | §2.1, §3, §4, §6 |
@@ -66,9 +66,9 @@ The authoritative machine-readable definition is [`src/domain/schema/resource-sc
 
 ## Checklist updates
 
-On acceptance:
+Done on acceptance (2026-11-05):
 
-- [ ] Note "(clarified by ADD-001)" on the KIND-*, SCHEMA-01..09 and MODEL-* items in `docs/checklists/01-model-and-schema.md`
-- [ ] No new requirement IDs
-- [ ] No items need unticking
-- [ ] Ran `scripts/prd-progress.sh --write`
+- [x] Noted "(clarified by ADD-001)" on the KIND-*, SCHEMA-01..09 and MODEL-* items in `docs/checklists/01-model-and-schema.md`
+- [x] No new requirement IDs
+- [x] No items need unticking
+- [x] Ran `scripts/prd-progress.sh --write`
