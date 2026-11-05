@@ -10,8 +10,10 @@ import type {
   CustomProperties,
   DiagramType,
   EdgePresentation,
+  ElementStyle,
   LayoutSettingsOverrides,
   NodePlacement,
+  RelationshipStyle,
   SourceRef,
 } from "./resources";
 
@@ -36,6 +38,7 @@ export interface CanonicalEntityType {
   name: string;
   description?: string;
   extends?: string;
+  style?: ElementStyle;
 }
 
 export interface CanonicalRelationshipType {
@@ -45,6 +48,7 @@ export interface CanonicalRelationshipType {
   extends?: string;
   sources?: string[];
   targets?: string[];
+  style?: RelationshipStyle;
 }
 
 export interface CanonicalEntity {
@@ -58,6 +62,7 @@ export interface CanonicalEntity {
   owner?: string;
   tags: string[];
   properties: CustomProperties;
+  style?: ElementStyle;
 }
 
 export interface CanonicalRelationship {
@@ -69,6 +74,7 @@ export interface CanonicalRelationship {
   technology?: string;
   tags: string[];
   properties: CustomProperties;
+  style?: RelationshipStyle;
 }
 
 /** A diagram node is a *view instance* of a canonical entity (DIAG-09). */

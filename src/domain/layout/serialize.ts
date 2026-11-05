@@ -56,12 +56,19 @@ export function toLayoutResource(layout: CanonicalDiagramLayout): DiagramLayoutR
     }
   }
   const edgeIds = Object.keys(layout.edges)
-    .filter((id) => layout.edges[id]!.type !== undefined)
+    .filter(
+      (id) => layout.edges[id]!.type !== undefined || layout.edges[id]!.animated !== undefined,
+    )
     .sort(compareCodePoints);
   if (edgeIds.length > 0) {
     resource.edges = {};
-    for (const id of edgeIds)
-      resource.edges[id] = { type: layout.edges[id]!.type } as EdgePresentation;
+    for (const id of edgeIds) {
+      const e = layout.edges[id]!;
+      const presentation: EdgePresentation = {};
+      if (e.type !== undefined) presentation.type = e.type;
+      if (e.animated !== undefined) presentation.animated = e.animated;
+      resource.edges[id] = presentation;
+    }
   }
   return resource;
 }

@@ -9,7 +9,12 @@ import {
   API_VERSION,
   DIAGRAM_TYPES,
   EDGE_TYPES,
+  ELEMENT_SHAPES,
   LAYOUT_DIRECTIONS,
+  LINE_STYLES,
+  STYLE_COLORS,
+  type ElementStyle,
+  type RelationshipStyle,
   type DiagramLayoutResource,
   type DiagramResource,
   type EntityFields,
@@ -88,9 +93,24 @@ export const layoutSettingsSchema = z.strictObject({
   snapToGrid: z.boolean(),
   nodeWidth: z.number().min(10).max(2000),
   nodeHeight: z.number().min(10).max(2000),
+  animateEdges: z.boolean(),
 });
 
 export const layoutSettingsOverridesSchema = layoutSettingsSchema.partial();
+
+// ---------------------------------------------------------------------------
+// Styles (DIAG-11, ADD-004)
+// ---------------------------------------------------------------------------
+
+export const elementStyleSchema = z.strictObject({
+  shape: z.enum(ELEMENT_SHAPES).optional(),
+  color: z.enum(STYLE_COLORS).optional(),
+});
+
+export const relationshipStyleSchema = z.strictObject({
+  line: z.enum(LINE_STYLES).optional(),
+  color: z.enum(STYLE_COLORS).optional(),
+});
 
 // ---------------------------------------------------------------------------
 // Entities and relationships
@@ -107,6 +127,7 @@ export const entityFieldsShape = {
   owner: shortTextSchema.optional(),
   tags: tagsSchema.optional(),
   properties: propertiesSchema.optional(),
+  style: elementStyleSchema.optional(),
 };
 
 export const entityFieldsSchema = z.strictObject(entityFieldsShape);
@@ -120,6 +141,7 @@ export const relationshipFieldsSchema = z.strictObject({
   technology: shortTextSchema.optional(),
   tags: tagsSchema.optional(),
   properties: propertiesSchema.optional(),
+  style: relationshipStyleSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -160,6 +182,7 @@ export const entityTypeSchema = z.strictObject({
   name: nameSchema,
   description: descriptionSchema.optional(),
   extends: idSchema.optional(),
+  style: elementStyleSchema.optional(),
 });
 
 export const relationshipTypeSchema = z.strictObject({
@@ -170,6 +193,7 @@ export const relationshipTypeSchema = z.strictObject({
   extends: idSchema.optional(),
   sources: z.array(idSchema).min(1).max(MAX_TAGS).optional(),
   targets: z.array(idSchema).min(1).max(MAX_TAGS).optional(),
+  style: relationshipStyleSchema.optional(),
 });
 
 export const relationshipSetSchema = z.strictObject({
@@ -217,6 +241,7 @@ export const nodePlacementSchema = z.strictObject({
 
 export const edgePresentationSchema = z.strictObject({
   type: z.enum(EDGE_TYPES).optional(),
+  animated: z.boolean().optional(),
 });
 
 export const diagramLayoutSchema = z.strictObject({
@@ -249,6 +274,8 @@ type Assert<T extends true> = T;
 
 export type SchemaContractChecks = [
   Assert<Equals<z.output<typeof layoutSettingsSchema>, LayoutSettings>>,
+  Assert<Equals<z.output<typeof elementStyleSchema>, ElementStyle>>,
+  Assert<Equals<z.output<typeof relationshipStyleSchema>, RelationshipStyle>>,
   Assert<Equals<z.output<typeof entityFieldsSchema>, EntityFields>>,
   Assert<Equals<z.output<typeof relationshipFieldsSchema>, RelationshipFields>>,
   Assert<Equals<z.output<typeof workspaceSchema>, WorkspaceResource>>,

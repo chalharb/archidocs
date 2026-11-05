@@ -45,6 +45,7 @@ export function toCanonicalEntity(fields: EntityFields): CanonicalEntity {
     owner: fields.owner,
     tags: [...(fields.tags ?? [])],
     properties: { ...(fields.properties ?? {}) },
+    style: fields.style ? { ...fields.style } : undefined,
   });
 }
 
@@ -58,6 +59,7 @@ export function toCanonicalRelationship(fields: RelationshipFields): CanonicalRe
     technology: fields.technology,
     tags: [...(fields.tags ?? [])],
     properties: { ...(fields.properties ?? {}) },
+    style: fields.style ? { ...fields.style } : undefined,
   });
 }
 
@@ -171,6 +173,7 @@ export function normalize(parsed: readonly ParsedResource[]): {
             name: resource.name,
             description: resource.description,
             extends: resource.extends,
+            style: resource.style ? { ...resource.style } : undefined,
           });
         }
         break;
@@ -183,6 +186,7 @@ export function normalize(parsed: readonly ParsedResource[]): {
             extends: resource.extends,
             sources: resource.sources ? [...resource.sources] : undefined,
             targets: resource.targets ? [...resource.targets] : undefined,
+            style: resource.style ? { ...resource.style } : undefined,
           });
         }
         break;

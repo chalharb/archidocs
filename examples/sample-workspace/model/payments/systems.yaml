@@ -18,6 +18,7 @@ entities:
     type: container
     parent: payments-system
     technology: Next.js
+    style: { shape: browser } # per-element override (ADD-004)
   - id: payments-api
     name: Payments API
     type: container

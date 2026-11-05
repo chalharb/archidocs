@@ -82,6 +82,8 @@ export const gridPositionGenerator: PositionGenerator = ({ nodes, settings, occu
 export interface ResolvedLayout {
   positions: Record<string, Placement>;
   edgeTypes: Record<string, EdgeType>;
+  /** Effective animation per edge: edge override, else `animateEdges` (LAYOUT-25). */
+  edgeAnimated: Record<string, boolean>;
   orphans: { nodes: string[]; edges: string[] };
   /** Pairs [generated node, manual node] that still overlap. */
   collisions: Array<[string, string]>;
@@ -150,12 +152,16 @@ export function resolveLayout(input: {
   const nodeIds = new Set(diagram.nodes.map((n) => n.id));
   const edgeIds = new Set(diagram.edges.map((e) => e.id));
   const edgeTypes: Record<string, EdgeType> = {};
-  for (const edge of diagram.edges)
+  const edgeAnimated: Record<string, boolean> = {};
+  for (const edge of diagram.edges) {
     edgeTypes[edge.id] = layout?.edges[edge.id]?.type ?? settings.edgeType;
+    edgeAnimated[edge.id] = layout?.edges[edge.id]?.animated ?? settings.animateEdges;
+  }
 
   return {
     positions,
     edgeTypes,
+    edgeAnimated,
     orphans: {
       nodes: Object.keys(layout?.nodes ?? {}).filter((id) => !nodeIds.has(id)),
       edges: Object.keys(layout?.edges ?? {}).filter((id) => !edgeIds.has(id)),

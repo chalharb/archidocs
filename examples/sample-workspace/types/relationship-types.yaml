@@ -9,6 +9,7 @@ id: reads-writes
 name: Reads from and writes to
 sources: [container, component]
 targets: [database]
+style: { line: solid, color: indigo }
 ---
 apiVersion: archdocs/v1
 kind: RelationshipType
@@ -16,12 +17,14 @@ id: calls
 name: Calls
 sources: [container, component]
 targets: [container, component, software-system]
+style: { line: solid }
 ---
 apiVersion: archdocs/v1
 kind: RelationshipType
 id: calls-async
 name: Calls asynchronously
 extends: calls
+style: { line: dashed, color: amber }
 ---
 apiVersion: archdocs/v1
 kind: RelationshipType
@@ -29,6 +32,7 @@ id: routes-to
 name: Routes traffic to
 sources: [network-device, network-zone]
 targets: [network-device, network-zone, deployment-node]
+style: { line: solid, color: sky }
 ---
 apiVersion: archdocs/v1
 kind: RelationshipType
@@ -36,3 +40,4 @@ id: deployed-on
 name: Deployed on
 sources: [container]
 targets: [deployment-node]
+style: { line: dotted, color: slate }

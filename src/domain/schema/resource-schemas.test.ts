@@ -136,6 +136,7 @@ describe("TEST-01: schema boundary values", () => {
       snapToGrid: true,
       nodeWidth: 10,
       nodeHeight: 2000,
+      animateEdges: false,
     };
     expect(layoutSettingsSchema.safeParse(base).success).toBe(true);
     for (const [k, v] of [
@@ -148,6 +149,7 @@ describe("TEST-01: schema boundary values", () => {
       ["direction", "down"],
       ["edgeType", "curvy"],
       ["snapToGrid", "yes"],
+      ["animateEdges", "no"],
       ["nodeSpacing", Infinity],
       ["nodeSpacing", NaN],
     ] as const) {

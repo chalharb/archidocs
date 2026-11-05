@@ -4,52 +4,62 @@ kind: EntityType
 id: person
 name: Person
 description: A human user of a software system.
+style: { shape: person, color: green }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: software-system
 name: Software System
+style: { color: primary }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: external-system
 name: External Software System
 extends: software-system
+style: { color: gray }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: container
 name: Container
 description: A separately deployable unit (app, service, data store).
+style: { color: blue }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: database
 name: Database
 extends: container
+style: { shape: cylinder, color: indigo }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: component
 name: Component
+style: { color: sky }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: network-zone
 name: Network Zone
+style: { color: muted }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: network-device
 name: Network Device
+style: { color: amber }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: deployment-node
 name: Deployment Node
+style: { color: slate }
 ---
 apiVersion: archdocs/v1
 kind: EntityType
 id: kubernetes-cluster
 name: Kubernetes Cluster
 extends: deployment-node
+style: { color: blue }

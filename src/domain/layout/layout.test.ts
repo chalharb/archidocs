@@ -333,3 +333,59 @@ edges:
     expect(parseLayoutFile("a: [", "x.layout.yaml").diagnostics[0]!.code).toBe("YAML_SYNTAX");
   });
 });
+
+describe("LAYOUT-25 animated edges (ADD-005)", () => {
+  it("is off by default and joins the precedence chain like any setting", () => {
+    expect(S.animateEdges).toBe(false);
+    expect(resolveLayoutSettings({}).settings.animateEdges).toBe(false);
+    const r = resolveLayoutSettings({
+      workspace: { animateEdges: true },
+      diagram: { animateEdges: false },
+    });
+    expect(r.settings.animateEdges).toBe(false);
+    expect(r.sources.animateEdges).toBe("diagram");
+    expect(resolveLayoutSettings({ layout: { animateEdges: true } }).settings.animateEdges).toBe(
+      true,
+    );
+  });
+
+  it("per-edge override wins over the resolved setting", () => {
+    const d = diagramWith(["a", "b"]);
+    const off = resolveLayout({ diagram: d, settings: S });
+    expect(off.edgeAnimated).toEqual({ r: false });
+    const on = resolveLayout({ diagram: d, settings: { ...S, animateEdges: true } });
+    expect(on.edgeAnimated).toEqual({ r: true });
+    const edgeOff = resolveLayout({
+      diagram: d,
+      layout: layout({}, { edges: { r: { animated: false } } }),
+      settings: { ...S, animateEdges: true },
+    });
+    expect(edgeOff.edgeAnimated).toEqual({ r: false });
+    expect(edgeOff.edgeTypes).toEqual({ r: S.edgeType });
+  });
+
+  it("serializes and round-trips the edge flag and setting", () => {
+    const l: CanonicalDiagramLayout = {
+      diagram: "d",
+      settings: { animateEdges: true },
+      nodes: {},
+      edges: { b: { animated: true }, a: { type: "step", animated: false } },
+    };
+    const text = serializeLayout(l);
+    expect(text).toBe(`${LAYOUT_FILE_HEADER}apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: d
+settings:
+  animateEdges: true
+edges:
+  a:
+    type: step
+    animated: false
+  b:
+    animated: true
+`);
+    const again = parseLayoutFile(text, "d.layout.yaml");
+    expect(again.diagnostics).toEqual([]);
+    expect(serializeLayout(again.layout!)).toBe(text);
+  });
+});

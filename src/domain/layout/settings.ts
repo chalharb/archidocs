@@ -14,6 +14,7 @@ export const APP_DEFAULT_LAYOUT_SETTINGS: Readonly<LayoutSettings> = Object.free
   snapToGrid: true,
   nodeWidth: 200,
   nodeHeight: 100,
+  animateEdges: false,
 });
 
 /** Canonical key order, used for deterministic output. */

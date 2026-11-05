@@ -49,7 +49,13 @@ edges:
       diagramType: "c4-context",
       description: "Overview",
       nodes: [
-        { id: "user", entityId: "user", label: "User", entityType: "person" },
+        {
+          id: "user",
+          entityId: "user",
+          label: "User",
+          entityType: "person",
+          style: { shape: "rectangle", color: "primary" },
+        },
         {
           id: "api",
           entityId: "api",
@@ -58,6 +64,7 @@ edges:
           technology: "Go",
           description: "Takes payments",
           parentEntityId: "sys",
+          style: { shape: "rectangle", color: "primary" },
         },
       ],
       edges: [
@@ -68,6 +75,7 @@ edges:
           source: "user",
           target: "api",
           label: "Pays with",
+          style: { line: "dashed", color: "gray" },
         },
         {
           id: "again",
@@ -76,6 +84,7 @@ edges:
           source: "user",
           target: "api",
           label: "Custom",
+          style: { line: "dashed", color: "gray" },
         },
       ],
     });

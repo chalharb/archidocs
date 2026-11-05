@@ -10,6 +10,12 @@
 import { diagnostic, type Diagnostic, type DiagnosticCode } from "./diagnostics";
 import { sourceKey, type ArchitectureModel } from "./model";
 import type { DiagramType } from "./resources";
+import {
+  effectiveElementStyle,
+  effectiveRelationshipStyle,
+  type EffectiveElementStyle,
+  type EffectiveRelationshipStyle,
+} from "./styles";
 
 export interface ResolvedNode {
   /** View-instance ID (unique within the diagram). */
@@ -21,6 +27,8 @@ export interface ResolvedNode {
   technology?: string;
   description?: string;
   parentEntityId?: string;
+  /** Effective style (DIAG-11). */
+  style: EffectiveElementStyle;
 }
 
 export interface ResolvedEdge {
@@ -34,6 +42,8 @@ export interface ResolvedEdge {
   target: string;
   label?: string;
   technology?: string;
+  /** Effective style (DIAG-11). */
+  style: EffectiveRelationshipStyle;
 }
 
 export interface ResolvedDiagram {
@@ -102,6 +112,7 @@ export function resolveDiagram(
       ...(entity.technology !== undefined ? { technology: entity.technology } : {}),
       ...(entity.description !== undefined ? { description: entity.description } : {}),
       ...(entity.parent !== undefined ? { parentEntityId: entity.parent } : {}),
+      style: effectiveElementStyle(model, entity),
     });
   });
 
@@ -187,6 +198,7 @@ export function resolveDiagram(
       target,
       ...(label !== undefined ? { label } : {}),
       ...(rel.technology !== undefined ? { technology: rel.technology } : {}),
+      style: effectiveRelationshipStyle(model, rel),
     });
   });
 

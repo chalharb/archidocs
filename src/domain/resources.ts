@@ -47,9 +47,55 @@ export interface LayoutSettings {
   snapToGrid: boolean;
   nodeWidth: number;
   nodeHeight: number;
+  /** Animate edges from source to target (LAYOUT-25, ADD-005). */
+  animateEdges: boolean;
 }
 
 export type LayoutSettingsOverrides = Partial<LayoutSettings>;
+
+// ---------------------------------------------------------------------------
+// Element and relationship styles (DIAG-11, ADD-004)
+// ---------------------------------------------------------------------------
+
+export const ELEMENT_SHAPES = [
+  "rectangle",
+  "person",
+  "cylinder",
+  "storage",
+  "queue",
+  "browser",
+  "mobile",
+] as const;
+export type ElementShape = (typeof ELEMENT_SHAPES)[number];
+
+/** Palette names, not hex values, so each theme can define them accessibly. */
+export const STYLE_COLORS = [
+  "primary",
+  "secondary",
+  "muted",
+  "slate",
+  "gray",
+  "blue",
+  "indigo",
+  "sky",
+  "green",
+  "amber",
+  "red",
+] as const;
+export type StyleColor = (typeof STYLE_COLORS)[number];
+
+export const LINE_STYLES = ["solid", "dashed", "dotted"] as const;
+export type LineStyle = (typeof LINE_STYLES)[number];
+
+export interface ElementStyle {
+  shape?: ElementShape;
+  color?: StyleColor;
+}
+
+export interface RelationshipStyle {
+  line?: LineStyle;
+  color?: StyleColor;
+}
 
 // ---------------------------------------------------------------------------
 // Resource bodies
@@ -72,6 +118,7 @@ export interface EntityFields {
   owner?: string;
   tags?: string[];
   properties?: CustomProperties;
+  style?: ElementStyle;
 }
 
 export interface RelationshipFields {
@@ -83,6 +130,7 @@ export interface RelationshipFields {
   technology?: string;
   tags?: string[];
   properties?: CustomProperties;
+  style?: RelationshipStyle;
 }
 
 export interface WorkspaceResource extends ResourceHeader<"Workspace"> {
@@ -115,6 +163,7 @@ export interface EntityTypeResource extends ResourceHeader<"EntityType"> {
   name: string;
   description?: string;
   extends?: string;
+  style?: ElementStyle;
 }
 
 export interface RelationshipTypeResource extends ResourceHeader<"RelationshipType"> {
@@ -126,6 +175,7 @@ export interface RelationshipTypeResource extends ResourceHeader<"RelationshipTy
   sources?: string[];
   /** Allowed target entity types; subtypes are accepted (SCHEMA-06). Omitted = any. */
   targets?: string[];
+  style?: RelationshipStyle;
 }
 
 export interface RelationshipSetResource extends ResourceHeader<"RelationshipSet"> {
@@ -183,6 +233,8 @@ export interface NodePlacement {
 
 export interface EdgePresentation {
   type?: EdgeType;
+  /** Per-edge animation override (LAYOUT-25, ADD-005). */
+  animated?: boolean;
 }
 
 export interface DiagramLayoutResource extends ResourceHeader<"DiagramLayout"> {
