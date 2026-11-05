@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Change |
 | **Proposed** | 2026-11-05 by Logan Harber (drafted by Claude) |
-| **Decided** | |
+| **Decided** | 2026-11-05 by Logan Harber |
 | **Baseline** | PRD v1.6 (with ADD-001..005) |
 | **Affected IDs** | DIAG-12 (new), DIAG-07, DIAG-10, LAYOUT-01..15, LAYOUT-25, SCOPE-01, E2E-01..05, VR-01..09 |
 | **PRD sections** | §2.2, §2.3, §7 |
@@ -64,11 +64,15 @@ Phase 1 opens every diagram straight into the layout editor: a toolbar of layout
 1. Should the view route show a small **legend** of shapes and colours used? This addendum leaves it out.
 2. Should viewers be able to toggle edge animation locally (not saved)? This addendum says no.
 
+## Decision
+
+Accepted as written, including the defaults for both open questions: no legend, and no viewer-side animation toggle.
+
 ## Checklist updates
 
-To do on acceptance:
+Done on acceptance (2026-11-05):
 
-- [ ] Add DIAG-12 to `docs/checklists/02-diagrams.md` with "(added by ADD-007)"
-- [ ] Note "(amended by ADD-007)" on E2E-01..05 and VR-01..09 in `docs/checklists/06-testing.md`
-- [ ] Record DIAG-12 in the allocated-IDs table
-- [ ] Run `scripts/prd-progress.sh --write`
+- [x] Added DIAG-12 to `docs/checklists/02-diagrams.md` with "(added by ADD-007)"
+- [x] Noted "(amended by ADD-007)" on E2E-01..05 and VR-01..09 in `docs/checklists/06-testing.md`
+- [x] Recorded DIAG-12 in the allocated-IDs table
+- [x] Ran `scripts/prd-progress.sh --write`

@@ -14,7 +14,7 @@ Changes, pivots, and clarifications to the [baseline PRD v1.6](../Archidocs-prd.
 | [ADD-004](ADD-004-element-and-relationship-styles.md) | Element and relationship styles (shapes, colours, line styles) | Accepted | 2026-11-05 | DIAG-11 (new), DIAG-01..05, LAYOUT-22, VR-01..09 |
 | [ADD-005](ADD-005-animated-edge-flow.md) | Optional animated edge direction flow | Accepted | 2026-11-05 | LAYOUT-25 (new), LAYOUT-15, PREC-01/02, BENCH-04, VR-01..09 |
 | [ADD-006](ADD-006-nested-boundary-semantics.md) | Nested boundary membership and layout coordinates | Proposed | 2026-11-05 | LAYOUT-14, LAYOUT-08, LAYOUT-24 |
-| [ADD-007](ADD-007-separate-view-and-edit-routes.md) | Separate routes for viewing and editing diagrams | Proposed | 2026-11-05 | DIAG-12 (new), DIAG-07, DIAG-10, LAYOUT-01..15, LAYOUT-25, SCOPE-01, E2E-01..05, VR-01..09 |
+| [ADD-007](ADD-007-separate-view-and-edit-routes.md) | Separate routes for viewing and editing diagrams | Accepted | 2026-11-05 | DIAG-12 (new), DIAG-07, DIAG-10, LAYOUT-01..15, LAYOUT-25, SCOPE-01, E2E-01..05, VR-01..09 |
 
 ## Allocated requirement IDs
 
@@ -24,7 +24,7 @@ New IDs introduced by addenda are recorded here so nobody allocates the same ID 
 |---|---|---|
 | MODEL | 01–10 | MODEL-11 |
 | SCHEMA | 01–10 | SCHEMA-11 |
-| DIAG | 01–10; DIAG-11 (ADD-004) | DIAG-12 |
+| DIAG | 01–10; DIAG-11 (ADD-004); DIAG-12 (ADD-007) | DIAG-13 |
 | LAYOUT | 01–24; LAYOUT-25 (ADD-005) | LAYOUT-26 |
 | RELI | 01–14; RELI-15 (ADD-002) | RELI-16 |
 | SEC | 01–10 | SEC-11 |
