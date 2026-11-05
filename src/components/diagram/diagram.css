@@ -1,0 +1,260 @@
+/*
+ * Diagram palette and element styles (DIAG-11, ADD-004).
+ * Colours are palette names in YAML; each theme maps them to values with at
+ * least 4.5:1 contrast between node fill and node text.
+ */
+:root {
+  --arch-primary: #2563eb;
+  --arch-secondary: #0f766e;
+  --arch-muted: #64748b;
+  --arch-slate: #475569;
+  --arch-gray: #4b5563;
+  --arch-blue: #1d4ed8;
+  --arch-indigo: #4f46e5;
+  --arch-sky: #0369a1;
+  --arch-green: #15803d;
+  --arch-amber: #b45309;
+  --arch-red: #b91c1c;
+  --arch-node-text: #ffffff;
+  --arch-edge-label-bg: #ffffff;
+  --arch-edge-label-text: #1f2937;
+  --arch-canvas: #f8fafc;
+  --arch-boundary-fill-amount: 7%;
+}
+
+.dark {
+  --arch-primary: #2563eb;
+  --arch-secondary: #0f766e;
+  --arch-muted: #64748b;
+  --arch-slate: #475569;
+  --arch-gray: #6b7280;
+  --arch-blue: #1d4ed8;
+  --arch-indigo: #4f46e5;
+  --arch-sky: #0369a1;
+  --arch-green: #15803d;
+  --arch-amber: #b45309;
+  --arch-red: #b91c1c;
+  --arch-edge-label-bg: #111827;
+  --arch-edge-label-text: #e5e7eb;
+  --arch-canvas: #0b1120;
+}
+
+[data-color="primary"] {
+  --arch-c: var(--arch-primary);
+}
+[data-color="secondary"] {
+  --arch-c: var(--arch-secondary);
+}
+[data-color="muted"] {
+  --arch-c: var(--arch-muted);
+}
+[data-color="slate"] {
+  --arch-c: var(--arch-slate);
+}
+[data-color="gray"] {
+  --arch-c: var(--arch-gray);
+}
+[data-color="blue"] {
+  --arch-c: var(--arch-blue);
+}
+[data-color="indigo"] {
+  --arch-c: var(--arch-indigo);
+}
+[data-color="sky"] {
+  --arch-c: var(--arch-sky);
+}
+[data-color="green"] {
+  --arch-c: var(--arch-green);
+}
+[data-color="amber"] {
+  --arch-c: var(--arch-amber);
+}
+[data-color="red"] {
+  --arch-c: var(--arch-red);
+}
+
+.arch-canvas .react-flow {
+  background: var(--arch-canvas);
+}
+
+/* --- Element nodes ------------------------------------------------------- */
+
+.arch-node {
+  position: relative;
+  color: var(--arch-node-text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.arch-node-shape {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.arch-node-shape .fill {
+  fill: var(--arch-c);
+  stroke: color-mix(in srgb, var(--arch-c) 70%, black);
+  stroke-width: 1.5;
+}
+
+.arch-node-shape .detail {
+  fill: color-mix(in srgb, var(--arch-c) 78%, black);
+  stroke: color-mix(in srgb, var(--arch-c) 70%, black);
+  stroke-width: 1.5;
+}
+
+.arch-node-shape .accent {
+  fill: color-mix(in srgb, var(--arch-c) 55%, white);
+}
+
+.arch-node-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 14px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.arch-node-title {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.arch-node-tech {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.arch-node-desc {
+  font-size: 11px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.react-flow__node.selected .arch-node-shape .fill,
+.react-flow__node:focus-visible .arch-node-shape .fill {
+  stroke: var(--arch-edge-label-text);
+  stroke-width: 3;
+}
+
+/* Hidden, non-interactive handles: edges float between node borders. */
+.arch-handle {
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+}
+
+/* --- Boundaries (LAYOUT-14) --------------------------------------------- */
+
+.arch-boundary {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed var(--arch-c);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--arch-c) var(--arch-boundary-fill-amount), transparent);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  padding: 10px 14px;
+  color: color-mix(in srgb, var(--arch-c) 85%, black);
+}
+
+.dark .arch-boundary {
+  color: color-mix(in srgb, var(--arch-c) 45%, white);
+}
+
+.arch-boundary-title {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.arch-boundary-meta {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.react-flow__node.selected .arch-boundary {
+  border-style: solid;
+}
+
+/* --- Edges --------------------------------------------------------------- */
+
+.arch-edge-path {
+  fill: none;
+  stroke: var(--arch-c);
+  stroke-width: 1.75;
+}
+
+.arch-edge-path[data-line="dashed"] {
+  stroke-dasharray: 8 6;
+}
+.arch-edge-path[data-line="dotted"] {
+  stroke-dasharray: 2 5;
+  stroke-linecap: round;
+}
+
+.react-flow__edge.selected .arch-edge-path {
+  stroke-width: 3;
+}
+
+/* LAYOUT-25: optional direction-of-flow animation, source to target. */
+.arch-edge-flow {
+  fill: none;
+  stroke: var(--arch-c);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 3 21;
+  animation: arch-edge-flow 0.9s linear infinite;
+}
+
+@keyframes arch-edge-flow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Reduced motion and exports are always static. */
+@media (prefers-reduced-motion: reduce) {
+  .arch-edge-flow {
+    display: none;
+  }
+}
+.arch-static .arch-edge-flow {
+  display: none;
+}
+
+.arch-edge-label {
+  position: absolute;
+  pointer-events: all;
+  max-width: 180px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--arch-edge-label-bg);
+  color: var(--arch-edge-label-text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--arch-c) 40%, transparent);
+}
+
+.arch-edge-label-tech {
+  display: block;
+  font-size: 10px;
+}

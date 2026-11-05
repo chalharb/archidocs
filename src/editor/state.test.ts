@@ -229,3 +229,26 @@ describe("editor document", () => {
     expect(rebased.placed).toEqual([]);
   });
 });
+
+describe("draft recovery", () => {
+  it("rebuilds the document from a draft, ignoring unknown nodes", async () => {
+    const { docFromDraft } = await import("./state");
+    const v = view({ nodes: { u: { x: 1, y: 1 } } });
+    const doc = docFromDraft(v, {
+      settings: { nodeWidth: 300 },
+      nodes: {
+        a: { x: 10, y: 20 },
+        sys: { x: 0, y: 0, width: 900, height: 500 },
+        ghost: { x: 0, y: 0 },
+      },
+      edges: { ab: { animated: true } },
+    });
+    expect(doc.placed).toEqual(["a", "sys"]);
+    expect(doc.boxes.a).toEqual({ x: 10, y: 20, width: 300, height: 100 });
+    expect(doc.boxes.sys).toEqual({ x: 0, y: 0, width: 900, height: 500 });
+    expect(doc.boxes.ghost).toBeUndefined();
+    expect(doc.settings).toEqual({ nodeWidth: 300 });
+    expect(doc.edges).toEqual({ ab: { animated: true } });
+    expect(docFromDraft(v, {}).placed).toEqual([]);
+  });
+});

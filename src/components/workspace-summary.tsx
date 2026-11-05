@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +75,13 @@ export function WorkspaceSummary(props: WorkspaceSummaryProps) {
             <ul className="text-sm">
               {props.diagrams.map((d) => (
                 <li key={d.id}>
-                  {d.name} <span className="text-muted-foreground">({d.diagramType})</span>
+                  <Link
+                    className="underline underline-offset-2"
+                    href={`/workspaces/${encodeURIComponent(props.workspaceKey)}/diagrams/${encodeURIComponent(d.id)}`}
+                  >
+                    {d.name}
+                  </Link>{" "}
+                  <span className="text-muted-foreground">({d.diagramType})</span>
                 </li>
               ))}
             </ul>

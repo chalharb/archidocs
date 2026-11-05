@@ -281,3 +281,27 @@ export function rebaseDoc(
   }
   return { boxes, placed: sorted(placed), settings, edges };
 }
+
+/** Rebuild a document from an autosaved draft (RELI-11) on top of the current view. */
+export function docFromDraft(view: DiagramViewData, draft: LayoutEdit): EditorDoc {
+  const start = docFromView(view);
+  const doc: EditorDoc = {
+    ...start,
+    settings: { ...(draft.settings ?? {}) },
+    edges: { ...(draft.edges ?? {}) },
+  };
+  const settings = effectiveSettings(view, doc);
+  const boxes = { ...start.boxes };
+  const placed: string[] = [];
+  for (const [id, p] of Object.entries(draft.nodes ?? {})) {
+    if (!boxes[id]) continue;
+    boxes[id] = {
+      x: p.x,
+      y: p.y,
+      width: p.width ?? settings.nodeWidth,
+      height: p.height ?? settings.nodeHeight,
+    };
+    placed.push(id);
+  }
+  return { ...doc, boxes, placed: sorted(placed) };
+}
