@@ -92,6 +92,32 @@ test.describe("read-only viewing", () => {
     await expect(details.getByText(/unknown entity 'does-not-exist'/)).toBeVisible();
   });
 
+  test("LAYOUT-10: minimap, zoom, pan and fit to view", async ({ page }) => {
+    await page.goto(diagramUrl("acme", "containers"));
+    await waitForDiagram(page);
+    await expect(page.getByRole("img", { name: "Diagram overview" })).toBeVisible();
+    const viewport = page.locator(".react-flow__viewport");
+    const transform = () => viewport.evaluate((el) => (el as HTMLElement).style.transform);
+    const scale = async () => Number((await transform()).match(/scale\(([\d.]+)\)/)![1]);
+    const fitted = await transform();
+
+    const before = await scale();
+    await page.getByRole("button", { name: "Zoom In" }).click();
+    await expect.poll(scale).toBeGreaterThan(before);
+
+    const pane = (await page.locator(".react-flow__pane").boundingBox())!;
+    const zoomed = await transform();
+    // Start on empty canvas along the top edge (controls and minimap sit at the bottom).
+    await page.mouse.move(pane.x + pane.width / 2, pane.y + 8);
+    await page.mouse.down();
+    await page.mouse.move(pane.x + pane.width / 2 + 100, pane.y + 60, { steps: 5 });
+    await page.mouse.up();
+    await expect.poll(transform).not.toBe(zoomed);
+
+    await page.getByRole("button", { name: "Fit to view" }).click();
+    await expect.poll(transform).toBe(fitted);
+  });
+
   test("SCOPE-01: the canvas cannot create or delete entities or relationships", async ({
     page,
   }) => {

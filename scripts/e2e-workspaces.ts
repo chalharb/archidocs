@@ -11,8 +11,12 @@ import { writeBenchWorkspace } from "../tests/bench/fixture.ts";
 export const E2E_DIR = path.resolve(import.meta.dirname, "../.e2e-workspaces");
 
 await rm(E2E_DIR, { recursive: true, force: true });
-await cp(path.resolve(import.meta.dirname, "../examples/sample-workspace"), path.join(E2E_DIR, "scratch"), {
-  recursive: true,
-});
+await cp(
+  path.resolve(import.meta.dirname, "../examples/sample-workspace"),
+  path.join(E2E_DIR, "scratch"),
+  {
+    recursive: true,
+  },
+);
 await writeBenchWorkspace(path.join(E2E_DIR, "large"));
 console.log(`Prepared E2E workspaces in ${E2E_DIR}`);
