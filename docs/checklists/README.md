@@ -16,7 +16,7 @@ Checkbox version of the effective requirements (baseline PRD v1.6 + accepted [ad
 <!-- PROGRESS:START -->
 | Checklist | Done | Total | % |
 |---|---:|---:|---:|
-| [00-phase-0-backlog](00-phase-0-backlog.md) | 25 | 27 | 92% |
+| [00-phase-0-backlog](00-phase-0-backlog.md) | 27 | 27 | 100% |
 | [01-model-and-schema](01-model-and-schema.md) | 28 | 29 | 96% |
 | [02-diagrams](02-diagrams.md) | 0 | 11 | 0% |
 | [03-layout](03-layout.md) | 8 | 27 | 29% |
@@ -24,9 +24,9 @@ Checkbox version of the effective requirements (baseline PRD v1.6 + accepted [ad
 | [05-security](05-security.md) | 10 | 10 | 100% |
 | [06-testing](06-testing.md) | 19 | 34 | 55% |
 | [07-performance](07-performance.md) | 7 | 11 | 63% |
-| [08-ci-quality-gates](08-ci-quality-gates.md) | 0 | 9 | 0% |
+| [08-ci-quality-gates](08-ci-quality-gates.md) | 0 | 0 | 0% |
 | [09-later-phases](09-later-phases.md) | 0 | 24 | 0% |
-| **Total** | **118** | **203** | **58%** |
+| **Total** | **120** | **194** | **61%** |
 <!-- PROGRESS:END -->
 
 Regenerate with `scripts/prd-progress.sh --write`.

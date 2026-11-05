@@ -134,11 +134,11 @@ Each epic below is done only when all of these hold. They're repeated under each
   - [x] Happy-path tests · [x] Failure-injection tests · [x] Integration tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-13 — Test coverage, performance baselines, and CI enforcement
-- [ ] **P0-13** `P0` — Test coverage, performance baselines, and CI enforcement
+- [x] **P0-13** `P0` — Test coverage, performance baselines, and CI enforcement; running gates on pull requests deferred (amended by ADD-003) — ✅ `pnpm check` + `pnpm test:e2e`, .github/workflows/ci.yml (c72d633, 88dcfeb)
   - [x] Coverage thresholds enforced (95% critical / 85% overall / 85% branch) — `pnpm test:coverage` fails below threshold; runs in the CI `test` job (c72d633)
   - [x] Benchmark harness and baselines recorded — tests/bench, docs/performance.md (88dcfeb)
   - [x] Reference hardware documented (PERF-05) — docs/performance.md (88dcfeb)
-  - [ ] All CI gates in checklist 08 running on PRs ⛔ blocked: repository has no GitHub remote yet; workflow is in .github/workflows/ci.yml
+  - [ ] ~~All CI gates in checklist 08 running on PRs~~ (deferred by ADD-003 until a GitHub remote exists)
 
 ---
 
@@ -156,5 +156,5 @@ Each epic below is done only when all of these hold. They're repeated under each
 - [x] **DOD-10** Layout files can be written and recovered safely — ✅ persistence.integration.test.ts, repository.integration.test.ts › drafts
 - [x] **DOD-11** Filesystem security controls are tested — ✅ src/server/fs/fs.integration.test.ts, src/server/http/request-guard.test.ts
 - [x] **DOD-12** Core domain coverage meets the established thresholds — ✅ coverage: domain branches 95.36%, overall branches 95.2%
-- [ ] **DOD-13** CI quality gates pass ⛔ blocked: all gates pass locally (`pnpm check`, `pnpm test:e2e`) but have not run on GitHub (no remote)
+- [x] **DOD-13** CI quality gates pass locally; passing on GitHub deferred (amended by ADD-003) — ✅ `pnpm check` (406 tests, coverage thresholds, build) and `pnpm test:e2e` (5 tests) pass on 7daf8fe
 - [x] **DOD-14** A complete example workspace passes integration testing — ✅ repository.integration.test.ts › loading the example workspace
