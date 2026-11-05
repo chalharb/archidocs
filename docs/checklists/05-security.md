@@ -15,5 +15,5 @@ Source: PRD §6. Conventions: [checklists/README.md](README.md). All items are P
 
 ## Phase 2 (added by ADD-009)
 
-- [ ] **SEC-11** `P0` `Phase 2` — Markdown rendered to sanitised HTML: no raw HTML, only safe link schemes, no remote loading, XSS fixture suite (added by ADD-009)
+- [x] **SEC-11** `P0` `Phase 2` — Markdown rendered to sanitised HTML: no raw HTML, only safe link schemes, no remote loading, XSS fixture suite (added by ADD-009) — ✅ src/components/docs/markdown.test.tsx › SEC-11 (3f6591b)
 - [ ] **SEC-12** `P1` `Phase 2` — Workspace images served through the repository, confined to the workspace, type- and size-limited; SVG never inlined; remote images render as links (added by ADD-009)
