@@ -2,25 +2,49 @@ apiVersion: archdocs/v1
 kind: RelationshipSet
 id: core-relationships
 relationships:
-  - {id: customer-shop, type: uses, source: customer, target: web-shop, description: Places orders}
-  - {id: agent-shop, type: uses, source: support-agent, target: web-shop, description: Issues refunds}
-  - {id: customer-payments, type: uses, source: customer, target: payments-system, description: Pays}
-  - {id: shop-api, type: calls, source: web-shop, target: payments-api, technology: HTTPS/JSON}
-  - {id: api-ledger, type: reads-writes, source: payments-api, target: ledger-db, technology: SQL}
-  - {id: api-card-network, type: calls-async, source: payments-api, target: card-network, technology: ISO 8583}
-  - {id: payments-card-network, type: uses, source: payments-system, target: card-network}
-  - {id: controller-fraud, type: calls, source: payment-controller, target: fraud-checker}
-  - {id: controller-repo, type: calls, source: payment-controller, target: ledger-repository}
-  - {id: repo-ledger, type: reads-writes, source: ledger-repository, target: ledger-db}
-  - {id: shop-controller, type: calls, source: web-shop, target: payment-controller}
+  - {
+      id: customer-shop,
+      type: uses,
+      source: customer,
+      target: web-shop,
+      description: Places orders,
+    }
+  - {
+      id: agent-shop,
+      type: uses,
+      source: support-agent,
+      target: web-shop,
+      description: Issues refunds,
+    }
+  - {
+      id: customer-payments,
+      type: uses,
+      source: customer,
+      target: payments-system,
+      description: Pays,
+    }
+  - { id: shop-api, type: calls, source: web-shop, target: payments-api, technology: HTTPS/JSON }
+  - { id: api-ledger, type: reads-writes, source: payments-api, target: ledger-db, technology: SQL }
+  - {
+      id: api-card-network,
+      type: calls-async,
+      source: payments-api,
+      target: card-network,
+      technology: ISO 8583,
+    }
+  - { id: payments-card-network, type: uses, source: payments-system, target: card-network }
+  - { id: controller-fraud, type: calls, source: payment-controller, target: fraud-checker }
+  - { id: controller-repo, type: calls, source: payment-controller, target: ledger-repository }
+  - { id: repo-ledger, type: reads-writes, source: ledger-repository, target: ledger-db }
+  - { id: shop-controller, type: calls, source: web-shop, target: payment-controller }
 ---
 apiVersion: archdocs/v1
 kind: RelationshipSet
 id: infrastructure-relationships
 relationships:
-  - {id: internet-lb, type: routes-to, source: internet, target: edge-lb}
-  - {id: lb-cluster, type: routes-to, source: edge-lb, target: prod-cluster}
-  - {id: dmz-private, type: routes-to, source: dmz, target: private-net}
-  - {id: shop-on-cluster, type: deployed-on, source: web-shop, target: prod-cluster}
-  - {id: api-on-cluster, type: deployed-on, source: payments-api, target: prod-cluster}
-  - {id: ledger-on-host, type: deployed-on, source: ledger-db, target: db-host}
+  - { id: internet-lb, type: routes-to, source: internet, target: edge-lb }
+  - { id: lb-cluster, type: routes-to, source: edge-lb, target: prod-cluster }
+  - { id: dmz-private, type: routes-to, source: dmz, target: private-net }
+  - { id: shop-on-cluster, type: deployed-on, source: web-shop, target: prod-cluster }
+  - { id: api-on-cluster, type: deployed-on, source: payments-api, target: prod-cluster }
+  - { id: ledger-on-host, type: deployed-on, source: ledger-db, target: db-host }
