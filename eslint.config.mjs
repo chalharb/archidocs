@@ -10,6 +10,14 @@ const eslintConfig = defineConfig([
   ...nextTs,
   prettier,
   {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
     // SEC-09: filesystem access only through server-side repository services in src/server.
     files: ["src/**/*.{ts,tsx}"],
     ignores: ["src/server/**"],
@@ -32,9 +40,15 @@ const eslintConfig = defineConfig([
       "no-restricted-imports": [
         "error",
         {
-          paths: fsModules.map((name) => ({ name, message: "src/domain must stay pure (no I/O)." })),
+          paths: fsModules.map((name) => ({
+            name,
+            message: "src/domain must stay pure (no I/O).",
+          })),
           patterns: [
-            { group: ["@/server/*", "next", "next/*", "react"], message: "src/domain must stay pure." },
+            {
+              group: ["@/server/*", "next", "next/*", "react"],
+              message: "src/domain must stay pure.",
+            },
           ],
         },
       ],

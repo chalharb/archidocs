@@ -67,7 +67,10 @@ export default defineConfig({
           name: "bench",
           environment: "node",
           include: [],
-          benchmark: { include: ["tests/bench/**/*.bench.ts"], outputJson: "bench-results/latest.json" },
+          benchmark: {
+            include: ["tests/bench/**/*.bench.ts"],
+            outputJson: "bench-results/latest.json",
+          },
         },
       },
     ],
