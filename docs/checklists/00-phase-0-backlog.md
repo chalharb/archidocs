@@ -21,140 +21,140 @@ Each epic below is done only when all of these hold. They're repeated under each
 ## Epics
 
 ### P0-01 — Next.js application foundation and testing setup
-- [ ] **P0-01** `P0` — Next.js application foundation and testing setup
-  - [ ] Next.js + TypeScript (strict) scaffold
-  - [ ] ShadCN UI Component Library
-  - [ ] Vitest with V8 coverage provider configured
-  - [ ] fast-check, React Testing Library, Playwright, axe-core installed and wired
-  - [ ] Lint + formatting configured
-  - [ ] Server binds to loopback by default (SEC-01)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-01** `P0` — Next.js application foundation and testing setup — ✅ docs/phase-0-acceptance.md; 57e6a56, 5fa9462, 0a913ee
+  - [x] Next.js + TypeScript (strict) scaffold
+  - [x] ShadCN UI Component Library
+  - [x] Vitest with V8 coverage provider configured
+  - [x] fast-check, React Testing Library, Playwright, axe-core installed and wired
+  - [x] Lint + formatting configured
+  - [x] Server binds to loopback by default (SEC-01)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-02 — Canonical TypeScript domain contracts
-- [ ] **P0-02** `P0` — Canonical TypeScript domain contracts
-  - [ ] Types for all 9 resource kinds (Workspace, Project, Entity, EntitySet, EntityType, RelationshipSet, RelationshipType, Diagram, DiagramLayout)
-  - [ ] Normalized canonical model types (entity, relationship, diagram, view instance)
-  - [ ] Diagnostic types (severity, file, path, message, code)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-02** `P0` — Canonical TypeScript domain contracts — ✅ docs/phase-0-acceptance.md; ab89aac
+  - [x] Types for all 9 resource kinds (Workspace, Project, Entity, EntitySet, EntityType, RelationshipSet, RelationshipType, Diagram, DiagramLayout)
+  - [x] Normalized canonical model types (entity, relationship, diagram, view instance)
+  - [x] Diagnostic types (severity, file, path, message, code)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-03 — YAML schemas and normalization
-- [ ] **P0-03** `P0` — YAML schemas and normalization
-  - [ ] Strict Zod schema per resource kind (SCHEMA-01)
-  - [ ] `Entity` and `EntitySet` normalize identically (SCHEMA-02, MODEL-03)
-  - [ ] Unsupported `archdocs/v*` versions produce explicit errors (SCHEMA-07)
-  - [ ] Unknown fields produce actionable diagnostics (SCHEMA-08)
-  - [ ] Normalization independent of file order (SCHEMA-09)
-  - [ ] Safe YAML parsing: no custom tags / code execution (SEC-05)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Property-based tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-03** `P0` — YAML schemas and normalization — ✅ docs/phase-0-acceptance.md; ab89aac, 71ac6c9
+  - [x] Strict Zod schema per resource kind (SCHEMA-01)
+  - [x] `Entity` and `EntitySet` normalize identically (SCHEMA-02, MODEL-03)
+  - [x] Unsupported `archdocs/v*` versions produce explicit errors (SCHEMA-07)
+  - [x] Unknown fields produce actionable diagnostics (SCHEMA-08)
+  - [x] Normalization independent of file order (SCHEMA-09)
+  - [x] Safe YAML parsing: no custom tags / code execution (SEC-05)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Property-based tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-04 — Workspace discovery and secure file loading
-- [ ] **P0-04** `P0` — Workspace discovery and secure file loading
-  - [ ] Discover YAML resources under configured workspace roots
-  - [ ] Restrict file access to workspace roots (SEC-02)
-  - [ ] Reject path traversal (SEC-03)
-  - [ ] Reject unsafe symlinks (SEC-04)
-  - [ ] File-size and parse-depth limits (SEC-06)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Integration tests (temp dirs) · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-04** `P0` — Workspace discovery and secure file loading — ✅ docs/phase-0-acceptance.md; 0b9418e
+  - [x] Discover YAML resources under configured workspace roots
+  - [x] Restrict file access to workspace roots (SEC-02)
+  - [x] Reject path traversal (SEC-03)
+  - [x] Reject unsafe symlinks (SEC-04)
+  - [x] File-size and parse-depth limits (SEC-06)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Integration tests (temp dirs) · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-05 — Cross-resource validation
-- [ ] **P0-05** `P0` — Cross-resource validation
-  - [ ] Unique IDs per category across workspace (SCHEMA-03)
-  - [ ] EntitySet ID uniqueness (SCHEMA-04)
-  - [ ] Acyclic parent hierarchy (SCHEMA-05, MODEL-10)
-  - [ ] Relationship endpoint type validation with inheritance (SCHEMA-06)
-  - [ ] Missing reference diagnostics (MODEL-07)
-  - [ ] Diagram endpoint mismatch diagnostics
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-05** `P0` — Cross-resource validation — ✅ docs/phase-0-acceptance.md; 0f11a18
+  - [x] Unique IDs per category across workspace (SCHEMA-03)
+  - [x] EntitySet ID uniqueness (SCHEMA-04)
+  - [x] Acyclic parent hierarchy (SCHEMA-05, MODEL-10)
+  - [x] Relationship endpoint type validation with inheritance (SCHEMA-06)
+  - [x] Missing reference diagnostics (MODEL-07)
+  - [x] Diagram endpoint mismatch diagnostics
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-06 — Architecture graph index
-- [ ] **P0-06** `P0` — Architecture graph index
-  - [ ] Incoming/outgoing relationship lookups
-  - [ ] Parent/child lookups
-  - [ ] Entity → diagram reverse references
-  - [ ] Deterministic index rebuild
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-06** `P0` — Architecture graph index — ✅ docs/phase-0-acceptance.md; 51d2f16
+  - [x] Incoming/outgoing relationship lookups
+  - [x] Parent/child lookups
+  - [x] Entity → diagram reverse references
+  - [x] Deterministic index rebuild
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-07 — Diagram resolution
-- [ ] **P0-07** `P0` — Diagram resolution
-  - [ ] Resolve diagram definitions into normalized renderable nodes/edges
-  - [ ] Rendered nodes keep canonical model references (DIAG-08)
-  - [ ] Multiple view instances of one entity (DIAG-09)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-07** `P0` — Diagram resolution — ✅ docs/phase-0-acceptance.md; 0f11a18
+  - [x] Resolve diagram definitions into normalized renderable nodes/edges
+  - [x] Rendered nodes keep canonical model references (DIAG-08)
+  - [x] Multiple view instances of one entity (DIAG-09)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-08 — Layout configuration and serialization
-- [ ] **P0-08** `P0` — Layout configuration and serialization
-  - [ ] Five-level precedence: app → workspace → diagram → generated → layout-file overrides
-  - [ ] `.layout.yaml` read/write round-trip
-  - [ ] Reconciliation: retain compatible positions, place new nodes, report orphans (LAYOUT-16/17/18)
-  - [ ] Layout changes never touch canonical files (LAYOUT-22/23)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-08** `P0` — Layout configuration and serialization — ✅ docs/phase-0-acceptance.md; f7d9d3d, 61a78db
+  - [x] Five-level precedence: app → workspace → diagram → generated → layout-file overrides
+  - [x] `.layout.yaml` read/write round-trip
+  - [x] Reconciliation: retain compatible positions, place new nodes, report orphans (LAYOUT-16/17/18)
+  - [x] Layout changes never touch canonical files (LAYOUT-22/23)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-09 — Next.js domain service integration
-- [ ] **P0-09** `P0` — Next.js domain service integration
-  - [ ] All filesystem access via server-side repository services (SEC-09)
-  - [ ] Request-origin protection on state-changing operations (SEC-07)
-  - [ ] Route handlers / server actions expose model, diagnostics, layout save
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Integration tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-09** `P0` — Next.js domain service integration — ✅ docs/phase-0-acceptance.md; 58c2506, 376c8e5
+  - [x] All filesystem access via server-side repository services (SEC-09)
+  - [x] Request-origin protection on state-changing operations (SEC-07)
+  - [x] Route handlers / server actions expose model, diagnostics, layout save
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Integration tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-10 — Example workspaces and regression fixtures
-- [ ] **P0-10** `P0` — Example workspaces and regression fixtures
-  - [ ] Complete example workspace covering all resource kinds and diagram types
-  - [ ] Invalid-input fixtures for each diagnostic class
-  - [ ] Benchmark fixtures (100 entities; 100 nodes / 150 edges) (PERF-01)
-  - [ ] Acceptance criteria documented
-  - [ ] Example workspace passes integration testing
+- [x] **P0-10** `P0` — Example workspaces and regression fixtures — ✅ docs/phase-0-acceptance.md; 6ba9f61, cdb3aa7, 88dcfeb
+  - [x] Complete example workspace covering all resource kinds and diagram types
+  - [x] Invalid-input fixtures for each diagnostic class
+  - [x] Benchmark fixtures (100 entities; 100 nodes / 150 edges) (PERF-01)
+  - [x] Acceptance criteria documented
+  - [x] Example workspace passes integration testing
 
 ### P0-11 — File watching and safe workspace reload
-- [ ] **P0-11** `P0` — File watching and safe workspace reload
-  - [ ] Detect external changes (RELI-01)
-  - [ ] Validate before updating active model (RELI-02)
-  - [ ] Auto-refresh when no local conflicts (RELI-03)
-  - [ ] Keep last valid model and flag it stale on failure (RELI-04)
-  - [ ] Reload without restart (RELI-14)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Error-path tests · [ ] Integration tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-11** `P0` — File watching and safe workspace reload — ✅ docs/phase-0-acceptance.md; 88ddabb, 7b2ae36
+  - [x] Detect external changes (RELI-01)
+  - [x] Validate before updating active model (RELI-02)
+  - [x] Auto-refresh when no local conflicts (RELI-03)
+  - [x] Keep last valid model and flag it stale on failure (RELI-04)
+  - [x] Reload without restart (RELI-14)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Error-path tests · [x] Integration tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-12 — Persistence conflict detection and failure recovery
-- [ ] **P0-12** `P0` — Persistence conflict detection and failure recovery
-  - [ ] Revision/hash conflict detection (RELI-06, RELI-07)
-  - [ ] Atomic temp-file writes (RELI-08)
-  - [ ] Validate before write (RELI-09)
-  - [ ] Draft autosave and recovery (RELI-10, RELI-11)
-  - [ ] Preserve valid files on write failure (RELI-12)
-  - [ ] Acceptance criteria documented
-  - [ ] Happy-path tests · [ ] Failure-injection tests · [ ] Integration tests · [ ] Lint/format/types clean · [ ] Coverage met
+- [x] **P0-12** `P0` — Persistence conflict detection and failure recovery — ✅ docs/phase-0-acceptance.md; 0b9418e, 61a78db, 88ddabb
+  - [x] Revision/hash conflict detection (RELI-06, RELI-07)
+  - [x] Atomic temp-file writes (RELI-08)
+  - [x] Validate before write (RELI-09)
+  - [x] Draft autosave and recovery (RELI-10, RELI-11)
+  - [x] Preserve valid files on write failure (RELI-12)
+  - [x] Acceptance criteria documented
+  - [x] Happy-path tests · [x] Failure-injection tests · [x] Integration tests · [x] Lint/format/types clean · [x] Coverage met
 
 ### P0-13 — Test coverage, performance baselines, and CI enforcement
 - [ ] **P0-13** `P0` — Test coverage, performance baselines, and CI enforcement
-  - [ ] Coverage thresholds enforced in CI (95% critical / 85% overall / 85% branch)
-  - [ ] Benchmark harness and baselines recorded
-  - [ ] Reference hardware documented (PERF-05)
-  - [ ] All CI gates in checklist 08 running on PRs
+  - [x] Coverage thresholds enforced (95% critical / 85% overall / 85% branch) — `pnpm test:coverage` fails below threshold; runs in the CI `test` job (c72d633)
+  - [x] Benchmark harness and baselines recorded — tests/bench, docs/performance.md (88dcfeb)
+  - [x] Reference hardware documented (PERF-05) — docs/performance.md (88dcfeb)
+  - [ ] All CI gates in checklist 08 running on PRs ⛔ blocked: repository has no GitHub remote yet; workflow is in .github/workflows/ci.yml
 
 ---
 
 ## Phase 0 Definition of Done (PRD §12)
 
-- [ ] **DOD-01** Both `Entity` and `EntitySet` formats work correctly
-- [ ] **DOD-02** All v1 resource schemas validate
-- [ ] **DOD-03** Entity and relationship references resolve correctly
-- [ ] **DOD-04** Duplicate IDs, invalid hierarchies, and broken relationships produce diagnostics
-- [ ] **DOD-05** Diagram definitions resolve to normalized renderable data
-- [ ] **DOD-06** Diagram and layout configuration precedence is deterministic
-- [ ] **DOD-07** External YAML changes are detected and safely reloaded
-- [ ] **DOD-08** Invalid reloads preserve the last valid model
-- [ ] **DOD-09** Conflicting writes cannot silently overwrite user changes
-- [ ] **DOD-10** Layout files can be written and recovered safely
-- [ ] **DOD-11** Filesystem security controls are tested
-- [ ] **DOD-12** Core domain coverage meets the established thresholds
-- [ ] **DOD-13** CI quality gates pass
-- [ ] **DOD-14** A complete example workspace passes integration testing
+- [x] **DOD-01** Both `Entity` and `EntitySet` formats work correctly — ✅ src/domain/normalize.test.ts; sample workspace uses both formats
+- [x] **DOD-02** All v1 resource schemas validate — ✅ src/domain/schema/resource-schemas.test.ts
+- [x] **DOD-03** Entity and relationship references resolve correctly — ✅ src/domain/validate.test.ts, src/domain/graph-index.test.ts
+- [x] **DOD-04** Duplicate IDs, invalid hierarchies, and broken relationships produce diagnostics — ✅ tests/integration/invalid-fixtures.test.ts
+- [x] **DOD-05** Diagram definitions resolve to normalized renderable data — ✅ src/domain/diagram-resolve.test.ts
+- [x] **DOD-06** Diagram and layout configuration precedence is deterministic — ✅ src/domain/layout/layout.test.ts › precedence (property-based)
+- [x] **DOD-07** External YAML changes are detected and safely reloaded — ✅ src/server/workspace/repository.integration.test.ts › file watching
+- [x] **DOD-08** Invalid reloads preserve the last valid model — ✅ src/server/workspace/snapshot.test.ts, repository.integration.test.ts
+- [x] **DOD-09** Conflicting writes cannot silently overwrite user changes — ✅ src/server/persistence/persistence.integration.test.ts › RELI-07
+- [x] **DOD-10** Layout files can be written and recovered safely — ✅ persistence.integration.test.ts, repository.integration.test.ts › drafts
+- [x] **DOD-11** Filesystem security controls are tested — ✅ src/server/fs/fs.integration.test.ts, src/server/http/request-guard.test.ts
+- [x] **DOD-12** Core domain coverage meets the established thresholds — ✅ coverage: domain branches 95.36%, overall branches 95.2%
+- [ ] **DOD-13** CI quality gates pass ⛔ blocked: all gates pass locally (`pnpm check`, `pnpm test:e2e`) but have not run on GitHub (no remote)
+- [x] **DOD-14** A complete example workspace passes integration testing — ✅ repository.integration.test.ts › loading the example workspace

@@ -12,8 +12,14 @@ DIAG-08 and DIAG-09 are resolved in Phase 0 (epic P0-07) and rendered in Phase 1
 - [ ] **DIAG-06** `P1` `Phase 3` — Custom/general-purpose diagrams
 - [ ] **DIAG-07** `P1` `Phase 1` — Node inspection and related-diagram navigation
 - [ ] **DIAG-08** `P0` `Phase 0–1` — Preserve canonical model references in rendered nodes
+  - [x] Phase 0: resolved nodes/edges keep entityId/relationshipId — src/domain/diagram-resolve.test.ts (0f11a18)
+  - [ ] Phase 1: rendered nodes keep the references
 - [ ] **DIAG-09** `P0` `Phase 0–1` — Support multiple view instances of one canonical entity
+  - [x] Phase 0: multiple view instances resolve, edges name instances — src/domain/diagram-resolve.test.ts (0f11a18)
+  - [ ] Phase 1: rendering
 - [ ] **DIAG-10** `P0` `Phase 1` — Display validation and stale-model diagnostics
+  - [x] Phase 0: stale/invalid status and diagnostics in API and status page — src/components/workspace-summary.test.tsx (376c8e5)
+  - [ ] Phase 1: diagnostics in the diagram viewer
 
 ## MVP scope boundary
 

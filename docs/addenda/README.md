@@ -8,7 +8,8 @@ Changes, pivots, and clarifications to the [baseline PRD v1.6](../Archidocs-prd.
 
 | ID | Title | Status | Date | Affected IDs |
 |---|---|---|---|---|
-| — | _No addenda yet. Copy [`_TEMPLATE.md`](_TEMPLATE.md) to `ADD-001-<slug>.md` to create the first one._ | | | |
+| [ADD-001](ADD-001-archdocs-v1-schema.md) | Field-level definition of the `archdocs/v1` schema | Proposed | 2026-11-05 | MODEL-01..10, SCHEMA-01..09, LAYOUT-08, LAYOUT-18, LAYOUT-23, SEC-06, SEC-08 |
+| [ADD-002](ADD-002-defer-git-revision-state.md) | Defer Git-committed revision state (RELI-10) to Phase 4 | Proposed | 2026-11-05 | RELI-10 |
 
 ## Allocated requirement IDs
 
