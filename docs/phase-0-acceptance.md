@@ -37,7 +37,9 @@ Tests: `src/domain/diagnostics.test.ts`, compile-time checks in `src/domain/sche
 - Only YAML 1.2 core tags are accepted; size, depth, document count and alias limits are enforced; reserved keys are rejected; parsing never throws (fuzzed).
 - `Entity` and `EntitySet` entries normalize to byte-identical records; the model is identical for any input order (property-based).
 
-Tests: `src/domain/parse.test.ts`, `src/domain/schema/resource-schemas.test.ts`, `src/domain/normalize.test.ts`.
+- Older `apiVersion`s are upgraded in memory through registered migrations. A guard rejects any migration step that adds, drops or renames a canonical ID (SCHEMA-10, [design](schema-migrations.md)).
+
+Tests: `src/domain/parse.test.ts`, `src/domain/schema/resource-schemas.test.ts`, `src/domain/normalize.test.ts`, `src/domain/migrate.test.ts`.
 
 ## P0-04 — Workspace discovery and secure file loading
 

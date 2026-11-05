@@ -40,4 +40,4 @@ Each kind needs a strict schema, valid and invalid fixtures, and tests.
 - [x] **SCHEMA-07** `Phase 0` — Unsupported schema versions produce explicit errors (clarified by ADD-001) — ✅ src/domain/parse.test.ts › unsupported version (71ac6c9)
 - [x] **SCHEMA-08** `Phase 0` — Unknown fields produce actionable diagnostics unless the schema permits them (clarified by ADD-001) — ✅ src/domain/parse.test.ts › unknown fields (71ac6c9)
 - [x] **SCHEMA-09** `Phase 0` — YAML normalization doesn't depend on file traversal order (clarified by ADD-001) — ✅ src/domain/normalize.test.ts › file-order independence, fast-check (71ac6c9)
-- [ ] **SCHEMA-10** `Phase 0` — Future migrations preserve canonical IDs (migration design documented and tested)
+- [x] **SCHEMA-10** `Phase 0` — Future migrations preserve canonical IDs (migration design documented and tested) — ✅ docs/schema-migrations.md, src/domain/migrate.test.ts
