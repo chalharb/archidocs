@@ -16,10 +16,11 @@ import {
   type EdgeProps,
   type InternalNode,
 } from "@xyflow/react";
-import { memo } from "react";
+import { memo, useContext } from "react";
 import type { EdgeType } from "@/domain/resources";
 import { borderPoint, type Box, type Side } from "@/editor/geometry";
 import type { ArchFlowEdge } from "@/editor/flow";
+import { EditorCallbacks } from "./editor-context";
 
 const SIDE: Record<Side, Position> = {
   top: Position.Top,
@@ -76,6 +77,7 @@ export const ArchEdge = memo(function ArchEdge({
   data,
   markerEnd,
 }: EdgeProps<ArchFlowEdge>) {
+  const { staticEdges } = useContext(EditorCallbacks);
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   if (!sourceNode || !targetNode || !data) return null;
@@ -108,7 +110,7 @@ export const ArchEdge = memo(function ArchEdge({
         data-line={edge.style.line}
         interactionWidth={16}
       />
-      {data.animated && (
+      {data.animated && !staticEdges && (
         <path className="arch-edge-flow" d={path} data-testid={`edge-flow-${id}`} />
       )}
       {(label || edge.technology) && (

@@ -252,3 +252,21 @@ describe("draft recovery", () => {
     expect(docFromDraft(v, {}).placed).toEqual([]);
   });
 });
+
+describe("dirty tracking", () => {
+  it("compares what would be saved, not generated positions", async () => {
+    const { sameEdit } = await import("./state");
+    const v = view({ nodes: { u: { x: 0, y: 0 } } });
+    const a = docFromView(v);
+    expect(sameEdit(v, a, a)).toBe(true);
+    // Unplaced node moved by the generator: nothing to save.
+    const regenerated = { ...a, boxes: { ...a.boxes, b: { ...a.boxes.b!, x: 999 } } };
+    expect(sameEdit(v, a, regenerated)).toBe(true);
+    // Settings in a different key order are the same edit.
+    const s1 = setSetting(setSetting(a, "gridSize", 5), "direction", "UP");
+    const s2 = setSetting(setSetting(a, "direction", "UP"), "gridSize", 5);
+    expect(sameEdit(v, s1, s2)).toBe(true);
+    expect(sameEdit(v, a, moveNodes(a, v.diagram, { u: { x: 1, y: 0 } }))).toBe(false);
+    expect(sameEdit(v, a, setEdgePresentation(a, "ab", { type: "step" }))).toBe(false);
+  });
+});

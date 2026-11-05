@@ -68,7 +68,7 @@ export function WorkspaceSummary(props: WorkspaceSummaryProps) {
           </dl>
         )}
         {props.diagrams && props.diagrams.length > 0 && (
-          <section aria-labelledby={`${props.workspaceKey}-diagrams`}>
+          <section aria-label={`Diagrams in workspace ${props.workspaceKey}`}>
             <h3 id={`${props.workspaceKey}-diagrams`} className="mb-1 font-medium">
               Diagrams
             </h3>
@@ -88,7 +88,7 @@ export function WorkspaceSummary(props: WorkspaceSummaryProps) {
           </section>
         )}
         {props.status !== "unavailable" && (
-          <section aria-labelledby={`${props.workspaceKey}-diagnostics`}>
+          <section aria-label={`Diagnostics for workspace ${props.workspaceKey}`}>
             <h3 id={`${props.workspaceKey}-diagnostics`} className="mb-1 font-medium">
               Diagnostics ({counts.error} errors, {counts.warning} warnings)
             </h3>

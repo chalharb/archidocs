@@ -40,13 +40,15 @@ async function DiagramContent({ params, searchParams }: Props) {
         <span className="text-sm text-muted-foreground">{view.diagram.diagramType}</span>
         <DiagramSwitcher workspace={workspace} current={view.diagram.id} diagrams={diagrams} />
       </header>
-      <DiagramEditor
-        key={view.diagram.id}
-        workspace={workspace}
-        initialView={view}
-        diagrams={diagrams}
-        {...(typeof focus === "string" ? { focus } : {})}
-      />
+      <main className="flex min-h-0 flex-1 flex-col">
+        <DiagramEditor
+          key={view.diagram.id}
+          workspace={workspace}
+          initialView={view}
+          diagrams={diagrams}
+          {...(typeof focus === "string" ? { focus } : {})}
+        />
+      </main>
     </>
   );
 }

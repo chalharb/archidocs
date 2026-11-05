@@ -21,8 +21,8 @@ import {
   ReactFlowProvider,
   applyNodeChanges,
   useReactFlow,
+  type EdgeChange,
   type NodeChange,
-  type OnSelectionChangeParams,
 } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -46,6 +46,7 @@ import {
   rebaseDoc,
   resizeNode,
   sameDoc,
+  sameEdit,
   setEdgePresentation,
   setSetting,
   toLayoutEdit,
@@ -63,6 +64,8 @@ import { Toolbar } from "./toolbar";
 
 const nodeTypes = { element: ElementNode, boundary: BoundaryNode };
 const edgeTypes = { arch: ArchEdge };
+/** Shift, Ctrl or Cmd adds to the selection, on every platform. */
+const MULTI_SELECT_KEYS = ["Shift", "Meta", "Control"];
 
 export interface DiagramEditorProps {
   workspace: string;
@@ -108,9 +111,12 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
   const [save, setSave] = useState<SaveState>({ kind: "idle" });
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [draftDismissed, setDraftDismissed] = useState(false);
 
-  const dirty = !sameDoc(base, doc);
+  const dirty = !sameEdit(view, base, doc);
+  /** Revision of the layout file this editor last wrote, to tell our saves from external edits. */
+  const savedRevision = useRef<string | null>(null);
   const readOnly = !view.persistence.writable;
   const settings = effectiveSettings(view, doc);
   const selectedIds = useMemo(() => nodes.filter((n) => n.selected).map((n) => n.id), [nodes]);
@@ -147,19 +153,25 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
     }
     const cur = latest.current;
     const freshDoc = docFromView(fresh);
+    const layoutChanged =
+      fresh.persistence.revision !== cur.view.persistence.revision &&
+      fresh.persistence.revision !== savedRevision.current;
+    const changedOnDisk =
+      layoutChanged ||
+      fresh.modelStatus !== cur.view.modelStatus ||
+      JSON.stringify(fresh.diagram) !== JSON.stringify(cur.view.diagram);
     setView(fresh);
     setBase(freshDoc);
     if (!cur.dirty) {
-      if (!sameDoc(freshDoc, cur.history.present)) {
-        commit(createHistory(freshDoc), fresh);
-        setNotice("The diagram was reloaded because its files changed on disk.");
-      } else {
-        commit(cur.history, fresh);
-      }
+      // Keep undo history unless the saved layout itself changed underneath us.
+      const keep = sameEdit(fresh, freshDoc, cur.history.present);
+      commit(keep ? { ...cur.history, present: freshDoc } : createHistory(freshDoc), fresh);
+      if (changedOnDisk) setNotice("The diagram was reloaded because its files changed on disk.");
     } else {
-      const rebased = rebaseDoc(cur.base, cur.history.present, fresh);
-      commit(createHistory(rebased), fresh);
-      setNotice("Files changed on disk. Your unsaved layout changes were kept on top of them.");
+      // Keep undo history: undoing steps back through the local edits.
+      commit(push(cur.history, rebaseDoc(cur.base, cur.history.present, fresh), sameDoc), fresh);
+      if (changedOnDisk)
+        setNotice("Files changed on disk. Your unsaved layout changes were kept on top of them.");
     }
   }, [commit, diagramId, workspace]);
 
@@ -233,12 +245,16 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
   );
 
   const callbacks = useMemo<EditorCallbackValue>(
-    () => ({ readOnly, onResized }),
-    [readOnly, onResized],
+    () => ({ readOnly, staticEdges: exporting, onResized }),
+    [readOnly, exporting, onResized],
   );
 
-  const onSelectionChange = useCallback(({ edges }: OnSelectionChangeParams) => {
-    setSelectedEdge(edges.length === 1 ? edges[0]!.id : null);
+  /** Edges are derived from the document; only selection changes apply (SCOPE-01). */
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    for (const c of changes) {
+      if (c.type !== "select") continue;
+      setSelectedEdge((current) => (c.selected ? c.id : current === c.id ? null : current));
+    }
   }, []);
 
   const onAlign = (mode: AlignMode) => change(alignNodes(doc, view.diagram, selectedIds, mode));
@@ -284,12 +300,13 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
     if (!d || !v.persistence.writable) return;
     setSave({ kind: "saving" });
     try {
-      await api.saveLayout(
+      const result = await api.saveLayout(
         workspace,
         diagramId,
         v.persistence.revision,
         toLayoutEdit(v, h.present),
       );
+      savedRevision.current = result.revision;
       const fresh = await api.diagram(workspace, diagramId);
       setView(fresh);
       setBase(h.present);
@@ -315,10 +332,14 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
   const onExport = async (format: ExportFormat) => {
     if (!containerRef.current) return;
     setBusy(true);
+    setExporting(true);
     try {
+      // Let edges re-render without animation before capturing.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const url = await renderDiagramImage(containerRef.current, rf.getNodes(), format);
       downloadDataUrl(url, `${diagramId}.${format}`);
     } finally {
+      setExporting(false);
       setBusy(false);
     }
   };
@@ -402,11 +423,12 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
               edgeTypes={edgeTypes}
               onNodesChange={onNodesChange}
               onNodeDragStop={onNodeDragStop}
-              onSelectionChange={onSelectionChange}
+              onEdgesChange={onEdgesChange}
               nodesDraggable={!readOnly}
               nodesConnectable={false}
               edgesReconnectable={false}
               deleteKeyCode={null}
+              multiSelectionKeyCode={MULTI_SELECT_KEYS}
               snapToGrid={settings.snapToGrid}
               snapGrid={[settings.gridSize, settings.gridSize]}
               fitView

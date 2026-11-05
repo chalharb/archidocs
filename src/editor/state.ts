@@ -305,3 +305,26 @@ export function docFromDraft(view: DiagramViewData, draft: LayoutEdit): EditorDo
   }
   return { ...doc, boxes, placed: sorted(placed) };
 }
+
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((k) => [k, canonical((value as Record<string, unknown>)[k])]),
+    );
+  return value;
+}
+
+/**
+ * True when saving `a` and `b` would write the same layout file. Generated
+ * positions of unplaced nodes don't count: they aren't saved.
+ */
+export function sameEdit(view: DiagramViewData, a: EditorDoc, b: EditorDoc): boolean {
+  return (
+    a === b ||
+    JSON.stringify(canonical(toLayoutEdit(view, a))) ===
+      JSON.stringify(canonical(toLayoutEdit(view, b)))
+  );
+}
