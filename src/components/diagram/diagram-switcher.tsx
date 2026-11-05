@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useId } from "react";
+import { diagramHref } from "./links";
 
 export function DiagramSwitcher({
   workspace,
@@ -23,11 +24,7 @@ export function DiagramSwitcher({
         id={id}
         className="h-7 rounded-md border bg-background px-2"
         value={current}
-        onChange={(e) =>
-          router.push(
-            `/workspaces/${encodeURIComponent(workspace)}/diagrams/${encodeURIComponent(e.currentTarget.value)}`,
-          )
-        }
+        onChange={(e) => router.push(diagramHref(workspace, e.currentTarget.value))}
       >
         {diagrams.map((d) => (
           <option key={d.id} value={d.id}>

@@ -110,3 +110,22 @@ describe("edge inspector", () => {
     expect(screen.getByRole("option", { name: "Diagram default (on)" })).toBeInTheDocument();
   });
 });
+
+describe("edge inspector in view mode", () => {
+  it("hides presentation controls", () => {
+    const edge = view.diagram.edges[0]!;
+    render(
+      <EdgeInspector
+        edge={edge}
+        readOnly
+        presentation={undefined}
+        effectiveType="bezier"
+        effectiveAnimated={false}
+        onChange={vi.fn()}
+        presentationControls={false}
+      />,
+    );
+    expect(screen.queryByLabelText("Edge style")).toBeNull();
+    expect(screen.queryByLabelText("Animation")).toBeNull();
+  });
+});

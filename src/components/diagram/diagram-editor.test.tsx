@@ -17,6 +17,8 @@ vi.mock("./api", async (orig) => ({
     eventsUrl: (ws: string) => `/api/workspaces/${ws}/events`,
   },
 }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("./export", () => ({
   renderDiagramImage: vi.fn(async () => "data:image/png;base64,AA"),
   downloadDataUrl: vi.fn(),
@@ -57,13 +59,14 @@ afterEach(() => {
 const TWO_INSTANCES =
   "[{entity: sys}, {id: a1, entity: api}, {id: a2, entity: api}, {entity: db}, {entity: user}]";
 
-function setup(view: DiagramView = makeView(), focus?: string) {
+function setup(view: DiagramView = makeView(), focus?: string, mode: "view" | "edit" = "edit") {
   m.diagram.mockResolvedValue(view);
   return render(
     <DiagramEditor
       workspace="ws"
       initialView={view}
       diagrams={[{ id: "d", name: "Payments" }]}
+      mode={mode}
       {...(focus ? { focus } : {})}
     />,
   );
@@ -318,5 +321,131 @@ describe("diagram editor", () => {
     FakeEventSource.last = null;
     setup();
     expect(FakeEventSource.last).toBeNull();
+  });
+});
+
+describe("leaving the editor (ADD-007)", () => {
+  it("goes straight back to the view when nothing is unsaved", () => {
+    setup();
+    fireEvent.click(button("Done"));
+    expect(push).toHaveBeenCalledWith("/workspaces/ws/diagrams/d");
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("asks to save, discard or keep editing when there are unsaved changes", async () => {
+    setup();
+    fireEvent.change(screen.getByLabelText("Direction"), { target: { value: "UP" } });
+    fireEvent.click(button("Done"));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Unsaved layout changes.");
+    expect(push).not.toHaveBeenCalled();
+
+    fireEvent.click(button("Keep editing"));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(status()).toHaveTextContent("Unsaved changes");
+
+    fireEvent.click(button("Done"));
+    fireEvent.click(button("Save and close"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/workspaces/ws/diagrams/d"));
+    expect(m.saveLayout).toHaveBeenCalledOnce();
+  });
+
+  it("stays in the editor when saving fails", async () => {
+    m.saveLayout.mockRejectedValueOnce({ status: 409, code: "CONFLICT", message: "Changed" });
+    setup();
+    fireEvent.change(screen.getByLabelText("Direction"), { target: { value: "UP" } });
+    fireEvent.click(button("Done"));
+    fireEvent.click(button("Save and close"));
+    await screen.findByText("Layout file changed outside the editor");
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("discards changes and the autosaved draft", () => {
+    setup();
+    fireEvent.change(screen.getByLabelText("Direction"), { target: { value: "UP" } });
+    fireEvent.click(button("Done"));
+    fireEvent.click(button("Discard changes"));
+    expect(m.discardDraft).toHaveBeenCalledWith("ws", "d");
+    expect(push).toHaveBeenCalledWith("/workspaces/ws/diagrams/d");
+    expect(status()).toHaveTextContent("All changes saved");
+  });
+});
+
+describe("read-only view (DIAG-12)", () => {
+  it("shows the diagram without layout controls", () => {
+    setup(makeView(), undefined, "view");
+    expect(screen.getByTestId("node-api")).toBeInTheDocument();
+    expect(screen.getByRole("toolbar", { name: "Diagram tools" })).toBeInTheDocument();
+    for (const name of ["Undo", "Align left", "Re-layout all", "Save layout", "Done"])
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    expect(screen.queryByLabelText("Direction")).toBeNull();
+    expect(screen.queryByRole("complementary")).toBeNull();
+    expect(screen.getByRole("link", { name: "Edit layout" })).toHaveAttribute(
+      "href",
+      "/workspaces/ws/diagrams/d/edit",
+    );
+    // No editing shortcuts, drafts or leave warnings.
+    fireEvent.keyDown(window, { key: "s", ctrlKey: true });
+    expect(m.saveLayout).not.toHaveBeenCalled();
+    const leave = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(leave);
+    expect(leave.defaultPrevented).toBe(false);
+  });
+
+  it("opens inspection for the focused entity and closes it until the selection changes", () => {
+    setup(makeView(), "api", "view");
+    const panel = screen.getByRole("complementary", { name: "Diagram details" });
+    expect(panel).toHaveTextContent("Payments API");
+    fireEvent.click(button("Close panel"));
+    expect(screen.queryByRole("complementary")).toBeNull();
+  });
+
+  it("collapses diagnostics into an indicator that expands", () => {
+    setup(
+      makeView({
+        nodes: "[{entity: sys}, {entity: api}, {entity: db}, {entity: user}, {entity: ghost}]",
+        saved: { nodes: { user: { x: 0, y: 0 }, gone: { x: 1, y: 1 } } },
+      }),
+      undefined,
+      "view",
+    );
+    const toggle = button("1 problem");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const panel = screen.getByRole("complementary", { name: "Diagram details" });
+    expect(panel).toHaveTextContent("Orphaned layout overrides");
+    expect(panel).toHaveTextContent("unknown entity 'ghost'");
+    fireEvent.click(toggle);
+    expect(screen.queryByRole("complementary")).toBeNull();
+  });
+
+  it("always shows a stale model, and reload notices, above the canvas", async () => {
+    setup(makeView({ modelStatus: "stale" }), undefined, "view");
+    expect(screen.getByText("Showing the last valid model")).toBeInTheDocument();
+    act(() => FakeEventSource.last!.emit());
+    const renamed = makeView({ modelStatus: "stale" });
+    renamed.diagram.nodes[1] = { ...renamed.diagram.nodes[1]!, label: "Payments Gateway" };
+    m.diagram.mockResolvedValueOnce(renamed);
+    act(() => FakeEventSource.last!.emit());
+    await screen.findByText(/reloaded because its files changed on disk/);
+    expect(screen.getByTestId("node-api")).toHaveTextContent("Payments Gateway");
+  });
+
+  it("disables editing with the reason when the layout file isn't writable", () => {
+    setup(
+      makeView({ persistence: { writable: false, notWritableReason: "Shared file" } }),
+      undefined,
+      "view",
+    );
+    expect(button("Edit layout")).toBeDisabled();
+    expect(screen.getByText("Shared file")).toBeInTheDocument();
+  });
+
+  it("exports from the view", async () => {
+    setup(makeView(), undefined, "view");
+    fireEvent.click(button("PNG"));
+    await waitFor(() => expect(downloadDataUrl).toHaveBeenCalledWith(expect.any(String), "d.png"));
+    fireEvent.click(button("Fit to view"));
   });
 });

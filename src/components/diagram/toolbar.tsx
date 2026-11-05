@@ -38,6 +38,8 @@ export interface ToolbarProps {
   onExport: (format: ExportFormat) => void;
   onSave: () => void;
   onRevert: () => void;
+  /** Leave the editor for the view route (ADD-007). */
+  onDone: () => void;
 }
 
 function Tool({
@@ -161,6 +163,9 @@ export function Toolbar(p: ToolbarProps) {
         </Button>
         <Button type="button" size="sm" onClick={p.onSave} disabled={!edit || !p.dirty || p.saving}>
           <Save /> Save layout
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={p.onDone}>
+          Done
         </Button>
       </div>
     </div>

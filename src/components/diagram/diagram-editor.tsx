@@ -1,12 +1,15 @@
 "use client";
 
 /**
- * Diagram viewer and layout editor (Phase 1).
+ * Diagram viewer and layout editor (Phase 1, DIAG-12).
  *
- * Renders a resolved diagram with React Flow and lets the user arrange it:
- * drag, align/distribute, snap, re-layout with ELK, change layout settings and
- * edge presentation, undo/redo, and save to the diagram's `.layout.yaml`.
- * Entities and relationships can't be created or deleted here (SCOPE-01).
+ * Renders a resolved diagram with React Flow in one of two modes (ADD-007):
+ * - view: read-only canvas with inspection, export and a diagnostics indicator;
+ * - edit: the layout editor, where the user can drag, align/distribute, snap,
+ *   re-layout with ELK, change layout settings and edge presentation,
+ *   undo/redo, and save to the diagram's `.layout.yaml`.
+ * Both reload live on external changes. Entities and relationships can't be
+ * created or deleted in either mode (SCOPE-01).
  */
 import "@xyflow/react/dist/style.css";
 import "./diagram.css";
@@ -24,6 +27,8 @@ import {
   type EdgeChange,
   type NodeChange,
 } from "@xyflow/react";
+import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -58,9 +63,11 @@ import { ArchEdge } from "./edges";
 import { EditorCallbacks, type EditorCallbackValue } from "./editor-context";
 import { downloadDataUrl, renderDiagramImage, type ExportFormat } from "./export";
 import { EdgeInspector, NodeInspector, type DiagramLink } from "./inspector";
+import { diagramHref, type DiagramMode } from "./links";
 import { BoundaryNode, ElementNode } from "./nodes";
 import { SettingsPanel } from "./settings-panel";
 import { Toolbar } from "./toolbar";
+import { ViewBar } from "./view-bar";
 
 const nodeTypes = { element: ElementNode, boundary: BoundaryNode };
 const edgeTypes = { arch: ArchEdge };
@@ -73,6 +80,8 @@ export interface DiagramEditorProps {
   diagrams: readonly DiagramLink[];
   /** Entity to select on load (navigation from another diagram, DIAG-07). */
   focus?: string;
+  /** Read-only view (default) or layout editor (DIAG-12). */
+  mode?: DiagramMode;
 }
 
 type SaveState =
@@ -91,8 +100,16 @@ export function DiagramEditor(props: DiagramEditorProps) {
   );
 }
 
-function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorProps) {
+function EditorInner({
+  workspace,
+  initialView,
+  diagrams,
+  focus,
+  mode = "view",
+}: DiagramEditorProps) {
   const rf = useReactFlow();
+  const router = useRouter();
+  const editing = mode === "edit";
   const containerRef = useRef<HTMLDivElement>(null);
   const diagramId = initialView.diagram.id;
 
@@ -113,11 +130,16 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [draftDismissed, setDraftDismissed] = useState(false);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  /** Selection whose details panel the viewer closed; a new selection reopens it. */
+  const [closedSelection, setClosedSelection] = useState<string | null>(null);
+  const [confirmDone, setConfirmDone] = useState(false);
 
   const dirty = !sameEdit(view, base, doc);
   /** Revision of the layout file this editor last wrote, to tell our saves from external edits. */
   const savedRevision = useRef<string | null>(null);
-  const readOnly = !view.persistence.writable;
+  /** Layout changes are possible only in the editor, on a writable layout file. */
+  const readOnly = !editing || !view.persistence.writable;
   const settings = effectiveSettings(view, doc);
   const selectedIds = useMemo(() => nodes.filter((n) => n.selected).map((n) => n.id), [nodes]);
 
@@ -295,9 +317,11 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
   );
   const onRevert = () => commit(push(history, base, sameDoc), view);
 
-  const onSave = useCallback(async () => {
+  /** Save the layout; resolves to whether the file now matches the editor. */
+  const onSave = useCallback(async (): Promise<boolean> => {
     const { view: v, history: h, dirty: d } = latest.current;
-    if (!d || !v.persistence.writable) return;
+    if (!d) return true;
+    if (!editing || !v.persistence.writable) return false;
     setSave({ kind: "saving" });
     try {
       const result = await api.saveLayout(
@@ -312,13 +336,28 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
       setBase(h.present);
       setNotice(null);
       setSave({ kind: "idle" });
+      return true;
     } catch (e) {
       const error: ApiError = isApiError(e)
         ? e
         : { status: 0, code: "NETWORK", message: "The server could not be reached." };
       setSave({ kind: error.code === "CONFLICT" ? "conflict" : "error", error });
+      return false;
     }
-  }, [diagramId, workspace]);
+  }, [diagramId, editing, workspace]);
+
+  // --- Leaving the editor (ADD-007) -------------------------------------------
+  const viewHref = diagramHref(workspace, diagramId, "view");
+  const onDone = () => (dirty ? setConfirmDone(true) : router.push(viewHref));
+  const onSaveAndClose = async () => {
+    if (await onSave()) router.push(viewHref);
+    else setConfirmDone(false);
+  };
+  const onDiscardAndClose = () => {
+    void api.discardDraft(workspace, diagramId).catch(() => undefined);
+    commit(push(history, base, sameDoc), view);
+    router.push(viewHref);
+  };
 
   const onReloadFromDisk = async () => {
     const fresh = await api.diagram(workspace, diagramId);
@@ -345,6 +384,7 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
   };
 
   useEffect(() => {
+    if (!editing) return;
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
@@ -359,7 +399,7 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onRedo, onSave, onUndo]);
+  }, [editing, onRedo, onSave, onUndo]);
 
   // --- Rendering --------------------------------------------------------------
   const nodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
@@ -388,29 +428,153 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
     : undefined;
   const draft = view.persistence.draft;
   const orphans = view.layout.orphans;
+  const nothingSelected = !selectedNode && !selectedEdgeData;
+  const staleAlert = (
+    <Alert variant="destructive">
+      <AlertTitle>Showing the last valid model</AlertTitle>
+      <AlertDescription>
+        The latest YAML files have errors. The diagram refreshes once they are fixed.
+      </AlertDescription>
+    </Alert>
+  );
+  const selectionKey = `${selectedIds.join(",")}|${selectedEdge ?? ""}`;
+  const panelClosed = closedSelection === selectionKey;
+  const showViewPanel = !editing && ((!nothingSelected && !panelClosed) || diagnosticsOpen);
+
+  const diagnosticsSection = (
+    <section
+      id="diagram-diagnostics"
+      aria-labelledby="diagram-diagnostics-heading"
+      className="flex flex-col gap-2"
+    >
+      <h2 id="diagram-diagnostics-heading" className="font-medium">
+        Diagnostics
+      </h2>
+      {editing && view.modelStatus === "stale" && staleAlert}
+      {(orphans.nodes.length > 0 || orphans.edges.length > 0) && (
+        <Alert>
+          <AlertTitle>Orphaned layout overrides</AlertTitle>
+          <AlertDescription>
+            The layout file has positions or edge styles for{" "}
+            {[...orphans.nodes, ...orphans.edges].map((id) => `'${id}'`).join(", ")}, which are no
+            longer in this diagram. Saving the layout removes them.
+          </AlertDescription>
+        </Alert>
+      )}
+      <DiagnosticsList diagnostics={view.diagnostics} />
+    </section>
+  );
+
+  const inspectors = (
+    <>
+      {selectedNode && (
+        <NodeInspector
+          workspace={workspace}
+          diagramId={diagramId}
+          node={selectedNode}
+          diagrams={diagrams}
+        />
+      )}
+      {selectedEdgeData && (
+        <EdgeInspector
+          edge={selectedEdgeData}
+          readOnly={readOnly}
+          presentation={doc.edges[selectedEdgeData.id]}
+          effectiveType={settings.edgeType}
+          effectiveAnimated={settings.animateEdges}
+          onChange={onEdgeChange}
+          presentationControls={editing}
+        />
+      )}
+    </>
+  );
+
+  const noticeAlert = notice && (
+    <Alert>
+      <AlertTitle>Reloaded</AlertTitle>
+      <AlertDescription>
+        <p>{notice}</p>
+        <Button
+          type="button"
+          size="xs"
+          variant="ghost"
+          className="mt-1"
+          onClick={() => setNotice(null)}
+        >
+          Dismiss
+        </Button>
+      </AlertDescription>
+    </Alert>
+  );
 
   return (
     <EditorCallbacks.Provider value={callbacks}>
       <div className="flex min-h-0 flex-1 flex-col">
-        <Toolbar
-          readOnly={readOnly}
-          canUndo={canUndo(history)}
-          canRedo={canRedo(history)}
-          selectedCount={selectedIds.length}
-          dirty={dirty}
-          saving={save.kind === "saving"}
-          busy={busy}
-          onUndo={onUndo}
-          onRedo={onRedo}
-          onAlign={onAlign}
-          onDistribute={onDistribute}
-          onRelayout={() => void onRelayout()}
-          onFitView={() => void rf.fitView({ padding: 0.1 })}
-          onExport={(f) => void onExport(f)}
-          onSave={() => void onSave()}
-          onRevert={onRevert}
-        />
-        <div className="flex min-h-0 flex-1">
+        {editing ? (
+          <Toolbar
+            readOnly={readOnly}
+            canUndo={canUndo(history)}
+            canRedo={canRedo(history)}
+            selectedCount={selectedIds.length}
+            dirty={dirty}
+            saving={save.kind === "saving"}
+            busy={busy}
+            onUndo={onUndo}
+            onRedo={onRedo}
+            onAlign={onAlign}
+            onDistribute={onDistribute}
+            onRelayout={() => void onRelayout()}
+            onFitView={() => void rf.fitView({ padding: 0.1 })}
+            onExport={(f) => void onExport(f)}
+            onSave={() => void onSave()}
+            onRevert={onRevert}
+            onDone={onDone}
+          />
+        ) : (
+          <ViewBar
+            editHref={diagramHref(workspace, diagramId, "edit")}
+            {...(view.persistence.writable
+              ? {}
+              : { notEditableReason: view.persistence.notWritableReason ?? "Layout is read-only" })}
+            problems={view.diagnostics.length}
+            diagnosticsOpen={diagnosticsOpen}
+            busy={busy}
+            onFitView={() => void rf.fitView({ padding: 0.1 })}
+            onExport={(f) => void onExport(f)}
+            onToggleDiagnostics={() => setDiagnosticsOpen((o) => !o)}
+          />
+        )}
+        {confirmDone && (
+          <div
+            role="alertdialog"
+            aria-labelledby="confirm-done-title"
+            aria-describedby="confirm-done-text"
+            className="flex flex-wrap items-center gap-2 border-b bg-amber-50 px-4 py-2 text-sm dark:bg-amber-950"
+          >
+            <span id="confirm-done-title" className="font-medium">
+              Unsaved layout changes.
+            </span>
+            <span id="confirm-done-text">Save them before leaving the editor?</span>
+            <div className="ml-auto flex gap-2">
+              <Button type="button" size="sm" onClick={() => void onSaveAndClose()} autoFocus>
+                Save and close
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={onDiscardAndClose}>
+                Discard changes
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmDone(false)}>
+                Keep editing
+              </Button>
+            </div>
+          </div>
+        )}
+        {!editing && (view.modelStatus === "stale" || notice) && (
+          <div className="flex flex-col gap-2 border-b px-4 py-2">
+            {view.modelStatus === "stale" && staleAlert}
+            {noticeAlert}
+          </div>
+        )}
+        <div className="relative flex min-h-0 flex-1">
           <div
             ref={containerRef}
             className="arch-canvas relative min-h-0 flex-1"
@@ -425,6 +589,8 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
               onNodeDragStop={onNodeDragStop}
               onEdgesChange={onEdgesChange}
               nodesDraggable={!readOnly}
+              nodesFocusable
+              elementsSelectable
               nodesConnectable={false}
               edgesReconnectable={false}
               deleteKeyCode={null}
@@ -452,161 +618,130 @@ function EditorInner({ workspace, initialView, diagrams, focus }: DiagramEditorP
               <Controls showInteractive={false} />
             </ReactFlow>
           </div>
-          <aside
-            aria-label="Diagram details"
-            className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-l bg-background p-4"
-          >
-            {readOnly && (
-              <Alert>
-                <AlertTitle>Layout is read-only</AlertTitle>
-                <AlertDescription>{view.persistence.notWritableReason}</AlertDescription>
-              </Alert>
-            )}
-            {save.kind === "conflict" && (
-              <Alert variant="destructive">
-                <AlertTitle>Layout file changed outside the editor</AlertTitle>
-                <AlertDescription>
-                  <p>{save.error.message}</p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="mt-2"
-                    onClick={() => void onReloadFromDisk()}
-                  >
-                    Discard my changes and reload
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            {save.kind === "error" && (
-              <Alert variant="destructive">
-                <AlertTitle>Layout not saved</AlertTitle>
-                <AlertDescription>
-                  <p>{save.error.message}</p>
-                  {save.error.issues && (
-                    <ul className="list-disc pl-4">
-                      {save.error.issues.map((i) => (
-                        <li key={i}>{i}</li>
-                      ))}
-                    </ul>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-            {notice && (
-              <Alert>
-                <AlertTitle>Reloaded</AlertTitle>
-                <AlertDescription>
-                  <p>{notice}</p>
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="ghost"
-                    className="mt-1"
-                    onClick={() => setNotice(null)}
-                  >
-                    Dismiss
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            {draft && !draftDismissed && !readOnly && (
-              <Alert variant={draft.status === "recoverable" ? "default" : "destructive"}>
-                <AlertTitle>Unsaved layout changes found</AlertTitle>
-                <AlertDescription>
-                  <p>
-                    {draft.status === "recoverable"
-                      ? `Changes autosaved at ${new Date(draft.draft.savedAt).toLocaleString()} were never saved.`
-                      : draft.status === "conflict"
-                        ? "An autosaved draft exists, but the layout file has changed since. Restoring it will replace those changes when you save."
-                        : draft.status === "incompatible"
-                          ? `An autosaved draft no longer matches this diagram: ${draft.issues.join("; ")}`
-                          : `An autosaved draft could not be read: ${draft.reason}`}
-                  </p>
-                  <div className="mt-2 flex gap-2">
-                    {(draft.status === "recoverable" || draft.status === "conflict") && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => {
-                          change(docFromDraft(view, draft.draft.layout));
-                          setDraftDismissed(true);
-                        }}
-                      >
-                        Restore
-                      </Button>
-                    )}
+          {editing ? (
+            <aside
+              aria-label="Diagram details"
+              className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-l bg-background p-4"
+            >
+              {readOnly && (
+                <Alert>
+                  <AlertTitle>Layout is read-only</AlertTitle>
+                  <AlertDescription>{view.persistence.notWritableReason}</AlertDescription>
+                </Alert>
+              )}
+              {save.kind === "conflict" && (
+                <Alert variant="destructive">
+                  <AlertTitle>Layout file changed outside the editor</AlertTitle>
+                  <AlertDescription>
+                    <p>{save.error.message}</p>
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setDraftDismissed(true);
-                        void api.discardDraft(workspace, diagramId).catch(() => undefined);
-                      }}
+                      className="mt-2"
+                      onClick={() => void onReloadFromDisk()}
                     >
-                      Discard draft
+                      Discard my changes and reload
                     </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-            {selectedNode && (
-              <NodeInspector
-                workspace={workspace}
-                diagramId={diagramId}
-                node={selectedNode}
-                diagrams={diagrams}
-              />
-            )}
-            {selectedEdgeData && (
-              <EdgeInspector
-                edge={selectedEdgeData}
-                readOnly={readOnly}
-                presentation={doc.edges[selectedEdgeData.id]}
-                effectiveType={settings.edgeType}
-                effectiveAnimated={settings.animateEdges}
-                onChange={onEdgeChange}
-              />
-            )}
-            {!selectedNode && !selectedEdgeData && (
-              <p className="text-sm text-muted-foreground">
-                Select a node or edge to inspect it. Shift-drag to select several nodes.
-              </p>
-            )}
-            <SettingsPanel
-              readOnly={readOnly}
-              effective={settings}
-              overrides={doc.settings}
-              onChange={onSetting}
-              onRelayout={() => void onRelayout()}
-            />
-            <section aria-labelledby="diagram-diagnostics-heading" className="flex flex-col gap-2">
-              <h2 id="diagram-diagnostics-heading" className="font-medium">
-                Diagnostics
-              </h2>
-              {view.modelStatus === "stale" && (
+                  </AlertDescription>
+                </Alert>
+              )}
+              {save.kind === "error" && (
                 <Alert variant="destructive">
-                  <AlertTitle>Showing the last valid model</AlertTitle>
+                  <AlertTitle>Layout not saved</AlertTitle>
                   <AlertDescription>
-                    The latest YAML files have errors. The diagram refreshes once they are fixed.
+                    <p>{save.error.message}</p>
+                    {save.error.issues && (
+                      <ul className="list-disc pl-4">
+                        {save.error.issues.map((i) => (
+                          <li key={i}>{i}</li>
+                        ))}
+                      </ul>
+                    )}
                   </AlertDescription>
                 </Alert>
               )}
-              {(orphans.nodes.length > 0 || orphans.edges.length > 0) && (
-                <Alert>
-                  <AlertTitle>Orphaned layout overrides</AlertTitle>
+              {noticeAlert}
+              {draft && !draftDismissed && !readOnly && (
+                <Alert variant={draft.status === "recoverable" ? "default" : "destructive"}>
+                  <AlertTitle>Unsaved layout changes found</AlertTitle>
                   <AlertDescription>
-                    The layout file has positions or edge styles for{" "}
-                    {[...orphans.nodes, ...orphans.edges].map((id) => `'${id}'`).join(", ")}, which
-                    are no longer in this diagram. Saving the layout removes them.
+                    <p>
+                      {draft.status === "recoverable"
+                        ? `Changes autosaved at ${new Date(draft.draft.savedAt).toLocaleString()} were never saved.`
+                        : draft.status === "conflict"
+                          ? "An autosaved draft exists, but the layout file has changed since. Restoring it will replace those changes when you save."
+                          : draft.status === "incompatible"
+                            ? `An autosaved draft no longer matches this diagram: ${draft.issues.join("; ")}`
+                            : `An autosaved draft could not be read: ${draft.reason}`}
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      {(draft.status === "recoverable" || draft.status === "conflict") && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            change(docFromDraft(view, draft.draft.layout));
+                            setDraftDismissed(true);
+                          }}
+                        >
+                          Restore
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setDraftDismissed(true);
+                          void api.discardDraft(workspace, diagramId).catch(() => undefined);
+                        }}
+                      >
+                        Discard draft
+                      </Button>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
-              <DiagnosticsList diagnostics={view.diagnostics} />
-            </section>
-          </aside>
+              {inspectors}
+              {!selectedNode && !selectedEdgeData && (
+                <p className="text-sm text-muted-foreground">
+                  Select a node or edge to inspect it. Shift-drag to select several nodes.
+                </p>
+              )}
+              <SettingsPanel
+                readOnly={readOnly}
+                effective={settings}
+                overrides={doc.settings}
+                onChange={onSetting}
+                onRelayout={() => void onRelayout()}
+              />
+              {diagnosticsSection}
+            </aside>
+          ) : (
+            showViewPanel && (
+              <aside
+                aria-label="Diagram details"
+                className="absolute inset-y-0 right-0 z-10 flex w-80 flex-col gap-6 overflow-y-auto border-l bg-background p-4 shadow-lg"
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="self-end"
+                  aria-label="Close panel"
+                  onClick={() => {
+                    setDiagnosticsOpen(false);
+                    setClosedSelection(selectionKey);
+                  }}
+                >
+                  <X />
+                </Button>
+                {!panelClosed && inspectors}
+                {diagnosticsOpen && diagnosticsSection}
+              </aside>
+            )
+          )}
         </div>
       </div>
     </EditorCallbacks.Provider>

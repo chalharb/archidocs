@@ -10,6 +10,7 @@ import type { ResolvedEdge, ResolvedNode } from "@/domain/diagram-resolve";
 import { EDGE_TYPES, type EdgePresentation, type EdgeType } from "@/domain/resources";
 import type { EntityView } from "@/server/workspace/repository";
 import { api } from "./api";
+import { diagramHref } from "./links";
 import { EDGE_TYPE_LABEL } from "./settings-panel";
 
 export interface DiagramLink {
@@ -109,7 +110,7 @@ export function NodeInspector({
                   <li key={d}>
                     <Link
                       className="underline underline-offset-2"
-                      href={`/workspaces/${encodeURIComponent(workspace)}/diagrams/${encodeURIComponent(d)}?focus=${encodeURIComponent(node.entityId)}`}
+                      href={diagramHref(workspace, d, "view", node.entityId)}
                     >
                       {names.get(d) ?? d}
                     </Link>
@@ -131,8 +132,11 @@ export function EdgeInspector({
   effectiveType,
   effectiveAnimated,
   onChange,
+  presentationControls = true,
 }: {
   edge: ResolvedEdge;
+  /** Per-edge style and animation controls; hidden in view mode (ADD-007). */
+  presentationControls?: boolean;
   readOnly: boolean;
   presentation: EdgePresentation | undefined;
   effectiveType: EdgeType;
@@ -164,42 +168,48 @@ export function EdgeInspector({
           </>
         )}
       </dl>
-      <div className="flex items-center justify-between gap-2">
-        <label htmlFor={typeId}>Edge style</label>
-        <select
-          id={typeId}
-          className={control}
-          disabled={readOnly}
-          value={presentation?.type ?? ""}
-          onChange={(e) =>
-            onChange({ type: (e.currentTarget.value || undefined) as EdgeType | undefined })
-          }
-        >
-          <option value="">Diagram default ({EDGE_TYPE_LABEL[effectiveType]})</option>
-          {EDGE_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {EDGE_TYPE_LABEL[t]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <label htmlFor={animId}>Animation</label>
-        <select
-          id={animId}
-          className={control}
-          disabled={readOnly}
-          value={presentation?.animated === undefined ? "" : presentation.animated ? "on" : "off"}
-          onChange={(e) => {
-            const v = e.currentTarget.value;
-            onChange({ animated: v === "" ? undefined : v === "on" });
-          }}
-        >
-          <option value="">Diagram default ({effectiveAnimated ? "on" : "off"})</option>
-          <option value="on">On</option>
-          <option value="off">Off</option>
-        </select>
-      </div>
+      {presentationControls && (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor={typeId}>Edge style</label>
+            <select
+              id={typeId}
+              className={control}
+              disabled={readOnly}
+              value={presentation?.type ?? ""}
+              onChange={(e) =>
+                onChange({ type: (e.currentTarget.value || undefined) as EdgeType | undefined })
+              }
+            >
+              <option value="">Diagram default ({EDGE_TYPE_LABEL[effectiveType]})</option>
+              {EDGE_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {EDGE_TYPE_LABEL[t]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor={animId}>Animation</label>
+            <select
+              id={animId}
+              className={control}
+              disabled={readOnly}
+              value={
+                presentation?.animated === undefined ? "" : presentation.animated ? "on" : "off"
+              }
+              onChange={(e) => {
+                const v = e.currentTarget.value;
+                onChange({ animated: v === "" ? undefined : v === "on" });
+              }}
+            >
+              <option value="">Diagram default ({effectiveAnimated ? "on" : "off"})</option>
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+        </>
+      )}
     </section>
   );
 }

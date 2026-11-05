@@ -20,6 +20,7 @@ function setup(overrides: Partial<ToolbarProps> = {}) {
     onExport: vi.fn(),
     onSave: vi.fn(),
     onRevert: vi.fn(),
+    onDone: vi.fn(),
     ...overrides,
   };
   render(<Toolbar {...props} />);
@@ -56,7 +57,16 @@ describe("layout toolbar", () => {
     expect(p.onExport).toHaveBeenLastCalledWith("svg");
     click("Revert");
     click("Save layout");
-    for (const fn of [p.onUndo, p.onRedo, p.onRelayout, p.onFitView, p.onRevert, p.onSave])
+    click("Done");
+    for (const fn of [
+      p.onUndo,
+      p.onRedo,
+      p.onRelayout,
+      p.onFitView,
+      p.onRevert,
+      p.onSave,
+      p.onDone,
+    ])
       expect(fn).toHaveBeenCalledOnce();
     expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
   });

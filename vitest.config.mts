@@ -15,6 +15,7 @@ export default defineConfig({
         "src/components/ui/**", // generated shadcn primitives
         "src/app/**/layout.tsx",
         "src/app/**/page.tsx", // exercised by Playwright, not Vitest
+        "src/app/**/diagram-page.tsx", // shared server page body, exercised by Playwright
         "src/app/**/route.ts", // thin adapters; handlers are tested in src/server/http
         "src/instrumentation.ts",
         "src/**/*.d.ts",
