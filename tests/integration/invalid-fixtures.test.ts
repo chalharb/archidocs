@@ -15,6 +15,10 @@ const COVERED_ELSEWHERE: Partial<Record<DiagnosticCode, string>> = {
   FS_TOO_MANY_FILES: "src/server/fs/fs.integration.test.ts › file count limit",
   FS_READ_ERROR: "src/server/fs/fs.integration.test.ts › unreadable directories",
   LAYOUT_COLLISION: "src/domain/layout/layout.test.ts › unresolved collisions",
+  SCHEMA_MIGRATED:
+    "src/domain/migrate.test.ts › parsing with migrations (needs a registered migration)",
+  SCHEMA_MIGRATION_FAILED:
+    "src/domain/migrate.test.ts › refuses to load a document whose migration changes IDs",
   MODEL_STALE: "src/server/http/handlers.integration.test.ts › stale state",
 };
 

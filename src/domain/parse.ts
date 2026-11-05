@@ -31,6 +31,7 @@ import {
   type SourceRef,
 } from "./resources";
 import { RESOURCE_SCHEMAS } from "./schema/resource-schemas";
+import { MIGRATIONS, MigrationError, migrateDocument, type Migration } from "./migrate";
 import { suggest } from "./suggest";
 
 export interface ParseLimits {
@@ -331,6 +332,10 @@ export function knownKeysAt(schema: z.ZodType, path: readonly PropertyKey[]): st
   return def.type === "object" ? Object.keys(def.shape ?? {}) : [];
 }
 
+function withNotes<T extends { diagnostics: Diagnostic[] }>(result: T, notes: Diagnostic[]): T {
+  return { ...result, diagnostics: [...notes, ...result.diagnostics] };
+}
+
 export function isResourceKind(value: unknown): value is ResourceKind {
   return typeof value === "string" && (RESOURCE_KINDS as readonly string[]).includes(value);
 }
@@ -343,6 +348,7 @@ export function validateResource(
   value: unknown,
   source: Pick<SourceRef, "file" | "document">,
   locate: (path: Path) => { line?: number; column?: number } = () => ({}),
+  migrations: readonly Migration[] = MIGRATIONS,
 ): { resource?: Resource; diagnostics: Diagnostic[] } {
   const where = (path: Path) => ({
     file: source.file,
@@ -362,7 +368,7 @@ export function validateResource(
     };
   }
 
-  const { apiVersion, kind } = value;
+  const { apiVersion } = value;
   if (apiVersion === undefined) {
     return {
       diagnostics: [
@@ -373,7 +379,37 @@ export function validateResource(
       ],
     };
   }
+  // Older versions are upgraded in memory when a migration path exists (SCHEMA-10).
+  const notes: Diagnostic[] = [];
   if (apiVersion !== API_VERSION) {
+    let migrated: Record<string, unknown> | null = null;
+    try {
+      migrated = migrateDocument(value, migrations);
+    } catch (err) {
+      const e = err as MigrationError;
+      return {
+        diagnostics: [
+          diagnostic("error", "SCHEMA_MIGRATION_FAILED", e.message, {
+            ...where(["apiVersion"]),
+            hint: "The document was not loaded. Update it to the current schema by hand or fix the migration.",
+          }),
+        ],
+      };
+    }
+    if (migrated) {
+      notes.push(
+        diagnostic(
+          "info",
+          "SCHEMA_MIGRATED",
+          `Upgraded from '${String(apiVersion)}' to '${API_VERSION}' in memory`,
+          {
+            ...where(["apiVersion"]),
+            hint: `Update the file to '${API_VERSION}' to skip the migration.`,
+          },
+        ),
+      );
+      return withNotes(validateResource(migrated, source, locate, migrations), notes);
+    }
     return {
       diagnostics: [
         diagnostic(
@@ -388,6 +424,7 @@ export function validateResource(
       ],
     };
   }
+  const { kind } = value;
   if (!isResourceKind(kind)) {
     const match = typeof kind === "string" ? suggest(kind, RESOURCE_KINDS) : undefined;
     return {
@@ -462,12 +499,13 @@ export function parseResources(
   content: string,
   file: string,
   limits: ParseLimits = DEFAULT_PARSE_LIMITS,
+  migrations: readonly Migration[] = MIGRATIONS,
 ): { resources: ParsedResource[]; diagnostics: Diagnostic[] } {
   const { documents, diagnostics } = parseYamlDocuments(content, file, limits);
   const resources: ParsedResource[] = [];
   for (const doc of documents) {
     const source = { file, document: doc.index };
-    const result = validateResource(doc.value, source, doc.locate);
+    const result = validateResource(doc.value, source, doc.locate, migrations);
     diagnostics.push(...result.diagnostics);
     if (result.resource)
       resources.push({ resource: result.resource, source: { ...source, path: [] } });
