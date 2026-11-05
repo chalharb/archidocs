@@ -1,0 +1,14 @@
+apiVersion: archdocs/v1
+kind: Project
+id: payments
+name: Payments Platform
+owner: payments-team
+tags: [revenue]
+properties:
+  costCenter: CC-1042
+---
+apiVersion: archdocs/v1
+kind: Project
+id: platform
+name: Shared Platform
+owner: platform-team

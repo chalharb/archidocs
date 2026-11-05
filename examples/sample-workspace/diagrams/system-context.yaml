@@ -1,0 +1,12 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: system-context
+name: Payments — System Context
+diagramType: c4-context
+nodes:
+  - entity: customer
+  - entity: payments-system
+  - entity: card-network
+edges:
+  - relationship: customer-payments
+  - relationship: payments-card-network

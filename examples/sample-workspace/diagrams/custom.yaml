@@ -1,0 +1,13 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: support-overview
+name: Support Overview
+diagramType: custom
+description: A free-form diagram reusing entities from other diagrams (MODEL-09).
+nodes:
+  - entity: support-agent
+  - entity: web-shop
+  - {entity: payments-api, label: Refund backend}
+edges:
+  - relationship: agent-shop
+  - {relationship: shop-api, label: Refund request}

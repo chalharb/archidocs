@@ -1,0 +1,20 @@
+# Two view instances of the same entity (DIAG-09): the API runs in two zones.
+apiVersion: archdocs/v1
+kind: Diagram
+id: deployment
+name: Production Deployment
+diagramType: deployment
+nodes:
+  - entity: prod-cluster
+  - entity: db-host
+  - entity: web-shop
+  - {id: payments-api-a, entity: payments-api, label: Payments API (zone A)}
+  - {id: payments-api-b, entity: payments-api, label: Payments API (zone B)}
+  - entity: ledger-db
+edges:
+  - relationship: shop-on-cluster
+  - {id: api-a-on-cluster, relationship: api-on-cluster, source: payments-api-a}
+  - {id: api-b-on-cluster, relationship: api-on-cluster, source: payments-api-b}
+  - relationship: ledger-on-host
+  - {id: api-a-ledger, relationship: api-ledger, source: payments-api-a}
+  - {id: api-b-ledger, relationship: api-ledger, source: payments-api-b}

@@ -1,0 +1,9 @@
+apiVersion: archdocs/v1
+kind: Workspace
+id: acme
+name: ACME Payments Architecture
+description: Example workspace covering every archdocs/v1 resource kind and diagram type.
+defaults:
+  layout:
+    direction: DOWN
+    nodeSpacing: 60

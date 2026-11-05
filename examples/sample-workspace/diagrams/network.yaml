@@ -1,0 +1,17 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: network-topology
+name: Network Topology
+diagramType: network
+layout:
+  edgeType: step
+nodes:
+  - entity: internet
+  - entity: dmz
+  - entity: edge-lb
+  - entity: private-net
+  - entity: prod-cluster
+edges:
+  - relationship: internet-lb
+  - relationship: lb-cluster
+  - relationship: dmz-private

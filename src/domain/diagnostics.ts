@@ -47,6 +47,8 @@ export const DIAGNOSTIC_CODES = [
   "FS_TOO_LARGE",
   "FS_TOO_MANY_FILES",
   "FS_READ_ERROR",
+  // Workspace state (RELI-04)
+  "MODEL_STALE",
 ] as const;
 
 export type DiagnosticCode = (typeof DIAGNOSTIC_CODES)[number];

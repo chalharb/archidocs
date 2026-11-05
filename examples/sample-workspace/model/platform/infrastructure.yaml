@@ -1,0 +1,10 @@
+apiVersion: archdocs/v1
+kind: EntitySet
+id: platform-infrastructure
+entities:
+  - {id: internet, name: Internet, type: network-zone, project: platform}
+  - {id: dmz, name: DMZ, type: network-zone, project: platform}
+  - {id: private-net, name: Private Network, type: network-zone, project: platform}
+  - {id: edge-lb, name: Edge Load Balancer, type: network-device, parent: dmz}
+  - {id: prod-cluster, name: Production Cluster, type: kubernetes-cluster, project: platform}
+  - {id: db-host, name: Database Host, type: deployment-node, project: platform}

@@ -1,0 +1,16 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: payments-api-components
+name: Payments API — Components
+diagramType: c4-component
+nodes:
+  - entity: web-shop
+  - entity: payment-controller
+  - entity: fraud-checker
+  - entity: ledger-repository
+  - entity: ledger-db
+edges:
+  - relationship: shop-controller
+  - relationship: controller-fraud
+  - relationship: controller-repo
+  - relationship: repo-ledger

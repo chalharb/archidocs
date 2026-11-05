@@ -1,0 +1,13 @@
+# Individual Entity resources (MODEL-01).
+apiVersion: archdocs/v1
+kind: Entity
+id: customer
+name: Customer
+type: person
+description: Pays for orders using the web shop.
+---
+apiVersion: archdocs/v1
+kind: Entity
+id: support-agent
+name: Support Agent
+type: person

@@ -1,0 +1,20 @@
+apiVersion: archdocs/v1
+kind: Diagram
+id: containers
+name: Payments — Containers
+diagramType: c4-container
+layout:
+  direction: RIGHT
+nodes:
+  - entity: customer
+  - entity: support-agent
+  - entity: web-shop
+  - entity: payments-api
+  - entity: ledger-db
+  - entity: card-network
+edges:
+  - relationship: customer-shop
+  - relationship: agent-shop
+  - relationship: shop-api
+  - relationship: api-ledger
+  - relationship: api-card-network

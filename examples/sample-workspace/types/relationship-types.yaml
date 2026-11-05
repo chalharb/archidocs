@@ -1,0 +1,38 @@
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: uses
+name: Uses
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: reads-writes
+name: Reads from and writes to
+sources: [container, component]
+targets: [database]
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: calls
+name: Calls
+sources: [container, component]
+targets: [container, component, software-system]
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: calls-async
+name: Calls asynchronously
+extends: calls
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: routes-to
+name: Routes traffic to
+sources: [network-device, network-zone]
+targets: [network-device, network-zone, deployment-node]
+---
+apiVersion: archdocs/v1
+kind: RelationshipType
+id: deployed-on
+name: Deployed on
+sources: [container]
+targets: [deployment-node]

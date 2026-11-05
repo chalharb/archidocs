@@ -1,0 +1,55 @@
+# Standard C4, network and deployment element types. Custom types can extend these.
+apiVersion: archdocs/v1
+kind: EntityType
+id: person
+name: Person
+description: A human user of a software system.
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: software-system
+name: Software System
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: external-system
+name: External Software System
+extends: software-system
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: container
+name: Container
+description: A separately deployable unit (app, service, data store).
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: database
+name: Database
+extends: container
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: component
+name: Component
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: network-zone
+name: Network Zone
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: network-device
+name: Network Device
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: deployment-node
+name: Deployment Node
+---
+apiVersion: archdocs/v1
+kind: EntityType
+id: kubernetes-cluster
+name: Kubernetes Cluster
+extends: deployment-node

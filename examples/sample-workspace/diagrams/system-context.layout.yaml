@@ -1,0 +1,14 @@
+# Diagram layout overrides managed by Architecture Docs.
+# Presentation only: canonical entities and relationships live in the other YAML files.
+apiVersion: archdocs/v1
+kind: DiagramLayout
+diagram: system-context
+settings:
+  edgeType: straight
+nodes:
+  card-network:
+    x: 600
+    y: 300
+  customer:
+    x: 300
+    y: 0

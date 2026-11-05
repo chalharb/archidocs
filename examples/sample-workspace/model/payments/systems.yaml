@@ -1,0 +1,46 @@
+# Grouped entities (MODEL-02) normalize exactly like individual ones (MODEL-03).
+apiVersion: archdocs/v1
+kind: EntitySet
+id: payments-systems
+name: Payments systems and containers
+entities:
+  - id: payments-system
+    name: Payments System
+    type: software-system
+    project: payments
+    owner: payments-team
+  - id: card-network
+    name: Card Network
+    type: external-system
+    description: Third-party card processor.
+  - id: web-shop
+    name: Web Shop
+    type: container
+    parent: payments-system
+    technology: Next.js
+  - id: payments-api
+    name: Payments API
+    type: container
+    parent: payments-system
+    technology: Go
+    tags: [pci]
+    properties:
+      tier: 1
+      slo: {availability: 99.95}
+  - id: ledger-db
+    name: Ledger Database
+    type: database
+    parent: payments-system
+    technology: PostgreSQL
+  - id: payment-controller
+    name: Payment Controller
+    type: component
+    parent: payments-api
+  - id: fraud-checker
+    name: Fraud Checker
+    type: component
+    parent: payments-api
+  - id: ledger-repository
+    name: Ledger Repository
+    type: component
+    parent: payments-api
