@@ -10,6 +10,8 @@ Detailed items are in checklists 02, 03, 06 (E2E/VR), and 07.
 
 ## Phase 2 — Architecture Documentation and ADRs
 
+Detailed requirements are proposed in [ADD-009](../addenda/ADD-009-phase-2-documentation-and-adrs.md) (Proposed). Once accepted, these outline items point to its DOC-, ADR- and other new items.
+
 - [ ] **PH2-01** — Markdown documents
 - [ ] **PH2-02** — Structured ADRs
 - [ ] **PH2-03** — Entity traceability

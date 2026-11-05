@@ -16,6 +16,7 @@ Changes, pivots, and clarifications to the [baseline PRD v1.7](../Archidocs-prd.
 | [ADD-006](ADD-006-nested-boundary-semantics.md) | Nested boundary membership and layout coordinates | Consolidated into v1.7 | 2026-11-05 | LAYOUT-14, LAYOUT-08, LAYOUT-24 |
 | [ADD-007](ADD-007-separate-view-and-edit-routes.md) | Separate routes for viewing and editing diagrams | Consolidated into v1.7 | 2026-11-05 | DIAG-12 (new), DIAG-07, DIAG-10, LAYOUT-01..15, LAYOUT-25, SCOPE-01, E2E-01..05, VR-01..09 |
 | [ADD-008](ADD-008-optional-minimap.md) | Optional minimap | Consolidated into v1.7 | 2026-11-05 | LAYOUT-26 (new), LAYOUT-10, PREC-01/02 |
+| [ADD-009](ADD-009-phase-2-documentation-and-adrs.md) | Phase 2 requirements: architecture documentation and ADRs | Proposed | 2026-11-05 | DOC-01..09, ADR-01..05, SEC-11..12, TEST-08, E2E-06..08, VR-10..11, BENCH-07, PH2-EXIT (all new); PH2-01..06, RELI-01..05, MODEL-07, DIAG-07 |
 
 ## Allocated requirement IDs
 
