@@ -92,7 +92,7 @@ Pinned browsers, deterministic fixtures, consistent fonts, fixed viewports.
 ## Phase 2 (added by ADD-009)
 
 - [ ] **TEST-08** Documentation (added by ADD-009)
-  - [ ] Front-matter parsing: valid, missing, malformed, wrong kind, unsupported version, limits
+  - [x] Front-matter parsing: valid, missing, malformed, wrong kind, unsupported version, limits — src/domain/parse.test.ts › TEST-08 (362ad1d)
   - [ ] Reference and link resolution, including broken links with line numbers
   - [ ] Supersession consistency warnings and cycles
   - [ ] Reverse-reference indexing, independent of file order

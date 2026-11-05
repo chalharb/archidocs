@@ -26,8 +26,8 @@ Checkbox version of the effective requirements (baseline PRD v1.7 + accepted [ad
 | [07-performance](07-performance.md) | 11 | 12 | 91% |
 | [08-ci-quality-gates](08-ci-quality-gates.md) | 0 | 0 | 0% |
 | [09-later-phases](09-later-phases.md) | 1 | 25 | 4% |
-| [10-documentation](10-documentation.md) | 0 | 14 | 0% |
-| **Total** | **174** | **222** | **78%** |
+| [10-documentation](10-documentation.md) | 3 | 14 | 21% |
+| **Total** | **177** | **222** | **79%** |
 <!-- PROGRESS:END -->
 
 Regenerate with `scripts/prd-progress.sh --write`.
