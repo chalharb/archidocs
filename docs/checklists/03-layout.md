@@ -23,7 +23,7 @@ Source: PRD §2.3, §4. Conventions: [checklists/README.md](README.md).
 - [x] **LAYOUT-13** `P0` `Phase 0–1` — Report orphaned layout references — ✅ tests/e2e/editor.spec.ts › DIAG-10 / LAYOUT-13 orphaned overrides shown in the editor (3765da0)
   - [x] Phase 0: orphan diagnostics (LAYOUT_ORPHAN_*) — src/domain/validate.test.ts (0f11a18)
   - [x] Phase 1: shown in the editor
-- [x] **LAYOUT-14** `P1` `Phase 1` — Nested boundaries and grouping — ✅ src/domain/layout/elk.test.ts › LAYOUT-14, tests/e2e/editor.spec.ts › LAYOUT-14, tests/e2e/visual.spec.ts › VR-07; semantics per ADD-006 (Proposed) (b24fe50, 3765da0, 05ad960)
+- [x] **LAYOUT-14** `P1` `Phase 1` — Nested boundaries and grouping (clarified by ADD-006) — ✅ src/domain/layout/elk.test.ts › LAYOUT-14, tests/e2e/editor.spec.ts › LAYOUT-14, tests/e2e/visual.spec.ts › VR-07 (b24fe50, 3765da0, 05ad960)
 - [x] **LAYOUT-15** `P0` `Phase 1` — Export PNG and SVG diagrams — ✅ tests/e2e/editor.spec.ts › E2E-05, src/components/diagram/export.test.tsx (3765da0, 02f134d)
 - [x] **LAYOUT-25** `P1` `Phase 1` — Optional animated edge direction flow; off by default, per-diagram and per-edge, respects reduced motion, static in exports (added by ADD-005) — ✅ src/domain/layout/layout.test.ts › LAYOUT-25, tests/e2e/editor.spec.ts › LAYOUT-25 reduced motion and E2E-05 static export, tests/e2e/performance.spec.ts › BENCH-04 (ada00ff, 3765da0, 2df0b27)
 

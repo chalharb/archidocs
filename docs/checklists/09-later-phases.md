@@ -6,7 +6,7 @@ Source: PRD §11, §13. Conventions: [checklists/README.md](README.md). These ph
 
 Detailed items are in checklists 02, 03, 06 (E2E/VR), and 07.
 
-- [ ] **PH1-EXIT** — A user can visually arrange YAML-defined architecture diagrams without modifying the canonical architecture model
+- [x] **PH1-EXIT** — A user can visually arrange YAML-defined architecture diagrams without modifying the canonical architecture model — ✅ docs/phase-1-acceptance.md
 
 ## Phase 2 — Architecture Documentation and ADRs
 

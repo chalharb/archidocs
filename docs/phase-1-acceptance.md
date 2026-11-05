@@ -3,10 +3,11 @@
 **Exit criterion (PRD §11):** a user can visually arrange YAML-defined
 architecture diagrams without modifying the canonical architecture model.
 
-Effective requirements: baseline PRD + ADD-001..005 + ADD-007. Nested-boundary semantics
-follow [ADD-006](addenda/ADD-006-nested-boundary-semantics.md), which is
-**Proposed** and awaiting a decision. Per-item evidence is in the
-[checklists](checklists/README.md).
+Effective requirements: baseline PRD + ADD-001..007. Nested-boundary semantics
+follow [ADD-006](addenda/ADD-006-nested-boundary-semantics.md). Per-item
+evidence is in the [checklists](checklists/README.md).
+
+**Status:** met (PH1-EXIT), 2026-11-05.
 
 ## What a user can do
 

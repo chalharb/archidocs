@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Clarification |
 | **Proposed** | 2026-11-05 by Claude, during Phase 1 |
-| **Decided** | |
+| **Decided** | 2026-11-05 by Logan Harber |
 | **Baseline** | PRD v1.6 (with ADD-001) |
 | **Affected IDs** | LAYOUT-14, LAYOUT-08, LAYOUT-24 |
 | **PRD sections** | §2.3, §4 |
@@ -38,9 +38,13 @@ Absolute coordinates keep collision detection (LAYOUT-24) and diffs simple, and 
 - No schema change and no migration (SCHEMA-10).
 - If parent-relative coordinates are preferred later, that's a layout-file format change and needs a migration (SCHEMA-10).
 
+## Decision
+
+Accepted as written: membership follows the nearest shown ancestor, and layout coordinates are absolute.
+
 ## Checklist updates
 
-To do on acceptance:
+Done on acceptance (2026-11-05):
 
-- [ ] Note "(clarified by ADD-006)" on LAYOUT-14 in `docs/checklists/03-layout.md`
-- [ ] Run `scripts/prd-progress.sh --write`
+- [x] Noted "(clarified by ADD-006)" on LAYOUT-14 in `docs/checklists/03-layout.md`
+- [x] Ran `scripts/prd-progress.sh --write`
