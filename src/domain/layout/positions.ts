@@ -151,17 +151,20 @@ function planLayout({ diagram, layout, settings }: LayoutInput): LayoutPlan {
   };
 }
 
-/** True when `outer` is an ancestor boundary of `inner` in the diagram. */
-function containsNode(diagram: ResolvedDiagram, outer: string, inner: string): boolean {
+/** Each node's chain of enclosing boundaries (LAYOUT-14), nearest first. Cycle-safe. */
+function boundaryAncestors(diagram: ResolvedDiagram): Map<string, Set<string>> {
   const byId = new Map(diagram.nodes.map((n) => [n.id, n]));
-  let current = byId.get(inner)?.boundary;
-  const seen = new Set<string>();
-  while (current !== undefined && !seen.has(current)) {
-    if (current === outer) return true;
-    seen.add(current);
-    current = byId.get(current)?.boundary;
+  const out = new Map<string, Set<string>>();
+  for (const node of diagram.nodes) {
+    const chain = new Set<string>();
+    let current = node.boundary;
+    while (current !== undefined && current !== node.id && !chain.has(current)) {
+      chain.add(current);
+      current = byId.get(current)?.boundary;
+    }
+    out.set(node.id, chain);
   }
-  return false;
+  return out;
 }
 
 function finishLayout(
@@ -172,6 +175,9 @@ function finishLayout(
   const { positions, manual, pending } = plan;
   const collisions: Array<[string, string]> = [];
   const diagnostics: Diagnostic[] = [];
+  const ancestors = manual.length > 0 ? boundaryAncestors(diagram) : new Map<string, Set<string>>();
+  const related = (a: string, b: string) =>
+    ancestors.get(a)?.has(b) === true || ancestors.get(b)?.has(a) === true;
   for (const node of pending) {
     const p = generated[node.id] ?? { x: 0, y: 0 };
     const box = {
@@ -183,8 +189,7 @@ function finishLayout(
     positions[node.id] = { ...box, source: "generated" };
     for (const [manualId, manualBox] of manual) {
       // A boundary is meant to overlap the nodes it contains.
-      if (containsNode(diagram, manualId, node.id) || containsNode(diagram, node.id, manualId))
-        continue;
+      if (related(manualId, node.id)) continue;
       if (overlaps(box, manualBox)) {
         collisions.push([node.id, manualId]);
         diagnostics.push(

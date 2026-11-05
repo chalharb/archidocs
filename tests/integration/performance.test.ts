@@ -5,6 +5,7 @@
 import { performance } from "node:perf_hooks";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolveDiagram } from "@/domain/diagram-resolve";
+import { layoutAll } from "@/domain/layout/elk";
 import { resolveLayout } from "@/domain/layout/positions";
 import { APP_DEFAULT_LAYOUT_SETTINGS } from "@/domain/layout/settings";
 import { WorkspaceRepository } from "@/server/workspace/repository";
@@ -85,5 +86,17 @@ describe("performance budgets", () => {
       );
     });
     expect(ms).toBeLessThan(500);
+  });
+
+  it("BENCH-03: auto-lays out a medium diagram with ELK in under 2 s", async () => {
+    const diagram = resolveDiagram(repo.snapshot().model, "bench").diagram!;
+    const ms = await median(5, () =>
+      layoutAll({
+        nodes: diagram.nodes,
+        edges: diagram.edges,
+        settings: APP_DEFAULT_LAYOUT_SETTINGS,
+      }),
+    );
+    expect(ms).toBeLessThan(2000);
   });
 });

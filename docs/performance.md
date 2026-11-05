@@ -11,6 +11,7 @@ positions.
 ```bash
 pnpm bench                                   # Vitest benchmarks, JSON in bench-results/latest.json
 pnpm vitest run tests/integration/performance.test.ts   # budget assertions (runs in CI)
+pnpm build && pnpm exec playwright test tests/e2e/performance.spec.ts   # browser budgets (Phase 1)
 ```
 
 The budget tests assert the median of several runs against the PRD targets,
@@ -18,12 +19,12 @@ so a regression that breaks a target fails CI (PERF-04).
 
 ## Reference machine (PERF-05)
 
-|            |                                                                                                                      |
-| ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| Hardware   | Apple M5, 10 cores, 16 GB RAM, internal SSD                                                                          |
-| OS         | macOS 26 (Darwin 25.6.0)                                                                                             |
-| Runtime    | Node.js 24.14.0, Vitest 4.1.12                                                                                       |
-| Conditions | Plugged in, no other heavy processes, warm OS file cache, temp directory on the internal SSD, file watching disabled |
+|            |                                                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| Hardware   | Apple M5, 10 cores, 16 GB RAM, internal SSD                                                                           |
+| OS         | macOS 26 (Darwin 25.6.0)                                                                                              |
+| Runtime    | Node.js 24.14.0, Vitest 4.1.12; Playwright 1.64 headless Chromium, 1280x800 viewport, production build (`next start`) |
+| Conditions | Plugged in, no other heavy processes, warm OS file cache, temp directory on the internal SSD, file watching disabled  |
 
 ## Baseline — 2026-11-05
 
@@ -37,7 +38,28 @@ so a regression that breaks a target fails CI (PERF-04).
 | Full diagram view (resolve + settings + layout + draft check)                                         |          — |  0.11 ms |  0.21 ms |
 | Save layout YAML (validate, conflict check, atomic write, reload) — BENCH-05                          |   < 500 ms |  24.3 ms |  26.5 ms |
 
-Phase 1 adds auto-layout (BENCH-03), dragging (BENCH-04) and export (BENCH-06).
+## Phase 1 — 2026-11-05
+
+Same fixture. The diagram has 10 nested boundaries (entities `e0000`..`e0009`
+are parents of the others). Browser figures come from
+`tests/e2e/performance.spec.ts` and are single runs.
+
+| Operation                                                                         | PRD target |                       Measured |
+| --------------------------------------------------------------------------------- | ---------: | -----------------------------: |
+| ELK auto-layout, 100 nodes / 150 edges (Re-layout All) — BENCH-03                 |      < 2 s |        mean 149 ms, p99 169 ms |
+| Resolve layout, 50 manual + 50 generated positions — PERF-03                      |          — |                   mean 0.14 ms |
+| Full diagram view including ELK placement of unplaced nodes (cached) — PERF-04    |          — |                   mean 0.95 ms |
+| Node dragging in the browser — BENCH-04                                           |    ~60 FPS | 59.5 FPS, median frame 16.7 ms |
+| Node dragging with animated edges (ADD-005) — BENCH-04                            |    ~60 FPS | 60.0 FPS, median frame 16.7 ms |
+| Export PNG (2x) / SVG of the whole diagram — BENCH-06                             |      < 5 s |                975 ms / 736 ms |
+| Initial render, navigation to 100 nodes and 150 edges visible — PERF-04 rendering |          — |                         917 ms |
+
+The browser budgets fail if dragging drops below a 20 ms median frame, export
+takes 5 s or more, or initial render takes 3 s or more.
+
+Generated positions for nodes without saved positions are computed with ELK on
+the server and memoized per input (the result is fully determined by it, LAYOUT-21),
+so repeated diagram views don't re-run ELK.
 
 Warm reload currently re-reads and re-parses every file; it is listed so that
 a future incremental reload can be compared against this baseline.

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, bench, describe } from "vitest";
 import { buildGraphIndex } from "@/domain/graph-index";
 import { resolveDiagram } from "@/domain/diagram-resolve";
+import { layoutAll } from "@/domain/layout/elk";
 import { resolveLayout } from "@/domain/layout/positions";
 import { APP_DEFAULT_LAYOUT_SETTINGS } from "@/domain/layout/settings";
 import { WorkspaceRepository } from "@/server/workspace/repository";
@@ -62,5 +63,16 @@ describe("persistence (BENCH-05)", () => {
       { nodes: { e0000: { x: i++, y: 0 } } },
       view.persistence.revision,
     );
+  });
+});
+
+describe("automatic layout (BENCH-03)", () => {
+  bench("ELK layout: 100 nodes / 150 edges, 10 boundaries", async () => {
+    const diagram = resolveDiagram(repo.snapshot().model, "bench").diagram!;
+    await layoutAll({
+      nodes: diagram.nodes,
+      edges: diagram.edges,
+      settings: APP_DEFAULT_LAYOUT_SETTINGS,
+    });
   });
 });
