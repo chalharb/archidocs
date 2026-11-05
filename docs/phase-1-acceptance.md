@@ -3,14 +3,18 @@
 **Exit criterion (PRD §11):** a user can visually arrange YAML-defined
 architecture diagrams without modifying the canonical architecture model.
 
-Effective requirements: baseline PRD + ADD-001..005. Nested-boundary semantics
+Effective requirements: baseline PRD + ADD-001..005 + ADD-007. Nested-boundary semantics
 follow [ADD-006](addenda/ADD-006-nested-boundary-semantics.md), which is
 **Proposed** and awaiting a decision. Per-item evidence is in the
 [checklists](checklists/README.md).
 
 ## What a user can do
 
-Open any diagram from the home page (`/workspaces/<key>/diagrams/<id>`) and:
+Open any diagram from the home page. It opens in a read-only view
+(`/workspaces/<key>/diagrams/<id>`): a full-width canvas with inspection,
+export and a diagnostics indicator. **Edit layout** opens the layout editor
+(`…/<id>/edit`), and **Done** returns to the view, asking first if there are
+unsaved changes (DIAG-12, ADD-007). Between them, a user can:
 
 - See C4 context, container and component, network, deployment and custom diagrams with LikeC4-style nodes: shapes and colours come from `style` on types and entities (ADD-004). Nested boundaries are drawn from `parent` (LAYOUT-14).
 - Inspect a node or edge and jump to other diagrams that show the same entity (DIAG-07).

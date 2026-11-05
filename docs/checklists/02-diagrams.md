@@ -21,7 +21,7 @@ DIAG-08 and DIAG-09 are resolved in Phase 0 (epic P0-07) and rendered in Phase 1
   - [x] Phase 0: stale/invalid status and diagnostics in API and status page — src/components/workspace-summary.test.tsx (376c8e5)
   - [x] Phase 1: diagnostics in the diagram viewer
 - [x] **DIAG-11** `P0` `Phase 1` — Element and relationship styles (shape, colour, line) on types with per-element overrides, resolved through type inheritance (added by ADD-004) — ✅ src/domain/styles.test.ts, tests/e2e/editor.spec.ts › E2E-01 shapes, tests/e2e/visual.spec.ts › VR-06 (ada00ff, 3765da0, 05ad960)
-- [ ] **DIAG-12** `P1` `Phase 1` — Separate read-only view route and layout edit route per diagram (added by ADD-007)
+- [x] **DIAG-12** `P1` `Phase 1` — Separate read-only view route and layout edit route per diagram (added by ADD-007) — ✅ tests/e2e/editor.spec.ts › DIAG-12, E2E-01, SCOPE-01; src/components/diagram/diagram-editor.test.tsx › read-only view, leaving the editor (b83750d, 291f455)
 
 ## MVP scope boundary
 

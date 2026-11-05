@@ -69,22 +69,22 @@ Source: PRD §7. Conventions: [checklists/README.md](README.md).
 
 ## Phase 1 E2E workflows (Playwright)
 
-- [x] **E2E-01** — Load a valid YAML workspace and render a diagram (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-01 (3765da0)
-- [x] **E2E-02** — Drag and align nodes, save, reload, verify positions (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-02 (3765da0)
-- [x] **E2E-03** — Change layout direction, spacing, and edge styles (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-03 (3765da0)
-- [x] **E2E-04** — Modify YAML externally and verify reload behavior (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-04 (3765da0)
-- [x] **E2E-05** — Export PNG and SVG and validate output (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-05 (3765da0)
+- [x] **E2E-01** — Load a valid YAML workspace and render a diagram (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-01 (3765da0; view/edit routes 291f455)
+- [x] **E2E-02** — Drag and align nodes, save, reload, verify positions (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-02 (3765da0; view/edit routes 291f455)
+- [x] **E2E-03** — Change layout direction, spacing, and edge styles (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-03 (3765da0; view/edit routes 291f455)
+- [x] **E2E-04** — Modify YAML externally and verify reload behavior (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-04 (3765da0; view/edit routes 291f455)
+- [x] **E2E-05** — Export PNG and SVG and validate output (amended by ADD-007) — ✅ tests/e2e/editor.spec.ts › E2E-05 (3765da0; view/edit routes 291f455)
 
 ## Visual regression snapshots
 
 Pinned browsers, deterministic fixtures, consistent fonts, fixed viewports.
 
-- [x] **VR-01** — C4 System Context (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-01 (05ad960)
-- [x] **VR-02** — C4 Container (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-02 (05ad960)
-- [x] **VR-03** — C4 Component (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-03 (05ad960)
-- [x] **VR-04** — Network topology (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-04 (05ad960)
-- [x] **VR-05** — Deployment architecture (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-05 (05ad960)
-- [x] **VR-06** — Alternative edge styles (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-06 (05ad960)
-- [x] **VR-07** — Nested boundaries (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-07 (05ad960)
-- [x] **VR-08** — Large diagrams (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-08 (05ad960)
-- [x] **VR-09** — Error and diagnostic states (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-09 (05ad960)
+- [x] **VR-01** — C4 System Context (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-01 (view route c9848eb)
+- [x] **VR-02** — C4 Container (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-02 (view route c9848eb)
+- [x] **VR-03** — C4 Component (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-03 (view route c9848eb)
+- [x] **VR-04** — Network topology (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-04 (view route c9848eb)
+- [x] **VR-05** — Deployment architecture (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-05 (view route c9848eb)
+- [x] **VR-06** — Alternative edge styles (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-06 (view route c9848eb)
+- [x] **VR-07** — Nested boundaries (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-07 (view route c9848eb)
+- [x] **VR-08** — Large diagrams (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-08 (view route c9848eb)
+- [x] **VR-09** — Error and diagnostic states (styled per ADD-004) (amended by ADD-007) — ✅ tests/e2e/visual.spec.ts › VR-09 (view route c9848eb)
