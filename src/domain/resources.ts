@@ -49,6 +49,8 @@ export interface LayoutSettings {
   nodeHeight: number;
   /** Animate edges from source to target (LAYOUT-25, ADD-005). */
   animateEdges: boolean;
+  /** Show the minimap on the canvas (LAYOUT-26, ADD-008). */
+  showMinimap: boolean;
 }
 
 export type LayoutSettingsOverrides = Partial<LayoutSettings>;

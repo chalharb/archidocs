@@ -334,6 +334,22 @@ edges:
   });
 });
 
+describe("LAYOUT-26 optional minimap (ADD-008)", () => {
+  it("is shown by default and joins the precedence chain like any setting", () => {
+    expect(S.showMinimap).toBe(true);
+    const r = resolveLayoutSettings({
+      workspace: { showMinimap: false },
+      diagram: { showMinimap: true },
+      layout: { showMinimap: false },
+    });
+    expect(r.settings.showMinimap).toBe(false);
+    expect(r.sources.showMinimap).toBe("layout");
+    expect(resolveLayoutSettings({ workspace: { showMinimap: false } }).sources.showMinimap).toBe(
+      "workspace",
+    );
+  });
+});
+
 describe("LAYOUT-25 animated edges (ADD-005)", () => {
   it("is off by default and joins the precedence chain like any setting", () => {
     expect(S.animateEdges).toBe(false);

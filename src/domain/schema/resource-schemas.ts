@@ -94,6 +94,7 @@ export const layoutSettingsSchema = z.strictObject({
   nodeWidth: z.number().min(10).max(2000),
   nodeHeight: z.number().min(10).max(2000),
   animateEdges: z.boolean(),
+  showMinimap: z.boolean(),
 });
 
 export const layoutSettingsOverridesSchema = layoutSettingsSchema.partial();

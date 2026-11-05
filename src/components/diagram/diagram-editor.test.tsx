@@ -122,6 +122,22 @@ describe("diagram editor", () => {
     expect(screen.getByLabelText("Direction")).toHaveValue("DOWN");
   });
 
+  it("shows or hides the minimap from the setting (LAYOUT-26)", () => {
+    const overview = () => screen.queryByRole("img", { name: "Diagram overview" });
+    setup();
+    expect(overview()).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Show minimap"));
+    expect(overview()).toBeNull();
+    expect(status()).toHaveTextContent("Unsaved changes");
+    fireEvent.click(button("Undo"));
+    expect(overview()).toBeInTheDocument();
+  });
+
+  it("follows a saved showMinimap setting in the read-only view", () => {
+    setup(makeView({ saved: { settings: { showMinimap: false } } }), undefined, "view");
+    expect(screen.queryByRole("img", { name: "Diagram overview" })).toBeNull();
+  });
+
   it("re-lays out every node with ELK (LAYOUT-12)", async () => {
     setup();
     fireEvent.click(screen.getAllByRole("button", { name: "Re-layout all" })[0]!);

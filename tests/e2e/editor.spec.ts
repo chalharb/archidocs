@@ -335,6 +335,26 @@ test.describe("editing the scratch workspace", () => {
     expect(view.layout.edgeAnimated["shop-api"]).toBe(true);
   });
 
+  test("LAYOUT-26: hide the minimap, save, and the view follows", async ({ page }) => {
+    const overview = page.getByRole("img", { name: "Diagram overview" });
+    await page.goto(diagramUrl("scratch", "containers", "edit"));
+    await waitForDiagram(page);
+    await expect(overview).toBeVisible();
+    await page
+      .getByRole("complementary", { name: "Diagram details" })
+      .getByLabel("Show minimap")
+      .uncheck();
+    await expect(overview).toHaveCount(0);
+    await save(page);
+    const file = await readFile(path.join(SCRATCH_DIR, "diagrams/containers.layout.yaml"), "utf8");
+    expect(file).toContain("showMinimap: false");
+
+    await page.goto(diagramUrl("scratch", "containers"));
+    await waitForDiagram(page);
+    await expect(overview).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Fit to view" })).toBeVisible();
+  });
+
   test("DIAG-12: view, edit, and Done with unsaved changes", async ({ page, request }) => {
     await page.goto(diagramUrl("scratch", "containers"));
     await waitForDiagram(page);

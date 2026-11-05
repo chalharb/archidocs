@@ -29,6 +29,8 @@ describe("layout settings panel", () => {
     expect(onChange).toHaveBeenLastCalledWith("animateEdges", true);
     fireEvent.click(screen.getByLabelText("Snap to grid"));
     expect(onChange).toHaveBeenLastCalledWith("snapToGrid", false);
+    fireEvent.click(screen.getByLabelText("Show minimap"));
+    expect(onChange).toHaveBeenLastCalledWith("showMinimap", false);
   });
 
   it("commits valid numbers on blur or Enter and reverts invalid ones", () => {

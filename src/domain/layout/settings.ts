@@ -15,6 +15,7 @@ export const APP_DEFAULT_LAYOUT_SETTINGS: Readonly<LayoutSettings> = Object.free
   nodeWidth: 200,
   nodeHeight: 100,
   animateEdges: false,
+  showMinimap: true,
 });
 
 /** Canonical key order, used for deterministic output. */

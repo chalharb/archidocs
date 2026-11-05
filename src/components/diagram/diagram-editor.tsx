@@ -608,13 +608,15 @@ function EditorInner({
               aria-label={`${view.diagram.name} diagram`}
             >
               <Background variant={BackgroundVariant.Dots} gap={settings.gridSize} size={1} />
-              <MiniMap
-                pannable
-                zoomable
-                ariaLabel="Diagram overview"
-                nodeColor={(n) => `var(--arch-${(n as ArchFlowNode).data.node.style.color})`}
-                nodeStrokeWidth={0}
-              />
+              {settings.showMinimap && (
+                <MiniMap
+                  pannable
+                  zoomable
+                  ariaLabel="Diagram overview"
+                  nodeColor={(n) => `var(--arch-${(n as ArchFlowNode).data.node.style.color})`}
+                  nodeStrokeWidth={0}
+                />
+              )}
               <Controls showInteractive={false} />
             </ReactFlow>
           </div>

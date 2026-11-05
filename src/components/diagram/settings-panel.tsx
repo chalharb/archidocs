@@ -1,6 +1,9 @@
 "use client";
 
-/** Layout settings for this diagram, saved to its layout file (LAYOUT-03/05/06/07, LAYOUT-25). */
+/**
+ * Layout settings for this diagram, saved to its layout file
+ * (LAYOUT-03/05/06/07, LAYOUT-25, LAYOUT-26).
+ */
 import { useId } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,7 +91,13 @@ export function SettingsPanel({
   onChange,
   onRelayout,
 }: SettingsPanelProps) {
-  const ids = { direction: useId(), edge: useId(), snap: useId(), animate: useId() };
+  const ids = {
+    direction: useId(),
+    edge: useId(),
+    snap: useId(),
+    animate: useId(),
+    minimap: useId(),
+  };
   const autoLayoutChanged =
     overrides.direction !== undefined ||
     overrides.nodeSpacing !== undefined ||
@@ -193,6 +202,16 @@ export function SettingsPanel({
         disabled={readOnly}
         onCommit={(v) => onChange("gridSize", v)}
       />
+      <div className={field}>
+        <label htmlFor={ids.minimap}>Show minimap</label>
+        <input
+          id={ids.minimap}
+          type="checkbox"
+          checked={effective.showMinimap}
+          disabled={readOnly}
+          onChange={(e) => onChange("showMinimap", e.currentTarget.checked)}
+        />
+      </div>
     </section>
   );
 }
