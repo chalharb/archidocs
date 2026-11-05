@@ -7,8 +7,10 @@ import {
   MAX_TAGS,
   NAME_MAX_LENGTH,
   RESOURCE_SCHEMAS,
+  decisionSchema,
   diagramLayoutSchema,
   diagramSchema,
+  documentSchema,
   entitySchema,
   idSchema,
   layoutSettingsSchema,
@@ -69,6 +71,25 @@ const VALID: Record<(typeof RESOURCE_KINDS)[number], unknown> = {
     settings: { edgeType: "step" },
     nodes: { e: { x: 0, y: -10.5, width: 100, height: 50 } },
     edges: { r: { type: "bezier" } },
+  },
+  Document: {
+    ...H,
+    kind: "Document",
+    id: "overview",
+    title: "Overview",
+    entities: ["e"],
+    diagrams: ["d"],
+    tags: ["intro"],
+  },
+  Decision: {
+    ...H,
+    kind: "Decision",
+    id: "adr-0002",
+    title: "Use PostgreSQL",
+    status: "accepted",
+    date: "2026-03-14",
+    deciders: ["Payments team"],
+    supersedes: ["adr-0001"],
   },
 };
 
@@ -210,5 +231,39 @@ describe("TEST-01: schema boundary values", () => {
       workspaceSchema.safeParse({ ...(VALID.Workspace as object), defaults: { theme: "x" } })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("ADR-01 / DOC-02: document and decision front matter (ADD-009)", () => {
+  const doc = VALID.Document as Record<string, unknown>;
+  const adr = VALID.Decision as Record<string, unknown>;
+
+  it("requires a title on documents and validates reference lists", () => {
+    const { title: _t, ...untitled } = doc;
+    expect(documentSchema.safeParse(untitled).success).toBe(false);
+    expect(documentSchema.safeParse({ ...doc, entities: ["not valid!"] }).success).toBe(false);
+    expect(documentSchema.safeParse({ ...doc, title: " " }).success).toBe(false);
+  });
+
+  it("accepts every decision status and rejects others", () => {
+    for (const status of ["proposed", "accepted", "rejected", "deprecated", "superseded"])
+      expect(decisionSchema.safeParse({ ...adr, status }).success, status).toBe(true);
+    expect(decisionSchema.safeParse({ ...adr, status: "Accepted" }).success).toBe(false);
+  });
+
+  it("requires real YYYY-MM-DD dates", () => {
+    for (const date of ["2024-02-29", "1999-12-31"])
+      expect(decisionSchema.safeParse({ ...adr, date }).success, date).toBe(true);
+    for (const date of ["2023-02-29", "2026-13-01", "2026-1-5", "14/03/2026", "2026-03-14T00:00"])
+      expect(decisionSchema.safeParse({ ...adr, date }).success, date).toBe(false);
+    const { date: _d, ...undated } = adr;
+    expect(decisionSchema.safeParse(undated).success).toBe(false);
+  });
+
+  it("limits deciders like tags", () => {
+    expect(
+      decisionSchema.safeParse({ ...adr, deciders: Array(MAX_TAGS + 1).fill("x") }).success,
+    ).toBe(false);
+    expect(decisionSchema.safeParse({ ...adr, deciders: [""] }).success).toBe(false);
   });
 });

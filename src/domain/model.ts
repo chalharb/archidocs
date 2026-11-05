@@ -8,10 +8,12 @@
  */
 import type {
   CustomProperties,
+  DecisionStatus,
   DiagramType,
   EdgePresentation,
   ElementStyle,
   LayoutSettingsOverrides,
+  MarkdownBody,
   NodePlacement,
   RelationshipStyle,
   SourceRef,
@@ -117,6 +119,35 @@ export interface CanonicalCollection {
   members: string[];
 }
 
+/** A Markdown document (DOC-01). */
+export interface CanonicalDocument {
+  id: string;
+  title: string;
+  description?: string;
+  owner?: string;
+  tags: string[];
+  entities: string[];
+  diagrams: string[];
+  properties: CustomProperties;
+  body: MarkdownBody;
+}
+
+/** An architecture decision record (ADR-01). */
+export interface CanonicalDecision {
+  id: string;
+  title: string;
+  status: DecisionStatus;
+  date: string;
+  description?: string;
+  deciders: string[];
+  tags: string[];
+  entities: string[];
+  diagrams: string[];
+  supersedes: string[];
+  properties: CustomProperties;
+  body: MarkdownBody;
+}
+
 export type ModelCategory =
   | "workspace"
   | "project"
@@ -126,7 +157,9 @@ export type ModelCategory =
   | "relationship"
   | "diagram"
   | "layout"
-  | "collection";
+  | "collection"
+  | "document"
+  | "decision";
 
 export interface ArchitectureModel {
   workspace: CanonicalWorkspace | null;
@@ -139,6 +172,8 @@ export interface ArchitectureModel {
   /** Keyed by diagram ID. */
   layouts: Record<string, CanonicalDiagramLayout>;
   collections: Record<string, CanonicalCollection>;
+  documents: Record<string, CanonicalDocument>;
+  decisions: Record<string, CanonicalDecision>;
   /** Source of each item, keyed by `${category}:${id}`. */
   sources: Record<string, SourceRef>;
 }
@@ -158,6 +193,8 @@ export function emptyModel(): ArchitectureModel {
     diagrams: {},
     layouts: {},
     collections: {},
+    documents: {},
+    decisions: {},
     sources: {},
   };
 }

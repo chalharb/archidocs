@@ -6,6 +6,7 @@
  * - Size, nesting-depth and alias-expansion limits (SEC-06).
  * - Multi-document files are supported; each document is one resource.
  * - Never throws for bad input: every problem becomes a diagnostic (FAIL-01).
+ * - Markdown files carry one resource in YAML front matter (DOC-01, DOC-02).
  */
 import {
   isAlias,
@@ -24,7 +25,9 @@ import type { z } from "zod";
 import { diagnostic, type Diagnostic } from "./diagnostics";
 import {
   API_VERSION,
+  MARKDOWN_KINDS,
   RESOURCE_KINDS,
+  isMarkdownKind,
   type ParsedResource,
   type Resource,
   type ResourceKind,
@@ -507,8 +510,122 @@ export function parseResources(
     const source = { file, document: doc.index };
     const result = validateResource(doc.value, source, doc.locate, migrations);
     diagnostics.push(...result.diagnostics);
-    if (result.resource)
+    if (result.resource && isMarkdownKind(result.resource.kind)) {
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "DOC_MARKDOWN_ONLY_KIND",
+          `${result.resource.kind} resources must be Markdown files with front matter`,
+          {
+            file,
+            document: doc.index,
+            path: ["kind"],
+            ...doc.locate(["kind"]),
+            hint: "Move this resource into the front matter of a .md file, followed by its Markdown body.",
+          },
+        ),
+      );
+    } else if (result.resource) {
       resources.push({ resource: result.resource, source: { ...source, path: [] } });
+    }
   }
   return { resources, diagnostics };
+}
+
+// ---------------------------------------------------------------------------
+// Markdown resources (DOC-01, DOC-02, ADD-009)
+// ---------------------------------------------------------------------------
+
+const FRONT_MATTER_OPEN = "---";
+const FRONT_MATTER_CLOSE = new Set(["---", "..."]);
+/** Front matter belongs to Architecture Docs when it declares an `archdocs/*` apiVersion. */
+const ARCHDOCS_API_VERSION = /^apiVersion:\s*["']?archdocs\//m;
+
+/**
+ * Parse a Markdown file whose front matter is an `archdocs/v1` Document or Decision.
+ * Markdown without front matter, or with front matter for another tool, yields
+ * nothing and no diagnostics: it isn't a resource. Never throws.
+ */
+export function parseMarkdownResource(
+  content: string,
+  file: string,
+  limits: ParseLimits = DEFAULT_PARSE_LIMITS,
+  migrations: readonly Migration[] = MIGRATIONS,
+): { resources: ParsedResource[]; diagnostics: Diagnostic[] } {
+  const none = { resources: [], diagnostics: [] };
+  const size = byteLength(content);
+  if (size > limits.maxBytes) {
+    return {
+      resources: [],
+      diagnostics: [
+        diagnostic(
+          "error",
+          "YAML_TOO_LARGE",
+          `File is ${size} bytes; the limit is ${limits.maxBytes} bytes`,
+          { file, hint: "Split large documents into several smaller files." },
+        ),
+      ],
+    };
+  }
+  const lines = content.replace(/^\uFEFF/, "").split(/\r?\n/);
+  if (lines[0]?.trimEnd() !== FRONT_MATTER_OPEN) return none;
+  const close = lines.findIndex((l, i) => i > 0 && FRONT_MATTER_CLOSE.has(l.trimEnd()));
+
+  if (close === -1) {
+    if (!ARCHDOCS_API_VERSION.test(lines.slice(1).join("\n"))) return none;
+    return {
+      resources: [],
+      diagnostics: [
+        diagnostic("error", "DOC_FRONT_MATTER_UNCLOSED", "Front matter is not closed", {
+          file,
+          line: 1,
+          hint: "End the front matter with a line containing only '---'.",
+        }),
+      ],
+    };
+  }
+
+  const yaml = lines.slice(1, close).join("\n");
+  if (!ARCHDOCS_API_VERSION.test(yaml)) return none;
+
+  // Front matter starts on line 2 of the file.
+  const shift = <T extends { line?: number }>(d: T): T =>
+    d.line === undefined ? d : { ...d, line: d.line + 1 };
+  const parsed = parseYamlDocuments(yaml, file, limits);
+  const diagnostics = parsed.diagnostics.map(shift);
+  const doc = parsed.documents[0];
+  if (!doc) return { resources: [], diagnostics };
+
+  const source = { file, document: 0 };
+  const locate = (path: Path) => shift(doc.locate(path));
+  const result = validateResource(doc.value, source, locate, migrations);
+  diagnostics.push(...result.diagnostics);
+  if (!result.resource) return { resources: [], diagnostics };
+  if (!isMarkdownKind(result.resource.kind)) {
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "DOC_KIND_NOT_MARKDOWN",
+        `${result.resource.kind} resources can't be written as Markdown front matter`,
+        {
+          file,
+          document: 0,
+          path: ["kind"],
+          ...locate(["kind"]),
+          hint: `Markdown front matter may declare ${MARKDOWN_KINDS.join(" or ")}. Put other resources in .yaml files.`,
+        },
+      ),
+    );
+    return { resources: [], diagnostics };
+  }
+  return {
+    resources: [
+      {
+        resource: result.resource,
+        source: { ...source, path: [] },
+        body: { text: lines.slice(close + 1).join("\n"), line: close + 2 },
+      },
+    ],
+    diagnostics,
+  };
 }

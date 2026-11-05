@@ -1,13 +1,19 @@
 /** Load a workspace from disk into a validated model (P0-04 + P0-03 + P0-05). */
 import { diagnostic, sortDiagnostics, type Diagnostic } from "@/domain/diagnostics";
 import { normalize } from "@/domain/normalize";
-import { DEFAULT_PARSE_LIMITS, parseResources, type ParseLimits } from "@/domain/parse";
+import {
+  DEFAULT_PARSE_LIMITS,
+  parseMarkdownResource,
+  parseResources,
+  type ParseLimits,
+} from "@/domain/parse";
 import type { ParsedResource } from "@/domain/resources";
 import { validateModel } from "@/domain/validate";
 import type { ArchitectureModel } from "@/domain/model";
 import {
   DEFAULT_DISCOVERY_OPTIONS,
-  discoverYamlFiles,
+  discoverWorkspaceFiles,
+  isMarkdownFile,
   type DiscoveryOptions,
 } from "../fs/discovery";
 import { FsError } from "../fs/errors";
@@ -22,7 +28,7 @@ export interface FileInfo {
 export interface WorkspaceLoad {
   model: ArchitectureModel;
   diagnostics: Diagnostic[];
-  /** Every YAML file that was read successfully, by workspace-relative path. */
+  /** Every YAML and Markdown file that was read successfully, by workspace-relative path. */
   files: Record<string, FileInfo>;
   loadedAt: string;
 }
@@ -42,7 +48,7 @@ export async function loadWorkspace(
   options: LoadOptions = DEFAULT_LOAD_OPTIONS,
   now: () => Date = () => new Date(),
 ): Promise<WorkspaceLoad> {
-  const { files: paths, diagnostics } = await discoverYamlFiles(root, options.discovery);
+  const { files: paths, diagnostics } = await discoverWorkspaceFiles(root, options.discovery);
   const files: Record<string, FileInfo> = {};
   const parsed: ParsedResource[] = [];
 
@@ -68,7 +74,9 @@ export async function loadWorkspace(
       continue;
     }
     files[file] = { revision: revisionOf(content), bytes: Buffer.byteLength(content) };
-    const result = parseResources(content, file, options.parseLimits);
+    const result = isMarkdownFile(file)
+      ? parseMarkdownResource(content, file, options.parseLimits)
+      : parseResources(content, file, options.parseLimits);
     parsed.push(...result.resources);
     diagnostics.push(...result.diagnostics);
   }

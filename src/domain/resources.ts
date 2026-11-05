@@ -3,7 +3,7 @@
  *
  * These interfaces describe resources exactly as authored. The Zod schemas in
  * `schema/` are checked against them at compile time, so the two cannot drift.
- * Field-level design is recorded in docs/addenda/ADD-001-archdocs-v1-schema.md.
+ * Field-level design is recorded in PRD §3 and ADD-009 (documents and decisions).
  */
 
 export const API_VERSION = "archdocs/v1" as const;
@@ -19,8 +19,18 @@ export const RESOURCE_KINDS = [
   "RelationshipType",
   "Diagram",
   "DiagramLayout",
+  "Document",
+  "Decision",
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
+
+/** Kinds authored as Markdown front matter rather than YAML files (DOC-01, ADD-009). */
+export const MARKDOWN_KINDS = ["Document", "Decision"] as const;
+export type MarkdownKind = (typeof MARKDOWN_KINDS)[number];
+
+export function isMarkdownKind(kind: ResourceKind): kind is MarkdownKind {
+  return (MARKDOWN_KINDS as readonly string[]).includes(kind);
+}
 
 /** JSON-compatible value used for custom metadata (MODEL-05). */
 export type JsonValue =
@@ -246,6 +256,48 @@ export interface DiagramLayoutResource extends ResourceHeader<"DiagramLayout"> {
   edges?: Record<string, EdgePresentation>;
 }
 
+// ---------------------------------------------------------------------------
+// Documents and decisions (DOC-01, ADR-01, ADD-009)
+// ---------------------------------------------------------------------------
+
+export const DECISION_STATUSES = [
+  "proposed",
+  "accepted",
+  "rejected",
+  "deprecated",
+  "superseded",
+] as const;
+export type DecisionStatus = (typeof DECISION_STATUSES)[number];
+
+export interface DocumentResource extends ResourceHeader<"Document"> {
+  id: string;
+  title: string;
+  description?: string;
+  owner?: string;
+  tags?: string[];
+  /** Canonical entity IDs this document describes (DOC-03). */
+  entities?: string[];
+  /** Diagram IDs this document describes (DOC-03). */
+  diagrams?: string[];
+  properties?: CustomProperties;
+}
+
+export interface DecisionResource extends ResourceHeader<"Decision"> {
+  id: string;
+  title: string;
+  status: DecisionStatus;
+  /** ISO date, `YYYY-MM-DD`. */
+  date: string;
+  description?: string;
+  deciders?: string[];
+  tags?: string[];
+  entities?: string[];
+  diagrams?: string[];
+  /** Decision IDs this decision supersedes (ADR-03). */
+  supersedes?: string[];
+  properties?: CustomProperties;
+}
+
 export type Resource =
   | WorkspaceResource
   | ProjectResource
@@ -255,7 +307,9 @@ export type Resource =
   | RelationshipSetResource
   | RelationshipTypeResource
   | DiagramResource
-  | DiagramLayoutResource;
+  | DiagramLayoutResource
+  | DocumentResource
+  | DecisionResource;
 
 export type ResourceOfKind<K extends ResourceKind> = Extract<Resource, { kind: K }>;
 
@@ -266,7 +320,16 @@ export interface SourceRef {
   path: Array<string | number>;
 }
 
+/** The Markdown after a resource's front matter. */
+export interface MarkdownBody {
+  text: string;
+  /** 1-based line in the file where `text` starts, for diagnostics. */
+  line: number;
+}
+
 export interface ParsedResource {
   resource: Resource;
   source: SourceRef;
+  /** Present for Markdown resources (Document, Decision). */
+  body?: MarkdownBody;
 }

@@ -287,3 +287,61 @@ describe("TEST-02 file-order independence and stable IDs (SCHEMA-09, MODEL-08)",
     );
   });
 });
+
+describe("documents and decisions (DOC-01, ADR-01, ADD-009)", () => {
+  const front = (body: string) => `---\n${res("Document", body)}---\n# Body\n`;
+  const adr = `---\n${res("Decision", 'id: adr-1\ntitle: T\nstatus: accepted\ndate: "2026-01-02"\nsupersedes: [adr-0]')}---\n## Context\n`;
+
+  it("normalizes front matter with defaults and keeps the body", () => {
+    const { model, diagnostics } = normalize(
+      parseFiles({ "docs/a.md": front("id: a\ntitle: A\nentities: [api]"), "adr/1.md": adr }),
+    );
+    expect(diagnostics).toEqual([]);
+    expect(model.documents.a).toEqual({
+      id: "a",
+      title: "A",
+      tags: [],
+      entities: ["api"],
+      diagrams: [],
+      properties: {},
+      body: { text: "# Body\n", line: 8 },
+    });
+    expect(model.decisions["adr-1"]).toMatchObject({
+      status: "accepted",
+      date: "2026-01-02",
+      deciders: [],
+      supersedes: ["adr-0"],
+      body: { text: "## Context\n", line: 10 },
+    });
+    expect(model.sources["document:a"]).toEqual({ file: "docs/a.md", document: 0, path: [] });
+  });
+
+  it("reports duplicate document IDs and keeps the first file", () => {
+    const { model, diagnostics } = normalize(
+      parseFiles({
+        "b.md": front("id: a\ntitle: From b"),
+        "a.md": front("id: a\ntitle: From a"),
+      }),
+    );
+    expect(model.documents.a!.title).toBe("From a");
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        code: "ID_DUPLICATE",
+        file: "b.md",
+        message: "Duplicate document ID 'a'",
+      }),
+    ]);
+  });
+
+  it("keeps documents and decisions in separate ID categories", () => {
+    const { model, diagnostics } = normalize(
+      parseFiles({
+        "d.md": front("id: adr-1\ntitle: Doc"),
+        "adr.md": adr,
+      }),
+    );
+    expect(diagnostics).toEqual([]);
+    expect(Object.keys(model.documents)).toEqual(["adr-1"]);
+    expect(Object.keys(model.decisions)).toEqual(["adr-1"]);
+  });
+});

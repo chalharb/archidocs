@@ -1,11 +1,11 @@
 /**
  * File watching (RELI-01): batch filesystem events under a workspace root and
  * report them after a quiet period. Hidden paths (e.g. .archidoc drafts, .git)
- * and node_modules are ignored; only YAML files and directory changes count.
+ * and node_modules are ignored; only YAML and Markdown files and directory changes count.
  */
 import { watch, type FSWatcher } from "chokidar";
 import path from "node:path";
-import { isIgnoredName, isYamlFile } from "../fs/discovery";
+import { isIgnoredName, isWorkspaceFile } from "../fs/discovery";
 import { toPosix } from "../fs/workspace-root";
 
 export interface WorkspaceWatcher {
@@ -45,7 +45,7 @@ export function watchWorkspace(
 
   watcher.on("all", (event, absPath) => {
     const isDirEvent = event === "addDir" || event === "unlinkDir";
-    if (!isDirEvent && !isYamlFile(absPath)) return;
+    if (!isDirEvent && !isWorkspaceFile(absPath)) return;
     pending.add(toPosix(path.relative(rootReal, absPath)));
     if (timer) clearTimeout(timer);
     timer = setTimeout(flush, debounceMs);

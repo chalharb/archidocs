@@ -10,7 +10,7 @@ const FIXTURES = path.resolve(import.meta.dirname, "../fixtures/invalid");
 /** Codes that need filesystem setup or runtime state, with the tests that cover them. */
 const COVERED_ELSEWHERE: Partial<Record<DiagnosticCode, string>> = {
   FS_OUTSIDE_ROOT: "src/server/fs/fs.integration.test.ts (traversal is an FsError, never loaded)",
-  FS_SYMLINK_REJECTED: "src/server/fs/fs.integration.test.ts › discoverYamlFiles",
+  FS_SYMLINK_REJECTED: "src/server/fs/fs.integration.test.ts › discoverWorkspaceFiles",
   FS_TOO_LARGE: "src/server/workspace/repository.integration.test.ts › never crashes",
   FS_TOO_MANY_FILES: "src/server/fs/fs.integration.test.ts › file count limit",
   FS_READ_ERROR: "src/server/fs/fs.integration.test.ts › unreadable directories",

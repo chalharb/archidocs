@@ -1,6 +1,6 @@
 /** Test helpers for building resources and models from YAML snippets. */
 import { normalize } from "@/domain/normalize";
-import { parseResources } from "@/domain/parse";
+import { parseMarkdownResource, parseResources } from "@/domain/parse";
 import type { ParsedResource } from "@/domain/resources";
 import { validateModel } from "@/domain/validate";
 
@@ -17,7 +17,9 @@ export function docs(...documents: string[]): string {
 export function parseFiles(files: Record<string, string>): ParsedResource[] {
   const out: ParsedResource[] = [];
   for (const [file, content] of Object.entries(files)) {
-    const { resources, diagnostics } = parseResources(content, file);
+    const { resources, diagnostics } = file.endsWith(".md")
+      ? parseMarkdownResource(content, file)
+      : parseResources(content, file);
     if (diagnostics.length > 0) {
       throw new Error(
         `Unexpected parse diagnostics in ${file}: ${JSON.stringify(diagnostics, null, 2)}`,

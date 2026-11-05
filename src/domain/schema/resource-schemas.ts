@@ -7,6 +7,7 @@
 import { z } from "zod";
 import {
   API_VERSION,
+  DECISION_STATUSES,
   DIAGRAM_TYPES,
   EDGE_TYPES,
   ELEMENT_SHAPES,
@@ -17,6 +18,8 @@ import {
   type RelationshipStyle,
   type DiagramLayoutResource,
   type DiagramResource,
+  type DecisionResource,
+  type DocumentResource,
   type EntityFields,
   type EntityResource,
   type EntitySetResource,
@@ -253,6 +256,48 @@ export const diagramLayoutSchema = z.strictObject({
   edges: z.record(idSchema, edgePresentationSchema).optional(),
 });
 
+// ---------------------------------------------------------------------------
+// Documents and decisions (DOC-02, ADR-01, ADD-009)
+// ---------------------------------------------------------------------------
+
+const idListSchema = z.array(idSchema).max(MAX_COLLECTION_ITEMS);
+
+/** `YYYY-MM-DD` naming a real calendar date. */
+export const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Dates must be written as YYYY-MM-DD")
+  .refine((d) => {
+    const parsed = new Date(`${d}T00:00:00Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(d);
+  }, "Not a real calendar date");
+
+export const documentSchema = z.strictObject({
+  ...header("Document"),
+  id: idSchema,
+  title: nameSchema,
+  description: descriptionSchema.optional(),
+  owner: shortTextSchema.optional(),
+  tags: tagsSchema.optional(),
+  entities: idListSchema.optional(),
+  diagrams: idListSchema.optional(),
+  properties: propertiesSchema.optional(),
+});
+
+export const decisionSchema = z.strictObject({
+  ...header("Decision"),
+  id: idSchema,
+  title: nameSchema,
+  status: z.enum(DECISION_STATUSES),
+  date: isoDateSchema,
+  description: descriptionSchema.optional(),
+  deciders: z.array(shortTextSchema).max(MAX_TAGS).optional(),
+  tags: tagsSchema.optional(),
+  entities: idListSchema.optional(),
+  diagrams: idListSchema.optional(),
+  supersedes: idListSchema.optional(),
+  properties: propertiesSchema.optional(),
+});
+
 export const RESOURCE_SCHEMAS = {
   Workspace: workspaceSchema,
   Project: projectSchema,
@@ -263,6 +308,8 @@ export const RESOURCE_SCHEMAS = {
   RelationshipType: relationshipTypeSchema,
   Diagram: diagramSchema,
   DiagramLayout: diagramLayoutSchema,
+  Document: documentSchema,
+  Decision: decisionSchema,
 } as const satisfies Record<ResourceKind, z.ZodType>;
 
 // ---------------------------------------------------------------------------
@@ -288,4 +335,6 @@ export type SchemaContractChecks = [
   Assert<Equals<z.output<typeof relationshipSetSchema>, RelationshipSetResource>>,
   Assert<Equals<z.output<typeof diagramSchema>, DiagramResource>>,
   Assert<Equals<z.output<typeof diagramLayoutSchema>, DiagramLayoutResource>>,
+  Assert<Equals<z.output<typeof documentSchema>, DocumentResource>>,
+  Assert<Equals<z.output<typeof decisionSchema>, DecisionResource>>,
 ];

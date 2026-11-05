@@ -6,6 +6,7 @@ import {
   byteLength,
   isResourceKind,
   knownKeysAt,
+  parseMarkdownResource,
   parseResources,
   parseYamlDocuments,
   validateResource,
@@ -336,5 +337,130 @@ describe("parse helpers", () => {
         { file: "f", document: 0 },
       ).resource,
     ).toEqual({ apiVersion: "archdocs/v1", kind: "EntityType", id: "t", name: "T" });
+  });
+});
+
+describe("TEST-08 Markdown front matter (DOC-01, DOC-02, ADD-009)", () => {
+  const md = (front: string, body = "\n# Title\n\nBody text.\n") =>
+    `---\napiVersion: archdocs/v1\n${front}\n---${body}`;
+  const DOC = "kind: Document\nid: overview\ntitle: Overview";
+  const parse = (content: string, limits = DEFAULT_PARSE_LIMITS) =>
+    parseMarkdownResource(content, "docs/overview.md", limits);
+
+  it("parses a document with its body and body line", () => {
+    const { resources, diagnostics } = parse(md(DOC));
+    expect(diagnostics).toEqual([]);
+    expect(resources).toEqual([
+      {
+        resource: {
+          apiVersion: "archdocs/v1",
+          kind: "Document",
+          id: "overview",
+          title: "Overview",
+        },
+        source: { file: "docs/overview.md", document: 0, path: [] },
+        body: { text: "# Title\n\nBody text.\n", line: 7 },
+      },
+    ]);
+  });
+
+  it("parses a decision, with CRLF line endings and a byte-order mark", () => {
+    const content = `\uFEFF${md(
+      'kind: Decision\nid: adr-1\ntitle: T\nstatus: accepted\ndate: "2026-01-02"',
+      "\n## Context\n",
+    )}`.replace(/\n/g, "\r\n");
+    const { resources, diagnostics } = parse(content);
+    expect(diagnostics).toEqual([]);
+    expect(resources[0]!.resource).toMatchObject({ kind: "Decision", status: "accepted" });
+    expect(resources[0]!.body).toEqual({ text: "## Context\n", line: 9 });
+  });
+
+  it("accepts '...' as the closing delimiter and an empty body", () => {
+    const { resources } = parse(`---\napiVersion: archdocs/v1\n${DOC}\n...`);
+    expect(resources[0]!.body).toEqual({ text: "", line: 7 });
+  });
+
+  it("ignores Markdown that isn't an Architecture Docs resource", () => {
+    for (const content of [
+      "# Just a README\n",
+      "",
+      "---\ntitle: Jekyll page\nlayout: post\n---\nHello",
+      "---\ntitle: unclosed jekyll front matter\n",
+      " ---\napiVersion: archdocs/v1\n---\n",
+    ])
+      expect(parse(content), JSON.stringify(content)).toEqual({ resources: [], diagnostics: [] });
+  });
+
+  it("reports unclosed front matter that declares archdocs", () => {
+    const { resources, diagnostics } = parse(`---\napiVersion: archdocs/v1\n${DOC}\n\n# Title\n`);
+    expect(resources).toEqual([]);
+    expect(diagnostics).toEqual([
+      expect.objectContaining({ code: "DOC_FRONT_MATTER_UNCLOSED", line: 1, severity: "error" }),
+    ]);
+  });
+
+  it("reports schema errors at their line in the file", () => {
+    const { resources, diagnostics } = parse(md("kind: Document\nid: overview\ntitel: Overview"));
+    expect(resources).toEqual([]);
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "SCHEMA_UNKNOWN_FIELD",
+          line: 5,
+          hint: "Did you mean 'title'?",
+        }),
+        expect.objectContaining({ code: "SCHEMA_REQUIRED_FIELD" }),
+      ]),
+    );
+  });
+
+  it("reports YAML syntax errors and unsafe tags at file lines", () => {
+    const syntax = parse(md("kind: Document\nid: [unclosed"));
+    expect(syntax.diagnostics[0]).toMatchObject({ code: "YAML_SYNTAX" });
+    expect(syntax.diagnostics[0]!.line).toBeGreaterThanOrEqual(4);
+    const tag = parse(md(`${DOC}\nproperties: { k: !!binary aGk= }`));
+    expect(tag.diagnostics).toEqual([
+      expect.objectContaining({ code: "YAML_UNSAFE_TAG", line: 6 }),
+    ]);
+    expect(tag.resources).toEqual([]);
+  });
+
+  it("reports unsupported versions and front matter that isn't a mapping", () => {
+    expect(
+      parse("---\napiVersion: archdocs/v9\nkind: Document\n---\n").diagnostics.map((d) => d.code),
+    ).toEqual(["SCHEMA_UNSUPPORTED_VERSION"]);
+  });
+
+  it("rejects non-Markdown kinds in front matter (DOC_KIND_NOT_MARKDOWN)", () => {
+    const { resources, diagnostics } = parse(md("kind: Entity\nid: a\nname: A\ntype: t"));
+    expect(resources).toEqual([]);
+    expect(diagnostics).toEqual([
+      expect.objectContaining({ code: "DOC_KIND_NOT_MARKDOWN", line: 3, path: ["kind"] }),
+    ]);
+  });
+
+  it("rejects Document and Decision resources in YAML files (DOC_MARKDOWN_ONLY_KIND)", () => {
+    const { resources, diagnostics } = parseResources(
+      res("Document", "id: d\ntitle: D"),
+      "docs/d.yaml",
+    );
+    expect(resources).toEqual([]);
+    expect(diagnostics).toEqual([
+      expect.objectContaining({ code: "DOC_MARKDOWN_ONLY_KIND", path: ["kind"], line: 2 }),
+    ]);
+  });
+
+  it("enforces the file size limit", () => {
+    const limits = { ...DEFAULT_PARSE_LIMITS, maxBytes: 20 };
+    expect(parse(md(DOC), limits).diagnostics.map((d) => d.code)).toEqual(["YAML_TOO_LARGE"]);
+  });
+
+  it("never throws, whatever the input", () => {
+    fc.assert(
+      fc.property(fc.string(), fc.string(), (front, body) => {
+        const r = parse(`---\napiVersion: archdocs/v1\n${front}\n---\n${body}`);
+        expect(r.resources.length).toBeLessThanOrEqual(1);
+      }),
+    );
   });
 });

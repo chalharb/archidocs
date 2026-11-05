@@ -1,5 +1,5 @@
 /**
- * Workspace discovery (P0-04): find YAML resource files under a root.
+ * Workspace discovery (P0-04): find YAML and Markdown (DOC-01) files under a root.
  * Hidden entries (e.g. .git, .archidoc) and node_modules are skipped. Output is
  * sorted so later stages never depend on directory iteration order.
  */
@@ -19,6 +19,7 @@ export const DEFAULT_DISCOVERY_OPTIONS: DiscoveryOptions = {
 };
 
 const YAML_FILE = /\.ya?ml$/i;
+const MARKDOWN_FILE = /\.md$/i;
 
 export function isIgnoredName(name: string): boolean {
   return name.startsWith(".") || name === "node_modules";
@@ -28,7 +29,16 @@ export function isYamlFile(name: string): boolean {
   return YAML_FILE.test(name);
 }
 
-export async function discoverYamlFiles(
+export function isMarkdownFile(name: string): boolean {
+  return MARKDOWN_FILE.test(name);
+}
+
+/** Files that may hold resources: YAML, or Markdown with front matter (DOC-01). */
+export function isWorkspaceFile(name: string): boolean {
+  return isYamlFile(name) || isMarkdownFile(name);
+}
+
+export async function discoverWorkspaceFiles(
   root: WorkspaceRoot,
   options: DiscoveryOptions = DEFAULT_DISCOVERY_OPTIONS,
 ): Promise<{ files: string[]; diagnostics: Diagnostic[] }> {
@@ -96,10 +106,10 @@ export async function discoverYamlFiles(
               { file: rel },
             ),
           );
-        } else if (target.kind === "file" && isYamlFile(entry.name)) {
+        } else if (target.kind === "file" && isWorkspaceFile(entry.name)) {
           files.push(rel);
         }
-      } else if (entry.kind === "file" && isYamlFile(entry.name)) {
+      } else if (entry.kind === "file" && isWorkspaceFile(entry.name)) {
         files.push(rel);
       }
       if (files.length > options.maxFiles) {
@@ -109,7 +119,7 @@ export async function discoverYamlFiles(
           diagnostic(
             "error",
             "FS_TOO_MANY_FILES",
-            `More than ${options.maxFiles} YAML files found; the rest were ignored`,
+            `More than ${options.maxFiles} YAML and Markdown files found; the rest were ignored`,
             {
               hint: "Point the workspace root at a smaller directory.",
             },

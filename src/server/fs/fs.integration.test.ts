@@ -8,7 +8,13 @@ import {
   tempPathFor,
   type AtomicWriteOps,
 } from "./atomic-write";
-import { discoverYamlFiles, isIgnoredName, isYamlFile } from "./discovery";
+import {
+  discoverWorkspaceFiles,
+  isIgnoredName,
+  isMarkdownFile,
+  isWorkspaceFile,
+  isYamlFile,
+} from "./discovery";
 import { FsError, toFsError } from "./errors";
 import { isInside, toPosix, WorkspaceRoot } from "./workspace-root";
 
@@ -276,15 +282,17 @@ describe("toFsError", () => {
   });
 });
 
-describe("discoverYamlFiles (P0-04)", () => {
-  it("finds YAML files recursively in sorted order, skipping hidden and node_modules", async () => {
+describe("discoverWorkspaceFiles (P0-04)", () => {
+  it("finds YAML and Markdown files recursively in sorted order, skipping hidden and node_modules", async () => {
     await ws.write("z/c.YAML", "");
+    await ws.write("docs/intro.md", "");
+    await ws.write(".archidoc/notes.md", "");
     await ws.write(".git/config.yaml", "");
     await ws.write(".archidoc/drafts/d.yaml", "");
     await ws.write("node_modules/pkg/x.yaml", "");
     await ws.write("dir/.hidden.yaml", "");
-    const { files, diagnostics } = await discoverYamlFiles(root);
-    expect(files).toEqual(["a.yaml", "dir/b.yml", "z/c.YAML"]);
+    const { files, diagnostics } = await discoverWorkspaceFiles(root);
+    expect(files).toEqual(["a.yaml", "dir/b.yml", "docs/intro.md", "z/c.YAML"]);
     expect(diagnostics).toEqual([]);
   });
 
@@ -294,7 +302,7 @@ describe("discoverYamlFiles (P0-04)", () => {
     await symlink(path.join(ws.dir, "dir"), path.join(ws.dir, "indir"));
     await symlink(path.join(ws.dir, "a.yaml"), path.join(ws.dir, "alias.yaml"));
     await symlink(path.join(ws.dir, "dir/notes.txt"), path.join(ws.dir, "notes-link.txt"));
-    const { files, diagnostics } = await discoverYamlFiles(root);
+    const { files, diagnostics } = await discoverWorkspaceFiles(root);
     expect(files).toEqual(["a.yaml", "alias.yaml", "dir/b.yml"]);
     expect(diagnostics.map((d) => [d.code, d.severity, d.file])).toEqual([
       ["FS_SYMLINK_REJECTED", "error", "evil.yaml"],
@@ -305,7 +313,7 @@ describe("discoverYamlFiles (P0-04)", () => {
 
   it("enforces the file count limit deterministically", async () => {
     for (const n of [1, 2, 3, 4]) await ws.write(`many/f${n}.yaml`, "");
-    const { files, diagnostics } = await discoverYamlFiles(root, {
+    const { files, diagnostics } = await discoverWorkspaceFiles(root, {
       maxFiles: 3,
       maxDirectoryDepth: 10,
     });
@@ -315,7 +323,7 @@ describe("discoverYamlFiles (P0-04)", () => {
 
   it("enforces the directory depth limit", async () => {
     await ws.write("1/2/3/deep.yaml", "");
-    const { files, diagnostics } = await discoverYamlFiles(root, {
+    const { files, diagnostics } = await discoverWorkspaceFiles(root, {
       maxFiles: 100,
       maxDirectoryDepth: 2,
     });
@@ -328,7 +336,7 @@ describe("discoverYamlFiles (P0-04)", () => {
     await mkdir(locked);
     await writeFile(path.join(locked, "x.yaml"), "");
     await chmod(locked, 0o000);
-    const { files, diagnostics } = await discoverYamlFiles(root);
+    const { files, diagnostics } = await discoverWorkspaceFiles(root);
     await chmod(locked, 0o755);
     expect(files).toEqual(["a.yaml", "dir/b.yml"]);
     expect(diagnostics.map((d) => [d.code, d.file])).toEqual([["FS_READ_ERROR", "locked"]]);
@@ -336,7 +344,7 @@ describe("discoverYamlFiles (P0-04)", () => {
 
   it("reports an unreadable root", async () => {
     await chmod(ws.dir, 0o000);
-    const { files, diagnostics } = await discoverYamlFiles(root);
+    const { files, diagnostics } = await discoverWorkspaceFiles(root);
     await chmod(ws.dir, 0o755);
     expect(files).toEqual([]);
     expect(diagnostics[0]).toMatchObject({ code: "FS_READ_ERROR" });
@@ -349,5 +357,9 @@ describe("discoverYamlFiles (P0-04)", () => {
     expect(isIgnoredName("src")).toBe(false);
     expect(isYamlFile("a.yml")).toBe(true);
     expect(isYamlFile("a.yaml.bak")).toBe(false);
+    expect(isMarkdownFile("README.MD")).toBe(true);
+    expect(isMarkdownFile("a.mdx")).toBe(false);
+    expect(isWorkspaceFile("a.md")).toBe(true);
+    expect(isWorkspaceFile("a.txt")).toBe(false);
   });
 });

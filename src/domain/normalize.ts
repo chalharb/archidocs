@@ -95,6 +95,8 @@ const CATEGORY_LABEL: Record<ModelCategory, string> = {
   diagram: "diagram",
   layout: "layout for diagram",
   collection: "collection",
+  document: "document",
+  decision: "decision",
 };
 
 export function normalize(parsed: readonly ParsedResource[]): {
@@ -142,7 +144,7 @@ export function normalize(parsed: readonly ParsedResource[]): {
 
   const ordered = [...parsed].sort((a, b) => compareSources(a.source, b.source));
 
-  for (const { resource, source } of ordered) {
+  for (const { resource, source, body } of ordered) {
     switch (resource.kind) {
       case "Workspace":
         if (claim("workspace", resource.id, source)) {
@@ -250,6 +252,39 @@ export function normalize(parsed: readonly ParsedResource[]): {
           };
         }
         break;
+      case "Document":
+        if (claim("document", resource.id, source)) {
+          model.documents[resource.id] = defined({
+            id: resource.id,
+            title: resource.title,
+            description: resource.description,
+            owner: resource.owner,
+            tags: [...(resource.tags ?? [])],
+            entities: [...(resource.entities ?? [])],
+            diagrams: [...(resource.diagrams ?? [])],
+            properties: { ...(resource.properties ?? {}) },
+            body: body ?? { text: "", line: 1 },
+          });
+        }
+        break;
+      case "Decision":
+        if (claim("decision", resource.id, source)) {
+          model.decisions[resource.id] = defined({
+            id: resource.id,
+            title: resource.title,
+            status: resource.status,
+            date: resource.date,
+            description: resource.description,
+            deciders: [...(resource.deciders ?? [])],
+            tags: [...(resource.tags ?? [])],
+            entities: [...(resource.entities ?? [])],
+            diagrams: [...(resource.diagrams ?? [])],
+            supersedes: [...(resource.supersedes ?? [])],
+            properties: { ...(resource.properties ?? {}) },
+            body: body ?? { text: "", line: 1 },
+          });
+        }
+        break;
     }
   }
 
@@ -264,6 +299,8 @@ export function normalize(parsed: readonly ParsedResource[]): {
       diagrams: sortRecord(model.diagrams),
       layouts: sortRecord(model.layouts),
       collections: sortRecord(model.collections),
+      documents: sortRecord(model.documents),
+      decisions: sortRecord(model.decisions),
       sources: sortRecord(model.sources),
     },
     diagnostics,

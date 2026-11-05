@@ -53,6 +53,12 @@ describe("loading the example workspace (P0-10, DOD-14)", () => {
         .map((c) => c.kind)
         .sort(),
     ).toEqual(["EntitySet", "EntitySet", "RelationshipSet", "RelationshipSet"]);
+    // Markdown resources (DOC-01, DOC-09); README.md has no front matter and is ignored.
+    expect(Object.keys(m.documents)).toEqual(["payments-overview", "payments-runbook"]);
+    expect(Object.keys(m.decisions)).toEqual(["adr-0001", "adr-0002", "adr-0003"]);
+    expect(m.decisions["adr-0002"]!.supersedes).toEqual(["adr-0001"]);
+    expect(m.sources["document:payments-overview"]!.file).toBe("docs/payments-overview.md");
+    expect(snap.files["README.md"]).toBeDefined();
     expect(staleNotice(snap)).toBeNull();
   });
 
@@ -134,6 +140,29 @@ describe("reload without restart (RELI-14) and stale handling (RELI-02, RELI-04)
     expect(changed).toBe(true);
     expect(snapshot).toMatchObject({ status: "valid", version: 2 });
     expect(snapshot.model.entities.customer!.name).toBe("Shopper");
+  });
+
+  it("reloads Markdown resources and keeps the last valid version when front matter breaks (DOC-07)", async () => {
+    const adr = "decisions/adr-0003-async-fraud-checks.md";
+    const original = await text(adr);
+    await writeFile(
+      path.join(ws.dir, adr),
+      original.replace("status: proposed", "status: accepted"),
+    );
+    expect((await repo.reload()).snapshot.model.decisions["adr-0003"]!.status).toBe("accepted");
+
+    await writeFile(path.join(ws.dir, adr), original.replace("status: proposed", "status: maybe"));
+    const stale = (await repo.reload()).snapshot;
+    expect(stale.status).toBe("stale");
+    expect(stale.model.decisions["adr-0003"]!.status).toBe("accepted");
+    expect(stale.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "SCHEMA_INVALID_VALUE", file: adr, line: 6 }),
+    );
+
+    await writeFile(path.join(ws.dir, adr), original);
+    const fixed = (await repo.reload()).snapshot;
+    expect(fixed.status).toBe("valid");
+    expect(fixed.model.decisions["adr-0003"]!.status).toBe("proposed");
   });
 
   it("keeps the last valid model when an edit breaks the YAML, then recovers", async () => {
@@ -267,8 +296,9 @@ describe("file watching (RELI-01, RELI-03)", () => {
     await ws.write("notes.txt", "x");
     await ws.write("a.yaml", "a: 1\n");
     await ws.write("b.yaml", "b: 1\n");
+    await ws.write("c.md", "# c\n");
     await waitFor(() =>
-      expect(batches.flat()).toEqual(expect.arrayContaining(["a.yaml", "b.yaml"])),
+      expect(batches.flat()).toEqual(expect.arrayContaining(["a.yaml", "b.yaml", "c.md"])),
     );
     expect(batches.flat().some((p) => p.startsWith(".archidoc") || p.endsWith(".txt"))).toBe(false);
     expect(batches.length).toBeLessThanOrEqual(2);
