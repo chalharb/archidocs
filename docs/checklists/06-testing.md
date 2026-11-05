@@ -93,9 +93,9 @@ Pinned browsers, deterministic fixtures, consistent fonts, fixed viewports.
 
 - [ ] **TEST-08** Documentation (added by ADD-009)
   - [x] Front-matter parsing: valid, missing, malformed, wrong kind, unsupported version, limits — src/domain/parse.test.ts › TEST-08 (362ad1d)
-  - [ ] Reference and link resolution, including broken links with line numbers
-  - [ ] Supersession consistency warnings and cycles
-  - [ ] Reverse-reference indexing, independent of file order
+  - [x] Reference and link resolution, including broken links with line numbers — src/domain/markdown.test.ts, documentation.test.ts › DOC-03/04 (ee04861)
+  - [x] Supersession consistency warnings and cycles — documentation.test.ts › ADR-03 (ee04861)
+  - [x] Reverse-reference indexing, independent of file order — documentation.test.ts › DOC-05 file order (ee04861)
   - [ ] Sanitisation fixtures (SEC-11) and image confinement (SEC-12)
 - [ ] **E2E-06** — Open a document, follow an entity link to its diagram, and return through the inspector's reverse references (added by ADD-009)
 - [ ] **E2E-07** — Filter the decision log by status and entity, and follow a supersession chain both ways (added by ADD-009)
