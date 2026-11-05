@@ -7,3 +7,7 @@ pnpm-lock.yaml
 next-env.d.ts
 docs/Archidocs-prd.md
 tests/fixtures/invalid
+docs/README.md
+docs/addenda
+docs/checklists
+CLAUDE.md

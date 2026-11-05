@@ -29,6 +29,12 @@ export default defineConfig({
         "src/domain/**": { lines: 95, statements: 95, functions: 95, branches: 95 },
         "src/server/persistence/**": { lines: 95, statements: 95, functions: 95, branches: 95 },
         "src/server/fs/**": { lines: 95, statements: 95, functions: 95, branches: 95 },
+        "src/server/workspace/{loader,snapshot}.ts": {
+          lines: 95,
+          statements: 95,
+          functions: 95,
+          branches: 95,
+        },
       },
     },
     projects: [
