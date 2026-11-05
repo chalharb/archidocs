@@ -13,6 +13,8 @@ export interface WorkspaceSummaryProps {
   loadedAt?: string;
   counts?: { entities: number; relationships: number; diagrams: number };
   diagrams?: Array<{ id: string; name: string; diagramType: string }>;
+  /** Number of documents and decisions (DOC-06). */
+  documentation?: { documents: number; decisions: number };
   diagnostics?: readonly Diagnostic[];
 }
 
@@ -84,6 +86,31 @@ export function WorkspaceSummary(props: WorkspaceSummaryProps) {
                   <span className="text-muted-foreground">({d.diagramType})</span>
                 </li>
               ))}
+            </ul>
+          </section>
+        )}
+        {props.documentation && (
+          <section aria-label={`Documentation in workspace ${props.workspaceKey}`}>
+            <h3 className="mb-1 font-medium">Documentation</h3>
+            <ul className="text-sm">
+              <li>
+                <Link
+                  className="underline underline-offset-2"
+                  href={`/workspaces/${encodeURIComponent(props.workspaceKey)}/docs`}
+                >
+                  Documents
+                </Link>{" "}
+                <span className="text-muted-foreground">({props.documentation.documents})</span>
+              </li>
+              <li>
+                <Link
+                  className="underline underline-offset-2"
+                  href={`/workspaces/${encodeURIComponent(props.workspaceKey)}/decisions`}
+                >
+                  Decisions
+                </Link>{" "}
+                <span className="text-muted-foreground">({props.documentation.decisions})</span>
+              </li>
             </ul>
           </section>
         )}

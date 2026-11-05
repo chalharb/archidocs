@@ -31,6 +31,27 @@ describe("node inspector (DIAG-07)", () => {
       outgoing: [],
       incoming: [],
       diagrams: ["d", "deploy", "unnamed"],
+      documentation: {
+        documents: [{ id: "overview", title: "Payments overview", tags: [] }],
+        decisions: [
+          {
+            id: "adr-2",
+            title: "Use Postgres",
+            status: "accepted",
+            date: "2026-02-01",
+            tags: [],
+            entities: [],
+          },
+          {
+            id: "adr-1",
+            title: "Use Mongo",
+            status: "superseded",
+            date: "2025-01-01",
+            tags: [],
+            entities: [],
+          },
+        ],
+      },
     } as never);
     render(<NodeInspector workspace="ws" diagramId="d" node={apiNode} diagrams={diagrams} />);
     expect(screen.getByRole("heading", { name: "Payments API" })).toBeInTheDocument();
@@ -41,6 +62,21 @@ describe("node inspector (DIAG-07)", () => {
     expect(link).toHaveAttribute("href", "/workspaces/ws/diagrams/deploy?focus=api");
     expect(screen.getByRole("link", { name: "unnamed" })).toBeInTheDocument();
     expect(entity).toHaveBeenCalledWith("ws", "api");
+    // DOC-05: documentation that references the entity, decisions grouped by status.
+    expect(screen.getByRole("link", { name: "Payments overview" })).toHaveAttribute(
+      "href",
+      "/workspaces/ws/docs/overview",
+    );
+    expect(screen.getByRole("list", { name: "Accepted decisions" })).toHaveTextContent(
+      "adr-2: Use Postgres",
+    );
+    expect(screen.getByRole("link", { name: "adr-1: Use Mongo" })).toHaveAttribute(
+      "href",
+      "/workspaces/ws/decisions/adr-1",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Superseded decisions", level: 4 }),
+    ).toBeInTheDocument();
   });
 
   it("says when no other diagram shows the entity, and reports errors", async () => {
@@ -50,11 +86,13 @@ describe("node inspector (DIAG-07)", () => {
       outgoing: [],
       incoming: [],
       diagrams: ["d"],
+      documentation: { documents: [], decisions: [] },
     } as never);
     const { unmount } = render(
       <NodeInspector workspace="ws" diagramId="d" node={apiNode} diagrams={diagrams} />,
     );
     await waitFor(() => expect(screen.getByText("No other diagrams.")).toBeInTheDocument());
+    expect(screen.getByText("No documents or decisions reference this.")).toBeInTheDocument();
     unmount();
     entity.mockRejectedValueOnce({ message: "Unknown entity 'api'" });
     render(<NodeInspector workspace="ws" diagramId="d" node={apiNode} diagrams={diagrams} />);

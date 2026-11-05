@@ -9,7 +9,9 @@ import { Suspense } from "react";
 import { DiagramEditor } from "@/components/diagram/diagram-editor";
 import { DiagramSwitcher } from "@/components/diagram/diagram-switcher";
 import { diagramHref, type DiagramMode } from "@/components/diagram/links";
+import { DocumentationRefsList } from "@/components/docs/documentation-refs";
 import { getWorkspaceService } from "@/server/service";
+import { diagramDocumentation } from "@/server/workspace/documentation-views";
 
 export interface DiagramPageProps {
   params: Promise<{ workspace: string; diagram: string }>;
@@ -26,7 +28,10 @@ async function DiagramContent({ params, searchParams, mode }: DiagramPageProps) 
   const repo = entry.repository!;
   const view = await repo.diagramView(diagram);
   if (!view) notFound();
-  const model = repo.snapshot().model;
+  const snapshot = repo.snapshot();
+  const model = snapshot.model;
+  const documentation = diagramDocumentation(snapshot, diagram);
+  const docCount = documentation.documents.length + documentation.decisions.length;
   const diagrams = Object.values(model.diagrams).map((d) => ({ id: d.id, name: d.name }));
   const editing = mode === "edit";
   return (
@@ -59,6 +64,16 @@ async function DiagramContent({ params, searchParams, mode }: DiagramPageProps) 
         <span className="text-sm text-muted-foreground">{view.diagram.diagramType}</span>
         {!editing && (
           <DiagramSwitcher workspace={workspace} current={view.diagram.id} diagrams={diagrams} />
+        )}
+        {!editing && docCount > 0 && (
+          <details className="relative text-sm">
+            <summary className="cursor-pointer underline-offset-2 hover:underline">
+              Documentation ({docCount})
+            </summary>
+            <div className="absolute top-full right-0 z-20 mt-1 w-80 rounded-md border bg-background p-3 shadow-md">
+              <DocumentationRefsList workspace={workspace} refs={documentation} headingLevel={2} />
+            </div>
+          </details>
         )}
       </header>
       <main className="flex min-h-0 flex-1 flex-col">

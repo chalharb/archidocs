@@ -10,8 +10,6 @@ entities: [payments-api, ledger-db]
 diagrams: [deployment]
 ---
 
-# Payments runbook
-
 1. Check the [Payments API](entity:payments-api) instances in the
    [deployment diagram](diagram:deployment).
 2. Check replication lag on the [Ledger Database](entity:ledger-db).

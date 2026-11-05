@@ -10,8 +10,6 @@ entities: [payments-system, web-shop, payments-api, ledger-db]
 diagrams: [system-context, containers]
 ---
 
-# Payments overview
-
 Customers pay in the [Web Shop](entity:web-shop), which calls the
 [Payments API](entity:payments-api). The API authorises the card with the
 [Card Network](entity:card-network) and records the result in the

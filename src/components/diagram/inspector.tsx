@@ -9,6 +9,7 @@ import { useEffect, useId, useState } from "react";
 import type { ResolvedEdge, ResolvedNode } from "@/domain/diagram-resolve";
 import { EDGE_TYPES, type EdgePresentation, type EdgeType } from "@/domain/resources";
 import type { EntityView } from "@/server/workspace/repository";
+import { DocumentationRefsList } from "../docs/documentation-refs";
 import { api } from "./api";
 import { diagramHref } from "./links";
 import { EDGE_TYPE_LABEL } from "./settings-panel";
@@ -118,6 +119,14 @@ export function NodeInspector({
                 ))}
               </ul>
             )}
+          </div>
+          <div>
+            <h3 className="font-medium">Documentation</h3>
+            <DocumentationRefsList
+              workspace={workspace}
+              refs={entity.view.documentation}
+              headingLevel={4}
+            />
           </div>
         </>
       )}

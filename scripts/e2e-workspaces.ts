@@ -1,6 +1,7 @@
 /**
  * Prepare workspaces for the Playwright suite (run before the server starts):
  *  - scratch: a writable copy of the sample workspace, edited by the E2E workflows
+ *  - docs:    another writable copy, edited by the documentation tests (ADD-009)
  *  - large:   the deterministic medium benchmark workspace (VR-08, BENCH-04)
  * Read-only workspaces (the sample itself, tests/fixtures/visual) are used in place.
  */
@@ -11,14 +12,16 @@ import { writeBenchWorkspace } from "../tests/bench/fixture.ts";
 export const E2E_DIR = path.resolve(import.meta.dirname, "../.e2e-workspaces");
 
 await rm(E2E_DIR, { recursive: true, force: true });
-await cp(
-  path.resolve(import.meta.dirname, "../examples/sample-workspace"),
-  path.join(E2E_DIR, "scratch"),
-  {
-    recursive: true,
-    // Skip local app state (drafts) left in the sample by running the app against it.
-    filter: (src) => path.basename(src) !== ".archidoc",
-  },
-);
+for (const name of ["scratch", "docs"]) {
+  await cp(
+    path.resolve(import.meta.dirname, "../examples/sample-workspace"),
+    path.join(E2E_DIR, name),
+    {
+      recursive: true,
+      // Skip local app state (drafts) left in the sample by running the app against it.
+      filter: (src) => path.basename(src) !== ".archidoc",
+    },
+  );
+}
 await writeBenchWorkspace(path.join(E2E_DIR, "large"));
 console.log(`Prepared E2E workspaces in ${E2E_DIR}`);

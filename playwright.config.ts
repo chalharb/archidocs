@@ -6,12 +6,14 @@ const PORT = Number(process.env.E2E_PORT ?? 3100);
  * Workspaces served to the E2E suite:
  *  - acme:    the sample workspace, read-only
  *  - scratch: a fresh writable copy of the sample (scripts/e2e-workspaces.ts)
+ *  - docs:    another writable copy, for documentation tests that edit files
  *  - visual:  committed visual-regression fixture (tests/fixtures/visual)
  *  - large:   the generated medium benchmark workspace
  */
 export const E2E_WORKSPACES = [
   "acme=examples/sample-workspace",
   "scratch=.e2e-workspaces/scratch",
+  "docs=.e2e-workspaces/docs",
   "visual=tests/fixtures/visual",
   "large=.e2e-workspaces/large",
 ].join(",");

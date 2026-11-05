@@ -30,6 +30,7 @@ import type { Revision } from "../persistence/revision";
 import { DEFAULT_LOAD_OPTIONS, loadWorkspace, type LoadOptions } from "./loader";
 import { applyLoad, type ModelStatus, type WorkspaceSnapshot } from "./snapshot";
 import { watchWorkspace, type WorkspaceWatcher } from "./watcher";
+import { entityDocumentation, type DocumentationRefs } from "./documentation-views";
 
 export interface RepositoryOptions {
   load?: LoadOptions;
@@ -67,6 +68,8 @@ export interface EntityView {
   outgoing: CanonicalRelationship[];
   incoming: CanonicalRelationship[];
   diagrams: readonly string[];
+  /** Documents and decisions that reference the entity (DOC-05). */
+  documentation: DocumentationRefs;
 }
 
 export type ChangeListener = (snapshot: WorkspaceSnapshot) => void;
@@ -129,7 +132,8 @@ export class WorkspaceRepository {
   }
 
   entityView(entityId: string): EntityView | null {
-    const { model, index } = this.snapshot();
+    const snap = this.snapshot();
+    const { model, index } = snap;
     const entity = model.entities[entityId];
     if (!entity) return null;
     const rels = (ids: readonly string[]) => ids.map((id) => model.relationships[id]!);
@@ -141,6 +145,7 @@ export class WorkspaceRepository {
       outgoing: rels(lookup.outgoing(index, entityId)),
       incoming: rels(lookup.incoming(index, entityId)),
       diagrams: lookup.diagramsForEntity(index, entityId),
+      documentation: entityDocumentation(snap, entityId),
     };
   }
 

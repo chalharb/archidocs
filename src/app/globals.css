@@ -128,3 +128,63 @@
     @apply font-sans;
   }
 }
+
+/* Rendered documents and decisions (DOC-06). */
+@layer components {
+  .markdown {
+    @apply flex flex-col gap-3 leading-relaxed;
+  }
+  .markdown h2 {
+    @apply mt-4 text-xl font-semibold;
+  }
+  .markdown h3,
+  .markdown h4,
+  .markdown h5,
+  .markdown h6 {
+    @apply mt-3 text-lg font-semibold;
+  }
+  .markdown a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .markdown ul {
+    @apply list-disc pl-6;
+  }
+  .markdown ol {
+    @apply list-decimal pl-6;
+  }
+  .markdown li > ul,
+  .markdown li > ol {
+    @apply mt-1;
+  }
+  .markdown li:has(> input[type="checkbox"]) {
+    @apply list-none;
+  }
+  .markdown blockquote {
+    @apply border-l-4 pl-4 text-muted-foreground;
+  }
+  .markdown code {
+    @apply rounded bg-muted px-1 py-0.5 font-mono text-sm;
+  }
+  .markdown pre {
+    @apply overflow-x-auto rounded-md bg-muted p-3;
+  }
+  .markdown pre code {
+    @apply bg-transparent p-0;
+  }
+  .markdown table {
+    @apply w-full border-collapse text-sm;
+  }
+  .markdown th,
+  .markdown td {
+    @apply border px-2 py-1 text-left;
+  }
+  .markdown hr {
+    @apply my-2;
+  }
+  .markdown .broken-link {
+    @apply text-destructive underline decoration-dotted underline-offset-2;
+  }
+  .markdown .image-placeholder {
+    @apply rounded border border-dashed px-1 text-muted-foreground;
+  }
+}

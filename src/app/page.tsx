@@ -33,6 +33,10 @@ async function loadSummaries(): Promise<WorkspaceSummaryProps[]> {
         name: d.name,
         diagramType: d.diagramType,
       })),
+      documentation: {
+        documents: Object.keys(snap.model.documents).length,
+        decisions: Object.keys(snap.model.decisions).length,
+      },
       diagnostics: notice ? [notice, ...snap.diagnostics] : snap.diagnostics,
     };
   });

@@ -6,7 +6,7 @@ test.describe("smoke", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Architecture Docs");
     const heading = page.getByRole("heading", { level: 2, name: /ACME Payments Architecture/ });
-    await expect(heading).toHaveCount(2); // the sample and its scratch copy
+    await expect(heading).toHaveCount(3); // the sample and its scratch and docs copies
     const card = page.locator('[data-slot="card"]', { hasText: "Workspace acme" });
     await expect(card.getByRole("heading", { level: 2 })).toContainText("Valid");
     await expect(card.getByText("No problems found.")).toBeVisible();
