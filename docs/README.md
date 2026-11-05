@@ -5,7 +5,7 @@ This folder holds the product requirements for Architecture Docs and the tools f
 ```
 docs/
 ├── README.md                 ← this guide
-├── Archidocs-prd.md          ← approved baseline PRD v1.6 (frozen)
+├── Archidocs-prd.md          ← approved baseline PRD v1.7 (frozen)
 ├── addenda/
 │   ├── README.md             ← addenda index and change log
 │   ├── _TEMPLATE.md          ← copy this to create a new addendum
@@ -30,7 +30,7 @@ docs/
 
 | Layer | Purpose | Changes how? |
 |---|---|---|
-| **Baseline PRD** | The approved v1.6 requirements. | Frozen. Only typo fixes. |
+| **Baseline PRD** | The approved v1.7 requirements (v1.6 plus ADD-001..008). | Frozen. Only typo fixes, or consolidation (§3). |
 | **Addenda** | Every change, clarification, pivot, deferral, or removal after the baseline. | New file per change; statuses move forward. |
 | **Checklists** | Trackable checkbox version of the effective requirements. | Ticked as work lands; updated when an addendum is accepted. |
 
@@ -89,12 +89,13 @@ Use an addendum for anything that alters what the baseline says: new requirement
 | `Accepted` | In effect; overrides the baseline. |
 | `Rejected` | Considered and declined; kept for the record. |
 | `Superseded` | Replaced by a later addendum (link to it). |
+| `Consolidated into vX.Y` | Folded into a new baseline PRD; kept as the record of why. |
 
 Don't delete addenda. Rejected and superseded ones explain why things are the way they are.
 
 ### Consolidating into a new baseline
 
-When the addenda pile up (roughly 10+ accepted, or before a major phase starts), fold them into a new PRD version (e.g. v1.7): copy the PRD, apply all accepted addenda, bump the version, and mark those addenda `Consolidated into v1.7` in the index. The old baseline stays in git history.
+When the addenda pile up (roughly 10+ accepted, or before a major phase starts), fold them into a new PRD version: apply all accepted addenda to the PRD, bump the version, list the folded addenda in its "Changes from" table, and mark them `Consolidated into vX.Y` in the index. Checklist notes such as `(amended by ADD-NNN)` stay as history. The old baseline stays in git history. v1.7 consolidated ADD-001..008.
 
 ---
 

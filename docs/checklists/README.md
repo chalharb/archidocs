@@ -1,6 +1,6 @@
 # Requirements Checklists
 
-Checkbox version of the effective requirements (baseline PRD v1.6 + accepted [addenda](../addenda/README.md)). Full conventions: [docs/README.md §4](../README.md#4-tracking-progress-checklists).
+Checkbox version of the effective requirements (baseline PRD v1.7 + accepted [addenda](../addenda/README.md)). `(amended by ADD-NNN)` notes for ADD-001..008 record history; those changes are now part of v1.7. Full conventions: [docs/README.md §4](../README.md#4-tracking-progress-checklists).
 
 ## Conventions
 

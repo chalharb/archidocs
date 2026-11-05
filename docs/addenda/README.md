@@ -1,21 +1,21 @@
 # PRD Addenda
 
-Changes, pivots, and clarifications to the [baseline PRD v1.6](../Archidocs-prd.md). The workflow is described in [docs/README.md §3](../README.md#3-changing-requirements-addenda).
+Changes, pivots, and clarifications to the [baseline PRD v1.7](../Archidocs-prd.md). The workflow is described in [docs/README.md §3](../README.md#3-changing-requirements-addenda).
 
-**Effective requirements = baseline PRD + all `Accepted` addenda below, applied in number order.**
+**Effective requirements = baseline PRD v1.7 + all `Accepted` addenda below, applied in number order.** ADD-001 to ADD-008 are already part of v1.7.
 
 ## Index
 
 | ID | Title | Status | Date | Affected IDs |
 |---|---|---|---|---|
-| [ADD-001](ADD-001-archdocs-v1-schema.md) | Field-level definition of the `archdocs/v1` schema | Accepted | 2026-11-05 | MODEL-01..10, SCHEMA-01..09, LAYOUT-08, LAYOUT-18, LAYOUT-23, SEC-06, SEC-08 |
-| [ADD-002](ADD-002-defer-git-revision-state.md) | Defer Git-committed revision state (RELI-10) to Phase 4 | Accepted | 2026-11-05 | RELI-10, RELI-15 (new) |
-| [ADD-003](ADD-003-defer-github-ci.md) | Defer GitHub-hosted CI until the repository is pushed to GitHub | Accepted | 2026-11-05 | CI-01..08, CI-REQ, P0-13, DOD-13 |
-| [ADD-004](ADD-004-element-and-relationship-styles.md) | Element and relationship styles (shapes, colours, line styles) | Accepted | 2026-11-05 | DIAG-11 (new), DIAG-01..05, LAYOUT-22, VR-01..09 |
-| [ADD-005](ADD-005-animated-edge-flow.md) | Optional animated edge direction flow | Accepted | 2026-11-05 | LAYOUT-25 (new), LAYOUT-15, PREC-01/02, BENCH-04, VR-01..09 |
-| [ADD-006](ADD-006-nested-boundary-semantics.md) | Nested boundary membership and layout coordinates | Accepted | 2026-11-05 | LAYOUT-14, LAYOUT-08, LAYOUT-24 |
-| [ADD-007](ADD-007-separate-view-and-edit-routes.md) | Separate routes for viewing and editing diagrams | Accepted | 2026-11-05 | DIAG-12 (new), DIAG-07, DIAG-10, LAYOUT-01..15, LAYOUT-25, SCOPE-01, E2E-01..05, VR-01..09 |
-| [ADD-008](ADD-008-optional-minimap.md) | Optional minimap | Accepted | 2026-11-05 | LAYOUT-26 (new), LAYOUT-10, PREC-01/02 |
+| [ADD-001](ADD-001-archdocs-v1-schema.md) | Field-level definition of the `archdocs/v1` schema | Consolidated into v1.7 | 2026-11-05 | MODEL-01..10, SCHEMA-01..09, LAYOUT-08, LAYOUT-18, LAYOUT-23, SEC-06, SEC-08 |
+| [ADD-002](ADD-002-defer-git-revision-state.md) | Defer Git-committed revision state (RELI-10) to Phase 4 | Consolidated into v1.7 | 2026-11-05 | RELI-10, RELI-15 (new) |
+| [ADD-003](ADD-003-defer-github-ci.md) | Defer GitHub-hosted CI until the repository is pushed to GitHub | Consolidated into v1.7 | 2026-11-05 | CI-01..08, CI-REQ, P0-13, DOD-13 |
+| [ADD-004](ADD-004-element-and-relationship-styles.md) | Element and relationship styles (shapes, colours, line styles) | Consolidated into v1.7 | 2026-11-05 | DIAG-11 (new), DIAG-01..05, LAYOUT-22, VR-01..09 |
+| [ADD-005](ADD-005-animated-edge-flow.md) | Optional animated edge direction flow | Consolidated into v1.7 | 2026-11-05 | LAYOUT-25 (new), LAYOUT-15, PREC-01/02, BENCH-04, VR-01..09 |
+| [ADD-006](ADD-006-nested-boundary-semantics.md) | Nested boundary membership and layout coordinates | Consolidated into v1.7 | 2026-11-05 | LAYOUT-14, LAYOUT-08, LAYOUT-24 |
+| [ADD-007](ADD-007-separate-view-and-edit-routes.md) | Separate routes for viewing and editing diagrams | Consolidated into v1.7 | 2026-11-05 | DIAG-12 (new), DIAG-07, DIAG-10, LAYOUT-01..15, LAYOUT-25, SCOPE-01, E2E-01..05, VR-01..09 |
+| [ADD-008](ADD-008-optional-minimap.md) | Optional minimap | Consolidated into v1.7 | 2026-11-05 | LAYOUT-26 (new), LAYOUT-10, PREC-01/02 |
 
 ## Allocated requirement IDs
 

@@ -6,7 +6,7 @@
 | **Type** | Change <!-- Addition · Change · Removal · Deferral · Clarification · Pivot --> |
 | **Proposed** | YYYY-MM-DD by <name> |
 | **Decided** | YYYY-MM-DD by <name> <!-- leave blank while Proposed --> |
-| **Baseline** | PRD v1.6 |
+| **Baseline** | PRD v1.7 |
 | **Affected IDs** | e.g. LAYOUT-08, LAYOUT-23 |
 | **PRD sections** | e.g. §2.3, §4 |
 
