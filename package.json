@@ -15,7 +15,8 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration --project performance",
     "test:component": "vitest run --project component",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --project unit --project integration --project component && pnpm test:perf",
+    "test:perf": "vitest run --project performance",
     "test:e2e": "playwright test",
     "bench": "vitest bench --run --project bench",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build"

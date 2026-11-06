@@ -10,12 +10,15 @@ positions.
 
 ```bash
 pnpm bench                                   # Vitest benchmarks, JSON in bench-results/latest.json
-pnpm vitest run tests/integration/performance.test.ts   # budget assertions (runs in CI)
+pnpm test:perf                               # budget assertions (runs in CI)
 pnpm build && pnpm exec playwright test tests/e2e/performance.spec.ts   # browser budgets (Phase 1)
 ```
 
 The budget tests assert the median of several runs against the PRD targets,
-so a regression that breaks a target fails CI (PERF-04).
+so a regression that breaks a target fails CI (PERF-04). `pnpm test:coverage`
+runs them in a separate pass without coverage instrumentation: V8 coverage
+slows the ELK bundle down about fivefold, so instrumented timings would
+measure the instrumentation rather than the app.
 
 ## Reference machine (PERF-05)
 
