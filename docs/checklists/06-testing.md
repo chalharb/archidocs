@@ -103,3 +103,18 @@ Pinned browsers, deterministic fixtures, consistent fonts, fixed viewports.
 - [x] **E2E-08** — Edit a decision externally and see it reload; break its front matter and see the last valid version with diagnostics (added by ADD-009) — ✅ tests/e2e/docs.spec.ts › E2E-08 (3f6591b)
 - [x] **VR-10** — Document page (added by ADD-009) — ✅ tests/e2e/docs.spec.ts › VR-10 (3f6591b)
 - [x] **VR-11** — Decision page with a superseded banner (added by ADD-009) — ✅ tests/e2e/docs.spec.ts › VR-11 (3f6591b)
+
+## Phase 3 (added by ADD-011)
+
+- [ ] **TEST-09** Advanced diagrams and flows (added by ADD-011)
+  - [ ] `Flow` schema and validation (MODEL-11, MODEL-12): mismatch and unmodelled-step warnings, determinism regardless of file order
+  - [ ] Sequence layout: participant order, numbering, self-messages, async and reply styling, deterministic output
+  - [ ] Flowchart and custom-diagram schema: field-per-type rules, shared ID namespace, unknown endpoints
+  - [ ] Group membership: nesting, double membership, cycles, conflicts with `parent` boundaries, absolute coordinates
+  - [ ] Flow overlay mapping of steps to edges (DIAG-15)
+- [ ] **E2E-09** — Open a sequence diagram, inspect a message and follow it to its relationship's diagram, and export SVG (added by ADD-011)
+- [ ] **E2E-10** — Open a flowchart, move a step and a group in the editor, save, edit the diagram YAML externally, and see the saved positions survive the reload (added by ADD-011)
+- [ ] **E2E-11** — Show a flow overlay on a container diagram and see the numbered steps and the "not shown" list (added by ADD-011)
+- [ ] **VR-12** — Sequence diagram (added by ADD-011)
+- [ ] **VR-13** — Flowchart with all step shapes (added by ADD-011)
+- [ ] **VR-14** — Custom diagram with nested groups and notes (added by ADD-011)

@@ -22,11 +22,14 @@ Detailed items are in checklist [10](10-documentation.md), plus SEC-11..12 (05),
 
 ## Phase 3 — Advanced Diagrams and Flows
 
-- [ ] **PH3-01** — Custom diagrams (see DIAG-06)
-- [ ] **PH3-02** — Structured flow models
-- [ ] **PH3-03** — Flowcharts
-- [ ] **PH3-04** — Sequence diagrams
-- [ ] **PH3-05** — Advanced grouping
+Detailed items are in checklists 01 (MODEL-11..12), 02 (DIAG-06, DIAG-13..15), 03 (LAYOUT-27), 06 (TEST-09, E2E-09..11, VR-12..14) and 07 (BENCH-08), per [ADD-011](../addenda/ADD-011-phase-3-advanced-diagrams-and-flows.md). Tick each outline item when the items it maps to are done.
+
+- [ ] **PH3-01** — Custom diagrams (→ DIAG-06)
+- [ ] **PH3-02** — Structured flow models (→ MODEL-11, MODEL-12, DIAG-15)
+- [ ] **PH3-03** — Flowcharts (→ DIAG-14)
+- [ ] **PH3-04** — Sequence diagrams (→ DIAG-13)
+- [ ] **PH3-05** — Advanced grouping (→ LAYOUT-27)
+- [ ] **PH3-EXIT** — A user can describe interactions and processes in YAML and see them as sequence diagrams, flowcharts, flow overlays and grouped custom diagrams, arrange the arrangeable ones visually, and trace every element back to its YAML definition, without the app modifying any canonical file (added by ADD-011)
 
 ## Phase 4 — Versioning and GitHub
 

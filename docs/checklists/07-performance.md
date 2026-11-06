@@ -24,3 +24,7 @@ Source: PRD §8. Conventions: [checklists/README.md](README.md). Targets are pro
 ## Phase 2 (added by ADD-009)
 
 - [ ] **BENCH-07** `Phase 2` — Load 100 entities and 200 Markdown resources in under 1.5 s, cold (added by ADD-009)
+
+## Phase 3 (added by ADD-011)
+
+- [ ] **BENCH-08** `Phase 3` — Render a sequence diagram with 30 participants and 300 steps in under 1 s on the reference machine (added by ADD-011)

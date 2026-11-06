@@ -191,8 +191,8 @@ The Product Analyst applies the checklist updates below in a follow-up PR.
 
 To do on acceptance (Product Analyst, in a follow-up PR):
 
-- [ ] In `02-diagrams.md`, expand DIAG-06 and add DIAG-13..15 "(added by ADD-011)"
-- [ ] Add MODEL-11..12 to `01-model-and-schema.md`, LAYOUT-27 to `03-layout.md`, TEST-09, E2E-09..11 and VR-12..14 to `06-testing.md`, BENCH-08 to `07-performance.md`
-- [ ] In `09-later-phases.md`, add PH3-EXIT and point PH3-01..05 at the new items
-- [ ] Record the new IDs in the allocated-IDs table in `addenda/README.md` as allocated (they are reserved while this is Proposed)
-- [ ] Run `scripts/prd-progress.sh --write`
+- [x] In `02-diagrams.md`, expand DIAG-06 and add DIAG-13..15 "(added by ADD-011)"
+- [x] Add MODEL-11..12 to `01-model-and-schema.md`, LAYOUT-27 to `03-layout.md`, TEST-09, E2E-09..11 and VR-12..14 to `06-testing.md`, BENCH-08 to `07-performance.md`
+- [x] In `09-later-phases.md`, add PH3-EXIT and point PH3-01..05 at the new items
+- [x] Record the new IDs in the allocated-IDs table in `addenda/README.md` as allocated (they are reserved while this is Proposed)
+- [x] Run `scripts/prd-progress.sh --write`

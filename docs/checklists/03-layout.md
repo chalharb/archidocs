@@ -27,6 +27,7 @@ Source: PRD §2.3, §4. Conventions: [checklists/README.md](README.md).
 - [x] **LAYOUT-15** `P0` `Phase 1` — Export PNG and SVG diagrams — ✅ tests/e2e/editor.spec.ts › E2E-05, src/components/diagram/export.test.tsx (3765da0, 02f134d)
 - [x] **LAYOUT-25** `P1` `Phase 1` — Optional animated edge direction flow; off by default, per-diagram and per-edge, respects reduced motion, static in exports (added by ADD-005) — ✅ src/domain/layout/layout.test.ts › LAYOUT-25, tests/e2e/editor.spec.ts › LAYOUT-25 reduced motion and E2E-05 static export, tests/e2e/performance.spec.ts › BENCH-04 (ada00ff, 3765da0, 2df0b27)
 - [x] **LAYOUT-26** `P1` `Phase 1` — Show or hide the minimap; shown by default, configurable per workspace, diagram and layout file (added by ADD-008) — ✅ src/domain/layout/layout.test.ts › LAYOUT-26, src/components/diagram/diagram-editor.test.tsx › LAYOUT-26, tests/e2e/editor.spec.ts › LAYOUT-26 (284e1fe)
+- [ ] **LAYOUT-27** `P1` `Phase 3` — Diagram-defined `groups[]` on `custom`, `flowchart`, `network` and `deployment` diagrams: nestable, single membership, cycle errors, `parent` boundaries win; rendered as dashed containers, laid out as ELK compound nodes, saved with absolute coordinates (added by ADD-011)
 
 ## Layout precedence (§4)
 

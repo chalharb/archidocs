@@ -9,7 +9,7 @@ DIAG-08 and DIAG-09 are resolved in Phase 0 (epic P0-07) and rendered in Phase 1
 - [x] **DIAG-03** `P0` `Phase 1` — C4 Component diagrams — ✅ tests/e2e/visual.spec.ts › VR-03 (05ad960)
 - [x] **DIAG-04** `P0` `Phase 1` — Network topology diagrams — ✅ tests/e2e/editor.spec.ts › LAYOUT-14, tests/e2e/visual.spec.ts › VR-04 (3765da0, 05ad960)
 - [x] **DIAG-05** `P0` `Phase 1` — Deployment architecture diagrams — ✅ tests/e2e/editor.spec.ts › DIAG-09, tests/e2e/visual.spec.ts › VR-05 (3765da0, 05ad960)
-- [ ] **DIAG-06** `P1` `Phase 3` — Custom/general-purpose diagrams
+- [ ] **DIAG-06** `P1` `Phase 3` — Custom/general-purpose diagrams: any entity types and relationships, no C4 conventions; optional plain-text `notes[]` positioned through `.layout.yaml`; optional `groups[]` (LAYOUT-27); `steps[]`/`transitions[]` not allowed (detailed by ADD-011)
 - [x] **DIAG-07** `P1` `Phase 1` — Node inspection and related-diagram navigation — ✅ tests/e2e/editor.spec.ts › DIAG-07, src/components/diagram/inspector.test.tsx (3765da0, 02f134d)
 - [x] **DIAG-08** `P0` `Phase 0–1` — Preserve canonical model references in rendered nodes — ✅ tests/e2e/editor.spec.ts › E2E-01 (data-entity-id), src/editor/flow.test.ts (3765da0, 44da8f4)
   - [x] Phase 0: resolved nodes/edges keep entityId/relationshipId — src/domain/diagram-resolve.test.ts (0f11a18)
@@ -22,6 +22,12 @@ DIAG-08 and DIAG-09 are resolved in Phase 0 (epic P0-07) and rendered in Phase 1
   - [x] Phase 1: diagnostics in the diagram viewer
 - [x] **DIAG-11** `P0` `Phase 1` — Element and relationship styles (shape, colour, line) on types with per-element overrides, resolved through type inheritance (added by ADD-004) — ✅ src/domain/styles.test.ts, tests/e2e/editor.spec.ts › E2E-01 shapes, tests/e2e/visual.spec.ts › VR-06 (ada00ff, 3765da0, 05ad960)
 - [x] **DIAG-12** `P1` `Phase 1` — Separate read-only view route and layout edit route per diagram (added by ADD-007) — ✅ tests/e2e/editor.spec.ts › DIAG-12, E2E-01, SCOPE-01; src/components/diagram/diagram-editor.test.tsx › read-only view, leaving the editor (b83750d, 291f455)
+
+## Phase 3 (added by ADD-011)
+
+- [ ] **DIAG-13** `P1` `Phase 3` — `diagramType: sequence` renders a `Flow` as a sequence diagram: ordered participants, lifelines, numbered messages, async/reply/self-message styling; automatic, non-editable layout; inspection and PNG/SVG export (added by ADD-011)
+- [ ] **DIAG-14** `P1` `Phase 3` — `diagramType: flowchart` mixes entity nodes with diagram-local `steps[]` (`start|end|process|decision|io`) and `transitions[]`; laid out, edited, saved and exported like other diagrams (added by ADD-011)
+- [ ] **DIAG-15** `P2` `Phase 3` — Flow overlay on a diagram's view route: matching steps highlighted and numbered, other elements dimmed, unmatched steps listed as "not shown"; view state only (added by ADD-011)
 
 ## MVP scope boundary
 
