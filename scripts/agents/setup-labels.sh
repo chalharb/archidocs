@@ -36,5 +36,6 @@ status:qa-failed|e99695|QA found gaps against the issue; dev agent will fix
 status:ready-to-merge|0e8a16|Reviewed and QA-approved; waiting for the product owner
 # Escape hatches
 needs-human|b60205|Agents stop on this item until a person removes the label
+update-visual-baselines|f9d0c4|Regenerate Linux Playwright screenshot baselines on CI and commit them
 blocked|000000|Waiting on another issue or decision
 EOF
