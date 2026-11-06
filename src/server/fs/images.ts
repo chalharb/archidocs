@@ -39,12 +39,14 @@ export async function readWorkspaceImage(
   rel: string,
   maxBytes: number = MAX_IMAGE_BYTES,
 ): Promise<WorkspaceImage> {
-  const contentType = checkImagePath(root, root.lexical(rel), rel);
-  // An in-root file symlink must satisfy the same rules as the link itself.
+  let contentType = checkImagePath(root, root.lexical(rel), rel);
+  // An in-root file symlink must satisfy the same rules as the link itself,
+  // and is served with the target's Content-Type so the header matches the bytes.
   const verifyTarget = (target: string) => {
-    checkImagePath(root, target, rel);
+    contentType = checkImagePath(root, target, rel);
   };
-  return { bytes: await root.readBytes(rel, maxBytes, verifyTarget), contentType };
+  const bytes = await root.readBytes(rel, maxBytes, verifyTarget);
+  return { bytes, contentType };
 }
 
 /** Refuse hidden paths and non-image types; returns the Content-Type. */

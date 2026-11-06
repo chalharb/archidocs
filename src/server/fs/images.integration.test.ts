@@ -101,6 +101,14 @@ describe("readWorkspaceImage (SEC-12, SEC-02..04)", () => {
     expect((await readWorkspaceImage(root, "alias.png")).bytes.equals(PNG)).toBe(true);
   });
 
+  it("serves an in-root symlink with its target's Content-Type", async () => {
+    await writeFile(path.join(ws.dir, "docs/diagram.svg"), "<svg/>");
+    await symlink(path.join(ws.dir, "docs/diagram.svg"), path.join(ws.dir, "svg-alias.png"));
+    const image = await readWorkspaceImage(root, "svg-alias.png");
+    expect(image.contentType).toBe("image/svg+xml");
+    expect(image.bytes.toString()).toBe("<svg/>");
+  });
+
   it("applies the hidden-path and type rules to an in-root symlink's target", async () => {
     await symlink(path.join(ws.dir, ".git/logo.png"), path.join(ws.dir, "hidden-alias.png"));
     await symlink(path.join(ws.dir, "docs/notes.txt"), path.join(ws.dir, "text-alias.png"));
