@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Type** | Addition |
 | **Proposed** | 2026-11-06 by Claude (Product Analyst agent) |
-| **Decided** | |
+| **Decided** | 2026-11-06 by the owner (PR #14) |
 | **Baseline** | PRD v1.7 |
 | **Affected IDs** | DIAG-06 (detailed), MODEL-11..12, DIAG-13..15, LAYOUT-27, TEST-09, E2E-09..11, VR-12..14, BENCH-08, PH3-EXIT (all new); PH3-01..05, SCOPE-01, DIAG-07, DIAG-11, LAYOUT-08, LAYOUT-14, LAYOUT-15 |
 | **PRD sections** | §2.2, §2.3, §3, §4, §7, §8, §11 |
@@ -175,11 +175,21 @@ Each has the default this addendum assumes.
 
 ## Decision
 
-<!-- Owner: record Accepted/Rejected, the date, and any answers to the open questions that differ from the defaults. -->
+**Accepted** on 2026-11-06 by the owner (PR #14). Every open question takes its default:
+
+1. Flows are a separate `Flow` kind.
+2. A step may omit `relationship`. An unmodelled step is a warning, not an error.
+3. Sequence diagrams are always laid out automatically and can't be edited.
+4. Groups come from explicit `groups[]` only. There is no rule-based `groupBy`.
+5. Flowchart steps and notes are local to one diagram. They are not entities.
+6. Groups are allowed on `custom`, `flowchart`, `network` and `deployment` only, not on C4 diagrams.
+7. Everything is P1 except the flow overlay (DIAG-15), which is P2.
+
+The Product Analyst applies the checklist updates below in a follow-up PR.
 
 ## Checklist updates
 
-To do on acceptance:
+To do on acceptance (Product Analyst, in a follow-up PR):
 
 - [ ] In `02-diagrams.md`, expand DIAG-06 and add DIAG-13..15 "(added by ADD-011)"
 - [ ] Add MODEL-11..12 to `01-model-and-schema.md`, LAYOUT-27 to `03-layout.md`, TEST-09, E2E-09..11 and VR-12..14 to `06-testing.md`, BENCH-08 to `07-performance.md`

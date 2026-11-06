@@ -18,7 +18,7 @@ Changes, pivots, and clarifications to the [baseline PRD v1.7](../Archidocs-prd.
 | [ADD-008](ADD-008-optional-minimap.md) | Optional minimap | Consolidated into v1.7 | 2026-11-05 | LAYOUT-26 (new), LAYOUT-10, PREC-01/02 |
 | [ADD-009](ADD-009-phase-2-documentation-and-adrs.md) | Phase 2 requirements: architecture documentation and ADRs | Accepted | 2026-11-05 | DOC-01..09, ADR-01..05, SEC-11..12, TEST-08, E2E-06..08, VR-10..11, BENCH-07, PH2-EXIT (all new); PH2-01..06, RELI-01..05, MODEL-07, DIAG-07 |
 | [ADD-010](ADD-010-hosted-read-only-mode.md) | Hosted read-only mode (Vercel) | Accepted | 2026-11-05 | SEC-13 (new), SEC-01, SEC-10, RELI-01, LAYOUT-08, DIAG-12, RELI-11 |
-| [ADD-011](ADD-011-phase-3-advanced-diagrams-and-flows.md) | Phase 3 requirements: advanced diagrams and flows | Proposed | 2026-11-06 | MODEL-11..12, DIAG-13..15, LAYOUT-27, TEST-09, E2E-09..11, VR-12..14, BENCH-08, PH3-EXIT (all new); DIAG-06, PH3-01..05, SCOPE-01, DIAG-07, DIAG-11, LAYOUT-08, LAYOUT-14, LAYOUT-15 |
+| [ADD-011](ADD-011-phase-3-advanced-diagrams-and-flows.md) | Phase 3 requirements: advanced diagrams and flows | Accepted | 2026-11-06 | MODEL-11..12, DIAG-13..15, LAYOUT-27, TEST-09, E2E-09..11, VR-12..14, BENCH-08, PH3-EXIT (all new); DIAG-06, PH3-01..05, SCOPE-01, DIAG-07, DIAG-11, LAYOUT-08, LAYOUT-14, LAYOUT-15 |
 
 ## Allocated requirement IDs
 
