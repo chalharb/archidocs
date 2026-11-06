@@ -29,8 +29,9 @@ jobs:
           DEV_APP_SLUG: ${{ vars.DEV_APP_SLUG }}
           PROJECT_OWNER: ${{ vars.PROJECT_OWNER || github.repository_owner }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER || '2' }}
-          PROJECT_PAT: ${{ secrets.PROJECT_PAT }}
         with:
+          # The Project check reads the board as the PAT owner; nothing else in this step writes.
+          github-token: ${{ secrets.PROJECT_PAT || github.token }}
           script: |
             const env = process.env;
             const rows = [];
@@ -42,14 +43,13 @@ jobs:
             check("variable DEV_APP_SLUG", !!env.DEV_APP_SLUG, "The dev App's URL name, e.g. archidocs-dev");
 
             if (env.HAS_PROJECT_PAT === "true") {
-              const pat = getOctokit(env.PROJECT_PAT);
               const wanted = {
                 Status: ["Backlog", "Ready", "In Progress", "In Review", "QA", "Ready to Merge", "Done"],
                 Agent: ["Dev 1", "Dev 2"],
                 Size: ["XS", "S", "M"],
               };
               try {
-                const data = await pat.graphql(
+                const data = await github.graphql(
                   `query($owner: String!, $number: Int!) { user(login: $owner) { projectV2(number: $number) {
                      title fields(first: 50) { nodes { ... on ProjectV2SingleSelectField { name options { name } } } } } } }`,
                   { owner: env.PROJECT_OWNER, number: Number(env.PROJECT_NUMBER) },
