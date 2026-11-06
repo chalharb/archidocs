@@ -112,9 +112,19 @@ export class WorkspaceRoot {
     return (await this.readBytes(rel, maxBytes)).toString("utf8");
   }
 
-  /** Read a file's raw bytes, enforcing `maxBytes` before loading it. */
-  async readBytes(rel: string, maxBytes: number): Promise<Buffer> {
+  /**
+   * Read a file's raw bytes, enforcing `maxBytes` before loading it.
+   * `verifyTarget` runs on the resolved path (the real target of an in-root
+   * file symlink) before the file is opened, so callers can apply their own
+   * rules to what is actually read.
+   */
+  async readBytes(
+    rel: string,
+    maxBytes: number,
+    verifyTarget?: (target: string) => void,
+  ): Promise<Buffer> {
     const target = await this.resolve(rel, "read");
+    verifyTarget?.(target);
     let handle: fsp.FileHandle | undefined;
     try {
       handle = await fsp.open(target, constants.O_RDONLY | constants.O_NOFOLLOW);

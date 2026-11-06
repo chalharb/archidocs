@@ -39,7 +39,16 @@ export async function readWorkspaceImage(
   rel: string,
   maxBytes: number = MAX_IMAGE_BYTES,
 ): Promise<WorkspaceImage> {
-  const abs = root.lexical(rel);
+  const contentType = checkImagePath(root, root.lexical(rel), rel);
+  // An in-root file symlink must satisfy the same rules as the link itself.
+  const verifyTarget = (target: string) => {
+    checkImagePath(root, target, rel);
+  };
+  return { bytes: await root.readBytes(rel, maxBytes, verifyTarget), contentType };
+}
+
+/** Refuse hidden paths and non-image types; returns the Content-Type. */
+function checkImagePath(root: WorkspaceRoot, abs: string, rel: string): string {
   const parts = path.relative(root.realPath, abs).split(path.sep);
   if (parts.some((p) => p.startsWith("."))) {
     throw new FsError("INVALID_PATH", `Hidden paths are not served: ${rel}`, rel);
@@ -48,5 +57,5 @@ export async function readWorkspaceImage(
   if (!contentType) {
     throw new FsError("UNSUPPORTED_TYPE", `Not an allowed image type: ${rel}`, rel);
   }
-  return { bytes: await root.readBytes(rel, maxBytes), contentType };
+  return contentType;
 }

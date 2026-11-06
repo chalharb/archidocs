@@ -101,6 +101,13 @@ describe("readWorkspaceImage (SEC-12, SEC-02..04)", () => {
     expect((await readWorkspaceImage(root, "alias.png")).bytes.equals(PNG)).toBe(true);
   });
 
+  it("applies the hidden-path and type rules to an in-root symlink's target", async () => {
+    await symlink(path.join(ws.dir, ".git/logo.png"), path.join(ws.dir, "hidden-alias.png"));
+    await symlink(path.join(ws.dir, "docs/notes.txt"), path.join(ws.dir, "text-alias.png"));
+    expect(await codeOf(readWorkspaceImage(root, "hidden-alias.png"))).toBe("INVALID_PATH");
+    expect(await codeOf(readWorkspaceImage(root, "text-alias.png"))).toBe("UNSUPPORTED_TYPE");
+  });
+
   it("reports missing files and directories as NOT_FOUND / NOT_A_FILE", async () => {
     await mkdir(path.join(ws.dir, "folder.png"));
     expect(await codeOf(readWorkspaceImage(root, "docs/missing.png"))).toBe("NOT_FOUND");
