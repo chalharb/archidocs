@@ -39,19 +39,20 @@ Owner merges → issue closes → Product Analyst refills the lane       Develop
 `agent-project-sync.yml` (Status, Agent and Size fields). Moving a card by hand does not start an
 agent; change the label instead.
 
-| Label                                            | On     | Meaning / who sets it                                  |
-| ------------------------------------------------ | ------ | ------------------------------------------------------ |
-| `type:feature`, `type:task`, `type:requirements` | issue  | Work structure (Product Analyst)                       |
-| `area:*`, `priority:p1..p3`, `size:xs/s/m`       | issue  | Grooming (Product Analyst)                             |
-| `agent:dev-1`, `agent:dev-2`                     | issue  | Lane assignment (Product Analyst)                      |
-| `status:ready` → `status:in-progress`            | issue  | Start signal → dev working                             |
-| `status:needs-review`                            | PR     | Dev → Code Reviewer                                    |
-| `status:changes-requested`                       | PR     | Code Reviewer → Dev                                    |
-| `status:needs-qa`                                | PR     | Code Reviewer → QA                                     |
-| `status:qa-failed`                               | PR     | QA → Dev                                               |
-| `status:ready-to-merge`                          | PR     | QA → owner                                             |
-| `needs-human`                                    | either | All agents stop on this item until a person removes it |
-| `blocked`                                        | issue  | Waiting on another issue                               |
+| Label                                            | On     | Meaning / who sets it                                                                                                             |
+| ------------------------------------------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `type:feature`, `type:task`, `type:requirements` | issue  | Work structure (Product Analyst)                                                                                                  |
+| `area:*`, `priority:p1..p3`, `size:xs/s/m`       | issue  | Grooming (Product Analyst)                                                                                                        |
+| `agent:dev-1`, `agent:dev-2`                     | issue  | Lane assignment (Product Analyst)                                                                                                 |
+| `status:ready` → `status:in-progress`            | issue  | Start signal → dev working                                                                                                        |
+| `status:needs-review`                            | PR     | Dev → Code Reviewer                                                                                                               |
+| `status:changes-requested`                       | PR     | Code Reviewer → Dev                                                                                                               |
+| `status:needs-qa`                                | PR     | Code Reviewer → QA                                                                                                                |
+| `status:qa-failed`                               | PR     | QA → Dev                                                                                                                          |
+| `status:ready-to-merge`                          | PR     | QA → owner                                                                                                                        |
+| `needs-human`                                    | either | All agents stop on this item until a person removes it                                                                            |
+| `blocked`                                        | issue  | Waiting on another issue                                                                                                          |
+| `update-visual-baselines`                        | PR     | Regenerates Linux screenshot baselines on CI and commits them (`visual-baselines.yml`); review the images, then push or re-run CI |
 
 Work items: a **feature** issue groups **task** sub-issues; each task is the smallest piece that
 can merge and deploy on its own (one PR, `size:m` ≈ 400 lines at most). Milestones are phases.
