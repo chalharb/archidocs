@@ -17,17 +17,17 @@ Checkbox version of the effective requirements (baseline PRD v1.7 + accepted [ad
 | Checklist | Done | Total | % |
 |---|---:|---:|---:|
 | [00-phase-0-backlog](00-phase-0-backlog.md) | 27 | 27 | 100% |
-| [01-model-and-schema](01-model-and-schema.md) | 29 | 29 | 100% |
-| [02-diagrams](02-diagrams.md) | 12 | 13 | 92% |
-| [03-layout](03-layout.md) | 29 | 29 | 100% |
+| [01-model-and-schema](01-model-and-schema.md) | 29 | 31 | 93% |
+| [02-diagrams](02-diagrams.md) | 12 | 16 | 75% |
+| [03-layout](03-layout.md) | 29 | 30 | 96% |
 | [04-reliability](04-reliability.md) | 21 | 21 | 100% |
 | [05-security](05-security.md) | 12 | 13 | 92% |
-| [06-testing](06-testing.md) | 39 | 40 | 97% |
-| [07-performance](07-performance.md) | 11 | 12 | 91% |
+| [06-testing](06-testing.md) | 39 | 47 | 82% |
+| [07-performance](07-performance.md) | 11 | 13 | 84% |
 | [08-ci-quality-gates](08-ci-quality-gates.md) | 0 | 0 | 0% |
-| [09-later-phases](09-later-phases.md) | 7 | 25 | 28% |
+| [09-later-phases](09-later-phases.md) | 7 | 26 | 26% |
 | [10-documentation](10-documentation.md) | 14 | 14 | 100% |
-| **Total** | **201** | **223** | **90%** |
+| **Total** | **201** | **238** | **84%** |
 <!-- PROGRESS:END -->
 
 Regenerate with `scripts/prd-progress.sh --write`.

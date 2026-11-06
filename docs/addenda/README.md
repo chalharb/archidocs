@@ -26,20 +26,20 @@ New IDs introduced by addenda are recorded here so nobody allocates the same ID 
 
 | Family | Baseline range | Next free |
 |---|---|---|
-| MODEL | 01–10; MODEL-11..12 (ADD-011, Proposed) | MODEL-13 |
+| MODEL | 01–10; MODEL-11..12 (ADD-011) | MODEL-13 |
 | SCHEMA | 01–10 | SCHEMA-11 |
-| DIAG | 01–10; DIAG-11 (ADD-004); DIAG-12 (ADD-007); DIAG-13..15 (ADD-011, Proposed) | DIAG-16 |
-| LAYOUT | 01–24; LAYOUT-25 (ADD-005); LAYOUT-26 (ADD-008); LAYOUT-27 (ADD-011, Proposed) | LAYOUT-28 |
+| DIAG | 01–10; DIAG-11 (ADD-004); DIAG-12 (ADD-007); DIAG-13..15 (ADD-011) | DIAG-16 |
+| LAYOUT | 01–24; LAYOUT-25 (ADD-005); LAYOUT-26 (ADD-008); LAYOUT-27 (ADD-011) | LAYOUT-28 |
 | RELI | 01–14; RELI-15 (ADD-002) | RELI-16 |
 | SEC | 01–10; SEC-11..12 (ADD-009); SEC-13 (ADD-010) | SEC-14 |
-| TEST | 01–07; TEST-08 (ADD-009); TEST-09 (ADD-011, Proposed) | TEST-10 |
+| TEST | 01–07; TEST-08 (ADD-009); TEST-09 (ADD-011) | TEST-10 |
 | PERF | 01–05 | PERF-06 |
 | CI | 01–08 (assigned in checklist 08) | CI-09 |
 | P0 | 01–13 | P0-14 |
 | DOC | DOC-01..09 (ADD-009) | DOC-10 |
 | ADR | ADR-01..05 (ADD-009) | ADR-06 |
-| E2E | 01–05 (checklist 06); E2E-06..08 (ADD-009); E2E-09..11 (ADD-011, Proposed) | E2E-12 |
-| VR | 01–09 (checklist 06); VR-10..11 (ADD-009); VR-12..14 (ADD-011, Proposed) | VR-15 |
-| BENCH | 01–06 (checklist 07); BENCH-07 (ADD-009); BENCH-08 (ADD-011, Proposed) | BENCH-09 |
+| E2E | 01–05 (checklist 06); E2E-06..08 (ADD-009); E2E-09..11 (ADD-011) | E2E-12 |
+| VR | 01–09 (checklist 06); VR-10..11 (ADD-009); VR-12..14 (ADD-011) | VR-15 |
+| BENCH | 01–06 (checklist 07); BENCH-07 (ADD-009); BENCH-08 (ADD-011) | BENCH-09 |
 | PH2 | 01–06 (checklist 09); PH2-EXIT (ADD-009) | PH2-07 |
-| PH3 | 01–05 (checklist 09); PH3-EXIT (ADD-011, Proposed) | PH3-06 |
+| PH3 | 01–05 (checklist 09); PH3-EXIT (ADD-011) | PH3-06 |

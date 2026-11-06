@@ -15,6 +15,11 @@ Source: PRD §2.1, §3. Conventions: [checklists/README.md](README.md).
 - [x] **MODEL-09** `P0` `Phase 0` — Support reusable entities across diagrams (clarified by ADD-001) — ✅ examples/sample-workspace (entities reused across 6 diagrams), src/domain/graph-index.test.ts (6ba9f61)
 - [x] **MODEL-10** `P0` `Phase 0` — Detect invalid hierarchies and duplicate identifiers (clarified by ADD-001) — ✅ src/domain/validate.test.ts › hierarchies, src/domain/normalize.test.ts › duplicates (0f11a18)
 
+## Phase 3 (added by ADD-011)
+
+- [ ] **MODEL-11** `P1` `Phase 3` — `Flow` resource: ordered `steps[]` (`id`, `from`, `to`, `label`, optional `relationship`, `description`, `async`, `reply`); flow IDs unique workspace-wide (added by ADD-011)
+- [ ] **MODEL-12** `P1` `Phase 3` — Flow validation: unknown entities/relationships are errors; `FLOW_RELATIONSHIP_MISMATCH` and `FLOW_UNMODELLED_STEP` warnings; flows join the normalized model, graph index and snapshot; the inspector lists an entity's flows (added by ADD-011)
+
 ## `archdocs/v1` resource kinds (§3)
 
 Each kind needs a strict schema, valid and invalid fixtures, and tests.
