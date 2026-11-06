@@ -54,8 +54,22 @@ export default defineConfig({
           name: "integration",
           environment: "node",
           include: ["src/**/*.integration.test.ts", "tests/integration/**/*.test.ts"],
+          exclude: ["tests/integration/performance.test.ts"],
           testTimeout: 20_000,
           hookTimeout: 20_000,
+        },
+      },
+      {
+        // PERF-04 budgets time real work, so they run alone after every other project
+        // (higher groupOrder) instead of competing for CPU with parallel test files.
+        resolve: { alias },
+        test: {
+          name: "performance",
+          environment: "node",
+          include: ["tests/integration/performance.test.ts"],
+          testTimeout: 60_000,
+          hookTimeout: 20_000,
+          sequence: { groupOrder: 1 },
         },
       },
       {
