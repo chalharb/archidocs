@@ -6,10 +6,29 @@ export type FsErrorCode =
   | "NOT_FOUND"
   | "NOT_A_FILE"
   | "TOO_LARGE"
+  | "UNSUPPORTED_TYPE"
   | "PERMISSION_DENIED"
   | "IO_ERROR";
 
+/**
+ * Brand shared by every copy of this module. Next.js can load it once per
+ * bundle layer (SSR chunk vs. route handler), and the workspace service
+ * singleton on `globalThis` may throw errors built by another copy, so
+ * `instanceof` checks the brand instead of class identity.
+ */
+const FS_ERROR_BRAND = Symbol.for("archidoc.FsError");
+
 export class FsError extends Error {
+  readonly [FS_ERROR_BRAND] = true;
+
+  static [Symbol.hasInstance](value: unknown): boolean {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      (value as { [FS_ERROR_BRAND]?: unknown })[FS_ERROR_BRAND] === true
+    );
+  }
+
   constructor(
     readonly code: FsErrorCode,
     message: string,

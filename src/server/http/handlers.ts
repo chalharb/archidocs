@@ -10,6 +10,7 @@ import {
   layoutSettingsOverridesSchema,
   nodePlacementSchema,
 } from "@/domain/schema/resource-schemas";
+import { FsError, type FsErrorCode } from "../fs/errors";
 import { LayoutSaveError, type LayoutSaveErrorCode } from "../persistence/layout-writer";
 import type { WorkspaceService } from "../service";
 import { staleNotice, type WorkspaceRepository } from "../workspace/repository";
@@ -141,6 +142,21 @@ function summary(repo: WorkspaceRepository) {
     diagnostics: notice ? [notice, ...snap.diagnostics] : snap.diagnostics,
   };
 }
+
+const FS_ERROR_STATUS: Record<FsErrorCode, number> = {
+  INVALID_PATH: 400,
+  OUTSIDE_ROOT: 403,
+  SYMLINK_REJECTED: 403,
+  PERMISSION_DENIED: 403,
+  NOT_FOUND: 404,
+  NOT_A_FILE: 404,
+  TOO_LARGE: 413,
+  UNSUPPORTED_TYPE: 415,
+  IO_ERROR: 500,
+};
+
+/** Restrictive policy for SVG so embedded scripts never run, even when opened directly. */
+export const SVG_CSP = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 
 // --- Handlers ------------------------------------------------------------------
 
@@ -322,4 +338,36 @@ export function workspaceEvents(request: Request, deps: HttpDeps, params: { work
       },
     });
   })(request, deps);
+}
+
+/**
+ * Serve a workspace image by relative path (SEC-12). Read-only, so it works the
+ * same in hosted read-only mode (SEC-13). Refusals use the filesystem error codes.
+ */
+export async function getWorkspaceFile(
+  request: Request,
+  deps: HttpDeps,
+  params: { workspace: string; path: string[] },
+): Promise<Response> {
+  const res = await guarded(async () => {
+    const r = await repositoryFor(deps, params.workspace);
+    if (!r.ok) return r.response;
+    try {
+      const image = await r.repo.readImage(params.path.join("/"));
+      const headers: Record<string, string> = {
+        "content-type": image.contentType,
+        "content-length": String(image.bytes.byteLength),
+        "cache-control": "no-store",
+      };
+      if (image.contentType === "image/svg+xml") headers["content-security-policy"] = SVG_CSP;
+      return new Response(new Uint8Array(image.bytes), { status: 200, headers });
+    } catch (err) {
+      if (!(err instanceof FsError)) throw err;
+      if (err.code === "IO_ERROR") console.error("[archidoc] image read failed", err);
+      const message = err.code === "IO_ERROR" ? "Could not read the file" : err.message;
+      return errorResponse(FS_ERROR_STATUS[err.code], err.code, message);
+    }
+  })(request, deps);
+  res.headers.set("x-content-type-options", "nosniff");
+  return res;
 }
