@@ -1,0 +1,90 @@
+# QA agent: once code review passes (status:needs-qa), waits for CI, verifies the PR against
+# its issue's acceptance criteria, and either hands it to the repo owner to merge or sends it
+# back to the dev lane. Prompt: .claude/agent-prompts/qa.md
+name: "Agent: QA"
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to QA
+        required: true
+
+jobs:
+  qa:
+    if: >-
+      vars.AGENTS_PAUSED != 'true' && (
+        github.event_name == 'workflow_dispatch' || (
+          github.event.label.name == 'status:needs-qa' &&
+          github.event.pull_request.state == 'open' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          !contains(github.event.pull_request.labels.*.name, 'needs-human')
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: agent-qa-${{ github.event.pull_request.number || inputs.pr }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      actions: read
+      checks: read
+      id-token: write
+    env:
+      PR: ${{ github.event.pull_request.number || inputs.pr }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number || inputs.pr }}/head
+          fetch-depth: 0
+
+      # Wait for the CI workflow on the PR's head commit (not for this job's own check).
+      - id: ci
+        name: Wait for CI
+        run: |
+          sha="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
+          for _ in $(seq 1 80); do
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&event=pull_request" \
+              --jq '[.workflow_runs[] | select(.name == "CI" or .name == "Conventional Commits")]')"
+            pending="$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")"
+            count="$(jq 'length' <<<"$runs")"
+            if [[ "$count" -ge 2 && "$pending" -eq 0 ]]; then break; fi
+            sleep 30
+          done
+          summary="$(jq -r '.[] | "\(.name): \(.conclusion // .status) (\(.html_url))"' <<<"$runs")"
+          failed="$(jq '[.[] | select(.conclusion != "success")] | length' <<<"$runs")"
+          if [[ "$count" -lt 2 || "$failed" -ne 0 ]]; then result=failure; else result=success; fi
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+          { echo "summary<<EOF"; echo "$summary"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          echo "CI $result"; echo "$summary"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: claude,${{ vars.DEV_APP_SLUG }}
+          additional_permissions: |
+            actions: read
+          prompt: |
+            You are the QA agent for ${{ github.repository }}.
+            Follow .claude/agent-prompts/qa.md exactly.
+
+            Pull request: ${{ env.PR }}
+            Repository owner (assign when approved): ${{ github.repository_owner }}
+            CI result for the head commit: ${{ steps.ci.outputs.result }}
+            ${{ steps.ci.outputs.summary }}
+          claude_args: |
+            --max-turns 120
+            --allowedTools "Read,Glob,Grep,Write,Bash,TodoWrite"

@@ -1,0 +1,83 @@
+# Code Reviewer agent: reviews PRs labeled status:needs-review against Next.js, web security and
+# UI/accessibility best practices, then approves or requests changes as claude[bot].
+# Prompt: .claude/agent-prompts/code-reviewer.md
+name: "Agent: Code Reviewer"
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to review
+        required: true
+
+jobs:
+  review:
+    if: >-
+      vars.AGENTS_PAUSED != 'true' && (
+        github.event_name == 'workflow_dispatch' || (
+          github.event.label.name == 'status:needs-review' &&
+          github.event.pull_request.state == 'open' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          !contains(github.event.pull_request.labels.*.name, 'needs-human')
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: agent-review-${{ github.event.pull_request.number || inputs.pr }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number || inputs.pr }}/head
+          fetch-depth: 0
+
+      # Agents must never change their own instructions, workflows or the baseline PRD.
+      - id: guard
+        name: Stop on protected paths
+        run: |
+          base="origin/${BASE_REF}"
+          git fetch -q origin "$BASE_REF"
+          changed="$(git diff --name-only "$(git merge-base "$base" HEAD)" HEAD)"
+          protected="$(grep -E '^(\.github/|\.claude/|CLAUDE\.md$|docs/Archidocs-prd\.md$)' <<<"$changed" || true)"
+          if [[ -n "$protected" ]]; then
+            {
+              echo "🛑 This PR changes protected paths, so the agents will not review or approve it:"
+              echo
+              sed 's/^/- `/; s/$/`/' <<<"$protected"
+              echo
+              echo "A person needs to review it. Remove \`needs-human\` and re-add \`status:needs-review\` to resume."
+            } > "$RUNNER_TEMP/guard.md"
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/guard.md"
+            gh pr edit "$PR" --add-label needs-human --remove-label status:needs-review
+            echo "stop=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number || inputs.pr }}
+          BASE_REF: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
+
+      - if: steps.guard.outputs.stop != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: claude,${{ vars.DEV_APP_SLUG }}
+          additional_permissions: |
+            actions: read
+          classify_inline_comments: "false"
+          prompt: |
+            You are the Code Reviewer agent for ${{ github.repository }}.
+            Follow .claude/agent-prompts/code-reviewer.md exactly.
+
+            Pull request: ${{ github.event.pull_request.number || inputs.pr }}
+          claude_args: |
+            --max-turns 80
+            --allowedTools "Read,Glob,Grep,TodoWrite,WebFetch,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr review:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh issue view:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*)"

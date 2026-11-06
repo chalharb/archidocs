@@ -1,0 +1,49 @@
+# Mirrors status:/agent:/size: labels onto the GitHub Project board. No LLM involved.
+# Labels are the source of truth (docs/agents.md); this keeps the kanban view in step.
+name: "Agents: project board sync"
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, closed, reopened]
+  pull_request:
+    types: [opened, edited, labeled, unlabeled, closed, reopened]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to resync
+        required: true
+
+concurrency:
+  group: project-sync-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - uses: actions/github-script@v7
+        env:
+          PROJECT_OWNER: ${{ vars.PROJECT_OWNER || github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER || '2' }}
+          HAS_PAT: ${{ secrets.PROJECT_PAT != '' }}
+        with:
+          github-token: ${{ secrets.PROJECT_PAT || github.token }}
+          script: |
+            if (process.env.HAS_PAT !== "true") {
+              core.warning("PROJECT_PAT is not set; skipping board sync.");
+              return;
+            }
+            const { run } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/project-sync.mjs`);
+            await run({
+              github,
+              context,
+              core,
+              projectOwner: process.env.PROJECT_OWNER,
+              projectNumber: Number(process.env.PROJECT_NUMBER),
+            });
