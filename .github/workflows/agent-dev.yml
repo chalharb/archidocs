@@ -1,0 +1,165 @@
+# Developer agents (Dev 1 and Dev 2 lanes). Implements a status:ready issue, or addresses
+# review/QA feedback on its own PR. Pushes as the dev GitHub App so the Code Reviewer
+# (claude[bot]) is allowed to approve. Prompt: .claude/agent-prompts/developer.md
+name: "Agent: Developer"
+
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: Dev lane
+        type: choice
+        options: [dev-1, dev-2]
+      issue:
+        description: Issue number to implement (leave empty when fixing a PR)
+        required: false
+      pr:
+        description: PR number to address feedback on (leave empty when implementing)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  route:
+    # Cheap filter so unrelated label events never start a runner for the agent.
+    if: >-
+      vars.AGENTS_PAUSED != 'true' && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'issues' && github.event.label.name == 'status:ready') ||
+        (github.event_name == 'pull_request' && (
+          github.event.label.name == 'status:changes-requested' ||
+          github.event.label.name == 'status:qa-failed'))
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    outputs:
+      run: ${{ steps.route.outputs.run }}
+      lane: ${{ steps.route.outputs.lane }}
+      mode: ${{ steps.route.outputs.mode }}
+      issue: ${{ steps.route.outputs.issue }}
+      pr: ${{ steps.route.outputs.pr }}
+      branch: ${{ steps.route.outputs.branch }}
+    steps:
+      - id: route
+        uses: actions/github-script@v7
+        env:
+          MAX_ROUNDS: ${{ vars.AGENT_MAX_REVIEW_ROUNDS || '3' }}
+          IN_LANE: ${{ inputs.lane }}
+          IN_ISSUE: ${{ inputs.issue }}
+          IN_PR: ${{ inputs.pr }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const stopLabels = ["needs-human", "blocked"];
+            const names = (labels) => labels.map((l) => (typeof l === "string" ? l : l.name));
+            const skip = (why) => { core.info(`Skipping: ${why}`); core.setOutput("run", "false"); };
+            const lanes = ["dev-1", "dev-2"];
+
+            let lane, mode, issue = "", pr = "", branch = "";
+            if (context.eventName === "workflow_dispatch") {
+              lane = process.env.IN_LANE;
+              if (process.env.IN_PR) { mode = "fix"; pr = process.env.IN_PR; }
+              else if (process.env.IN_ISSUE) { mode = "implement"; issue = process.env.IN_ISSUE; }
+              else return skip("give an issue or a PR number");
+            } else if (context.eventName === "issues") {
+              // Re-read labels: the payload can lag behind labels added in the same edit.
+              const { data } = await github.rest.issues.get({ owner, repo, issue_number: context.payload.issue.number });
+              const labels = names(data.labels);
+              if (data.state !== "open") return skip("issue is closed");
+              if (!labels.includes("status:ready")) return skip("status:ready no longer present");
+              if (labels.some((l) => stopLabels.includes(l))) return skip("issue has a stop label");
+              const assigned = lanes.filter((l) => labels.includes(`agent:${l}`));
+              if (assigned.length !== 1) return skip(`expected exactly one agent: label, found ${assigned.length}`);
+              lane = assigned[0]; mode = "implement"; issue = String(data.number);
+            } else {
+              const p = context.payload.pull_request;
+              if (p.state !== "open") return skip("PR is closed");
+              if (p.head.repo.full_name !== `${owner}/${repo}`) return skip("PR is from a fork");
+              lane = lanes.find((l) => p.head.ref.startsWith(`${l}/`));
+              if (!lane) return skip(`branch ${p.head.ref} does not belong to a dev lane`);
+              mode = "fix"; pr = String(p.number);
+            }
+            if (!lanes.includes(lane)) return skip(`unknown lane ${lane}`);
+
+            if (mode === "fix") {
+              const { data: p } = await github.rest.pulls.get({ owner, repo, pull_number: Number(pr) });
+              if (names(p.labels).some((l) => stopLabels.includes(l))) return skip("PR has a stop label");
+              branch = p.head.ref;
+              const reviews = await github.paginate(github.rest.pulls.listReviews, { owner, repo, pull_number: p.number });
+              const rounds = reviews.filter((r) => r.state === "CHANGES_REQUESTED").length;
+              const max = Number(process.env.MAX_ROUNDS);
+              if (rounds >= max) {
+                await github.rest.issues.addLabels({ owner, repo, issue_number: p.number, labels: ["needs-human"] });
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: p.number,
+                  body: `🛑 ${rounds} rounds of requested changes (limit ${max}). Agents have stopped on this PR; ` +
+                    "a person needs to step in. Remove `needs-human` and re-add the last status label to resume.",
+                });
+                return skip("review round limit reached");
+              }
+            }
+            core.setOutput("run", "true");
+            for (const [k, v] of Object.entries({ lane, mode, issue, pr, branch })) core.setOutput(k, v);
+            core.info(`${lane}: ${mode} issue=${issue} pr=${pr}`);
+
+  develop:
+    needs: route
+    if: needs.route.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    # One job at a time per lane; a dev never works two items in parallel.
+    concurrency:
+      group: agent-${{ needs.route.outputs.lane }}
+      cancel-in-progress: false
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.DEV_APP_ID }}
+          private-key: ${{ secrets.DEV_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+
+      - id: bot
+        name: Resolve the dev App's git identity
+        run: echo "id=$(gh api "/users/${SLUG}%5Bbot%5D" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          SLUG: ${{ steps.app.outputs.app-slug }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app.outputs.token }}
+          ref: ${{ needs.route.outputs.branch || github.event.repository.default_branch }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.app.outputs.token }}
+          bot_name: ${{ steps.app.outputs.app-slug }}[bot]
+          bot_id: ${{ steps.bot.outputs.id }}
+          allowed_bots: claude,${{ steps.app.outputs.app-slug }}
+          prompt: |
+            You are the ${{ needs.route.outputs.lane }} developer agent for ${{ github.repository }}.
+            Follow .claude/agent-prompts/developer.md exactly.
+
+            Lane: ${{ needs.route.outputs.lane }}
+            Mode: ${{ needs.route.outputs.mode }}
+            Issue: ${{ needs.route.outputs.issue }}
+            Pull request: ${{ needs.route.outputs.pr }}
+            Branch prefix: ${{ needs.route.outputs.lane }}/
+          claude_args: |
+            --max-turns 200
+            --allowedTools "Read,Glob,Grep,Write,Edit,MultiEdit,Bash,TodoWrite,WebFetch,WebSearch"

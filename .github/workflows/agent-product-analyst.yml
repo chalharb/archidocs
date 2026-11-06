@@ -1,0 +1,57 @@
+# Product Analyst agent: turns remaining requirements into feature/task issues, grooms the
+# backlog and hands one task at a time to each dev lane. Prompt: .claude/agent-prompts/product-analyst.md
+name: "Agent: Product Analyst"
+
+on:
+  schedule:
+    - cron: "17 14 * * 1-5" # weekdays; re-plans even if no event fired
+  issues:
+    types: [closed] # a task finished → a lane may be free
+  pull_request:
+    types: [labeled] # status:ready-to-merge frees the lane
+  workflow_dispatch:
+    inputs:
+      instructions:
+        description: Optional extra instructions for this run (e.g. "focus on Phase 2 exit")
+        required: false
+
+concurrency:
+  group: agent-product-analyst
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      vars.AGENTS_PAUSED != 'true' && (
+        github.event_name != 'pull_request' ||
+        github.event.label.name == 'status:ready-to-merge'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          EXTRA_INSTRUCTIONS: ${{ inputs.instructions }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: claude,${{ vars.DEV_APP_SLUG }}
+          prompt: |
+            You are the Product Analyst agent for ${{ github.repository }}.
+            Follow .claude/agent-prompts/product-analyst.md exactly.
+
+            Trigger: ${{ github.event_name }}
+            Project owner (for assigning merges): ${{ github.repository_owner }}
+            Extra instructions from the product owner, if any, are in the
+            EXTRA_INSTRUCTIONS environment variable (read it with `printenv EXTRA_INSTRUCTIONS`).
+          claude_args: |
+            --max-turns 120
+            --allowedTools "Read,Glob,Grep,Write,Edit,Bash,TodoWrite"

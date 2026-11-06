@@ -10,6 +10,7 @@ Architecture Docs is a local-first architecture documentation app (Next.js, Type
 | How the requirements docs work (full guide) | `docs/README.md` |
 | Changes/pivots to the baseline | `docs/addenda/` (index in `docs/addenda/README.md`) |
 | Progress tracking checklists | `docs/checklists/` (summary in `docs/checklists/README.md`) |
+| Autonomous agent workflow (labels, hand-offs, guardrails) | `docs/agents.md` |
 
 **The effective requirements = baseline PRD + every addendum with status `Accepted`.** Addenda marked `Consolidated into v1.7` are already part of the baseline. When an accepted addendum conflicts with the baseline, the addendum wins. A later addendum wins over an earlier one.
 

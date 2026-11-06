@@ -1,0 +1,65 @@
+# Regenerates the Linux Playwright screenshot baselines (VR-*, ADD-005/007) on the same
+# runner image CI uses, and commits them to the PR branch. Baselines are per platform
+# (`-chromium-linux.png` vs the local `-chromium-darwin.png`), so they must come from CI.
+#
+# Use: add the `update-visual-baselines` label to a PR (same-repo branches only), or run it
+# from the Actions tab on a branch. Review the committed images in the PR diff before merging.
+# The commit is made with GITHUB_TOKEN, which does not re-trigger CI: push your next commit or
+# re-run the CI workflow afterwards.
+name: Update visual baselines
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+concurrency:
+  group: visual-baselines-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.label.name == 'update-visual-baselines' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Regenerate screenshots
+        run: pnpm exec playwright test tests/e2e/visual.spec.ts tests/e2e/docs.spec.ts --update-snapshots=changed
+        env: { CI: "true" }
+
+      - name: Commit changed baselines
+        run: |
+          git add 'tests/e2e/__screenshots__/**/*-linux.png'
+          if git diff --cached --quiet; then
+            echo "Baselines already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(e2e): update linux visual regression baselines"
+          git push origin "HEAD:${BRANCH}"
+
+      - name: Remove trigger label
+        if: always() && github.event_name == 'pull_request'
+        run: gh pr edit "$PR" --remove-label update-visual-baselines
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
