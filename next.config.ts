@@ -24,12 +24,17 @@ function workspaceRoots(): string[] {
   return roots;
 }
 
+const TRACED_EXTENSIONS = ["yaml", "yml", "md", "png", "jpg", "jpeg", "gif", "webp", "svg"];
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   // Only the file types the app reads, so local app state (drafts) never ships.
+  // Images mirror IMAGE_CONTENT_TYPES in src/server/fs/images.ts (SEC-12).
   outputFileTracingIncludes: {
-    "/**": workspaceRoots().flatMap((r) => [`${r}/**/*.yaml`, `${r}/**/*.yml`, `${r}/**/*.md`]),
+    "/**": workspaceRoots().flatMap((r) =>
+      TRACED_EXTENSIONS.flatMap((ext) => [`${r}/**/*.${ext}`, `${r}/**/*.${ext.toUpperCase()}`]),
+    ),
   },
   turbopack: {
     rules: {
