@@ -55,3 +55,7 @@ jobs:
           claude_args: |
             --max-turns 120
             --allowedTools "Read,Glob,Grep,Write,Edit,Bash,TodoWrite"
+
+      - name: Explain agent failure
+        if: failure()
+        run: .github/scripts/agent-error.sh
