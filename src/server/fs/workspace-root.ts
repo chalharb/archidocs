@@ -109,6 +109,11 @@ export class WorkspaceRoot {
 
   /** Read a UTF-8 file, enforcing `maxBytes` before loading it. */
   async readFile(rel: string, maxBytes: number): Promise<string> {
+    return (await this.readBytes(rel, maxBytes)).toString("utf8");
+  }
+
+  /** Read a file's raw bytes, enforcing `maxBytes` before loading it. */
+  async readBytes(rel: string, maxBytes: number): Promise<Buffer> {
     const target = await this.resolve(rel, "read");
     let handle: fsp.FileHandle | undefined;
     try {
@@ -122,7 +127,7 @@ export class WorkspaceRoot {
           rel,
         );
       }
-      return await handle.readFile("utf8");
+      return await handle.readFile();
     } catch (err) {
       throw toFsError(err, rel);
     } finally {

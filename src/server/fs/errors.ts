@@ -6,6 +6,7 @@ export type FsErrorCode =
   | "NOT_FOUND"
   | "NOT_A_FILE"
   | "TOO_LARGE"
+  | "UNSUPPORTED_TYPE"
   | "PERMISSION_DENIED"
   | "IO_ERROR";
 

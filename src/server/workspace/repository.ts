@@ -18,6 +18,7 @@ import { resolveLayoutSettings, type ResolvedSettings } from "@/domain/layout/se
 import type { LayoutSettings } from "@/domain/resources";
 import { sourceKey, type CanonicalEntity, type CanonicalRelationship } from "@/domain/model";
 import { WorkspaceRoot } from "../fs/workspace-root";
+import { readWorkspaceImage, type WorkspaceImage } from "../fs/images";
 import type { AtomicWriteOps } from "../fs/atomic-write";
 import { assessDraft, DraftStore, type DraftState, type LayoutDraft } from "../persistence/drafts";
 import {
@@ -152,6 +153,11 @@ export class WorkspaceRepository {
       diagrams: lookup.diagramsForEntity(index, entityId),
       documentation: entityDocumentation(snap, entityId),
     };
+  }
+
+  /** Read a workspace image by relative path (SEC-12). Throws FsError when refused. */
+  readImage(relPath: string): Promise<WorkspaceImage> {
+    return readWorkspaceImage(this.root, relPath);
   }
 
   async diagramView(diagramId: string): Promise<DiagramView | null> {

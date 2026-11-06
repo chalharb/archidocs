@@ -1,8 +1,10 @@
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CONTAINERS_LAYOUT, copySampleWorkspace } from "../../../tests/helpers/workspace";
-import type { TempDir } from "../../../tests/helpers/tmp";
+import { tempDir, type TempDir } from "../../../tests/helpers/tmp";
+import { toFsError } from "../fs/errors";
+import { MAX_IMAGE_BYTES } from "../fs/images";
 import { WorkspaceService, getHttpDeps, getWorkspaceService } from "../service";
 import {
   MAX_BODY_BYTES,
@@ -10,6 +12,8 @@ import {
   getDiagram,
   getEntity,
   getWorkspace,
+  getWorkspaceFile,
+  SVG_CSP,
   listWorkspaces,
   reloadWorkspace,
   saveDraft,
@@ -405,5 +409,145 @@ describe("workspace change events", () => {
         )
       ).status,
     ).toBe(403);
+  });
+});
+
+describe("workspace images (SEC-12)", () => {
+  const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const SVG = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
+  const file = (p: string, workspace = "sample", d: HttpDeps = deps) =>
+    getWorkspaceFile(get(`/api/workspaces/${workspace}/files/${p}`), d, {
+      workspace,
+      path: p.split("/"),
+    });
+  const put = async (rel: string, content: string | Buffer) => {
+    await mkdir(path.dirname(path.join(ws.dir, rel)), { recursive: true });
+    await writeFile(path.join(ws.dir, rel), content);
+  };
+
+  it.each([
+    ["img/a.png", "image/png"],
+    ["img/a.jpg", "image/jpeg"],
+    ["img/a.jpeg", "image/jpeg"],
+    ["img/a.gif", "image/gif"],
+    ["img/a.webp", "image/webp"],
+  ])("serves %s as %s with nosniff and no CSP", async (p, type) => {
+    await put(p, PNG);
+    const res = await file(p);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe(type);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("content-length")).toBe(String(PNG.byteLength));
+    expect(res.headers.get("content-security-policy")).toBeNull();
+    expect(Buffer.from(await res.arrayBuffer()).equals(PNG)).toBe(true);
+  });
+
+  it("serves SVG as an image with a restrictive CSP", async () => {
+    await put("img/diagram.svg", SVG);
+    const res = await file("img/diagram.svg");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("image/svg+xml");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    const csp = res.headers.get("content-security-policy")!;
+    expect(csp).toBe(SVG_CSP);
+    for (const directive of ["default-src 'none'", "style-src 'unsafe-inline'", "sandbox"]) {
+      expect(csp).toContain(directive);
+    }
+    expect(await res.text()).toBe(SVG);
+  });
+
+  const refused = async (res: Response, status: number, code: string) => {
+    expect(res.status).toBe(status);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("content-type")).toContain("application/json");
+    expect((await res.json()).error.code).toBe(code);
+  };
+
+  it("refuses disallowed types with 415", async () => {
+    await refused(await file("workspace.yaml"), 415, "UNSUPPORTED_TYPE");
+    await refused(await file("img/page.html"), 415, "UNSUPPORTED_TYPE");
+  });
+
+  it("refuses images over 5 MiB with 413", async () => {
+    await put("img/huge.png", Buffer.alloc(MAX_IMAGE_BYTES + 1));
+    await refused(await file("img/huge.png"), 413, "TOO_LARGE");
+  });
+
+  it.each([
+    ["..", "secret.png"],
+    ["img", "..", "..", "secret.png"],
+    ["%2e%2e", "secret.png"].map(decodeURIComponent),
+    ["..%2Fsecret.png"].map(decodeURIComponent),
+    ["", "etc", "passwd.png"],
+  ])("refuses traversal and absolute path %j with 403", async (...segments) => {
+    const res = await getWorkspaceFile(get("/api/workspaces/sample/files/x"), deps, {
+      workspace: "sample",
+      path: segments,
+    });
+    await refused(res, 403, "OUTSIDE_ROOT");
+  });
+
+  it("refuses symlinks pointing outside the workspace with 403", async () => {
+    const outside = await tempDir({ "secret.png": "secret" });
+    try {
+      await symlink(path.join(outside.dir, "secret.png"), path.join(ws.dir, "leak.png"));
+      await refused(await file("leak.png"), 403, "SYMLINK_REJECTED");
+    } finally {
+      await outside.cleanup();
+    }
+  });
+
+  it("refuses hidden directories such as .git with 400", async () => {
+    await put(".git/logo.png", PNG);
+    await refused(await file(".git/logo.png"), 400, "INVALID_PATH");
+  });
+
+  it("returns 404 for a missing file or unknown workspace", async () => {
+    await refused(await file("img/missing.png"), 404, "NOT_FOUND");
+    await refused(await file("img/a.png", "nope"), 404, "WORKSPACE_NOT_FOUND");
+  });
+
+  it("applies the request guard", async () => {
+    await put("img/a.png", PNG);
+    const res = await getWorkspaceFile(
+      get("/api/workspaces/sample/files/img/a.png", { host: "evil.example" }),
+      deps,
+      { workspace: "sample", path: ["img", "a.png"] },
+    );
+    expect(res.status).toBe(403);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("hides I/O error details", async () => {
+    await put("img/a.png", PNG);
+    const repo = (await service.get("sample"))!.repository!;
+    const spy = vi
+      .spyOn(repo.root, "readBytes")
+      .mockRejectedValue(
+        toFsError(Object.assign(new Error("disk on fire"), { code: "EIO" }), "img/a.png"),
+      );
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const res = await file("img/a.png");
+      expect(res.status).toBe(500);
+      const body = await res.json();
+      expect(body.error.code).toBe("IO_ERROR");
+      expect(body.error.message).not.toContain("disk on fire");
+    } finally {
+      spy.mockRestore();
+      errors.mockRestore();
+    }
+  });
+
+  it("serves images the same way in hosted read-only mode (SEC-13)", async () => {
+    await put("img/a.png", PNG);
+    const hosted = new WorkspaceService({ ...service.config, readOnly: true });
+    try {
+      const res = await file("img/a.png", "sample", { service: hosted, allowedHosts: [] });
+      expect(res.status).toBe(200);
+      expect(Buffer.from(await res.arrayBuffer()).equals(PNG)).toBe(true);
+    } finally {
+      await hosted.close();
+    }
   });
 });
