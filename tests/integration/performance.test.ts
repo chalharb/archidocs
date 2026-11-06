@@ -9,7 +9,7 @@ import { layoutAll } from "@/domain/layout/elk";
 import { resolveLayout } from "@/domain/layout/positions";
 import { APP_DEFAULT_LAYOUT_SETTINGS } from "@/domain/layout/settings";
 import { WorkspaceRepository } from "@/server/workspace/repository";
-import { benchFiles, writeBenchWorkspace } from "../bench/fixture";
+import { benchFiles, WITH_MARKDOWN, writeBenchWorkspace } from "../bench/fixture";
 import { tempDir, type TempDir } from "../helpers/tmp";
 
 async function median(runs: number, fn: () => unknown | Promise<unknown>): Promise<number> {
@@ -24,16 +24,20 @@ async function median(runs: number, fn: () => unknown | Promise<unknown>): Promi
 }
 
 let ws: TempDir;
+let mdWs: TempDir;
 let repo: WorkspaceRepository;
 
 beforeAll(async () => {
   ws = await tempDir();
   await writeBenchWorkspace(ws.dir);
+  mdWs = await tempDir();
+  await writeBenchWorkspace(mdWs.dir, WITH_MARKDOWN);
   repo = await WorkspaceRepository.open("perf", ws.dir);
 });
 afterAll(async () => {
   await repo.close();
   await ws.cleanup();
+  await mdWs.cleanup();
 });
 
 describe("benchmark fixture (PERF-01)", () => {
@@ -46,6 +50,25 @@ describe("benchmark fixture (PERF-01)", () => {
     const d = resolveDiagram(snap.model, "bench").diagram!;
     expect([d.nodes.length, d.edges.length]).toEqual([100, 150]);
   });
+
+  it("is deterministic and valid with 200 Markdown resources (BENCH-07)", async () => {
+    expect(JSON.stringify(benchFiles(WITH_MARKDOWN))).toBe(
+      JSON.stringify(benchFiles(WITH_MARKDOWN)),
+    );
+    const md = await WorkspaceRepository.open("perf-md", mdWs.dir);
+    try {
+      const snap = md.snapshot();
+      expect(snap.diagnostics).toEqual([]);
+      expect(Object.keys(snap.model.entities)).toHaveLength(100);
+      const docs = Object.values(snap.model.documents);
+      const adrs = Object.values(snap.model.decisions);
+      expect([docs.length, adrs.length]).toEqual([120, 80]);
+      expect(adrs.filter((a) => a.supersedes?.length).length).toBeGreaterThan(0);
+      expect(adrs.filter((a) => a.status === "superseded").length).toBeGreaterThan(0);
+    } finally {
+      await md.close();
+    }
+  });
 });
 
 describe("performance budgets", () => {
@@ -54,6 +77,13 @@ describe("performance budgets", () => {
       (await WorkspaceRepository.open("cold", ws.dir)).close(),
     );
     expect(ms).toBeLessThan(1000);
+  });
+
+  it("BENCH-07: loads 100 entities and 200 Markdown resources in under 1.5 s (cold)", async () => {
+    const ms = await median(5, async () =>
+      (await WorkspaceRepository.open("cold-md", mdWs.dir)).close(),
+    );
+    expect(ms).toBeLessThan(1500);
   });
 
   it("BENCH-02: resolves 100 nodes and 150 edges in under 200 ms", async () => {
