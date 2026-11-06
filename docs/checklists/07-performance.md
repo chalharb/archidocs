@@ -23,4 +23,4 @@ Source: PRD §8. Conventions: [checklists/README.md](README.md). Targets are pro
 
 ## Phase 2 (added by ADD-009)
 
-- [ ] **BENCH-07** `Phase 2` — Load 100 entities and 200 Markdown resources in under 1.5 s, cold (added by ADD-009)
+- [x] **BENCH-07** `Phase 2` — Load 100 entities and 200 Markdown resources in under 1.5 s, cold (added by ADD-009) — ✅ cold load mean 337 ms on a CI runner; reference-machine re-run pending (docs/performance.md, tests/integration/performance.test.ts)

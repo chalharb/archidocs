@@ -6,24 +6,32 @@ import { resolveLayout } from "@/domain/layout/positions";
 import { APP_DEFAULT_LAYOUT_SETTINGS } from "@/domain/layout/settings";
 import { WorkspaceRepository } from "@/server/workspace/repository";
 import { tempDir, type TempDir } from "../helpers/tmp";
-import { writeBenchWorkspace } from "./fixture";
+import { WITH_MARKDOWN, writeBenchWorkspace } from "./fixture";
 
 let ws: TempDir;
+let mdWs: TempDir;
 let repo: WorkspaceRepository;
 
 beforeAll(async () => {
   ws = await tempDir();
   await writeBenchWorkspace(ws.dir);
+  mdWs = await tempDir();
+  await writeBenchWorkspace(mdWs.dir, WITH_MARKDOWN);
   repo = await WorkspaceRepository.open("bench", ws.dir);
 });
 afterAll(async () => {
   await repo.close();
   await ws.cleanup();
+  await mdWs.cleanup();
 });
 
 describe("workspace loading (BENCH-01, PERF-02)", () => {
   bench("cold load: 100 entities", async () => {
     const r = await WorkspaceRepository.open("cold", ws.dir);
+    await r.close();
+  });
+  bench("cold load: 100 entities + 200 Markdown resources (BENCH-07)", async () => {
+    const r = await WorkspaceRepository.open("cold-md", mdWs.dir);
     await r.close();
   });
   bench("warm reload: 100 entities, unchanged", async () => {
