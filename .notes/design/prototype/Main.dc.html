@@ -1,0 +1,1825 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Archidocs — architecture explorer</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#09090b}
+a{color:#e4e4e7}a:hover{color:#ffffff}
+.ad{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:#fafafa;-webkit-font-smoothing:antialiased}
+.ad *{box-sizing:border-box}
+.ad button{font:inherit;color:inherit;cursor:pointer;margin:0}
+.ad-mono{font-family:'Geist Mono',ui-monospace,SFMono-Regular,monospace}
+.ad-ghost{background:transparent;border:1px solid transparent;border-radius:6px}
+.ad-ghost:hover{background:#27272a}
+.ad-outline{background:#09090b;border:1px solid #27272a;border-radius:6px}
+.ad-outline:hover{background:#18181b}
+.ad-tree{background:transparent;border:0;border-radius:6px}
+.ad-tree:hover{background:#18181b;color:#fafafa}
+.ad-link{background:transparent;border:0;border-radius:6px}
+.ad-link:hover{background:#18181b}
+.ad-node{transition:box-shadow .15s ease,opacity .15s ease,transform .15s ease}
+.ad-node:hover{transform:translateY(-2px)}
+.ad-group{transition:background-color .15s ease,border-color .15s ease}
+.ad-group:hover{background-color:rgba(63,63,70,.32)!important;border-color:#71717a!important}
+.ad-gnode:hover .ad-dot{transform:scale(1.15)}
+.ad-dot{transition:transform .15s ease}
+.ad button:focus-visible,.ad input:focus-visible{outline:2px solid #d4d4d8;outline-offset:2px}
+.ad input::placeholder{color:#71717a}
+.ad-scroll::-webkit-scrollbar{width:10px;height:10px}
+.ad-scroll::-webkit-scrollbar-thumb{background:#27272a;border-radius:10px;border:2px solid #09090b}
+.ad-scroll::-webkit-scrollbar-track{background:transparent}
+@media (max-width:760px){
+.ad-root{height:auto!important;min-height:100vh;overflow:visible!important}
+.ad-side{flex:1 1 100%!important;max-width:none!important;height:auto!important;border-right:0!important;border-bottom:1px solid #27272a}
+.ad-main{height:auto!important}
+.ad-canvaswrap{flex:none!important;height:620px}
+.ad-insp{width:auto!important;left:12px}
+.ad-hide-sm{display:none!important}
+}
+</style>
+</helmet>
+
+<div class="ad ad-root" style="height:100vh;display:flex;flex-wrap:wrap;background:#09090b;position:relative;overflow:hidden">
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="ad-side ad-scroll" style="{{sideStyle}}">
+  <div style="display:flex;align-items:center;gap:10px;padding:18px 16px 14px">
+    <div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="34" height="34" viewBox="0 0 34 34" role="img" aria-label="Archidocs logo"><rect x="0" y="0" width="34" height="34" rx="8" fill="#e4e7ef"></rect><path d="M10.7 34V22.6a6.3 6.3 0 0 1 12.6 0V34Z" fill="#0f172a"></path><path d="M14.3 6h5.4l-.9 6.6h-3.6Z" fill="#818cf8"></path></svg>
+    </div>
+    <div style="min-width:0">
+      <div style="font-size:14px;font-weight:600;letter-spacing:-.01em">Archidocs</div>
+      <div style="font-size:12px;color:#a1a1aa">Architecture explorer</div>
+    </div>
+  </div>
+
+  <div style="padding:0 12px;position:relative">
+    <button class="ad-outline" onClick="{{toggleProj}}" aria-expanded="{{projOpenStr}}" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;min-height:52px">
+      <span style="width:30px;height:30px;border-radius:6px;background:{{projColor}};color:#09090b;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none">{{projInitials}}</span>
+      <span style="min-width:0;flex:1">
+        <span style="display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#a1a1aa">Project</span>
+        <span style="display:block;font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{projName}}</span>
+      </span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+    </button>
+    <sc-if value="{{projOpen}}" hint-placeholder-val="{{false}}">
+      <div style="position:absolute;left:12px;right:12px;top:58px;z-index:40;background:#09090b;border:1px solid #27272a;border-radius:8px;padding:4px;box-shadow:0 16px 40px rgba(0,0,0,.6)">
+        <div style="font-size:11.5px;color:#a1a1aa;padding:6px 8px 4px">Switch project</div>
+        <sc-for list="{{projects}}" as="p" hint-placeholder-count="3">
+          <button class="ad-link" onClick="{{p.pick}}" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px;text-align:left;min-height:44px">
+            <span style="width:26px;height:26px;border-radius:6px;background:{{p.color}};color:#09090b;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none">{{p.initials}}</span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-size:13px;font-weight:500">{{p.name}}</span>
+              <span style="display:block;font-size:11.5px;color:#a1a1aa">{{p.meta}}</span>
+            </span>
+            <sc-if value="{{p.active}}" hint-placeholder-val="{{false}}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fafafa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="padding:10px 12px 4px">
+    <button class="ad-outline" onClick="{{openSearch}}" style="width:100%;display:flex;align-items:center;gap:8px;padding:0 10px;height:38px;color:#a1a1aa;font-size:13px;text-align:left">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Search views and elements…</span>
+      <kbd class="ad-mono" aria-label="Command K" style="display:inline-flex;align-items:center;gap:2px;font-size:11px;color:#a1a1aa;background:#18181b;border:1px solid #27272a;border-radius:4px;padding:1px 6px;flex:none"><span style="font-size: 12px">⌘</span>k</kbd>
+    </button>
+  </div>
+
+  <div style="padding:16px 20px 6px;font-size:11.5px;font-weight:500;color:#a1a1aa">Model</div>
+  <div style="padding:0 8px;display:flex;flex-direction:column;gap:1px">
+    <button class="ad-tree" onClick="{{openDecisions}}" aria-current="{{navDecCur}}" style="{{navDecStyle}}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;opacity:.85"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path></svg>
+      <span style="flex:1">Decision records</span>
+      <span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{adrTotal}}</span>
+    </button>
+    <button class="ad-tree" onClick="{{openChangelog}}" aria-current="{{navChgCur}}" style="{{navChgStyle}}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;opacity:.85"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
+      <span style="flex:1">Changelog</span>
+      <span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{chgTotal}}</span>
+    </button>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 6px;font-size:11.5px;font-weight:500;color:#a1a1aa">
+    <span>Diagrams</span>
+    <span class="ad-mono" style="font-size:11px;background:#18181b;border:1px solid #27272a;border-radius:999px;padding:1px 8px">{{viewCount}}</span>
+  </div>
+
+  <nav aria-label="Diagrams" style="padding:0 8px 12px;flex:1">
+    <sc-for list="{{folders}}" as="f" hint-placeholder-count="4">
+      <div style="margin-bottom:2px">
+        <button class="ad-tree" onClick="{{f.toggle}}" aria-expanded="{{f.openStr}}" style="width:100%;display:flex;align-items:center;gap:8px;padding:0 10px;height:34px;font-size:13px;color:#e4e4e7;text-align:left">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{f.chevStyle}}"><path d="m9 18 6-6-6-6"></path></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
+          <span style="flex:1;font-weight:500">{{f.name}}</span>
+          <span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{f.count}}</span>
+        </button>
+        <sc-if value="{{f.open}}" hint-placeholder-val="{{true}}">
+          <div style="margin:2px 0 6px 17px;padding-left:10px;border-left:1px solid #27272a;display:flex;flex-direction:column;gap:1px">
+            <sc-for list="{{f.items}}" as="it" hint-placeholder-count="3">
+              <sc-if value="{{it.isHeader}}" hint-placeholder-val="{{false}}">
+                <div style="display:flex;align-items:center;gap:8px;padding:0 10px;height:32px;font-size:12.5px;font-weight:500;color:#d4d4d8">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
+                  <span>{{it.title}}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{it.isView}}" hint-placeholder-val="{{true}}">
+                <button class="ad-tree" onClick="{{it.pick}}" aria-current="{{it.current}}" style="{{it.style}}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;opacity:.8"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{it.title}}</span>
+                </button>
+              </sc-if>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </nav>
+
+  <div style="margin:0 12px 12px;padding:10px;border:1px solid #27272a;border-radius:8px;display:flex;align-items:center;gap:10px;background:#09090b">
+    <span style="width:28px;height:28px;border-radius:999px;background:#27272a;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e4e4e7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+    </span>
+    <span style="min-width:0">
+      <span class="ad-mono" style="display:block;font-size:12px;color:#e4e4e7">{{projRepo}}</span>
+      <span style="display:block;font-size:11.5px;color:#a1a1aa">main · synced {{projSynced}}</span>
+    </span>
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main class="ad-main" style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column;height:100%;background:#09090b">
+
+  <!-- top bar -->
+  <div style="display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;border-bottom:1px solid #27272a;flex:none">
+    <button class="ad-ghost" onClick="{{toggleSide}}" aria-label="Toggle sidebar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#a1a1aa">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>
+    </button>
+    <div style="width:1px;height:18px;background:#27272a"></div>
+    <nav aria-label="Breadcrumb" style="display:flex;align-items:center;gap:6px;font-size:13px;color:#a1a1aa;min-width:0;flex:1;overflow:hidden;white-space:nowrap">
+      <span>Projects</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+      <span>{{projName}}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+      <span>{{crumbFolder}}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+      <span style="color:#fafafa;overflow:hidden;text-overflow:ellipsis">{{title}}</span>
+    </nav>
+    <span class="ad-hide-sm ad-mono" style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#a1a1aa;border:1px solid #27272a;border-radius:999px;padding:3px 10px">
+      <span style="width:6px;height:6px;border-radius:999px;background:#4ade80"></span>{{projVersion}}
+    </span>
+    <button class="ad-outline ad-hide-sm" style="display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;font-size:13px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>
+      View source
+    </button>
+  </div>
+
+  <!-- title + toolbar -->
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px 20px 14px;flex:none">
+    <div style="min-width:0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:500;color:#e4e4e7;background:#18181b;border:1px solid #27272a;border-radius:6px;padding:1px 7px">{{kicker}}</span>
+        <span class="ad-mono" style="font-size:11.5px;color:#a1a1aa">{{vid}}</span>
+        <sc-if value="{{showViewChips}}" hint-placeholder-val="{{true}}">
+          <button class="ad-outline" onClick="{{openViewAdrs}}" style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;font-size:11.5px;color:#d4d4d8;border-radius:999px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path></svg>
+            {{viAdrLabel}}
+          </button>
+          <button class="ad-outline" onClick="{{openViewChanges}}" style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;font-size:11.5px;color:#d4d4d8;border-radius:999px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
+            {{viChgLabel}}
+          </button>
+        </sc-if>
+      </div>
+      <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em">{{title}}</h1>
+      <p style="margin:4px 0 0;font-size:13px;color:#a1a1aa;max-width:620px">{{viewDesc}}</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div role="group" aria-label="View mode" style="display:flex;background:#18181b;border:1px solid #27272a;border-radius:8px;padding:3px;gap:2px">
+        <button onClick="{{setDiagram}}" aria-pressed="{{isDiagramStr}}" style="{{tabDiagramStyle}}">Diagram</button>
+        <button onClick="{{setGraph}}" aria-pressed="{{isGraphStr}}" style="{{tabGraphStyle}}">Graph</button>
+      </div>
+      <div style="display:flex;align-items:center;border:1px solid #27272a;border-radius:8px;height:38px">
+        <button class="ad-ghost" onClick="{{zoomOut}}" aria-label="Zoom out" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
+        </button>
+        <span class="ad-mono" style="font-size:12px;color:#d4d4d8;width:44px;text-align:center">{{zoomLabel}}</span>
+        <button class="ad-ghost" onClick="{{zoomIn}}" aria-label="Zoom in" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+        </button>
+        <div style="width:1px;height:18px;background:#27272a"></div>
+        <button class="ad-ghost" onClick="{{zoomFit}}" aria-label="Reset zoom" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        </button>
+      </div>
+      <button onClick="{{toggleInfo}}" aria-pressed="{{infoOpenStr}}" style="{{infoBtnStyle}}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+        View info
+      </button>
+    </div>
+  </div>
+
+  <!-- canvas -->
+  <div class="ad-canvaswrap" style="position:relative;flex:1;min-height:0;margin:0 20px;border:1px solid #27272a;border-radius:12px;overflow:hidden;background-color:#0b0b0d;background-image:radial-gradient(#232327 1px, transparent 1px);background-size:22px 22px">
+    <div class="ad-scroll" style="position:absolute;inset:0;overflow:auto;display:flex;padding:48px">
+      <div style="{{stageOuter}}">
+        <div style="{{stageInner}}">
+
+          <sc-if value="{{isDiagram}}" hint-placeholder-val="{{true}}">
+            <sc-for list="{{groups}}" as="g" hint-placeholder-count="1">
+              <button class="ad-group" onClick="{{g.pick}}" aria-pressed="{{g.selStr}}" aria-label="{{g.aria}}" style="{{g.style}}">
+                <span style="{{g.labelStyle}}">
+                  {{g.label}}
+                  <sc-if value="{{g.hasInfo}}" hint-placeholder-val="{{false}}">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  </sc-if>
+                </span>
+              </button>
+            </sc-for>
+            <sc-for list="{{edges}}" as="e" hint-placeholder-count="6">
+              <svg width="{{e.w}}" height="{{e.h}}" style="{{e.svgStyle}}" aria-hidden="true"><path d="{{e.d}}" fill="none" stroke="{{e.stroke}}" stroke-width="1.6" stroke-dasharray="{{e.dash}}" stroke-linejoin="round"></path><polygon points="{{e.arrow}}" fill="{{e.stroke}}"></polygon></svg>
+            </sc-for>
+            <sc-for list="{{edges}}" as="e" hint-placeholder-count="6">
+              <div style="{{e.labelStyle}}">
+                <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+                  <sc-if value="{{e.hasStep}}" hint-placeholder-val="{{false}}">
+                    <span class="ad-mono" style="{{e.stepStyle}}">{{e.step}}</span>
+                  </sc-if>
+                  <span>{{e.label}}</span>
+                </div>
+                <sc-if value="{{e.hasTech}}" hint-placeholder-val="{{true}}">
+                  <div class="ad-mono" style="font-size:10px;color:#a1a1aa;margin-top:1px">[ {{e.tech}} ]</div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-for list="{{nodes}}" as="n" hint-placeholder-count="6">
+              <button class="ad-node" onClick="{{n.pick}}" aria-pressed="{{n.selStr}}" style="{{n.style}}">
+                <span style="display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:{{n.subColor}}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>
+                  <span>{{n.kindLabel}}</span>
+                </span>
+                <span style="display:block;font-size:14.5px;font-weight:600;margin-top:8px;line-height:1.25;letter-spacing:-.01em">{{n.name}}</span>
+                <span class="ad-mono" style="display:block;font-size:11px;margin-top:3px;color:{{n.subColor}}">{{n.tech}}</span>
+                <span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;margin-top:6px;line-height:1.4;color:{{n.subColor}}">{{n.desc}}</span>
+              </button>
+            </sc-for>
+          </sc-if>
+
+          <sc-if value="{{isGraph}}" hint-placeholder-val="{{false}}">
+            <sc-for list="{{gEdges}}" as="e" hint-placeholder-count="6">
+              <svg width="{{e.w}}" height="{{e.h}}" style="{{e.svgStyle}}" aria-hidden="true"><path d="{{e.d}}" fill="none" stroke="{{e.stroke}}" stroke-width="1.4" stroke-dasharray="{{e.dash}}"></path><polygon points="{{e.arrow}}" fill="{{e.stroke}}"></polygon></svg>
+            </sc-for>
+            <sc-for list="{{gNodes}}" as="n" hint-placeholder-count="8">
+              <button class="ad-gnode" onClick="{{n.pick}}" aria-pressed="{{n.selStr}}" style="{{n.style}}">
+                <span class="ad-dot" style="{{n.dotStyle}}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>
+                </span>
+                <span style="display:block;font-size:12.5px;font-weight:500;margin-top:6px;color:#fafafa;line-height:1.2">{{n.name}}</span>
+                <span class="ad-mono" style="display:block;font-size:10.5px;color:#a1a1aa;margin-top:2px">{{n.tech}}</span>
+              </button>
+            </sc-for>
+          </sc-if>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- legend -->
+    <div class="ad-hide-sm" style="position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:rgba(9,9,11,.92);border:1px solid #27272a;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#a1a1aa">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#0c2d48;border:1px solid #2f86c4"></span>Person</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#172554;border:1px solid #3557c9"></span>Internal</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#18181b;border:1px solid #52525b"></span>External</span>
+      <span style="display:flex;align-items:center;gap:6px"><svg width="22" height="6" aria-hidden="true"><path d="M0 3H22" stroke="#71717a" stroke-width="1.6"></path></svg>Sync</span>
+      <span style="display:flex;align-items:center;gap:6px"><svg width="22" height="6" aria-hidden="true"><path d="M0 3H22" stroke="#71717a" stroke-width="1.6" stroke-dasharray="5 4"></path></svg>Async</span>
+    </div>
+
+    <!-- inspector: element -->
+    <sc-if value="{{showNodePanel}}" hint-placeholder-val="{{false}}">
+      <aside class="ad-insp ad-scroll" aria-label="Element details" style="position:absolute;top:12px;right:12px;bottom:12px;width:380px;max-width:calc(100% - 24px);overflow:auto;background:#09090b;border:1px solid #27272a;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.55)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 12px 0 18px">
+          <span style="{{insp.chipStyle}}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{insp.icon}}"></path></svg>
+            {{insp.kindLabel}}
+          </span>
+          <button class="ad-ghost" onClick="{{closePanel}}" aria-label="Close details" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#a1a1aa">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </button>
+        </div>
+        <div style="padding:6px 18px 16px;border-bottom:1px solid #27272a">
+          <h2 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.015em">{{insp.name}}</h2>
+          <div class="ad-mono" style="font-size:12px;color:#a1a1aa;margin-top:4px">{{insp.tech}}</div>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.55;color:#d4d4d8">{{insp.desc}}</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+            <span class="ad-mono" style="font-size:11px;color:#d4d4d8;border:1px solid #27272a;border-radius:6px;padding:2px 7px">id: {{insp.id}}</span>
+            <span style="font-size:11px;color:#d4d4d8;border:1px solid #27272a;border-radius:6px;padding:2px 7px">owner: {{insp.owner}}</span>
+          </div>
+        </div>
+
+        <div style="padding:14px 10px 6px">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:0 8px 6px">Outgoing · {{insp.outCount}}</div>
+          <sc-for list="{{insp.outgoing}}" as="r" hint-placeholder-count="2">
+            <button class="ad-link" onClick="{{r.pick}}" style="width:100%;display:flex;align-items:flex-start;gap:10px;padding:8px;text-align:left;min-height:44px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top:2px;flex:none"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+              <span style="min-width:0">
+                <span style="display:block;font-size:13px;font-weight:500">{{r.name}}</span>
+                <span style="display:block;font-size:12px;color:#a1a1aa;margin-top:1px">{{r.label}} <span class="ad-mono" style="font-size:10.5px">· {{r.tech}}</span></span>
+              </span>
+            </button>
+          </sc-for>
+          <sc-if value="{{insp.noOut}}" hint-placeholder-val="{{false}}">
+            <div style="font-size:12.5px;color:#a1a1aa;padding:4px 8px 8px">No outgoing relationships.</div>
+          </sc-if>
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:10px 8px 6px">Incoming · {{insp.inCount}}</div>
+          <sc-for list="{{insp.incoming}}" as="r" hint-placeholder-count="2">
+            <button class="ad-link" onClick="{{r.pick}}" style="width:100%;display:flex;align-items:flex-start;gap:10px;padding:8px;text-align:left;min-height:44px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top:2px;flex:none"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+              <span style="min-width:0">
+                <span style="display:block;font-size:13px;font-weight:500">{{r.name}}</span>
+                <span style="display:block;font-size:12px;color:#a1a1aa;margin-top:1px">{{r.label}} <span class="ad-mono" style="font-size:10.5px">· {{r.tech}}</span></span>
+              </span>
+            </button>
+          </sc-for>
+          <sc-if value="{{insp.noIn}}" hint-placeholder-val="{{false}}">
+            <div style="font-size:12.5px;color:#a1a1aa;padding:4px 8px 8px">No incoming relationships.</div>
+          </sc-if>
+        </div>
+
+        <div style="padding:8px 10px 6px;border-top:1px solid #27272a">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:8px 8px 6px">Appears in · {{insp.viewCount}} views</div>
+          <sc-for list="{{insp.views}}" as="v" hint-placeholder-count="2">
+            <button class="ad-link" onClick="{{v.pick}}" style="width:100%;display:flex;align-items:center;gap:10px;padding:0 8px;height:40px;text-align:left">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+              <span style="flex:1;font-size:13px">{{v.title}}</span>
+              <span style="font-size:11px;color:#a1a1aa">{{v.folder}}</span>
+              <sc-if value="{{v.current}}" hint-placeholder-val="{{false}}">
+                <span style="font-size:10.5px;color:#09090b;background:#e4e4e7;border-radius:4px;padding:1px 6px;font-weight:500">Current</span>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="padding:8px 10px 6px;border-top:1px solid #27272a">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:8px 8px 4px">Decisions</div>
+          <sc-for list="{{insp.adrs}}" as="a" hint-placeholder-count="1">
+            <button class="ad-link" onClick="{{a.pick}}" style="width:100%;display:block;text-align:left;padding:10px 8px">
+              <span style="display:flex;align-items:center;gap:8px"><span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{a.id}}</span><span style="{{a.badgeStyle}}">{{a.status}}</span><span style="flex:1"></span><span style="font-size:11px;color:#a1a1aa">{{a.date}}</span></span>
+              <span style="display:block;font-size:13px;font-weight:500;margin-top:5px;line-height:1.35">{{a.title}}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{insp.noAdrs}}" hint-placeholder-val="{{false}}">
+            <div style="font-size:12.5px;color:#a1a1aa;padding:4px 8px 8px">No decision records mention this element.</div>
+          </sc-if>
+        </div>
+
+        <div style="padding:8px 18px 18px;border-top:1px solid #27272a">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 8px">
+            <span style="font-size:11.5px;font-weight:500;color:#a1a1aa">Definition</span>
+            <span class="ad-mono" style="font-size:10.5px;color:#a1a1aa">{{insp.file}}</span>
+          </div>
+          <pre class="ad-mono ad-scroll" style="margin:0;padding:12px;background:#111113;border:1px solid #27272a;border-radius:8px;font-size:11.5px;line-height:1.6;color:#d4d4d8;overflow:auto;white-space:pre">{{insp.code}}</pre>
+        </div>
+      </aside>
+    </sc-if>
+
+    <!-- inspector: group -->
+    <sc-if value="{{showGroupPanel}}" hint-placeholder-val="{{false}}">
+      <aside class="ad-insp ad-scroll" aria-label="Group details" style="position:absolute;top:12px;right:12px;bottom:12px;width:380px;max-width:calc(100% - 24px);overflow:auto;background:#09090b;border:1px solid #27272a;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.55)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 12px 0 18px">
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#e4e4e7;background:#18181b;border:1px dashed #52525b;border-radius:6px;padding:2px 8px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"></rect></svg>
+            {{grp.kind}}
+          </span>
+          <button class="ad-ghost" onClick="{{closePanel}}" aria-label="Close group details" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#a1a1aa">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </button>
+        </div>
+        <div style="padding:6px 18px 16px;border-bottom:1px solid #27272a">
+          <h2 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.015em">{{grp.label}}</h2>
+          <div class="ad-mono" style="font-size:12px;color:#a1a1aa;margin-top:4px">{{grp.id}} · {{grp.memberCount}} elements</div>
+          <sc-if value="{{grp.hasDesc}}" hint-placeholder-val="{{true}}">
+            <p style="margin:10px 0 0;font-size:13px;line-height:1.55;color:#d4d4d8">{{grp.desc}}</p>
+          </sc-if>
+        </div>
+
+        <div style="padding:8px 18px 14px">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:8px 0 8px">Metadata</div>
+          <sc-if value="{{grp.hasMeta}}" hint-placeholder-val="{{true}}">
+            <div style="border:1px solid #27272a;border-radius:8px;overflow:hidden">
+              <sc-for list="{{grp.meta}}" as="m" hint-placeholder-count="4">
+                <div style="{{m.rowStyle}}">
+                  <span style="font-size:12px;color:#a1a1aa">{{m.k}}</span>
+                  <span class="ad-mono" style="font-size:11.5px;color:#e4e4e7;word-break:break-word">{{m.v}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{grp.noMeta}}" hint-placeholder-val="{{false}}">
+            <div style="font-size:12.5px;color:#a1a1aa">No metadata on this group yet. Add a <span class="ad-mono">metadata</span> block to its definition.</div>
+          </sc-if>
+        </div>
+
+        <div style="padding:4px 10px 10px;border-top:1px solid #27272a">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:10px 8px 6px">Links</div>
+          <sc-for list="{{grp.links}}" as="l" hint-placeholder-count="2">
+            <a class="ad-link" href="{{l.url}}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:10px;padding:0 8px;min-height:44px;text-decoration:none;color:#fafafa">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+              <span style="flex:1;min-width:0">
+                <span style="display:block;font-size:13px;font-weight:500">{{l.label}}</span>
+                <span class="ad-mono" style="display:block;font-size:11px;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{l.host}}</span>
+              </span>
+            </a>
+          </sc-for>
+          <sc-if value="{{grp.noLinks}}" hint-placeholder-val="{{false}}">
+            <div style="font-size:12.5px;color:#a1a1aa;padding:0 8px 6px">No links yet.</div>
+          </sc-if>
+        </div>
+
+        <div style="padding:4px 10px 10px;border-top:1px solid #27272a">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:10px 8px 6px">Contains · {{grp.memberCount}}</div>
+          <sc-for list="{{grp.members}}" as="x" hint-placeholder-count="3">
+            <button class="ad-link" onClick="{{x.pick}}" style="width:100%;display:flex;align-items:center;gap:10px;padding:0 8px;height:40px;text-align:left">
+              <span style="{{x.dotStyle}}"></span>
+              <span style="flex:1;font-size:13px">{{x.name}}</span>
+              <span class="ad-mono" style="font-size:10.5px;color:#a1a1aa">{{x.tech}}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="padding:8px 18px 18px;border-top:1px solid #27272a">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 8px">
+            <span style="font-size:11.5px;font-weight:500;color:#a1a1aa">Definition</span>
+            <span class="ad-mono" style="font-size:10.5px;color:#a1a1aa">{{grp.file}}</span>
+          </div>
+          <pre class="ad-mono ad-scroll" style="margin:0;padding:12px;background:#111113;border:1px solid #27272a;border-radius:8px;font-size:11.5px;line-height:1.6;color:#d4d4d8;overflow:auto;white-space:pre">{{grp.code}}</pre>
+        </div>
+      </aside>
+    </sc-if>
+
+    <!-- inspector: view info -->
+    <sc-if value="{{showViewPanel}}" hint-placeholder-val="{{false}}">
+      <aside class="ad-insp ad-scroll" aria-label="View info" style="position:absolute;top:12px;right:12px;bottom:12px;width:380px;max-width:calc(100% - 24px);overflow:auto;background:#09090b;border:1px solid #27272a;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.55)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 12px 0 18px">
+          <span style="font-size:11px;font-weight:500;color:#e4e4e7;background:#18181b;border:1px solid #27272a;border-radius:6px;padding:2px 8px">{{vi.kind}}</span>
+          <button class="ad-ghost" onClick="{{closePanel}}" aria-label="Close view info" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#a1a1aa">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </button>
+        </div>
+        <div style="padding:6px 18px 16px;border-bottom:1px solid #27272a">
+          <h2 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.015em">{{title}}</h2>
+          <div class="ad-mono" style="font-size:12px;color:#a1a1aa;margin-top:4px">{{vid}}</div>
+          <p style="margin:10px 0 0;font-size:13px;line-height:1.55;color:#d4d4d8">{{viewDesc}}</p>
+        </div>
+        <div role="tablist" aria-label="View info sections" style="display:flex;gap:2px;margin:12px 14px;background:#18181b;border:1px solid #27272a;border-radius:8px;padding:3px">
+          <sc-for list="{{viTabs}}" as="t" hint-placeholder-count="3">
+            <button role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{viOverview}}" hint-placeholder-val="{{true}}">
+        <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:1px;background:#27272a;border-bottom:1px solid #27272a">
+          <div style="background:#09090b;padding:12px 18px"><div style="font-size:11.5px;color:#a1a1aa">Elements</div><div style="font-size:20px;font-weight:600;margin-top:2px">{{vi.elCount}}</div></div>
+          <div style="background:#09090b;padding:12px 18px"><div style="font-size:11.5px;color:#a1a1aa">Relationships</div><div style="font-size:20px;font-weight:600;margin-top:2px">{{vi.relCount}}</div></div>
+          <div style="background:#09090b;padding:12px 18px"><div style="font-size:11.5px;color:#a1a1aa">Owner</div><div style="font-size:13px;font-weight:500;margin-top:4px">{{vi.owner}}</div></div>
+          <div style="background:#09090b;padding:12px 18px"><div style="font-size:11.5px;color:#a1a1aa">Last change</div><div style="font-size:13px;font-weight:500;margin-top:4px">{{vi.updated}}</div></div>
+        </div>
+        <div style="padding:8px 10px 6px">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:8px 8px 6px">Elements in this view</div>
+          <sc-for list="{{vi.elements}}" as="x" hint-placeholder-count="4">
+            <button class="ad-link" onClick="{{x.pick}}" style="width:100%;display:flex;align-items:center;gap:10px;padding:0 8px;height:40px;text-align:left">
+              <span style="{{x.dotStyle}}"></span>
+              <span style="flex:1;font-size:13px">{{x.name}}</span>
+              <span class="ad-mono" style="font-size:10.5px;color:#a1a1aa">{{x.tech}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="padding:8px 18px 18px;border-top:1px solid #27272a">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 8px">
+            <span style="font-size:11.5px;font-weight:500;color:#a1a1aa">Source</span>
+            <span class="ad-mono" style="font-size:10.5px;color:#a1a1aa">{{vi.file}}</span>
+          </div>
+          <pre class="ad-mono ad-scroll" style="margin:0;padding:12px;background:#111113;border:1px solid #27272a;border-radius:8px;font-size:11.5px;line-height:1.6;color:#d4d4d8;overflow:auto;white-space:pre">{{vi.code}}</pre>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{viDecisions}}" hint-placeholder-val="{{false}}">
+          <div style="padding:0 10px 16px">
+            <sc-for list="{{vi.adrs}}" as="a" hint-placeholder-count="2">
+              <button class="ad-link" onClick="{{a.pick}}" style="width:100%;display:block;text-align:left;padding:10px 8px">
+                <span style="display:flex;align-items:center;gap:8px"><span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{a.id}}</span><span style="{{a.badgeStyle}}">{{a.status}}</span><span style="flex:1"></span><span style="font-size:11px;color:#a1a1aa">{{a.date}}</span></span>
+                <span style="display:block;font-size:13px;font-weight:500;margin-top:5px;line-height:1.35">{{a.title}}</span>
+              </button>
+            </sc-for>
+            <sc-if value="{{vi.noAdrs}}" hint-placeholder-val="{{false}}">
+              <div style="font-size:12.5px;color:#a1a1aa;padding:8px">No decision records reference this view yet.</div>
+            </sc-if>
+            <button class="ad-outline" onClick="{{openDecisions}}" style="margin:8px 8px 0;height:36px;padding:0 12px;font-size:12.5px">Open decision log →</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{viChanges}}" hint-placeholder-val="{{false}}">
+          <div style="padding:0 14px 16px;display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{vi.changes}}" as="c" hint-placeholder-count="2">
+              <div style="border:1px solid #27272a;border-radius:8px;padding:10px 12px;background:#0c0c0e">
+                <div style="display:flex;align-items:center;gap:8px"><span style="{{c.typeStyle}}">{{c.typeLabel}}</span><span style="flex:1"></span><span class="ad-mono" style="font-size:10.5px;color:#a1a1aa">{{c.hash}}</span></div>
+                <div style="font-size:13px;font-weight:500;margin-top:6px;line-height:1.35">{{c.msg}}</div>
+                <div style="font-size:11.5px;color:#a1a1aa;margin-top:3px">{{c.date}} · {{c.author}}</div>
+                <sc-if value="{{c.hasDiff}}" hint-placeholder-val="{{true}}">
+                  <div class="ad-mono ad-scroll" style="margin-top:8px;border:1px solid #27272a;border-radius:6px;background:#111113;padding:4px 0;font-size:11px;line-height:1.65;overflow:auto">
+                    <sc-for list="{{c.lines}}" as="ln" hint-placeholder-count="2"><div style="{{ln.style}}">{{ln.text}}</div></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{c.hasAdr}}" hint-placeholder-val="{{false}}">
+                  <button class="ad-ghost ad-mono" onClick="{{c.adrPick}}" style="margin-top:6px;height:30px;padding:0 6px;font-size:11px;color:#fdba74">{{c.adr}} →</button>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{vi.noChanges}}" hint-placeholder-val="{{false}}">
+              <div style="font-size:12.5px;color:#a1a1aa;padding:8px 0">No recorded changes for this view.</div>
+            </sc-if>
+            <button class="ad-outline" onClick="{{openChangelog}}" style="align-self:flex-start;height:36px;padding:0 12px;font-size:12.5px">Open full changelog →</button>
+          </div>
+        </sc-if>
+      </aside>
+    </sc-if>
+    <!-- page: decision records -->
+    <sc-if value="{{isDecisions}}" hint-placeholder-val="{{false}}">
+      <div class="ad-scroll" style="position:absolute;inset:0;background:#09090b;display:flex;flex-wrap:wrap;align-content:flex-start;overflow:auto">
+        <div style="flex:1 1 300px;max-width:400px;min-width:0;border-right:1px solid #27272a;padding:14px 10px;align-self:stretch">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 6px 12px">
+            <sc-for list="{{adrFilters}}" as="fl" hint-placeholder-count="4">
+              <button onClick="{{fl.pick}}" aria-pressed="{{fl.on}}" style="{{fl.style}}">{{fl.label}} <span class="ad-mono" style="opacity:.7;margin-left:3px">{{fl.count}}</span></button>
+            </sc-for>
+          </div>
+          <sc-for list="{{adrList}}" as="a" hint-placeholder-count="5">
+            <button class="ad-link" onClick="{{a.pick}}" aria-current="{{a.current}}" style="{{a.style}}">
+              <span style="display:flex;align-items:center;gap:8px">
+                <span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{a.id}}</span>
+                <span style="{{a.badgeStyle}}">{{a.status}}</span>
+                <span style="flex:1"></span>
+                <span style="font-size:11px;color:#a1a1aa">{{a.date}}</span>
+              </span>
+              <span style="display:block;font-size:13.5px;font-weight:500;margin-top:6px;line-height:1.35;color:#fafafa">{{a.title}}</span>
+              <span style="display:block;font-size:12px;color:#a1a1aa;margin-top:3px">{{a.authors}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <article style="flex:999 1 420px;min-width:0;padding:28px 36px 48px">
+          <sc-if value="{{hasAdr}}" hint-placeholder-val="{{true}}">
+            <div style="max-width:760px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span class="ad-mono" style="font-size:12px;color:#a1a1aa">{{adrD.id}}</span>
+                <span style="{{adrD.badgeStyle}}">{{adrD.status}}</span>
+                <span style="font-size:12px;color:#a1a1aa">{{adrD.date}} · {{adrD.authors}}</span>
+              </div>
+              <h2 style="margin:10px 0 0;font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.25">{{adrD.title}}</h2>
+              <div class="ad-mono" style="font-size:11.5px;color:#a1a1aa;margin-top:6px">{{adrD.file}}</div>
+              <sc-if value="{{adrD.isSup}}" hint-placeholder-val="{{false}}">
+                <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid #3f3f46;border-radius:8px;background:#18181b;font-size:13px;color:#d4d4d8">
+                  <span>This decision was superseded by</span>
+                  <button class="ad-outline ad-mono" onClick="{{adrD.supPick}}" style="height:30px;padding:0 10px;font-size:12px">{{adrD.supBy}} →</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{adrD.hasSupersedes}}" hint-placeholder-val="{{false}}">
+                <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid #27272a;border-radius:8px;font-size:13px;color:#d4d4d8">
+                  <span>Supersedes</span>
+                  <button class="ad-outline ad-mono" onClick="{{adrD.supersedesPick}}" style="height:30px;padding:0 10px;font-size:12px">{{adrD.supersedes}}</button>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:22px;padding:16px 0;border-top:1px solid #27272a;border-bottom:1px solid #27272a">
+                <div style="flex:1 1 240px;min-width:0">
+                  <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;margin-bottom:8px">Affected views</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{adrD.views}}" as="v" hint-placeholder-count="2">
+                      <button class="ad-outline" onClick="{{v.pick}}" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;font-size:12.5px">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+                        {{v.title}}
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="flex:1 1 240px;min-width:0">
+                  <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;margin-bottom:8px">Affected elements</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{adrD.elements}}" as="x" hint-placeholder-count="2">
+                      <button class="ad-outline" onClick="{{x.pick}}" style="display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px;font-size:12.5px"><span style="{{x.dotStyle}}"></span>{{x.name}}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+              <h3 style="margin:24px 0 6px;font-size:14px;font-weight:600">Context</h3>
+              <p style="margin:0;font-size:14px;line-height:1.65;color:#d4d4d8">{{adrD.context}}</p>
+              <h3 style="margin:22px 0 6px;font-size:14px;font-weight:600">Decision</h3>
+              <p style="margin:0;font-size:14px;line-height:1.65;color:#d4d4d8">{{adrD.decision}}</p>
+              <h3 style="margin:22px 0 6px;font-size:14px;font-weight:600">Consequences</h3>
+              <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.65;color:#d4d4d8">
+                <sc-for list="{{adrD.consequences}}" as="c" hint-placeholder-count="3"><li style="margin-bottom:4px">{{c.text}}</li></sc-for>
+              </ul>
+              <sc-if value="{{adrD.hasChanges}}" hint-placeholder-val="{{false}}">
+                <h3 style="margin:26px 0 10px;font-size:14px;font-weight:600">Model changes from this decision</h3>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{adrD.changes}}" as="c" hint-placeholder-count="1">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid #27272a;border-radius:8px;padding:10px 12px;background:#0c0c0e">
+                      <span style="{{c.typeStyle}}">{{c.typeLabel}}</span>
+                      <span style="flex:1;min-width:180px;font-size:13px;font-weight:500">{{c.msg}}</span>
+                      <span style="font-size:11.5px;color:#a1a1aa">{{c.date}} · {{c.author}}</span>
+                      <span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{c.hash}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </article>
+      </div>
+    </sc-if>
+
+    <!-- page: changelog -->
+    <sc-if value="{{isChangelog}}" hint-placeholder-val="{{false}}">
+      <div class="ad-scroll" style="position:absolute;inset:0;background:#09090b;overflow:auto">
+        <div style="max-width:880px;margin:0 auto;padding:22px 28px 48px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
+            <sc-for list="{{chgFilters}}" as="fl" hint-placeholder-count="4">
+              <button onClick="{{fl.pick}}" aria-pressed="{{fl.on}}" style="{{fl.style}}">{{fl.label}} <span class="ad-mono" style="opacity:.7;margin-left:3px">{{fl.count}}</span></button>
+            </sc-for>
+          </div>
+          <sc-for list="{{chgGroups}}" as="g" hint-placeholder-count="3">
+            <section style="margin-bottom:24px">
+              <h3 style="margin:0 0 10px;font-size:12px;font-weight:500;color:#a1a1aa">{{g.date}}</h3>
+              <div style="margin-left:8px;padding-left:22px;border-left:1px solid #27272a;display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{g.items}}" as="c" hint-placeholder-count="2">
+                  <div style="position:relative;border:1px solid #27272a;border-radius:10px;background:#0c0c0e;padding:12px 14px">
+                    <span style="{{c.dotStyle}}"></span>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                      <span style="{{c.typeStyle}}">{{c.typeLabel}}</span>
+                      <span style="flex:1;min-width:200px;font-size:13.5px;font-weight:500">{{c.msg}}</span>
+                      <span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{c.hash}}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#a1a1aa">
+                      <span>{{c.author}}</span>
+                      <span aria-hidden="true">·</span>
+                      <sc-for list="{{c.views}}" as="v" hint-placeholder-count="1">
+                        <button class="ad-outline" onClick="{{v.pick}}" style="height:28px;padding:0 9px;font-size:11.5px;color:#e4e4e7">{{v.title}}</button>
+                      </sc-for>
+                      <sc-if value="{{c.hasAdr}}" hint-placeholder-val="{{false}}">
+                        <button class="ad-outline ad-mono" onClick="{{c.adrPick}}" style="height:28px;padding:0 9px;font-size:11px;color:#fdba74;border-color:#7c2d12">{{c.adr}}</button>
+                      </sc-if>
+                      <span style="flex:1"></span>
+                      <sc-if value="{{c.hasDiff}}" hint-placeholder-val="{{true}}">
+                        <button class="ad-ghost" onClick="{{c.toggle}}" aria-expanded="{{c.openStr}}" style="height:30px;padding:0 9px;font-size:12px;color:#d4d4d8">{{c.toggleLabel}}</button>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{c.open}}" hint-placeholder-val="{{false}}">
+                      <div class="ad-mono ad-scroll" style="margin-top:10px;border:1px solid #27272a;border-radius:8px;background:#111113;padding:6px 0;font-size:11.5px;line-height:1.7;overflow:auto">
+                        <sc-for list="{{c.lines}}" as="ln" hint-placeholder-count="2"><div style="{{ln.style}}">{{ln.text}}</div></sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- status bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 20px 12px;font-size:12px;color:#a1a1aa;flex:none">
+    <span>{{status}}</span>
+    <span class="ad-hide-sm">Select an element to inspect it · open related views from the details panel</span>
+  </div>
+</main>
+
+<!-- ============ SEARCH DIALOG ============ -->
+<sc-if value="{{searchOpen}}" hint-placeholder-val="{{false}}">
+  <div style="position:absolute;inset:0;z-index:60;display:flex;justify-content:center;align-items:flex-start;padding:96px 16px 16px">
+    <button onClick="{{closeSearch}}" aria-label="Close search" style="position:absolute;inset:0;background:rgba(0,0,0,.62);border:0;padding:0;cursor:default"></button>
+    <div role="dialog" aria-modal="true" aria-label="Search" style="position:relative;width:100%;max-width:600px;background:#09090b;border:1px solid #27272a;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.7);overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid #27272a">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <label for="ad-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search views and elements</label>
+        <input id="ad-q" value="{{query}}" onChange="{{onQuery}}" onKeyDown="{{onSearchKey}}" autoFocus="{{yes}}" placeholder="Search views, containers, technologies…" autocomplete="off" style="flex:1;height:50px;background:transparent;border:0;outline:none;color:#fafafa;font:inherit;font-size:14px">
+        <span class="ad-mono" style="font-size:10.5px;color:#a1a1aa;border:1px solid #27272a;border-radius:4px;padding:1px 6px">esc</span>
+      </div>
+      <div class="ad-scroll" style="max-height:420px;overflow:auto;padding:6px">
+        <sc-if value="{{hasViewResults}}" hint-placeholder-val="{{true}}">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:8px 10px 4px">Views</div>
+          <sc-for list="{{viewResults}}" as="r" hint-placeholder-count="3">
+            <button class="ad-link" onClick="{{r.pick}}" style="width:100%;display:flex;align-items:center;gap:10px;padding:0 10px;height:44px;text-align:left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+              <span style="flex:1;font-size:13.5px">{{r.title}}</span>
+              <span style="font-size:11.5px;color:#a1a1aa">{{r.meta}}</span>
+            </button>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{hasElResults}}" hint-placeholder-val="{{true}}">
+          <div style="font-size:11.5px;font-weight:500;color:#a1a1aa;padding:10px 10px 4px">Elements</div>
+          <sc-for list="{{elResults}}" as="r" hint-placeholder-count="4">
+            <button class="ad-link" onClick="{{r.pick}}" style="width:100%;display:flex;align-items:center;gap:10px;padding:0 10px;height:44px;text-align:left">
+              <span style="{{r.iconStyle}}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"></path></svg>
+              </span>
+              <span style="flex:1;font-size:13.5px">{{r.name}}</span>
+              <span class="ad-mono" style="font-size:11px;color:#a1a1aa">{{r.meta}}</span>
+            </button>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{noResults}}" hint-placeholder-val="{{false}}">
+          <div style="padding:28px 12px;text-align:center;font-size:13px;color:#a1a1aa">No views or elements match “{{query}}”.</div>
+        </sc-if>
+      </div>
+      <div style="display:flex;gap:16px;padding:10px 14px;border-top:1px solid #27272a;font-size:11.5px;color:#a1a1aa">
+        <span><span class="ad-mono" style="border:1px solid #27272a;border-radius:4px;padding:0 5px">↵</span> open first result</span>
+        <span>{{projName}} · {{elTotal}} elements · {{viewCount}} views</span>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const W = 220, H = 124;
+const ICON = {
+  user: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8z',
+  app: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM3 9h18M7 6h.01M11 6h.01',
+  db: 'M3 5c0-1.66 4.03-3 9-3s9 1.34 9 3-4.03 3-9 3-9-1.34-9-3zM3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3',
+  queue: 'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+  globe: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
+  system: 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.3 7 12 12l8.7-5M12 22V12'
+};
+const KIND = {
+  person:    { label: 'Person',          kw: 'person',    bg: '#0c2d48', border: '#2f86c4', title: '#f0f9ff', sub: '#bae6fd', radius: '14px', icon: ICON.user },
+  system:    { label: 'Software system', kw: 'system',    bg: '#1e3a8a', border: '#4f7cf0', title: '#eff6ff', sub: '#c7d7fe', radius: '10px', icon: ICON.system },
+  container: { label: 'Container',       kw: 'container', bg: '#172554', border: '#3557c9', title: '#eff6ff', sub: '#bfdbfe', radius: '10px', icon: ICON.app },
+  db:        { label: 'Database',        kw: 'database',  bg: '#172554', border: '#3557c9', title: '#eff6ff', sub: '#bfdbfe', radius: '22px', icon: ICON.db },
+  queue:     { label: 'Queue',           kw: 'queue',     bg: '#172554', border: '#3557c9', title: '#eff6ff', sub: '#bfdbfe', radius: '10px', icon: ICON.queue },
+  external:  { label: 'External system', kw: 'external',  bg: '#18181b', border: '#52525b', title: '#fafafa', sub: '#a1a1aa', radius: '10px', icon: ICON.globe },
+  compute:   { label: 'Compute',         kw: 'node',      bg: '#1e1b4b', border: '#5b55d6', title: '#eef2ff', sub: '#c7d2fe', radius: '6px',
+               icon: 'M4 2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM4 14h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2zM6 6h.01M6 18h.01' },
+  network:   { label: 'Network',         kw: 'network',   bg: '#042f2e', border: '#0f8f84', title: '#f0fdfa', sub: '#99f6e4', radius: '6px',
+               icon: 'M9 2h6v6H9zM2 16h6v6H2zM16 16h6v6h-6zM5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3M12 12V8' },
+  storage:   { label: 'Storage',         kw: 'storage',   bg: '#1c2433', border: '#4b6584', title: '#f1f5f9', sub: '#cbd5e1', radius: '6px',
+               icon: 'M22 12H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11zM6 16h.01M10 16h.01' }
+};
+const FOLDERS = ['C1', 'C2', 'Deployment', 'Flows', 'Reference'];
+const COLORS = {
+  blue:   { bg: '#172554', border: '#3557c9', title: '#eff6ff', sub: '#bfdbfe' },
+  indigo: { bg: '#1e1b4b', border: '#5b55d6', title: '#eef2ff', sub: '#c7d2fe' },
+  sky:    { bg: '#0c2d48', border: '#2f86c4', title: '#f0f9ff', sub: '#bae6fd' },
+  teal:   { bg: '#042f2e', border: '#0f8f84', title: '#f0fdfa', sub: '#99f6e4' },
+  green:  { bg: '#052e16', border: '#16a34a', title: '#f0fdf4', sub: '#bbf7d0' },
+  amber:  { bg: '#451a03', border: '#d97706', title: '#fffbeb', sub: '#fde68a' },
+  rose:   { bg: '#4c0519', border: '#e11d48', title: '#fff1f2', sub: '#fecdd3' },
+  violet: { bg: '#2e1065', border: '#7c3aed', title: '#f5f3ff', sub: '#ddd6fe' },
+  muted:  { bg: '#18181b', border: '#52525b', title: '#fafafa', sub: '#a1a1aa' }
+};
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtDate(d) { const p = d.split('-').map(Number); return `${MONTHS[p[1] - 1]} ${p[2]}, ${p[0]}`; }
+const STATUS = {
+  Accepted:   { bg: '#052e16', bd: '#166534', fg: '#86efac' },
+  Proposed:   { bg: '#172554', bd: '#1d4ed8', fg: '#bfdbfe' },
+  Superseded: { bg: '#27272a', bd: '#3f3f46', fg: '#a1a1aa' },
+  Deprecated: { bg: '#27272a', bd: '#3f3f46', fg: '#a1a1aa' }
+};
+const CTYPE = {
+  added:   { label: 'Added',   bg: '#052e16', bd: '#166534', fg: '#86efac' },
+  changed: { label: 'Changed', bg: '#172554', bd: '#1d4ed8', fg: '#93c5fd' },
+  removed: { label: 'Removed', bg: '#431407', bd: '#9a3412', fg: '#fdba74' }
+};
+function badge(c) { return `display:inline-flex;align-items:center;font-size:10.5px;font-weight:500;padding:1px 8px;border-radius:999px;background:${c.bg};border:1px solid ${c.bd};color:${c.fg};white-space:nowrap;flex:none`; }
+function lineStyle(l) {
+  const c = l[0];
+  const fg = c === '+' ? '#86efac' : c === '-' ? '#fdba74' : c === '~' ? '#93c5fd' : '#d4d4d8';
+  const bg = c === '+' ? 'rgba(22,101,52,.22)' : c === '-' ? 'rgba(154,52,18,.22)' : 'transparent';
+  return `padding:0 12px;white-space:pre;color:${fg};background:${bg}`;
+}
+
+const PROJECTS = {
+  lumen: {
+    id: 'lumen', name: 'Lumen Commerce', initials: 'LC', color: '#93c5fd', team: 'commerce-platform',
+    repo: 'lumen/architecture', synced: '2h ago', version: 'v4.12', start: 'containers',
+    adrs: [
+      { id: 'ADR-0016', title: 'Autoscale the fulfilment worker on consumer lag', status: 'Accepted', date: '2026-10-30', authors: 'Tom W.',
+        views: ['prod', 'prod-infra', 'containers'], elements: ['ful', 'bus'],
+        context: 'Order volume spikes 6–8× during promotions. CPU-based autoscaling reacted minutes late, and OrderPlaced lag reached 40 minutes during the spring sale.',
+        decision: 'Scale Fulfilment Worker pods with KEDA using Kafka consumer-group lag as the trigger: minimum 2, maximum 12 replicas, target lag of 500 messages.',
+        consequences: ['Shipments reach the warehouse within minutes, even during peaks.', 'Adds KEDA as a cluster dependency owned by the platform team.', 'The order-events topic needs at least 12 partitions to match the maximum replica count.'] },
+      { id: 'ADR-0015', title: 'Authorise payments synchronously, capture on webhook', status: 'Proposed', date: '2026-10-28', authors: 'Priya N., R. Okafor',
+        views: ['checkout', 'place-order'], elements: ['ord', 'psp'],
+        context: 'Checkout authorises and captures in a single call. Failed captures leave orders in an unknown state, and refunds for cancelled orders cost fees.',
+        decision: 'Order Service authorises the card during checkout and stores the authorisation. Capture happens when the Payment Provider confirms by webhook after the warehouse ships the order.',
+        consequences: ['Orders gain an AUTHORISED state before PAID.', 'Order Service must expose an idempotent webhook endpoint.', 'Authorisations expire after 7 days, so a sweeper job re-authorises or cancels them.'] },
+      { id: 'ADR-0014', title: 'Move product search to a managed OpenSearch domain', status: 'Accepted', date: '2026-08-21', authors: 'Tom W.',
+        views: ['catalog', 'data', 'containers'], elements: ['srch', 'cat'], supersedes: 'ADR-0009',
+        context: 'The self-hosted search cluster needed weekly manual work for upgrades, snapshots and shard rebalancing, and had two outages in Q2.',
+        decision: 'Run the Search Index on a managed OpenSearch service with three data nodes across zones. Catalog Service keeps ownership of the index mapping.',
+        consequences: ['Removes roughly a day per week of operations work.', 'Monthly cost rises by about 18%, accepted by the platform budget.', 'Plugins are limited to what the managed service supports.'] },
+      { id: 'ADR-0009', title: 'Self-host OpenSearch for product search', status: 'Superseded', date: '2025-09-02', authors: 'Mei L.',
+        views: ['catalog', 'data'], elements: ['srch'], supersededBy: 'ADR-0014',
+        context: 'Search was a LIKE query on the Catalog DB and could not handle facets or typos.',
+        decision: 'Deploy a three-node OpenSearch cluster on the Kubernetes cluster, fed by Catalog Service.',
+        consequences: ['Faceted, typo-tolerant search for shoppers.', 'The team operates the search cluster itself.'] },
+      { id: 'ADR-0007', title: 'Validate access tokens at the API gateway', status: 'Accepted', date: '2025-06-19', authors: 'Priya N.',
+        views: ['identity', 'containers'], elements: ['gw', 'idp', 'web', 'bo'],
+        context: 'Each service validated tokens with its own library and settings, and two services accepted expired tokens after a clock-skew bug.',
+        decision: 'The API Gateway validates every JWT against the Identity Provider’s JWKS and forwards verified claims as headers. Services only trust traffic that comes through the gateway.',
+        consequences: ['One place to rotate keys and fix validation bugs.', 'Services must reject requests that bypass the gateway (enforced by mesh policy).', 'Adds about 2 ms of gateway latency per request.'] },
+      { id: 'ADR-0005', title: 'Split catalog and order domains into separate services', status: 'Accepted', date: '2025-04-02', authors: 'R. Okafor',
+        views: ['containers', 'checkout', 'catalog'], elements: ['cat', 'ord', 'catdb', 'orddb'],
+        context: 'A single service and schema held both products and orders. Bulk catalog imports locked order tables and slowed checkout.',
+        decision: 'Create Catalog Service and Order Service, each with its own PostgreSQL database. They share data only through APIs and events.',
+        consequences: ['Checkout is isolated from bulk catalog imports.', 'Order lines copy product data at the time of purchase.', 'Cross-domain reporting moves to the data warehouse.'] },
+      { id: 'ADR-0003', title: 'Use Kafka as the event backbone', status: 'Accepted', date: '2025-03-11', authors: 'R. Okafor',
+        views: ['containers', 'data', 'place-order', 'publish-product'], elements: ['bus', 'cat', 'ord', 'ful'],
+        context: 'Services called each other synchronously to react to changes, so a slow warehouse integration could block checkout.',
+        decision: 'Publish domain events such as ProductChanged and OrderPlaced to Kafka. Consumers react asynchronously and own their retries.',
+        consequences: ['Checkout no longer waits on fulfilment.', 'Events need schemas and versioning through a schema registry.', 'Eventual consistency has to be explained in the UI.'] }
+    ],
+    changes: [
+      { hash: 'c3d7e91', date: '2026-11-06', author: 'Tom W.', type: 'added', msg: 'New views: Prod infrastructure and networking (AWS)', views: ['prod-infra', 'prod-network', 'prod'],
+        diff: ['+ deployment view lumen_deploy_prod_infra', '+ deployment view lumen_deploy_prod_network', "~ lumen_deploy_prod title 'Production · eu-west' → 'Workloads'"] },
+      { hash: 'a41c9e2', date: '2026-11-05', author: 'Priya N.', type: 'added', msg: 'Order Service: payment webhook relationship', views: ['checkout'], adr: 'ADR-0015',
+        diff: ["+ psp -> ord 'payment webhooks' {", "+   technology 'HTTPS'", '+ }'] },
+      { hash: 'e08b17d', date: '2026-11-05', author: 'Priya N.', type: 'changed', msg: 'Containers: re-laid out the data row', views: ['containers'],
+        diff: ['~ orddb   x 1160 → 1000', '~ bus     x  560 →  620'] },
+      { hash: '7c2d0fa', date: '2026-11-02', author: 'Tom W.', type: 'changed', msg: 'Production: KEDA autoscaling for Fulfilment Worker', views: ['prod'], adr: 'ADR-0016',
+        diff: ["- ful  '2 pods'", "+ ful  '2 pods · KEDA'"] },
+      { hash: '3f9e6b1', date: '2026-10-31', author: 'R. Okafor', type: 'added', msg: 'Place order: confirmation email step', views: ['place-order'],
+        diff: ["+ ful -> mail 'send confirmation'"] },
+      { hash: '19ab44c', date: '2026-10-24', author: 'Mei L.', type: 'changed', msg: 'Catalog Service upgraded to Go 1.23', views: ['containers', 'catalog', 'data'],
+        diff: ["- technology 'Go 1.22'", "+ technology 'Go 1.23'"] },
+      { hash: 'b7710de', date: '2026-10-12', author: 'Mei L.', type: 'added', msg: 'New view: Data stores', views: ['data'],
+        diff: ['+ view lumen_c2_data {', "+   title 'Data stores'", '+   include cat, ord, catdb, srch, bus, orddb, ful', '+ }'] },
+      { hash: '0d3e5a8', date: '2026-08-21', author: 'Tom W.', type: 'changed', msg: 'Search Index moved to a managed service', views: ['catalog', 'data'], adr: 'ADR-0014',
+        diff: ["- description 'Self-hosted OpenSearch cluster'", "+ description 'Full-text and faceted product search.'", "+ technology 'OpenSearch 2'"] },
+      { hash: '5521c0f', date: '2026-07-30', author: 'R. Okafor', type: 'removed', msg: 'Removed the legacy Monolith Adapter', views: ['containers'],
+        diff: ["- legacy = container 'Monolith Adapter'", "- gw -> legacy 'proxies /v1'"] },
+      { hash: 'c81f2b0', date: '2026-06-19', author: 'Priya N.', type: 'added', msg: 'New view: Identity and access', views: ['identity'], adr: 'ADR-0007',
+        diff: ['+ view lumen_c2_identity {', '+   include shopper, merch, web, gw, bo, idp', '+ }'] }
+    ],
+    elements: {
+      shopper: { kind: 'person', name: 'Shopper', tech: '', desc: 'Browses the catalog, manages a cart and places orders.' },
+      merch:   { kind: 'person', name: 'Merchandiser', tech: '', desc: 'Curates products, prices and promotions.' },
+      lumen:   { kind: 'system', name: 'Lumen Platform', tech: 'Software system', desc: 'Sells products online and manages the order lifecycle end to end.' },
+      idp:     { kind: 'external', name: 'Identity Provider', tech: 'OIDC', desc: 'Shared sign-in for staff and customer accounts.' },
+      psp:     { kind: 'external', name: 'Payment Provider', tech: 'REST · Webhooks', desc: 'Authorises, captures and refunds card payments.' },
+      wms:     { kind: 'external', name: 'Warehouse System', tech: 'SFTP · EDI', desc: 'Picks, packs and ships fulfilled orders.' },
+      mail:    { kind: 'external', name: 'Email Delivery', tech: 'HTTPS API', desc: 'Sends transactional order and shipping emails.' },
+      web:     { kind: 'container', name: 'Storefront Web', tech: 'Next.js 15', desc: 'Server-rendered shopping experience for desktop and mobile.' },
+      bo:      { kind: 'container', name: 'Back Office', tech: 'React SPA', desc: 'Catalog, pricing and order administration UI.' },
+      gw:      { kind: 'container', name: 'API Gateway', tech: 'Envoy', desc: 'Routes API traffic and validates access tokens.' },
+      cat:     { kind: 'container', name: 'Catalog Service', tech: 'Go 1.23', desc: 'Owns products, variants, pricing and availability.' },
+      ord:     { kind: 'container', name: 'Order Service', tech: 'Kotlin · Spring Boot', desc: 'Owns carts, checkout and the order state machine.' },
+      ful:     { kind: 'container', name: 'Fulfilment Worker', tech: 'Python 3.12', desc: 'Forwards paid orders to the warehouse and notifies shoppers.' },
+      bus:     { kind: 'queue', name: 'Event Bus', tech: 'Kafka', desc: 'Carries domain events between services.' },
+      srch:    { kind: 'db', name: 'Search Index', tech: 'OpenSearch 2', desc: 'Full-text and faceted product search.' },
+      catdb:   { kind: 'db', name: 'Catalog DB', tech: 'PostgreSQL 16', desc: 'Products, variants and price lists.' },
+      orddb:   { kind: 'db', name: 'Orders DB', tech: 'PostgreSQL 16', desc: 'Carts, orders and payment records.' }
+    },
+    rels: {
+      c1: { f: 'shopper', t: 'lumen', l: 'browses and buys', tech: 'HTTPS' },
+      c2: { f: 'merch', t: 'lumen', l: 'manages catalog', tech: 'HTTPS' },
+      c3: { f: 'lumen', t: 'idp', l: 'signs in users', tech: 'OIDC' },
+      c4: { f: 'lumen', t: 'psp', l: 'takes payments', tech: 'REST' },
+      c5: { f: 'lumen', t: 'wms', l: 'ships orders', tech: 'SFTP' },
+      c6: { f: 'lumen', t: 'mail', l: 'sends email', tech: 'HTTPS' },
+      shop_web: { f: 'shopper', t: 'web', l: 'browses and checks out', tech: 'HTTPS 443' },
+      merch_bo: { f: 'merch', t: 'bo', l: 'manages products', tech: 'HTTPS 443' },
+      web_gw:   { f: 'web', t: 'gw', l: 'calls storefront APIs', tech: 'HTTPS · JSON' },
+      bo_gw:    { f: 'bo', t: 'gw', l: 'calls admin APIs', tech: 'HTTPS · JSON' },
+      gw_cat:   { f: 'gw', t: 'cat', l: 'routes catalog calls', tech: 'gRPC' },
+      gw_ord:   { f: 'gw', t: 'ord', l: 'routes cart and checkout', tech: 'gRPC' },
+      cat_db:   { f: 'cat', t: 'catdb', l: 'reads and writes products', tech: 'SQL · 5432' },
+      cat_srch: { f: 'cat', t: 'srch', l: 'indexes and queries', tech: 'HTTPS 9200' },
+      cat_bus:  { f: 'cat', t: 'bus', l: 'publishes ProductChanged', tech: 'Kafka', async: true },
+      ord_db:   { f: 'ord', t: 'orddb', l: 'reads and writes orders', tech: 'SQL · 5432' },
+      ord_psp:  { f: 'ord', t: 'psp', l: 'authorises payments', tech: 'HTTPS', o: -24 },
+      psp_ord:  { f: 'psp', t: 'ord', l: 'payment webhooks', tech: 'HTTPS', o: 24, async: true },
+      ord_bus:  { f: 'ord', t: 'bus', l: 'publishes OrderPlaced', tech: 'Kafka', async: true },
+      bus_ful:  { f: 'bus', t: 'ful', l: 'delivers OrderPlaced', tech: 'Kafka', async: true },
+      ful_wms:  { f: 'ful', t: 'wms', l: 'sends shipments', tech: 'SFTP' },
+      ful_mail: { f: 'ful', t: 'mail', l: 'sends order emails', tech: 'HTTPS' },
+      web_idp:  { f: 'web', t: 'idp', l: 'signs in shoppers', tech: 'OIDC' },
+      bo_idp:   { f: 'bo', t: 'idp', l: 'signs in staff', tech: 'OIDC · SSO' },
+      gw_idp:   { f: 'gw', t: 'idp', l: 'validates tokens', tech: 'JWKS' }
+    },
+    views: [
+      { id: 'context', folder: 'C1', title: 'System context', vid: 'lumen_c1_context', updated: '3 days ago',
+        desc: 'Who uses Lumen and which external systems it depends on.', w: 1080, h: 700, z: 0.85,
+        nodes: [['shopper', 190, 40], ['merch', 670, 40], ['lumen', 430, 270], ['idp', 40, 520], ['psp', 300, 520], ['wms', 560, 520], ['mail', 820, 520]],
+        edges: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'] },
+      { id: 'containers', folder: 'C2', title: 'Containers', vid: 'lumen_c2_containers', updated: 'yesterday',
+        desc: 'The deployable units inside the Lumen Platform and how they talk to each other.', w: 1550, h: 1280, z: 0.6,
+        groups: [{ label: 'Lumen Platform', x: 20, y: 220, w: 1230, h: 1040 }],
+        nodes: [['shopper', 360, 40], ['merch', 700, 40], ['web', 360, 250], ['bo', 700, 250], ['gw', 530, 460], ['cat', 190, 670], ['ord', 870, 670], ['psp', 1290, 670],
+                ['srch', 40, 900], ['catdb', 340, 900], ['bus', 620, 900], ['orddb', 1000, 900], ['ful', 620, 1110], ['wms', 1290, 1110]],
+        edges: ['shop_web', 'merch_bo', 'web_gw', 'bo_gw', 'gw_cat', 'gw_ord', 'cat_srch', 'cat_db', 'cat_bus', 'ord_bus', 'ord_db', 'ord_psp', 'bus_ful', 'ful_wms'] },
+      { id: 'checkout', folder: 'C2', title: 'Checkout', vid: 'lumen_c2_checkout', updated: '5 days ago',
+        desc: 'Containers involved when a shopper pays for a cart.', w: 1080, h: 1064, z: 0.72,
+        nodes: [['shopper', 380, 40], ['web', 380, 250], ['gw', 380, 460], ['ord', 380, 670], ['psp', 820, 670], ['orddb', 160, 900], ['bus', 600, 900]],
+        edges: ['shop_web', 'web_gw', 'gw_ord', 'ord_psp', 'psp_ord', 'ord_db', 'ord_bus'] },
+      { id: 'catalog', folder: 'C2', title: 'Catalog and search', vid: 'lumen_c2_catalog', updated: '2 weeks ago',
+        desc: 'How product data is managed, stored and made searchable.', w: 960, h: 1064, z: 0.72,
+        nodes: [['merch', 380, 40], ['bo', 380, 250], ['gw', 380, 460], ['cat', 380, 670], ['catdb', 60, 900], ['srch', 380, 900], ['bus', 700, 900]],
+        edges: ['merch_bo', 'bo_gw', 'gw_cat', 'cat_db', 'cat_srch', 'cat_bus'] },
+      { id: 'identity', folder: 'C2', title: 'Identity and access', vid: 'lumen_c2_identity', updated: '1 month ago',
+        desc: 'How shoppers and staff sign in, and where tokens are validated.', w: 1060, h: 664, z: 0.85,
+        nodes: [['shopper', 40, 40], ['merch', 800, 40], ['web', 40, 250], ['gw', 420, 250], ['bo', 800, 250], ['idp', 420, 500]],
+        edges: ['shop_web', 'merch_bo', 'web_gw', 'bo_gw', 'web_idp', 'bo_idp', 'gw_idp'] },
+      { id: 'data', folder: 'C2', title: 'Data stores', vid: 'lumen_c2_data', updated: '1 week ago',
+        desc: 'Which service owns which store, and how events flow out.', w: 1140, h: 724, z: 0.82,
+        nodes: [['cat', 160, 40], ['ord', 880, 40], ['catdb', 40, 300], ['srch', 300, 300], ['bus', 560, 300], ['orddb', 880, 300], ['ful', 560, 560]],
+        edges: ['cat_db', 'cat_srch', 'cat_bus', 'ord_bus', 'ord_db', 'bus_ful'] },
+      { id: 'prod', folder: 'Deployment', sub: 'Prod', title: 'Workloads', vid: 'lumen_deploy_prod', updated: '4 days ago',
+        desc: 'Runtime placement of containers in the production cluster and managed services.', w: 960, h: 1000, z: 0.72,
+        groups: [{ label: 'k8s cluster · lumen-prod', x: 40, y: 40, w: 880, h: 620 }, { label: 'Managed services', x: 40, y: 740, w: 880, h: 220 }],
+        nodes: [['web', 80, 90, '3 pods · 1 vCPU'], ['bo', 380, 90, '2 pods · 0.5 vCPU'], ['gw', 230, 300, '3 pods · HPA 3–10'], ['ful', 660, 300, '2 pods · KEDA'],
+                ['cat', 80, 510, '4 pods · 1 vCPU'], ['ord', 380, 510, '4 pods · 2 vCPU'],
+                ['catdb', 80, 790, 'Multi-AZ · 2 vCPU'], ['orddb', 380, 790, 'Multi-AZ · 4 vCPU'], ['bus', 660, 790, '3 brokers · RF 3']],
+        edges: ['web_gw', 'bo_gw', 'gw_cat', 'gw_ord', 'cat_db', 'ord_db', 'ord_bus', 'bus_ful'] },
+      { id: 'prod-infra', folder: 'Deployment', sub: 'Prod', title: 'Infrastructure', vid: 'lumen_deploy_prod_infra', updated: 'today',
+        desc: 'AWS resources behind production in eu-west-1: edge, compute, data and supporting services.', w: 1400, h: 1000, z: 0.62,
+        local: {
+          ai_r53: { kind: 'network', name: 'Route 53', tech: 'AWS · DNS', desc: 'Hosts the storefront zone with latency-based records.' },
+          ai_cf:  { kind: 'network', name: 'CloudFront', tech: 'AWS · CDN + WAF', desc: 'Caches pages and media at the edge and applies WAF rules.' },
+          ai_s3:  { kind: 'storage', name: 'S3 media bucket', tech: 'AWS · S3', desc: 'Product images and static assets, versioned.' },
+          ai_alb: { kind: 'network', name: 'Application Load Balancer', tech: 'AWS · ALB', desc: 'Terminates TLS and routes to the EKS ingress.' },
+          ai_eks: { kind: 'compute', name: 'EKS node group', tech: 'AWS · m7g.xlarge × 6', desc: 'Runs every Lumen container across three availability zones.' },
+          ai_ecr: { kind: 'storage', name: 'ECR', tech: 'AWS · container registry', desc: 'Signed container images for every service.' },
+          ai_rds: { kind: 'db', name: 'Aurora PostgreSQL', tech: 'AWS · RDS · Multi-AZ', desc: 'Hosts the Catalog DB and Orders DB clusters.' },
+          ai_msk: { kind: 'queue', name: 'Amazon MSK', tech: 'AWS · Kafka 3.7 · 3 brokers', desc: 'Managed Kafka for the Event Bus.' },
+          ai_oss: { kind: 'db', name: 'OpenSearch Service', tech: 'AWS · 3 data nodes', desc: 'Managed domain for the Search Index.' }
+        },
+        groups: [
+          { label: 'Global edge', x: 30, y: 20, w: 640, h: 194 },
+          { label: 'VPC 10.20.0.0/16 · 3 AZs', x: 30, y: 266, w: 1000, h: 704 },
+          { label: 'EKS · lumen-prod', x: 390, y: 500, w: 280, h: 194 },
+          { label: 'Data subnets', x: 40, y: 756, w: 980, h: 194 }
+        ],
+        nodes: [['ai_r53', 60, 60], ['ai_cf', 420, 60], ['ai_s3', 780, 60], ['ai_alb', 420, 300], ['ai_eks', 420, 540], ['ai_ecr', 1140, 540],
+                ['ai_rds', 60, 800], ['ai_msk', 420, 800], ['ai_oss', 780, 800]],
+        edges: [
+          { f: 'ai_r53', t: 'ai_cf', l: 'resolves', tech: 'DNS' },
+          { f: 'ai_cf', t: 'ai_s3', l: 'serves media', tech: 'OAC' },
+          { f: 'ai_cf', t: 'ai_alb', l: 'forwards app traffic', tech: 'HTTPS 443' },
+          { f: 'ai_alb', t: 'ai_eks', l: 'routes to ingress', tech: 'HTTP 8080' },
+          { f: 'ai_eks', t: 'ai_ecr', l: 'pulls images', tech: 'VPC endpoint' },
+          { f: 'ai_eks', t: 'ai_rds', l: 'SQL', tech: 'TCP 5432' },
+          { f: 'ai_eks', t: 'ai_msk', l: 'produces and consumes', tech: 'TCP 9098 · IAM', async: true },
+          { f: 'ai_eks', t: 'ai_oss', l: 'indexes and queries', tech: 'HTTPS 443' }
+        ] },
+      { id: 'prod-network', folder: 'Deployment', sub: 'Prod', title: 'Networking', vid: 'lumen_deploy_prod_network', updated: 'today',
+        desc: 'Traffic paths, subnets and security boundaries for production on AWS.', w: 1400, h: 1160, z: 0.55,
+        local: {
+          an_inet: { kind: 'external', name: 'Internet', tech: 'Shoppers and staff', desc: 'Public clients reaching the storefront and back office.' },
+          an_waf:  { kind: 'network', name: 'AWS WAF', tech: 'Managed rules · rate limits', desc: 'Blocks common exploits and bots before traffic reaches the VPC.' },
+          an_alb:  { kind: 'network', name: 'ALB', tech: 'Public subnets · 10.20.0.0/20', desc: 'Internet-facing load balancer, one subnet per availability zone.' },
+          an_nat:  { kind: 'network', name: 'NAT Gateways', tech: 'One per AZ · static IPs', desc: 'Outbound internet access for private workloads.' },
+          an_pods: { kind: 'compute', name: 'EKS pods', tech: 'Private subnets · 10.20.32.0/19', desc: 'Workloads have no public IPs; one security group per service.' },
+          an_vpce: { kind: 'network', name: 'VPC endpoints', tech: 'S3 · ECR · STS · Secrets', desc: 'Private access to AWS APIs without leaving the VPC.' },
+          an_db:   { kind: 'db', name: 'Aurora + MSK', tech: 'Data subnets · 10.20.64.0/21', desc: 'No route to the internet; reachable only from the pods security group.' },
+          an_tgw:  { kind: 'network', name: 'Transit Gateway', tech: 'tgw-core', desc: 'Connects the VPC to the corporate network.' },
+          an_corp: { kind: 'external', name: 'Corporate network', tech: 'Site-to-site VPN · 10.0.0.0/8', desc: 'Office and on-call engineer access.' },
+          an_psp:  { kind: 'external', name: 'Payment Provider', tech: 'Allow-lists our NAT IPs', desc: 'Receives outbound API calls from the static NAT addresses.' }
+        },
+        groups: [
+          { label: 'VPC 10.20.0.0/16', x: 30, y: 420, w: 1020, h: 710 },
+          { label: 'Public subnets', x: 400, y: 450, w: 620, h: 184 },
+          { label: 'Private subnets', x: 40, y: 690, w: 1000, h: 184 },
+          { label: 'Data subnets', x: 390, y: 930, w: 280, h: 184 }
+        ],
+        nodes: [['an_inet', 420, 40], ['an_waf', 420, 250], ['an_psp', 1140, 240], ['an_alb', 420, 480], ['an_nat', 780, 480], ['an_corp', 1140, 480],
+                ['an_vpce', 60, 720], ['an_pods', 420, 720], ['an_tgw', 1140, 720], ['an_db', 420, 960]],
+        edges: [
+          { f: 'an_inet', t: 'an_waf', l: 'HTTPS', tech: 'TCP 443' },
+          { f: 'an_waf', t: 'an_alb', l: 'allowed requests', tech: 'TCP 443' },
+          { f: 'an_alb', t: 'an_pods', l: 'to ingress', tech: 'TCP 8080 · SG' },
+          { f: 'an_pods', t: 'an_nat', l: 'egress', tech: '0.0.0.0/0', o: 40 },
+          { f: 'an_nat', t: 'an_psp', l: 'outbound API calls', tech: 'HTTPS 443' },
+          { f: 'an_pods', t: 'an_vpce', l: 'AWS APIs', tech: 'PrivateLink' },
+          { f: 'an_pods', t: 'an_db', l: 'database and Kafka', tech: 'TCP 5432 · 9098' },
+          { f: 'an_corp', t: 'an_tgw', l: 'site-to-site VPN', tech: 'IPsec' },
+          { f: 'an_tgw', t: 'an_pods', l: 'admin access', tech: 'TCP 443 · SG ops' }
+        ] },
+      { id: 'place-order', folder: 'Flows', title: 'Place order', vid: 'lumen_flow_place_order', updated: '6 days ago', dynamic: true,
+        desc: 'Step-by-step: what happens from “Pay now” to the shipping confirmation.', w: 1740, h: 724, z: 0.6,
+        nodes: [['shopper', 40, 40], ['web', 400, 40], ['gw', 760, 40], ['ord', 1120, 40], ['psp', 1480, 40], ['bus', 760, 300], ['orddb', 1120, 300], ['wms', 400, 560], ['ful', 760, 560], ['mail', 1120, 560]],
+        edges: [
+          { f: 'shopper', t: 'web', step: 1, l: 'submits checkout', tech: 'HTTPS' },
+          { f: 'web', t: 'gw', step: 2, l: 'POST /checkout', tech: 'HTTPS' },
+          { f: 'gw', t: 'ord', step: 3, l: 'createOrder', tech: 'gRPC' },
+          { f: 'ord', t: 'psp', step: 4, l: 'authorise payment', tech: 'HTTPS' },
+          { f: 'ord', t: 'orddb', step: 5, l: 'persist order', tech: 'SQL' },
+          { f: 'ord', t: 'bus', step: 6, l: 'publish OrderPlaced', tech: 'Kafka', async: true },
+          { f: 'bus', t: 'ful', step: 7, l: 'deliver OrderPlaced', tech: 'Kafka', async: true },
+          { f: 'ful', t: 'wms', step: 8, l: 'create shipment', tech: 'SFTP' },
+          { f: 'ful', t: 'mail', step: 9, l: 'send confirmation', tech: 'HTTPS' }
+        ] },
+      { id: 'publish-product', folder: 'Flows', title: 'Publish product', vid: 'lumen_flow_publish_product', updated: '3 weeks ago', dynamic: true,
+        desc: 'How a product edit in the Back Office reaches the storefront and search.', w: 1380, h: 724, z: 0.7,
+        nodes: [['merch', 40, 40], ['bo', 400, 40], ['gw', 760, 40], ['web', 40, 300], ['bus', 400, 300], ['cat', 760, 300], ['catdb', 1120, 300], ['srch', 760, 560]],
+        edges: [
+          { f: 'merch', t: 'bo', step: 1, l: 'edits product', tech: 'HTTPS' },
+          { f: 'bo', t: 'gw', step: 2, l: 'PUT /products/{id}', tech: 'HTTPS' },
+          { f: 'gw', t: 'cat', step: 3, l: 'updateProduct', tech: 'gRPC' },
+          { f: 'cat', t: 'catdb', step: 4, l: 'save new version', tech: 'SQL' },
+          { f: 'cat', t: 'bus', step: 5, l: 'ProductChanged', tech: 'Kafka', async: true },
+          { f: 'bus', t: 'web', step: 6, l: 'revalidate pages', tech: 'Kafka', async: true },
+          { f: 'cat', t: 'srch', step: 7, l: 'reindex product', tech: 'HTTPS' }
+        ] }
+    ]
+  },
+
+  atlas: {
+    id: 'atlas', name: 'Atlas Identity', initials: 'AI', color: '#c4b5fd', team: 'identity-core',
+    repo: 'atlas/architecture', synced: '1d ago', version: 'v2.3', start: 'containers',
+    adrs: [
+      { id: 'ADR-0004', title: 'Adopt passkeys as the primary second factor', status: 'Accepted', date: '2026-05-14', authors: 'Ana R.',
+        views: ['containers'], elements: ['auth', 'users', 'portal'],
+        context: 'SMS codes are the most common second factor and the most phished. SMS costs also grew 40% year on year.',
+        decision: 'Offer passkeys (WebAuthn) as the default second factor. SMS remains as a fallback for members without a compatible device.',
+        consequences: ['User Store gains a credentials table for public keys.', 'Phishing-resistant sign-in for most members.', 'Support agents need a recovery flow for lost devices.'] },
+      { id: 'ADR-0002', title: 'Sync staff accounts via SCIM instead of LDAP', status: 'Accepted', date: '2026-02-03', authors: 'Sam K.',
+        views: ['containers', 'context'], elements: ['auth', 'dir'],
+        context: 'Nightly LDAP exports left leavers active for up to 24 hours.',
+        decision: 'Receive staff account changes from the Corporate Directory through SCIM 2.0 push.',
+        consequences: ['Leavers are disabled within minutes.', 'Auth Service exposes a SCIM endpoint behind mutual TLS.'] }
+    ],
+    changes: [
+      { hash: '6a1fd02', date: '2026-11-06', author: 'Sam K.', type: 'added', msg: 'New views: Prod infrastructure and networking (Azure)', views: ['prod-infra', 'prod-network'],
+        diff: ['+ deployment view atlas_deploy_prod_infra', '+ deployment view atlas_deploy_prod_network'] },
+      { hash: 'd2a90c1', date: '2026-11-05', author: 'Sam K.', type: 'changed', msg: 'Auth Service moved to axum 0.8', views: ['containers'],
+        diff: ["- technology 'Rust · axum 0.7'", "+ technology 'Rust · axum'"] },
+      { hash: '8be1f43', date: '2026-10-20', author: 'Sam K.', type: 'added', msg: 'SMS Gateway as one-time passcode fallback', views: ['containers', 'context'],
+        diff: ["+ sms = external 'SMS Gateway'", "+ auth -> sms 'sends OTP codes'"] },
+      { hash: '44ac0e9', date: '2026-05-14', author: 'Ana R.', type: 'changed', msg: 'User Store: passkey credentials', views: ['containers'], adr: 'ADR-0004',
+        diff: ["- description 'Accounts and passwords.'", "+ description 'Accounts, credentials and MFA factors.'"] }
+    ],
+    elements: {
+      member: { kind: 'person', name: 'Member', tech: '', desc: 'Signs in to company products and manages their profile.' },
+      agent:  { kind: 'person', name: 'Support Agent', tech: '', desc: 'Helps members recover access and reset MFA.' },
+      atlas:  { kind: 'system', name: 'Atlas Identity', tech: 'Software system', desc: 'Central accounts, sign-in and multi-factor authentication.' },
+      portal: { kind: 'container', name: 'Account Portal', tech: 'SvelteKit', desc: 'Sign-in, sign-up and profile self-service.' },
+      auth:   { kind: 'container', name: 'Auth Service', tech: 'Rust · axum', desc: 'Issues tokens and enforces MFA policies.' },
+      users:  { kind: 'db', name: 'User Store', tech: 'PostgreSQL 16', desc: 'Accounts, credentials and MFA factors.' },
+      dir:    { kind: 'external', name: 'Corporate Directory', tech: 'SCIM 2.0', desc: 'Source of truth for staff accounts and groups.' },
+      sms:    { kind: 'external', name: 'SMS Gateway', tech: 'REST', desc: 'Delivers one-time passcodes.' }
+    },
+    rels: {
+      a1: { f: 'member', t: 'atlas', l: 'signs in', tech: 'HTTPS' },
+      a2: { f: 'agent', t: 'atlas', l: 'manages accounts', tech: 'HTTPS' },
+      a3: { f: 'atlas', t: 'dir', l: 'syncs staff', tech: 'SCIM' },
+      a4: { f: 'atlas', t: 'sms', l: 'sends passcodes', tech: 'HTTPS' },
+      m_portal: { f: 'member', t: 'portal', l: 'signs in, edits profile', tech: 'HTTPS 443' },
+      ag_auth:  { f: 'agent', t: 'auth', l: 'resets MFA', tech: 'HTTPS · admin API' },
+      p_auth:   { f: 'portal', t: 'auth', l: 'authenticates', tech: 'OIDC' },
+      a_users:  { f: 'auth', t: 'users', l: 'reads and writes users', tech: 'SQL · 5432' },
+      a_dir:    { f: 'auth', t: 'dir', l: 'syncs staff', tech: 'SCIM 2.0' },
+      a_sms:    { f: 'auth', t: 'sms', l: 'sends OTP codes', tech: 'HTTPS' }
+    },
+    views: [
+      { id: 'context', folder: 'C1', title: 'System context', vid: 'atlas_c1_context', updated: '2 weeks ago',
+        desc: 'Who relies on Atlas and what it integrates with.', w: 1000, h: 700, z: 0.9,
+        nodes: [['member', 190, 40], ['agent', 590, 40], ['atlas', 390, 270], ['dir', 170, 520], ['sms', 610, 520]],
+        edges: ['a1', 'a2', 'a3', 'a4'] },
+      { id: 'containers', folder: 'C2', title: 'Containers', vid: 'atlas_c2_containers', updated: '1d ago',
+        desc: 'Services and stores that make up Atlas Identity.', w: 1260, h: 684, z: 0.8,
+        groups: [{ label: 'Atlas Identity', x: 130, y: 220, w: 720, h: 430 }],
+        nodes: [['member', 160, 40], ['agent', 600, 40], ['portal', 160, 250], ['auth', 600, 250], ['users', 600, 500], ['dir', 1000, 250], ['sms', 1000, 500]],
+        edges: ['m_portal', 'ag_auth', 'p_auth', 'a_users', 'a_dir', 'a_sms'] },
+      { id: 'prod-infra', folder: 'Deployment', sub: 'Prod', title: 'Infrastructure', vid: 'atlas_deploy_prod_infra', updated: 'today',
+        desc: 'Azure resources behind Atlas Identity production in West Europe.', w: 1420, h: 810, z: 0.65,
+        local: {
+          zi_dns:   { kind: 'network', name: 'Azure DNS', tech: 'Azure · DNS zone', desc: 'Hosts the sign-in domain records.' },
+          zi_fd:    { kind: 'network', name: 'Azure Front Door', tech: 'Azure · Premium + WAF', desc: 'Global entry point with WAF and Private Link origins.' },
+          zi_aks:   { kind: 'compute', name: 'AKS node pool', tech: 'Azure · D4s v5 × 4', desc: 'Runs the Account Portal and Auth Service across three zones.' },
+          zi_acr:   { kind: 'storage', name: 'Container Registry', tech: 'Azure · ACR Premium', desc: 'Signed images, geo-replicated.' },
+          zi_pg:    { kind: 'db', name: 'PostgreSQL Flexible Server', tech: 'Azure · zone-redundant HA', desc: 'Hosts the User Store.' },
+          zi_redis: { kind: 'db', name: 'Azure Cache for Redis', tech: 'Azure · Premium P1', desc: 'Session and rate-limit state.' },
+          zi_kv:    { kind: 'storage', name: 'Key Vault', tech: 'Azure · HSM-backed', desc: 'Token-signing keys and secrets, read with managed identity.' },
+          zi_logs:  { kind: 'storage', name: 'Log Analytics', tech: 'Azure Monitor', desc: 'Audit logs and metrics, retained for 400 days.' }
+        },
+        groups: [
+          { label: 'Global edge', x: 30, y: 20, w: 640, h: 194 },
+          { label: 'Resource group rg-atlas-prod · West Europe', x: 30, y: 280, w: 1360, h: 494 },
+          { label: 'VNet 10.40.0.0/16', x: 45, y: 312, w: 630, h: 442 }
+        ],
+        nodes: [['zi_dns', 60, 60], ['zi_fd', 420, 60], ['zi_aks', 420, 350], ['zi_acr', 780, 350],
+                ['zi_pg', 60, 610], ['zi_redis', 420, 610], ['zi_kv', 780, 610], ['zi_logs', 1140, 610]],
+        edges: [
+          { f: 'zi_dns', t: 'zi_fd', l: 'CNAME', tech: 'DNS' },
+          { f: 'zi_fd', t: 'zi_aks', l: 'Private Link origin', tech: 'HTTPS 443' },
+          { f: 'zi_aks', t: 'zi_acr', l: 'pulls images', tech: 'managed identity' },
+          { f: 'zi_aks', t: 'zi_pg', l: 'User Store', tech: 'TCP 5432' },
+          { f: 'zi_aks', t: 'zi_redis', l: 'sessions', tech: 'TLS 6380' },
+          { f: 'zi_aks', t: 'zi_kv', l: 'signing keys', tech: 'private endpoint' },
+          { f: 'zi_aks', t: 'zi_logs', l: 'diagnostics', tech: 'Monitor agent', async: true }
+        ] },
+      { id: 'prod-network', folder: 'Deployment', sub: 'Prod', title: 'Networking', vid: 'atlas_deploy_prod_network', updated: 'today',
+        desc: 'Hub-and-spoke networking for Atlas Identity production on Azure.', w: 1420, h: 1144, z: 0.58,
+        local: {
+          zn_inet: { kind: 'external', name: 'Internet', tech: 'Members and agents', desc: 'Public clients signing in.' },
+          zn_fd:   { kind: 'network', name: 'Front Door + WAF', tech: 'OWASP 3.2 · bot protection', desc: 'Filters traffic at the edge before it reaches the region.' },
+          zn_pls:  { kind: 'network', name: 'Private Link Service', tech: 'No public IP on the origin', desc: 'Front Door reaches the cluster only through Private Link.' },
+          zn_ing:  { kind: 'compute', name: 'AKS internal ingress', tech: 'snet-aks · 10.40.0.0/20', desc: 'Internal load balancer in front of the pods.' },
+          zn_pe:   { kind: 'network', name: 'Private endpoints', tech: 'snet-pe · PostgreSQL, Key Vault, ACR', desc: 'Platform services exposed only on private IPs.' },
+          zn_corp: { kind: 'external', name: 'Corporate WAN', tech: 'ExpressRoute circuit', desc: 'Office and support-agent connectivity.' },
+          zn_er:   { kind: 'network', name: 'ExpressRoute gateway', tech: 'Hub · GatewaySubnet', desc: 'Terminates the private circuit in the hub.' },
+          zn_fw:   { kind: 'network', name: 'Azure Firewall', tech: 'Hub · FQDN allow-list', desc: 'Inspects all spoke egress and corporate traffic.' },
+          zn_sms:  { kind: 'external', name: 'SMS Gateway', tech: 'Reached via firewall egress', desc: 'Delivers one-time passcodes.' }
+        },
+        groups: [
+          { label: 'Spoke VNet vnet-atlas-prod 10.40.0.0/16', x: 30, y: 460, w: 650, h: 434 },
+          { label: 'Hub VNet 10.0.0.0/22', x: 1110, y: 460, w: 280, h: 434 }
+        ],
+        nodes: [['zn_inet', 420, 40], ['zn_fd', 420, 260], ['zn_corp', 1140, 260], ['zn_pls', 420, 500], ['zn_er', 1140, 500],
+                ['zn_pe', 60, 740], ['zn_ing', 420, 740], ['zn_fw', 1140, 740], ['zn_sms', 1140, 980]],
+        edges: [
+          { f: 'zn_inet', t: 'zn_fd', l: 'HTTPS', tech: 'TCP 443' },
+          { f: 'zn_fd', t: 'zn_pls', l: 'Private Link', tech: 'TCP 443' },
+          { f: 'zn_pls', t: 'zn_ing', l: 'to ingress', tech: 'TCP 443 · NSG' },
+          { f: 'zn_ing', t: 'zn_pe', l: 'data and secrets', tech: 'TCP 5432 · 443' },
+          { f: 'zn_ing', t: 'zn_fw', l: 'all egress', tech: 'UDR 0.0.0.0/0 · peering' },
+          { f: 'zn_fw', t: 'zn_sms', l: 'OTP delivery', tech: 'HTTPS · allow-listed FQDN' },
+          { f: 'zn_corp', t: 'zn_er', l: 'private connectivity', tech: 'ExpressRoute' },
+          { f: 'zn_er', t: 'zn_fw', l: 'inspected', tech: 'hub routing' }
+        ] }
+    ]
+  },
+
+  ledger: {
+    id: 'ledger', name: 'Ledger Payments', initials: 'LP', color: '#fcd34d', team: 'finance-eng',
+    repo: 'ledger/architecture', synced: '5h ago', version: 'v1.8', start: 'containers',
+    adrs: [
+      { id: 'ADR-0003', title: 'Consume Lumen order events instead of polling', status: 'Proposed', date: '2026-10-30', authors: 'Jonas B.',
+        views: ['containers', 'context'], elements: ['api', 'lumenx'],
+        context: 'Ledger polls the Lumen order API every 10 minutes, which misses refunds issued between polls and loads Lumen at peak.',
+        decision: 'Subscribe Ledger API to OrderPlaced and OrderRefunded on Lumen’s event bus with its own consumer group.',
+        consequences: ['Journal entries appear within seconds of an order.', 'Ledger depends on Lumen’s event schemas and their versioning.'] },
+      { id: 'ADR-0001', title: 'Record every money movement as double-entry journal lines', status: 'Accepted', date: '2025-11-02', authors: 'Lea M.',
+        views: ['containers', 'context'], elements: ['api', 'ldb'],
+        context: 'Balances were stored as mutable totals, so audits could not explain how a balance was reached.',
+        decision: 'Store an append-only journal where every movement is a balanced debit and credit. Balances are derived snapshots.',
+        consequences: ['Full audit trail for every balance.', 'Corrections are new reversing entries, never edits.'] }
+    ],
+    changes: [
+      { hash: 'e4b2c18', date: '2026-11-06', author: 'Jonas B.', type: 'added', msg: 'New views: Prod infrastructure and networking (Google Cloud)', views: ['prod-infra', 'prod-network'],
+        diff: ['+ deployment view ledger_deploy_prod_infra', '+ deployment view ledger_deploy_prod_network'] },
+      { hash: 'f0e1c77', date: '2026-11-06', author: 'Jonas B.', type: 'added', msg: 'Lumen Commerce event stream', views: ['containers', 'context'], adr: 'ADR-0003',
+        diff: ["+ lumenx = external 'Lumen Commerce'", "+ lumenx -> api 'streams OrderPlaced'"] },
+      { hash: '2b6d8a0', date: '2026-09-15', author: 'Jonas B.', type: 'changed', msg: 'Reconciler runs every 15 minutes instead of hourly', views: ['containers'],
+        diff: ["- technology 'Go · hourly cron'", "+ technology 'Go · cron'"] },
+      { hash: '9c0f3d2', date: '2025-11-02', author: 'Lea M.', type: 'added', msg: 'Initial model', views: ['context', 'containers'], adr: 'ADR-0001',
+        diff: ['+ 6 elements, 5 relationships, 2 views'] }
+    ],
+    elements: {
+      fin:    { kind: 'person', name: 'Finance Analyst', tech: '', desc: 'Reviews balances and investigates mismatches.' },
+      ledger: { kind: 'system', name: 'Ledger', tech: 'Software system', desc: 'Double-entry record of every money movement.' },
+      api:    { kind: 'container', name: 'Ledger API', tech: 'Java 21', desc: 'Posts journal entries and serves balances.' },
+      recon:  { kind: 'container', name: 'Reconciler', tech: 'Go · cron', desc: 'Matches bank statements against journal entries.' },
+      ldb:    { kind: 'db', name: 'Ledger DB', tech: 'PostgreSQL 16', desc: 'Append-only journal and balance snapshots.' },
+      bank:   { kind: 'external', name: 'Bank Feeds', tech: 'ISO 20022', desc: 'Daily statements from partner banks.' },
+      lumenx: { kind: 'external', name: 'Lumen Commerce', tech: 'Kafka', desc: 'Publishes order and refund events.' }
+    },
+    rels: {
+      l1: { f: 'fin', t: 'ledger', l: 'reviews balances', tech: 'HTTPS' },
+      l2: { f: 'lumenx', t: 'ledger', l: 'sends order events', tech: 'Kafka', async: true },
+      l3: { f: 'ledger', t: 'bank', l: 'imports statements', tech: 'SFTP' },
+      fin_api:   { f: 'fin', t: 'api', l: 'queries ledger', tech: 'HTTPS' },
+      lx_api:    { f: 'lumenx', t: 'api', l: 'streams OrderPlaced', tech: 'Kafka', async: true },
+      api_db:    { f: 'api', t: 'ldb', l: 'appends entries', tech: 'SQL' },
+      recon_db:  { f: 'recon', t: 'ldb', l: 'matches entries', tech: 'SQL' },
+      recon_bank:{ f: 'recon', t: 'bank', l: 'pulls statements', tech: 'SFTP' }
+    },
+    views: [
+      { id: 'context', folder: 'C1', title: 'System context', vid: 'ledger_c1_context', updated: '1 month ago',
+        desc: 'Ledger, its users and its upstream and downstream systems.', w: 1000, h: 700, z: 0.9,
+        nodes: [['fin', 190, 40], ['lumenx', 590, 40], ['ledger', 390, 270], ['bank', 390, 520]],
+        edges: ['l1', 'l2', 'l3'] },
+      { id: 'containers', folder: 'C2', title: 'Containers', vid: 'ledger_c2_containers', updated: '5h ago',
+        desc: 'The API, the reconciliation job and the journal store.', w: 1220, h: 680, z: 0.82,
+        groups: [{ label: 'Ledger', x: 30, y: 220, w: 800, h: 430 }],
+        nodes: [['fin', 60, 40], ['lumenx', 560, 40], ['api', 60, 250], ['recon', 560, 250], ['bank', 960, 250], ['ldb', 310, 500]],
+        edges: ['fin_api', 'lx_api', 'api_db', 'recon_db', 'recon_bank'] },
+      { id: 'prod-infra', folder: 'Deployment', sub: 'Prod', title: 'Infrastructure', vid: 'ledger_deploy_prod_infra', updated: 'today',
+        desc: 'Google Cloud resources behind Ledger production in europe-west1.', w: 1420, h: 1010, z: 0.62,
+        local: {
+          gi_dns: { kind: 'network', name: 'Cloud DNS', tech: 'GCP · managed zone', desc: 'Hosts the Ledger API domain.' },
+          gi_lb:  { kind: 'network', name: 'Cloud Load Balancing', tech: 'GCP · global HTTPS + Cloud Armor', desc: 'Global entry point with WAF policies.' },
+          gi_ps:  { kind: 'queue', name: 'Pub/Sub', tech: 'GCP · lumen-orders subscription', desc: 'Receives Lumen order events bridged from Kafka.' },
+          gi_sm:  { kind: 'storage', name: 'Secret Manager', tech: 'GCP', desc: 'Database credentials and bank SFTP keys.' },
+          gi_run: { kind: 'compute', name: 'Cloud Run · ledger-api', tech: 'GCP · 2–20 instances', desc: 'Serves the Ledger API and consumes order events.' },
+          gi_job: { kind: 'compute', name: 'Cloud Run job · reconciler', tech: 'GCP · Cloud Scheduler, every 15 min', desc: 'Matches bank statements to journal entries.' },
+          gi_sql: { kind: 'db', name: 'Cloud SQL for PostgreSQL', tech: 'GCP · HA · private IP', desc: 'Hosts the Ledger DB.' },
+          gi_gcs: { kind: 'storage', name: 'Cloud Storage', tech: 'GCP · statement archive', desc: 'Raw bank statements, retained for 10 years.' },
+          gi_bq:  { kind: 'db', name: 'BigQuery', tech: 'GCP · ledger_reporting', desc: 'Read-only analytics copy of the journal.' }
+        },
+        groups: [
+          { label: 'Global', x: 30, y: 20, w: 640, h: 194 },
+          { label: 'Project ledger-prod · europe-west1', x: 30, y: 280, w: 1360, h: 714 },
+          { label: 'Private services access', x: 750, y: 560, w: 280, h: 184 }
+        ],
+        nodes: [['gi_dns', 60, 60], ['gi_lb', 420, 60], ['gi_ps', 780, 60], ['gi_sm', 60, 320], ['gi_run', 420, 320], ['gi_job', 1140, 320],
+                ['gi_sql', 780, 590], ['gi_gcs', 1140, 590], ['gi_bq', 780, 840]],
+        edges: [
+          { f: 'gi_dns', t: 'gi_lb', l: 'A record', tech: 'DNS' },
+          { f: 'gi_lb', t: 'gi_run', l: 'serverless NEG', tech: 'HTTPS 443' },
+          { f: 'gi_ps', t: 'gi_run', l: 'push subscription', tech: 'HTTPS · OIDC token', async: true },
+          { f: 'gi_run', t: 'gi_sm', l: 'reads secrets', tech: 'IAM' },
+          { f: 'gi_run', t: 'gi_sql', l: 'journal writes', tech: 'Cloud SQL connector' },
+          { f: 'gi_job', t: 'gi_sql', l: 'matches entries', tech: 'Cloud SQL connector' },
+          { f: 'gi_job', t: 'gi_gcs', l: 'reads statements', tech: 'IAM' },
+          { f: 'gi_sql', t: 'gi_bq', l: 'replicates', tech: 'Datastream', async: true }
+        ] },
+      { id: 'prod-network', folder: 'Deployment', sub: 'Prod', title: 'Networking', vid: 'ledger_deploy_prod_network', updated: 'today',
+        desc: 'Ingress, private connectivity and egress for Ledger production on Google Cloud.', w: 1420, h: 1380, z: 0.52,
+        local: {
+          gn_inet: { kind: 'external', name: 'Internet', tech: 'Finance analysts', desc: 'Clients of the Ledger API.' },
+          gn_lb:   { kind: 'network', name: 'External HTTPS LB', tech: 'Anycast IP · Cloud Armor', desc: 'Single global IP with WAF rules.' },
+          gn_neg:  { kind: 'network', name: 'Serverless NEG', tech: 'ledger-api backend', desc: 'Connects the load balancer to Cloud Run.' },
+          gn_run:  { kind: 'compute', name: 'Cloud Run · ledger-api', tech: 'Ingress: internal + LB only', desc: 'Not reachable on its default run.app URL.' },
+          gn_vpcc: { kind: 'network', name: 'Serverless VPC Access', tech: 'Connector 10.60.8.0/28', desc: 'Sends all Cloud Run egress into the VPC.' },
+          gn_pga:  { kind: 'network', name: 'Private Google Access', tech: 'Pub/Sub · GCS · Secret Manager', desc: 'Google APIs without public internet.' },
+          gn_psa:  { kind: 'network', name: 'Private Service Access', tech: 'Peering range 10.60.16.0/20', desc: 'Reserved range peered with Google-managed services.' },
+          gn_sql:  { kind: 'db', name: 'Cloud SQL (private IP)', tech: '10.60.16.3:5432', desc: 'No public IP.' },
+          gn_nat:  { kind: 'network', name: 'Cloud NAT', tech: 'Two reserved static IPs', desc: 'Stable egress addresses for partner allow-lists.' },
+          gn_bank: { kind: 'external', name: 'Bank SFTP', tech: 'Allow-lists our NAT IPs', desc: 'Partner banks publishing daily statements.' }
+        },
+        groups: [
+          { label: 'Google-managed serverless', x: 390, y: 450, w: 280, h: 424 },
+          { label: 'VPC ledger-vpc 10.60.0.0/16', x: 30, y: 920, w: 1020, h: 434 },
+          { label: 'Google-managed producer VPC', x: 1110, y: 920, w: 290, h: 194 }
+        ],
+        nodes: [['gn_inet', 420, 40], ['gn_lb', 420, 260], ['gn_neg', 420, 480], ['gn_run', 420, 720],
+                ['gn_pga', 60, 960], ['gn_vpcc', 420, 960], ['gn_psa', 780, 960], ['gn_sql', 1140, 960], ['gn_nat', 420, 1200], ['gn_bank', 780, 1200]],
+        edges: [
+          { f: 'gn_inet', t: 'gn_lb', l: 'HTTPS', tech: 'TCP 443' },
+          { f: 'gn_lb', t: 'gn_neg', l: 'backend service', tech: 'HTTPS' },
+          { f: 'gn_neg', t: 'gn_run', l: 'invokes', tech: 'serverless' },
+          { f: 'gn_run', t: 'gn_vpcc', l: 'all egress', tech: 'VPC connector' },
+          { f: 'gn_vpcc', t: 'gn_pga', l: 'Google APIs', tech: 'private.googleapis.com' },
+          { f: 'gn_vpcc', t: 'gn_psa', l: 'database traffic', tech: 'TCP 5432' },
+          { f: 'gn_psa', t: 'gn_sql', l: 'VPC peering', tech: 'private IP' },
+          { f: 'gn_vpcc', t: 'gn_nat', l: 'internet egress', tech: 'Cloud Router' },
+          { f: 'gn_nat', t: 'gn_bank', l: 'statement downloads', tech: 'SFTP 22 · static IP' }
+        ] }
+    ]
+  }
+};
+
+// Metadata and links for diagram groups, keyed by view id + group label.
+const GROUP_META = {
+  'lumen_c2_containers|Lumen Platform': { kind: 'System boundary', desc: 'Everything the commerce-platform team builds, deploys and operates.',
+    meta: [['Owner', 'commerce-platform'], ['On-call', '#lumen-oncall'], ['Tier', 'Tier 1 · 99.95% SLO'], ['Repository', 'lumen/platform']],
+    links: [['Service catalog', 'https://backstage.example.com/catalog/lumen'], ['SLO dashboard', 'https://grafana.example.com/d/lumen-slo'], ['Architecture overview', 'https://wiki.example.com/lumen/architecture']] },
+  'lumen_deploy_prod|k8s cluster · lumen-prod': { kind: 'Kubernetes cluster', desc: 'Production cluster running every Lumen workload.',
+    meta: [['Provider', 'AWS EKS 1.31'], ['Region', 'eu-west-1 · 3 AZs'], ['Namespaces', 'storefront, admin, core, jobs'], ['GitOps', 'Argo CD · lumen/deploy']],
+    links: [['Argo CD application', 'https://argocd.example.com/applications/lumen-prod'], ['Cluster dashboard', 'https://grafana.example.com/d/eks-lumen-prod'], ['Runbook: node rotation', 'https://wiki.example.com/lumen/runbooks/eks-node-rotation']] },
+  'lumen_deploy_prod|Managed services': { kind: 'Service group', desc: 'Stateful services run by the cloud provider, outside the cluster.',
+    meta: [['Backups', 'Daily snapshots · 35 days'], ['Encryption', 'KMS · alias/lumen-data'], ['Maintenance window', 'Sun 02:00–04:00 UTC']],
+    links: [['Backup and restore policy', 'https://wiki.example.com/lumen/backup-policy']] },
+  'lumen_deploy_prod_infra|Global edge': { kind: 'Edge', desc: 'Global DNS and CDN in front of the region.',
+    meta: [['Account', 'lumen-edge (123456789012)'], ['Certificates', 'ACM · *.lumen.example'], ['WAF', 'AWS managed core rule set']],
+    links: [['CloudFront console', 'https://console.aws.amazon.com/cloudfront/v4/home'], ['WAF tuning notes', 'https://wiki.example.com/lumen/waf']] },
+  'lumen_deploy_prod_infra|VPC 10.20.0.0/16 · 3 AZs': { kind: 'VPC', desc: 'Production network for all Lumen workloads and data stores.',
+    meta: [['VPC ID', 'vpc-0a1b2c3d4e5f6a7b8'], ['CIDR', '10.20.0.0/16'], ['Availability zones', 'eu-west-1a, 1b, 1c'], ['Account', 'lumen-prod (123456789012)'], ['Terraform', 'infra/aws/vpc']],
+    links: [['VPC console', 'https://console.aws.amazon.com/vpc/home?region=eu-west-1'], ['Terraform module', 'https://git.example.com/lumen/infra/tree/main/aws/vpc']] },
+  'lumen_deploy_prod_infra|EKS · lumen-prod': { kind: 'Kubernetes cluster', desc: 'Managed control plane with Graviton worker nodes.',
+    meta: [['Version', '1.31'], ['Nodes', 'm7g.xlarge × 6'], ['Autoscaling', 'Karpenter'], ['Add-ons', 'VPC CNI, CoreDNS, KEDA']],
+    links: [['EKS console', 'https://console.aws.amazon.com/eks/home?region=eu-west-1'], ['Argo CD application', 'https://argocd.example.com/applications/lumen-prod']] },
+  'lumen_deploy_prod_infra|Data subnets': { kind: 'Subnet group', desc: 'Isolated subnets for databases and Kafka.',
+    meta: [['CIDRs', '10.20.64.0/21 (×3)'], ['Route to internet', 'None'], ['Security group', 'sg-lumen-data']],
+    links: [['Data access policy', 'https://wiki.example.com/lumen/data-access']] },
+  'lumen_deploy_prod_network|VPC 10.20.0.0/16': { kind: 'VPC', desc: 'Network boundary for production.',
+    meta: [['VPC ID', 'vpc-0a1b2c3d4e5f6a7b8'], ['Flow logs', 'On · 90 days in S3'], ['DNS', 'Route 53 Resolver']],
+    links: [['Runbook: query flow logs', 'https://wiki.example.com/lumen/runbooks/flow-logs'], ['VPC console', 'https://console.aws.amazon.com/vpc/home?region=eu-west-1']] },
+  'lumen_deploy_prod_network|Public subnets': { kind: 'Subnet group', desc: 'Only the load balancer and NAT gateways live here.',
+    meta: [['CIDRs', '10.20.0.0/20 (×3)'], ['Route table', 'rtb-public → internet gateway'], ['NACL', 'Allow 443 inbound']], links: [] },
+  'lumen_deploy_prod_network|Private subnets': { kind: 'Subnet group', desc: 'Workloads without public IP addresses.',
+    meta: [['CIDRs', '10.20.32.0/19 (×3)'], ['Route table', 'rtb-private → NAT per AZ'], ['Pod networking', 'VPC CNI · prefix delegation']], links: [] },
+  'lumen_deploy_prod_network|Data subnets': { kind: 'Subnet group', desc: 'No route to the internet.',
+    meta: [['CIDRs', '10.20.64.0/21 (×3)'], ['Route table', 'local only'], ['Ingress', 'sg-lumen-pods → 5432, 9098']],
+    links: [['Data access policy', 'https://wiki.example.com/lumen/data-access']] },
+  'atlas_c2_containers|Atlas Identity': { kind: 'System boundary', desc: 'Central identity platform for members and staff.',
+    meta: [['Owner', 'identity-core'], ['On-call', '#identity-oncall'], ['Tier', 'Tier 0 · 99.99% SLO'], ['Compliance', 'SOC 2 · ISO 27001']],
+    links: [['Service catalog', 'https://backstage.example.com/catalog/atlas'], ['Threat model', 'https://wiki.example.com/atlas/threat-model']] },
+  'atlas_deploy_prod_infra|Global edge': { kind: 'Edge', desc: 'Global entry point for sign-in traffic.',
+    meta: [['Front Door profile', 'fd-atlas-prod'], ['WAF policy', 'wafatlasprod · Prevention'], ['Certificates', 'Managed · id.atlas.example']],
+    links: [['Azure portal', 'https://portal.azure.com/']] },
+  'atlas_deploy_prod_infra|Resource group rg-atlas-prod · West Europe': { kind: 'Resource group', desc: 'All production resources for Atlas Identity.',
+    meta: [['Subscription', 'atlas-prod'], ['Region', 'West Europe · 3 zones'], ['Policy', 'Deny public IPs'], ['Bicep', 'infra/azure/main.bicep']],
+    links: [['Azure portal', 'https://portal.azure.com/'], ['Cost dashboard', 'https://grafana.example.com/d/atlas-cost']] },
+  'atlas_deploy_prod_infra|VNet 10.40.0.0/16': { kind: 'Virtual network', desc: 'Spoke network peered with the shared hub.',
+    meta: [['Address space', '10.40.0.0/16'], ['Subnets', 'snet-aks, snet-pe, snet-data'], ['Peered with', 'Hub VNet 10.0.0.0/22']], links: [] },
+  'atlas_deploy_prod_network|Spoke VNet vnet-atlas-prod 10.40.0.0/16': { kind: 'Spoke VNet', desc: 'Application network; all egress goes through the hub firewall.',
+    meta: [['Default route', '0.0.0.0/0 → Azure Firewall'], ['NSGs', 'nsg-aks, nsg-pe'], ['DDoS', 'Network Protection']],
+    links: [['Network runbook', 'https://wiki.example.com/atlas/runbooks/network']] },
+  'atlas_deploy_prod_network|Hub VNet 10.0.0.0/22': { kind: 'Hub VNet', desc: 'Shared connectivity owned by the network platform team.',
+    meta: [['Owner', 'network-platform'], ['Firewall', 'afw-hub-weu · Premium'], ['Gateway', 'ExpressRoute · ErGw2AZ']],
+    links: [['Hub-and-spoke design', 'https://wiki.example.com/network/hub-spoke']] },
+  'ledger_c2_containers|Ledger': { kind: 'System boundary', desc: 'Financial ledger owned by finance engineering.',
+    meta: [['Owner', 'finance-eng'], ['On-call', '#ledger-oncall'], ['Tier', 'Tier 1 · 99.9% SLO'], ['Data class', 'Financial · restricted']],
+    links: [['Service catalog', 'https://backstage.example.com/catalog/ledger'], ['Audit evidence', 'https://wiki.example.com/ledger/audit']] },
+  'ledger_deploy_prod_infra|Global': { kind: 'Edge', desc: 'Global load balancing and WAF.',
+    meta: [['Load balancer', 'ledger-api-lb'], ['Cloud Armor policy', 'ledger-waf'], ['Certificate', 'Google-managed']], links: [] },
+  'ledger_deploy_prod_infra|Project ledger-prod · europe-west1': { kind: 'GCP project', desc: 'Production project for Ledger.',
+    meta: [['Project ID', 'ledger-prod-4821'], ['Folder', 'finance/prod'], ['Org policy', 'No external IPs · CMEK required'], ['Terraform', 'infra/gcp/prod']],
+    links: [['Cloud console', 'https://console.cloud.google.com/'], ['Terraform module', 'https://git.example.com/ledger/infra/tree/main/gcp/prod']] },
+  'ledger_deploy_prod_infra|Private services access': { kind: 'Network range', desc: 'Reserved range for Google-managed services.',
+    meta: [['Range', '10.60.16.0/20'], ['Peered service', 'servicenetworking.googleapis.com']], links: [] },
+  'ledger_deploy_prod_network|Google-managed serverless': { kind: 'Managed runtime', desc: 'Cloud Run infrastructure operated by Google.',
+    meta: [['Service', 'Cloud Run (2nd gen)'], ['Ingress', 'internal-and-cloud-load-balancing'], ['Min instances', '2']], links: [] },
+  'ledger_deploy_prod_network|VPC ledger-vpc 10.60.0.0/16': { kind: 'VPC', desc: 'Custom-mode VPC for Ledger egress and private access.',
+    meta: [['Mode', 'Custom subnets'], ['Firewall', 'Deny all ingress by default'], ['Flow logs', 'On · 50% sampling']],
+    links: [['Firewall rules', 'https://wiki.example.com/ledger/firewall']] },
+  'ledger_deploy_prod_network|Google-managed producer VPC': { kind: 'Producer VPC', desc: 'Where Cloud SQL runs, reached only through peering.',
+    meta: [['Managed by', 'Google (Cloud SQL)'], ['Access', 'VPC peering only']], links: [] }
+};
+
+// Shared reference view: every element kind, color option and relationship style.
+const NOTATION_VIEW = {
+  id: 'notation', folder: 'Reference', title: 'Notation and colors', vid: 'archidocs_notation', updated: 'today',
+  desc: 'Every element kind, color option and relationship style available in Archidocs diagrams.', w: 1620, h: 1150, z: 0.52,
+  local: {
+    k_person:    { kind: 'person', name: 'Person', tech: '', desc: 'A human user or role that interacts with the system.' },
+    k_system:    { kind: 'system', name: 'Software system', tech: 'system', desc: 'A system in scope, shown as one box in context views.' },
+    k_container: { kind: 'container', name: 'Container', tech: 'container', desc: 'A deployable unit: web app, service or job.' },
+    k_db:        { kind: 'db', name: 'Database', tech: 'database', desc: 'Stores data. Drawn with rounder corners.' },
+    k_queue:     { kind: 'queue', name: 'Queue / topic', tech: 'queue', desc: 'An asynchronous message channel.' },
+    k_external:  { kind: 'external', name: 'External system', tech: 'external', desc: 'Owned by another team or a vendor.' },
+    k_compute:   { kind: 'compute', name: 'Compute', tech: 'node', desc: 'Infrastructure that runs workloads: VMs, node pools, serverless.' },
+    k_network:   { kind: 'network', name: 'Network', tech: 'network', desc: 'Load balancers, gateways, firewalls and endpoints.' },
+    k_storage:   { kind: 'storage', name: 'Storage', tech: 'storage', desc: 'Buckets, registries, vaults and log stores.' },
+    c_blue:   { kind: 'container', name: 'Blue', tech: '', desc: 'Default for internal containers and stores.' },
+    c_indigo: { kind: 'container', name: 'Indigo', tech: '', desc: 'Platform or shared services.' },
+    c_sky:    { kind: 'container', name: 'Sky', tech: '', desc: 'Default for people.' },
+    c_teal:   { kind: 'container', name: 'Teal', tech: '', desc: 'Data pipelines and analytics.' },
+    c_green:  { kind: 'container', name: 'Green', tech: '', desc: 'New or recently added.' },
+    c_amber:  { kind: 'container', name: 'Amber', tech: '', desc: 'Deprecated or scheduled to change.' },
+    c_rose:   { kind: 'container', name: 'Rose', tech: '', desc: 'Being removed, or a known risk.' },
+    c_violet: { kind: 'container', name: 'Violet', tech: '', desc: 'Third-party SaaS you configure.' },
+    c_muted:  { kind: 'container', name: 'Muted', tech: '', desc: 'Default for external systems.' },
+    e_a: { kind: 'container', name: 'Caller', tech: '', desc: 'Makes a request and waits for the answer.' },
+    e_b: { kind: 'container', name: 'Callee', tech: '', desc: 'Handles the synchronous request.' },
+    e_c: { kind: 'container', name: 'Producer', tech: '', desc: 'Publishes a message and moves on.' },
+    e_d: { kind: 'container', name: 'Consumer', tech: '', desc: 'Processes messages in its own time.' }
+  },
+  groups: [
+    { label: 'Element kinds', x: 20, y: 30, w: 1580, h: 378 },
+    { label: 'Color options', x: 20, y: 448, w: 1580, h: 378 },
+    { label: 'Relationship styles', x: 20, y: 866, w: 1580, h: 254 }
+  ],
+  nodes: [
+    ['k_person', 40, 80], ['k_system', 300, 80], ['k_container', 560, 80], ['k_db', 820, 80], ['k_queue', 1080, 80], ['k_external', 1340, 80],
+    ['k_compute', 40, 244], ['k_network', 300, 244], ['k_storage', 560, 244],
+    ['c_blue', 40, 498, "color 'blue'", 'blue'], ['c_indigo', 300, 498, "color 'indigo'", 'indigo'], ['c_sky', 560, 498, "color 'sky'", 'sky'],
+    ['c_teal', 820, 498, "color 'teal'", 'teal'], ['c_green', 1080, 498, "color 'green'", 'green'], ['c_amber', 1340, 498, "color 'amber'", 'amber'],
+    ['c_rose', 40, 662, "color 'rose'", 'rose'], ['c_violet', 300, 662, "color 'violet'", 'violet'], ['c_muted', 560, 662, "color 'muted'", 'muted'],
+    ['e_a', 40, 940], ['e_b', 460, 940], ['e_c', 920, 940], ['e_d', 1340, 940]
+  ],
+  edges: [
+    { f: 'e_a', t: 'e_b', l: 'synchronous call (solid)', tech: 'HTTPS' },
+    { f: 'e_c', t: 'e_d', l: 'asynchronous message (dashed)', tech: 'Kafka', async: true }
+  ]
+};
+Object.values(PROJECTS).forEach(p => p.views.push(NOTATION_VIEW));
+
+function route(a, b, o) {
+  o = o || 0;
+  const acx = a.x + W / 2, acy = a.y + H / 2, bcx = b.x + W / 2, bcy = b.y + H / 2;
+  if (b.y >= a.y + H + 30) {
+    const sx = acx + o, sy = a.y + H, tx = bcx + o, ty = b.y, my = (sy + ty) / 2;
+    return { d: `M${sx} ${sy} V${my} H${tx} V${ty - 3}`, lx: (sx + tx) / 2, ly: my, arrow: `${tx - 5},${ty - 9} ${tx + 5},${ty - 9} ${tx},${ty}` };
+  }
+  if (b.y + H + 30 <= a.y) {
+    const sx = acx + o, sy = a.y, tx = bcx + o, ty = b.y + H, my = (sy + ty) / 2;
+    return { d: `M${sx} ${sy} V${my} H${tx} V${ty + 3}`, lx: (sx + tx) / 2, ly: my, arrow: `${tx - 5},${ty + 9} ${tx + 5},${ty + 9} ${tx},${ty}` };
+  }
+  if (bcx >= acx) {
+    const sx = a.x + W, sy = acy + o, tx = b.x, ty = bcy + o, mx = (sx + tx) / 2;
+    return { d: `M${sx} ${sy} H${mx} V${ty} H${tx - 3}`, lx: mx, ly: (sy + ty) / 2, arrow: `${tx - 9},${ty - 5} ${tx - 9},${ty + 5} ${tx},${ty}` };
+  }
+  const sx = a.x, sy = acy + o, tx = b.x + W, ty = bcy + o, mx = (sx + tx) / 2;
+  return { d: `M${sx} ${sy} H${mx} V${ty} H${tx + 3}`, lx: mx, ly: (sy + ty) / 2, arrow: `${tx + 9},${ty - 5} ${tx + 9},${ty + 5} ${tx},${ty}` };
+}
+
+function q(s) { return String(s).replace(/'/g, "\\'"); }
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      project: 'lumen', viewId: 'containers', mode: 'diagram', selected: 'ord', panel: 'node', zoom: null,
+      open: { C1: true, C2: true, Deployment: true, Flows: true },
+      side: true, projOpen: false, searchOpen: false, query: '',
+      adr: null, adrFilter: 'all', chgFilter: 'all', chgOpen: {}, viTab: 'overview'
+    };
+  }
+
+  select(id) {
+    if (this.state.selected === id && this.state.panel === 'node') this.setState({ selected: null, panel: null, group: null });
+    else this.setState({ selected: id, panel: 'node', group: null });
+  }
+  selectGroup(i) {
+    if (this.state.group === i && this.state.panel === 'group') this.setState({ group: null, panel: null });
+    else this.setState({ group: i, selected: null, panel: 'group' });
+  }
+  goView(id) { this.setState({ viewId: id, mode: 'diagram', zoom: null, projOpen: false, group: null, panel: this.state.panel === 'group' ? null : this.state.panel }); }
+  openAdr(id) { this.setState({ mode: 'decisions', adr: id, adrFilter: 'all', projOpen: false }); }
+  focusElement(id) {
+    const P = PROJECTS[this.state.project];
+    const cur = P.views.find(v => v.id === this.state.viewId);
+    let viewId = this.state.viewId;
+    if (!(cur && cur.nodes.some(n => n[0] === id))) {
+      const v = P.views.find(v => !v.dynamic && v.nodes.some(n => n[0] === id)) || P.views.find(v => v.nodes.some(n => n[0] === id));
+      if (v) viewId = v.id;
+    }
+    this.setState({ viewId, selected: id, panel: 'node', searchOpen: false, mode: this.state.mode === 'graph' ? 'graph' : 'diagram', zoom: viewId === this.state.viewId ? this.state.zoom : null });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const P = PROJECTS[s.project];
+    const V = P.views.find(v => v.id === s.viewId) || P.views[0];
+    const isGraph = s.mode === 'graph';
+    const isPage = s.mode === 'decisions' || s.mode === 'changelog';
+    const E = (isGraph || !V.local) ? P.elements : Object.assign({}, P.elements, V.local);
+    const baseZ = isGraph ? 0.85 : V.z;
+    const z = s.zoom != null ? s.zoom : baseZ;
+    const sel = s.selected && E[s.selected] ? s.selected : null;
+
+    // ---------- diagram ----------
+    const pos = {};
+    V.nodes.forEach(n => { pos[n[0]] = { x: n[1], y: n[2] }; });
+    const vEdges = V.edges.map(e => typeof e === 'string' ? Object.assign({ id: e }, P.rels[e]) : e);
+    const selInView = !!(sel && pos[sel]);
+    const touch = new Set();
+    if (selInView) vEdges.forEach(e => { if (e.f === sel || e.t === sel) { touch.add(e.f); touch.add(e.t); } });
+    const gSel = (!isGraph && s.panel === 'group' && s.group != null && V.groups && V.groups[s.group]) ? V.groups[s.group] : null;
+    const inGroup = (g, n) => { const cx = n[1] + W / 2, cy = n[2] + H / 2; return cx > g.x && cx < g.x + g.w && cy > g.y && cy < g.y + g.h; };
+    const gMem = new Set(gSel ? V.nodes.filter(n => inGroup(gSel, n)).map(n => n[0]) : []);
+
+    const edges = vEdges.map(e => {
+      const r = route(pos[e.f], pos[e.t], e.o);
+      const hot = selInView && (e.f === sel || e.t === sel);
+      const dim = (selInView && !hot) || (!!gSel && !(gMem.has(e.f) && gMem.has(e.t)));
+      return {
+        d: r.d, arrow: r.arrow, w: V.w, h: V.h,
+        stroke: hot ? '#fb923c' : '#5b5b63',
+        dash: e.async ? '6 5' : 'none',
+        svgStyle: `position:absolute;left:0;top:0;overflow:visible;pointer-events:none;opacity:${dim ? 0.22 : 1}`,
+        label: e.l, tech: e.tech || '', hasTech: !!e.tech, step: e.step || '', hasStep: !!e.step,
+        stepStyle: `display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:999px;font-size:10.5px;font-weight:600;background:${hot ? '#fb923c' : '#e4e4e7'};color:#09090b;flex:none`,
+        labelStyle: `position:absolute;left:${r.lx}px;top:${r.ly}px;transform:translate(-50%,-50%);width:max-content;max-width:150px;background:#09090b;border:1px solid ${hot ? '#c2410c' : '#2e2e33'};border-radius:6px;padding:4px 8px;text-align:center;font-size:11px;line-height:1.35;color:${hot ? '#fed7aa' : '#e4e4e7'};opacity:${dim ? 0.3 : 1};pointer-events:none;transition:opacity .15s`
+      };
+    });
+
+    const nodes = V.nodes.map(n => {
+      const el = E[n[0]], k = Object.assign({}, KIND[el.kind], n[4] ? COLORS[n[4]] : {});
+      const isSel = sel === n[0];
+      const dim = (selInView && !isSel && !touch.has(n[0])) || (!!gSel && !gMem.has(n[0]));
+      return {
+        name: el.name, kindLabel: k.label, tech: n[3] || el.tech || k.label, desc: el.desc, icon: k.icon, subColor: k.sub,
+        selStr: isSel ? 'true' : 'false',
+        style: `position:absolute;left:${n[1]}px;top:${n[2]}px;width:${W}px;height:${H}px;display:block;text-align:left;padding:12px 14px;overflow:hidden;background:${k.bg};border:1px solid ${isSel ? '#fafafa' : k.border};border-radius:${k.radius};color:${k.title};opacity:${dim ? 0.32 : 1};box-shadow:${isSel ? '0 0 0 4px rgba(250,250,250,.18), 0 14px 34px rgba(0,0,0,.6)' : '0 1px 2px rgba(0,0,0,.5), 0 6px 18px rgba(0,0,0,.25)'}`,
+        pick: () => this.select(n[0])
+      };
+    });
+
+    const groups = (V.groups || []).map((g, i) => {
+      const on = gSel === g;
+      const gm = GROUP_META[`${V.vid}|${g.label}`];
+      return {
+        label: g.label, selStr: on ? 'true' : 'false', aria: `Group: ${g.label}`,
+        hasInfo: !!(gm && ((gm.links && gm.links.length) || (gm.meta && gm.meta.length))),
+        style: `position:absolute;left:${g.x}px;top:${g.y}px;width:${g.w}px;height:${g.h}px;margin:0;padding:0;display:block;text-align:left;cursor:pointer;border-radius:14px;border:1.5px ${on ? 'solid #fafafa' : 'dashed #3f3f46'};background:${on ? 'rgba(250,250,250,.05)' : 'rgba(39,39,42,.18)'};box-shadow:${on ? '0 0 0 4px rgba(250,250,250,.1)' : 'none'}`,
+        labelStyle: `position:absolute;left:8px;top:5px;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:5px;color:${on ? '#fafafa' : '#a1a1aa'};background:${on ? '#27272a' : 'transparent'}`,
+        pick: () => this.selectGroup(i)
+      };
+    });
+    let grp = { kind: '', label: '', id: '', desc: '', hasDesc: false, meta: [], hasMeta: false, noMeta: true, links: [], noLinks: true, members: [], memberCount: 0, code: '', file: '' };
+    if (gSel) {
+      const gm = GROUP_META[`${V.vid}|${gSel.label}`] || {};
+      const gid = gSel.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const meta = gm.meta || [], links = gm.links || [];
+      const isBoundary = /boundary/i.test(gm.kind || '');
+      const members = V.nodes.filter(n => gMem.has(n[0]));
+      grp = {
+        kind: gm.kind || 'Group', label: gSel.label, id: gid, desc: gm.desc || '', hasDesc: !!gm.desc,
+        meta: meta.map((m, j) => ({ k: m[0], v: m[1], rowStyle: `display:grid;grid-template-columns:minmax(0, 2fr) minmax(0, 3fr);gap:12px;align-items:baseline;padding:8px 12px;${j ? 'border-top:1px solid #27272a;' : ''}${j % 2 ? 'background:#0c0c0e' : ''}` })),
+        hasMeta: meta.length > 0, noMeta: meta.length === 0,
+        links: links.map(l => { let host = l[1]; try { const u = new URL(l[1]); host = u.hostname + u.pathname; } catch (e) {} return { label: l[0], url: l[1], host }; }),
+        noLinks: links.length === 0,
+        members: members.map(n => {
+          const el = E[n[0]], k = Object.assign({}, KIND[el.kind], n[4] ? COLORS[n[4]] : {});
+          return { name: el.name, tech: n[3] || el.tech || KIND[el.kind].label, dotStyle: `width:10px;height:10px;border-radius:3px;background:${k.bg};border:1px solid ${k.border};flex:none`, pick: () => this.select(n[0]) };
+        }),
+        memberCount: members.length,
+        file: `views/${V.folder.toLowerCase()}/${V.id}.c4`,
+        code: `${gid} = ${isBoundary ? 'boundary' : 'deploymentNode'} '${q(gSel.label)}' {\n` +
+          (gm.desc ? `  description '${q(gm.desc)}'\n` : '') +
+          (meta.length ? `  metadata {\n` + meta.map(m => `    ${m[0].toLowerCase().replace(/[^a-z0-9]+/g, '_')} '${q(m[1])}'`).join('\n') + `\n  }\n` : '') +
+          links.map(l => `  link ${l[1]} '${q(l[0])}'\n`).join('') +
+          (members.length ? `  include ${members.map(n => n[0]).join(', ')}\n` : '') + '}'
+      };
+    }
+
+    // ---------- graph ----------
+    const ids = Object.keys(E);
+    const GW = 940, GH = 820, cx = GW / 2, cy = GH / 2 - 10, R = Math.min(330, 90 + ids.length * 15);
+    const gpos = {};
+    ids.forEach((id, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / ids.length; gpos[id] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) }; });
+    const allRels = Object.keys(P.rels).map(k => Object.assign({ id: k }, P.rels[k]));
+    const neigh = new Set();
+    if (sel) allRels.forEach(r => { if (r.f === sel || r.t === sel) { neigh.add(r.f); neigh.add(r.t); } });
+    const gEdges = allRels.map(r => {
+      const a = gpos[r.f], b = gpos[r.t];
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+      const sx = a.x + ux * 16, sy = a.y + uy * 16, tx = b.x - ux * 16, ty = b.y - uy * 16;
+      const bx = tx - ux * 9, by = ty - uy * 9, px = -uy * 4.5, py = ux * 4.5;
+      const hot = sel && (r.f === sel || r.t === sel);
+      const dim = sel && !hot;
+      return {
+        d: `M${sx.toFixed(1)} ${sy.toFixed(1)} L${(tx - ux * 3).toFixed(1)} ${(ty - uy * 3).toFixed(1)}`,
+        arrow: `${(bx + px).toFixed(1)},${(by + py).toFixed(1)} ${(bx - px).toFixed(1)},${(by - py).toFixed(1)} ${tx.toFixed(1)},${ty.toFixed(1)}`,
+        w: GW, h: GH, stroke: hot ? '#fb923c' : '#52525b', dash: r.async ? '5 4' : 'none',
+        svgStyle: `position:absolute;left:0;top:0;overflow:visible;pointer-events:none;opacity:${dim ? 0.15 : 0.9}`
+      };
+    });
+    const gNodes = ids.map(id => {
+      const el = E[id], k = KIND[el.kind], p = gpos[id];
+      const isSel = sel === id, dim = sel && !neigh.has(id);
+      return {
+        name: el.name, tech: el.tech || k.label, icon: k.icon, selStr: isSel ? 'true' : 'false',
+        style: `position:absolute;left:${(p.x - 75).toFixed(1)}px;top:${(p.y - 16).toFixed(1)}px;width:150px;display:flex;flex-direction:column;align-items:center;text-align:center;background:transparent;border:0;padding:0;opacity:${dim ? 0.3 : 1};transition:opacity .15s`,
+        dotStyle: `width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:${k.bg};border:1.5px solid ${isSel ? '#fafafa' : k.border};color:${k.sub};box-shadow:${isSel ? '0 0 0 5px rgba(250,250,250,.16)' : 'none'}`,
+        pick: () => this.select(id)
+      };
+    });
+
+    const sw = isGraph ? GW : V.w, sh = isGraph ? GH : V.h;
+
+    // ---------- sidebar ----------
+    const folders = FOLDERS.filter(f => P.views.some(v => v.folder === f)).map(f => {
+      const items = P.views.filter(v => v.folder === f);
+      const open = !!s.open[f];
+      return {
+        name: f, count: items.length, open, openStr: open ? 'true' : 'false',
+        chevStyle: `flex:none;transition:transform .15s;transform:rotate(${open ? 90 : 0}deg)`,
+        toggle: () => this.setState({ open: Object.assign({}, s.open, { [f]: !open }) }),
+        items: (() => {
+          const mk = (v, nested) => {
+            const active = s.mode === 'diagram' && v.id === V.id;
+            return {
+              isHeader: false, isView: true, title: v.title, current: active ? 'page' : 'false',
+              style: `width:100%;display:flex;align-items:center;gap:8px;padding:0 10px 0 ${nested ? 30 : 10}px;height:34px;font-size:13px;text-align:left;${active ? 'background:#27272a;color:#fafafa;font-weight:500' : 'color:#a1a1aa'}`,
+              pick: () => this.goView(v.id)
+            };
+          };
+          const out = items.filter(v => !v.sub).map(v => mk(v, false));
+          [...new Set(items.filter(v => v.sub).map(v => v.sub))].forEach(sb => {
+            out.push({ isHeader: true, isView: false, title: sb, current: 'false', style: '', pick: null });
+            items.filter(v => v.sub === sb).forEach(v => out.push(mk(v, true)));
+          });
+          return out;
+        })()
+      };
+    });
+
+    const projects = Object.values(PROJECTS).map(p => ({
+      name: p.name, initials: p.initials, color: p.color, active: p.id === P.id,
+      meta: `${p.views.length} views · ${p.team}`,
+      pick: () => this.setState({ project: p.id, viewId: p.start, selected: null, panel: null, projOpen: false, zoom: null, mode: 'diagram', adr: null, chgOpen: {} })
+    }));
+
+    // ---------- inspector: element ----------
+    let insp = { id: '', name: '', kindLabel: '', tech: '', desc: '', icon: '', chipStyle: '', owner: '', outgoing: [], incoming: [], outCount: 0, inCount: 0, noOut: true, noIn: true, views: [], viewCount: 0, code: '', file: '' };
+    if (sel) {
+      const el = E[sel], k = KIND[el.kind];
+      const selNode = isGraph ? null : V.nodes.find(n => n[0] === sel);
+      const selColor = selNode && selNode[4];
+      const relSrc = (!isGraph && V.local && V.local[sel]) ? vEdges : allRels;
+      const out = relSrc.filter(r => r.f === sel), inc = relSrc.filter(r => r.t === sel);
+      const inViews = P.views.filter(v => v.nodes.some(n => n[0] === sel));
+      const code = `${sel} = ${k.kw} '${q(el.name)}' {\n` + (el.tech ? `  technology '${q(el.tech)}'\n` : '') + `  description '${q(el.desc)}'\n${selColor ? `  style {\n    color ${selColor}\n  }\n` : ''}}` +
+        (out.length ? '\n\n' + out.map(r => `${sel} -> ${r.t} '${q(r.l)}' {\n  technology '${q(r.tech)}'\n}`).join('\n') : '');
+      insp = {
+        id: sel, name: el.name, kindLabel: k.label, tech: el.tech || k.label, desc: el.desc, icon: k.icon, owner: P.team,
+        chipStyle: `display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;background:${k.bg};border:1px solid ${k.border};color:${k.sub}`,
+        outgoing: out.map(r => ({ name: E[r.t].name, label: r.l, tech: r.tech, pick: () => this.focusElement(r.t) })),
+        incoming: inc.map(r => ({ name: E[r.f].name, label: r.l, tech: r.tech, pick: () => this.focusElement(r.f) })),
+        outCount: out.length, inCount: inc.length, noOut: out.length === 0, noIn: inc.length === 0,
+        views: inViews.map(v => ({ title: v.title, folder: v.folder, current: !isGraph && v.id === V.id, pick: () => this.goView(v.id) })),
+        viewCount: inViews.length, code, file: `model/${el.kind === 'external' || el.kind === 'person' ? 'actors' : 'containers'}.c4`
+      };
+    }
+
+    // ---------- view info ----------
+    const viNodes = isGraph ? ids : V.nodes.map(n => n[0]);
+    const vi = {
+      kind: isGraph ? 'Model graph' : (V.dynamic ? 'Dynamic view' : (V.folder === 'Deployment' ? 'Deployment view' : 'Static view')),
+      elCount: viNodes.length, relCount: isGraph ? allRels.length : vEdges.length,
+      owner: P.team, updated: isGraph ? P.synced : V.updated,
+      file: isGraph ? 'model/*.c4' : `views/${V.folder.toLowerCase()}/${V.id}.c4`,
+      elements: viNodes.map(id => {
+        const el = E[id], k = KIND[el.kind];
+        return { name: el.name, tech: el.tech || k.label, dotStyle: `width:10px;height:10px;border-radius:3px;background:${k.bg};border:1px solid ${k.border};flex:none`, pick: () => this.focusElement(id) };
+      }),
+      code: isGraph
+        ? `// generated from the whole model\nelements: ${ids.length}\nrelationships: ${allRels.length}`
+        : (V.dynamic
+          ? `dynamic view ${V.vid} {\n  title '${q(V.title)}'\n` + vEdges.map(e => `  ${e.f} -> ${e.t} '${q(e.l)}'`).join('\n') + '\n}'
+          : `${V.folder === 'Deployment' ? 'deployment view' : 'view'} ${V.vid} {\n  title '${q(V.title)}'\n  include\n` + V.nodes.map((n, i) => `    ${n[0]}${i < V.nodes.length - 1 ? ',' : ''}`).join('\n') + '\n  autoLayout off\n}')
+    };
+
+    // ---------- search ----------
+    const qy = s.query.trim().toLowerCase();
+    const match = (...xs) => !qy || xs.some(x => String(x || '').toLowerCase().includes(qy));
+    const viewResults = P.views.filter(v => match(v.title, v.folder, v.vid, v.desc)).slice(0, 6).map(v => ({
+      title: v.title, meta: v.folder, pick: () => this.setState({ viewId: v.id, mode: 'diagram', zoom: null, searchOpen: false })
+    }));
+    const elResults = ids.filter(id => match(E[id].name, E[id].tech, KIND[E[id].kind].label, id)).slice(0, qy ? 10 : 6).map(id => {
+      const el = E[id], k = KIND[el.kind];
+      return {
+        name: el.name, meta: el.tech || k.label, icon: k.icon,
+        iconStyle: `width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:${k.bg};border:1px solid ${k.border};color:${k.sub};flex:none`,
+        pick: () => this.focusElement(id)
+      };
+    });
+
+    // ---------- decision records + changelog ----------
+    const ADRS = P.adrs || [], CHG = P.changes || [];
+    const adrById = {};
+    ADRS.forEach(a => { adrById[a.id] = a; });
+    const vTitle = id => { const v = P.views.find(x => x.id === id); return v ? v.title : id; };
+    const adrCard = a => ({ id: a.id, title: a.title, status: a.status, date: fmtDate(a.date), authors: a.authors, badgeStyle: badge(STATUS[a.status]), pick: () => this.openAdr(a.id) });
+    const chgItem = c => {
+      const t = CTYPE[c.type], open = !!s.chgOpen[c.hash];
+      return {
+        hash: c.hash, msg: c.msg, author: c.author, date: fmtDate(c.date), typeLabel: t.label, typeStyle: badge(t),
+        dotStyle: `position:absolute;left:-28px;top:16px;width:9px;height:9px;border-radius:999px;background:${t.fg};box-shadow:0 0 0 3px #09090b`,
+        views: c.views.map(id => ({ title: vTitle(id), pick: () => this.goView(id) })),
+        hasAdr: !!c.adr, adr: c.adr || '', adrPick: () => this.openAdr(c.adr),
+        lines: (c.diff || []).map(l => ({ text: l, style: lineStyle(l) })), hasDiff: !!(c.diff && c.diff.length),
+        open, openStr: open ? 'true' : 'false', toggleLabel: open ? 'Hide diff' : 'Show diff',
+        toggle: () => this.setState({ chgOpen: Object.assign({}, s.chgOpen, { [c.hash]: !open }) })
+      };
+    };
+    const scopeView = (isGraph || isPage) ? null : V.id;
+    const vAdrs = ADRS.filter(a => !scopeView || a.views.includes(scopeView));
+    const vChg = CHG.filter(c => !scopeView || c.views.includes(scopeView));
+    vi.adrs = vAdrs.map(adrCard);
+    vi.changes = vChg.map(chgItem);
+    vi.noAdrs = vAdrs.length === 0;
+    vi.noChanges = vChg.length === 0;
+    const viTab = s.viTab || 'overview';
+    const segSty = on => `flex:1;height:30px;border:0;border-radius:6px;font-size:12.5px;font-weight:500;${on ? 'background:#09090b;color:#fafafa;box-shadow:0 1px 2px rgba(0,0,0,.6)' : 'background:transparent;color:#a1a1aa'}`;
+    const viTabs = [['overview', 'Overview'], ['decisions', `Decisions · ${vAdrs.length}`], ['changes', `Changes · ${vChg.length}`]].map(([k, l]) => ({
+      label: l, sel: viTab === k ? 'true' : 'false', style: segSty(viTab === k), pick: () => this.setState({ viTab: k })
+    }));
+    insp.adrs = sel ? ADRS.filter(a => a.elements.includes(sel)).map(adrCard) : [];
+    insp.noAdrs = insp.adrs.length === 0;
+
+    const chipSty = on => `height:32px;padding:0 12px;border-radius:999px;font-size:12.5px;font-weight:500;border:1px solid ${on ? '#fafafa' : '#27272a'};background:${on ? '#fafafa' : 'transparent'};color:${on ? '#09090b' : '#d4d4d8'}`;
+    const af = s.adrFilter || 'all';
+    const adrFilters = ['all', 'Accepted', 'Proposed', 'Superseded'].map(k => ({
+      label: k === 'all' ? 'All' : k, count: k === 'all' ? ADRS.length : ADRS.filter(a => a.status === k).length,
+      on: af === k ? 'true' : 'false', style: chipSty(af === k), pick: () => this.setState({ adrFilter: k })
+    }));
+    const adrShown = ADRS.filter(a => af === 'all' || a.status === af);
+    const cur = (s.adr && adrById[s.adr]) || adrShown[0] || null;
+    const adrList = adrShown.map(a => {
+      const on = cur && cur.id === a.id;
+      return Object.assign(adrCard(a), {
+        current: on ? 'true' : 'false',
+        style: `width:100%;display:block;text-align:left;padding:12px;margin-bottom:2px;border-radius:8px;border:1px solid ${on ? '#3f3f46' : 'transparent'};${on ? 'background:#18181b' : ''}`
+      });
+    });
+    const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const adrD = cur ? {
+      id: cur.id, title: cur.title, status: cur.status, badgeStyle: badge(STATUS[cur.status]), date: fmtDate(cur.date), authors: cur.authors,
+      file: `docs/adr/${cur.id.slice(4)}-${slug(cur.title)}.md`,
+      context: cur.context, decision: cur.decision, consequences: cur.consequences.map(t => ({ text: t })),
+      isSup: !!cur.supersededBy, supBy: cur.supersededBy || '', supPick: () => this.openAdr(cur.supersededBy),
+      hasSupersedes: !!cur.supersedes, supersedes: cur.supersedes || '', supersedesPick: () => this.openAdr(cur.supersedes),
+      views: cur.views.map(id => ({ title: vTitle(id), pick: () => this.goView(id) })),
+      elements: cur.elements.filter(id => E[id]).map(id => {
+        const k = KIND[E[id].kind];
+        return { name: E[id].name, dotStyle: `width:9px;height:9px;border-radius:3px;background:${k.bg};border:1px solid ${k.border};flex:none`, pick: () => this.focusElement(id) };
+      }),
+      changes: CHG.filter(c => c.adr === cur.id).map(chgItem), hasChanges: CHG.some(c => c.adr === cur.id)
+    } : { id: '', title: '', status: '', badgeStyle: '', date: '', authors: '', file: '', context: '', decision: '', consequences: [], isSup: false, supBy: '', supPick: null, hasSupersedes: false, supersedes: '', supersedesPick: null, views: [], elements: [], changes: [], hasChanges: false };
+
+    const cf = s.chgFilter || 'all';
+    const chgFilters = ['all', 'added', 'changed', 'removed'].map(k => ({
+      label: k === 'all' ? 'All changes' : CTYPE[k].label, count: k === 'all' ? CHG.length : CHG.filter(c => c.type === k).length,
+      on: cf === k ? 'true' : 'false', style: chipSty(cf === k), pick: () => this.setState({ chgFilter: k })
+    }));
+    const chgGroups = [];
+    CHG.filter(c => cf === 'all' || c.type === cf).forEach(c => {
+      const last = chgGroups[chgGroups.length - 1];
+      if (last && last.key === c.date) last.items.push(chgItem(c));
+      else chgGroups.push({ key: c.date, date: fmtDate(c.date), items: [chgItem(c)] });
+    });
+
+    const hdr = s.mode === 'decisions'
+      ? { title: 'Decision records', vid: `${P.repo}/docs/adr`, kicker: 'Model', desc: `Architecture decision records for ${P.name}, linked to the views and elements they shape.` }
+      : s.mode === 'changelog'
+        ? { title: 'Changelog', vid: `${P.repo}/CHANGELOG.md`, kicker: 'Model', desc: `Every change to the ${P.name} model and its views, newest first.` }
+        : isGraph
+          ? { title: 'Model graph', vid: `${P.id}_model`, kicker: 'Model', desc: `Every element and relationship defined in ${P.name}, regardless of view.` }
+          : { title: V.title, vid: V.vid, kicker: V.sub ? `${V.folder} / ${V.sub}` : V.folder, desc: V.desc };
+    const navSty = on => `width:100%;display:flex;align-items:center;gap:8px;padding:0 10px;height:34px;font-size:13px;text-align:left;${on ? 'background:#27272a;color:#fafafa;font-weight:500' : 'color:#e4e4e7'}`;
+    const pageStatus = s.mode === 'decisions'
+      ? `${ADRS.length} decision records · ${ADRS.filter(a => a.status === 'Accepted').length} accepted · ${ADRS.filter(a => a.status === 'Proposed').length} proposed`
+      : (CHG.length ? `${CHG.length} changes · latest ${fmtDate(CHG[0].date)} by ${CHG[0].author}` : 'No changes recorded');
+    const extra = {
+      isDecisions: s.mode === 'decisions', isChangelog: s.mode === 'changelog',
+      navDecStyle: navSty(s.mode === 'decisions'), navChgStyle: navSty(s.mode === 'changelog'),
+      navDecCur: s.mode === 'decisions' ? 'page' : 'false', navChgCur: s.mode === 'changelog' ? 'page' : 'false',
+      adrTotal: ADRS.length, chgTotal: CHG.length,
+      openDecisions: () => this.setState({ mode: 'decisions', projOpen: false }),
+      openChangelog: () => this.setState({ mode: 'changelog', projOpen: false }),
+      adrFilters, adrList, adrD, hasAdr: !!cur, chgFilters, chgGroups,
+      viTabs, viOverview: viTab === 'overview', viDecisions: viTab === 'decisions', viChanges: viTab === 'changes',
+      showViewChips: s.mode === 'diagram',
+      viAdrLabel: `${vAdrs.length} decision${vAdrs.length === 1 ? '' : 's'}`,
+      viChgLabel: `${vChg.length} change${vChg.length === 1 ? '' : 's'}`,
+      openViewAdrs: () => this.setState({ panel: 'view', viTab: 'decisions' }),
+      openViewChanges: () => this.setState({ panel: 'view', viTab: 'changes' })
+    };
+    const title = hdr.title;
+    const tabOn = 'height:30px;padding:0 12px;border:0;border-radius:6px;font-size:13px;font-weight:500;background:#09090b;color:#fafafa;box-shadow:0 1px 2px rgba(0,0,0,.6)';
+    const tabOff = 'height:30px;padding:0 12px;border:0;border-radius:6px;font-size:13px;font-weight:500;background:transparent;color:#a1a1aa';
+    const infoOpen = s.panel === 'view' && !isPage;
+
+    return {
+      yes: true,
+      ...extra,
+      showGroupPanel: !!gSel && !isPage, grp,
+      // sidebar
+      sideStyle: s.side
+        ? 'flex:0 0 272px;max-width:272px;height:100%;min-height:0;border-right:1px solid #27272a;background:#0b0b0d;display:flex;flex-direction:column;overflow:auto'
+        : 'display:none',
+      toggleSide: () => this.setState({ side: !s.side }),
+      projName: P.name, projInitials: P.initials, projColor: P.color, projRepo: P.repo, projSynced: P.synced, projVersion: P.version,
+      projOpen: s.projOpen, projOpenStr: s.projOpen ? 'true' : 'false',
+      toggleProj: () => this.setState({ projOpen: !s.projOpen }),
+      projects, folders, viewCount: P.views.length, elTotal: ids.length,
+      // header
+      title, vid: hdr.vid,
+      kicker: hdr.kicker, crumbFolder: hdr.kicker,
+      viewDesc: hdr.desc,
+      isDiagram: !isGraph, isGraph, isDiagramStr: s.mode === 'diagram' ? 'true' : 'false', isGraphStr: isGraph ? 'true' : 'false',
+      tabDiagramStyle: s.mode === 'diagram' ? tabOn : tabOff, tabGraphStyle: isGraph ? tabOn : tabOff,
+      setDiagram: () => this.setState({ mode: 'diagram', zoom: null }),
+      setGraph: () => this.setState({ mode: 'graph', zoom: null }),
+      zoomLabel: `${Math.round(z * 100)}%`,
+      zoomIn: () => this.setState({ zoom: Math.min(1.6, Math.round((z + 0.1) * 10) / 10) }),
+      zoomOut: () => this.setState({ zoom: Math.max(0.3, Math.round((z - 0.1) * 10) / 10) }),
+      zoomFit: () => this.setState({ zoom: null }),
+      infoOpenStr: infoOpen ? 'true' : 'false',
+      infoBtnStyle: `display:flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid ${infoOpen ? '#fafafa' : '#27272a'};background:${infoOpen ? '#fafafa' : '#09090b'};color:${infoOpen ? '#09090b' : '#fafafa'}`,
+      toggleInfo: () => this.setState({ panel: infoOpen ? null : 'view', viTab: 'overview', mode: isPage ? 'diagram' : s.mode }),
+      // canvas
+      stageOuter: `position:relative;flex:none;margin:auto;width:${Math.round(sw * z)}px;height:${Math.round(sh * z)}px`,
+      stageInner: `position:absolute;left:0;top:0;width:${sw}px;height:${sh}px;transform:scale(${z});transform-origin:0 0`,
+      groups, edges, nodes, gEdges, gNodes,
+      // panels
+      showNodePanel: s.panel === 'node' && !!sel && !isPage, showViewPanel: infoOpen,
+      insp, vi,
+      closePanel: () => this.setState({ panel: null, selected: null, group: null }),
+      status: isPage ? pageStatus : isGraph
+        ? `${ids.length} elements · ${allRels.length} relationships in the model`
+        : `${V.nodes.length} elements · ${vEdges.length} relationships${V.dynamic ? ' · ' + vEdges.length + ' steps' : ''} · updated ${V.updated}`,
+      // search
+      searchOpen: s.searchOpen, query: s.query,
+      openSearch: () => this.setState({ searchOpen: true, query: '', projOpen: false }),
+      closeSearch: () => this.setState({ searchOpen: false }),
+      onQuery: (ev) => this.setState({ query: ev.target.value }),
+      onSearchKey: (ev) => {
+        if (ev.key === 'Escape') this.setState({ searchOpen: false });
+        if (ev.key === 'Enter') { const first = viewResults[0] || elResults[0]; if (first) first.pick(); }
+      },
+      viewResults, elResults,
+      hasViewResults: viewResults.length > 0, hasElResults: elResults.length > 0,
+      noResults: viewResults.length === 0 && elResults.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -7,3 +7,4 @@ package-lock.json
 .notes/requirements.md
 .notes/Flue SDLC Agent Workflow — Requirements.md
 tests/fixtures/models/invalid-json
+.notes/design/prototype
