@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "views": [
+      { "id": "context", "title": "System context", "group": "Overview" },
+      { "id": "containers", "title": "Containers" }
+    ]
+  },
+  "nodes": [
+    { "unique-id": "user", "node-type": "actor", "name": "User", "description": "A person." },
+    { "unique-id": "app", "node-type": "system", "name": "App", "description": "The app." }
+  ],
+  "relationships": [
+    {
+      "unique-id": "user-uses-app",
+      "relationship-type": { "interacts": { "actor": "user", "nodes": ["app"] } }
+    }
+  ]
+}

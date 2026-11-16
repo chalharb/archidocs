@@ -1,0 +1,9 @@
+dist
+coverage
+playwright-report
+test-results
+.e2e
+package-lock.json
+.notes/requirements.md
+.notes/Flue SDLC Agent Workflow — Requirements.md
+tests/fixtures/models/invalid-json
