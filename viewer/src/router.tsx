@@ -5,9 +5,21 @@ import {
   createRouter,
   Outlet,
 } from "@tanstack/react-router";
+import logo from "./logo-on-dark.svg";
 import { ViewList } from "./view-list";
 
-const rootRoute = createRootRoute({ component: Outlet });
+function Root() {
+  return (
+    <>
+      <header className="border-b border-border px-6 py-3">
+        <img src={logo} alt="Archidocs" className="h-7 w-auto" />
+      </header>
+      <Outlet />
+    </>
+  );
+}
+
+const rootRoute = createRootRoute({ component: Root });
 const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: ViewList });
 
 // Hash history keeps deep links working on a plain file server with no rewrite rules.

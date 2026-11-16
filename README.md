@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/chalharb/archidocs/main/.notes/design/logo/archidocs-lockup-on-light.svg" alt="Archidocs" width="260"></p>
+
 # Archidocs
 
 Archidocs turns a repository of [FINOS CALM](https://calm.finos.org) architecture files into a
