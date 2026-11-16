@@ -1,0 +1,8 @@
+/.github/ @chalharb
+/AGENTS.md @chalharb
+/.notes/adr/ @chalharb
+/eslint.config.js @chalharb
+/commitlint.config.js @chalharb
+/vitest.config.ts @chalharb
+/vitest.pack.config.ts @chalharb
+/playwright.config.ts @chalharb

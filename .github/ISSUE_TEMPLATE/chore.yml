@@ -1,0 +1,41 @@
+name: Chore
+description: Tooling, docs or maintenance
+title: "chore: "
+labels: []
+body:
+  - type: input
+    id: job
+    attributes:
+      label: Job
+      description: The user job this serves (J1 to J14), or the named user who asked for it.
+      placeholder: J8
+    validations:
+      required: true
+  - type: textarea
+    id: story
+    attributes:
+      label: What needs doing and why
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Numbered, in Given / When / Then form (AC-1, AC-2, ...).
+      placeholder: "AC-1: Given ..., when ..., then ..."
+    validations:
+      required: true
+  - type: textarea
+    id: test-plan
+    attributes:
+      label: Test plan
+      description: For each criterion, say whether it is covered by a unit test or an end-to-end test.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this issue must not change.
+    validations:
+      required: true
