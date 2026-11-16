@@ -15,7 +15,8 @@ PROJECT_TITLE="${PROJECT_TITLE:-Archidocs}"
 
 echo "==> Repository merge settings (squash only, delete merged branches)"
 gh repo edit "$REPO" \
-  --enable-squash-merge --disable-merge-commit --disable-rebase-merge \
+  --enable-squash-merge=true --enable-merge-commit=false --enable-rebase-merge=false \
+  --squash-merge-commit-message pr-title-description \
   --delete-branch-on-merge
 
 echo "==> Labels"
