@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens for the dark theme. Every value is a placeholder until the
+ * design export lands in .notes/design/; search for TODO(design) to find them.
+ */
+@theme {
+  /* TODO(design): colours from the prototype */
+  --color-background: #0b0d12;
+  --color-foreground: #e8eaf0;
+  --color-muted: #1a1d26;
+  --color-muted-foreground: #a3a9b8;
+  --color-border: #2a2e3a;
+  --color-primary: #8b7cf6;
+  --color-primary-foreground: #0b0d12;
+  --color-ring: #8b7cf6;
+  --color-destructive: #ff8a8a;
+
+  /* TODO(design): Geist and Geist Mono once the font files are added */
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* TODO(design): type scale */
+  --text-body: 0.875rem;
+  --text-title: 1.25rem;
+
+  /* TODO(design): spacing and radius */
+  --spacing-gutter: 1.5rem;
+  --radius-md: 0.5rem;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+}
