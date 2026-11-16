@@ -1,0 +1,10 @@
+export default {
+  extends: ["@commitlint/config-conventional"],
+  rules: {
+    "scope-enum": [
+      2,
+      "always",
+      ["cli", "core", "layout", "viewer", "config", "ci", "docs", "deps"],
+    ],
+  },
+};
