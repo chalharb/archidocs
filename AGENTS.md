@@ -57,10 +57,11 @@ one without the other: change the schema constant.
 - **Conventional Commits**: `type(scope): subject`. Types: feat, fix, docs, style, refactor,
   perf, test, build, ci, chore, revert. Scopes: cli, core, layout, viewer, config, ci, docs, deps.
   A commit-msg hook runs commitlint. PRs are squash-merged using the PR title.
-- **Branches**: `<type>/<issue#>-<slug>`, for example `feat/12-validate-command`.
-- **Pull requests**: use the template, include `Closes #<n>` and fill the AC -> test table.
+- **Branches**: `<type>/ad-<n>-<slug>`, where `AD-<n>` is the Code Factory task key, for example
+  `feat/ad-12-validate-command`. The key in the branch name links the PR to its card.
+- **Pull requests**: use the template, reference the task as `AD-<n>` and fill the AC -> test table.
 - **Tests**: names describe behaviour ("reports the file and field of an invalid config"). Never
-  put issue numbers or requirement ids in test names or code comments. Every acceptance
+  put task keys, issue numbers or requirement ids in test names or code comments. Every acceptance
   criterion needs at least one test.
 - **No `.only` or `.skip`**: lint fails on them. Do not lower coverage thresholds.
 - **Comments** describe behaviour. They do not refer to tickets or to requirement ids.
@@ -102,3 +103,17 @@ Do not edit these unless the issue says so; they are owned by a human via CODEOW
 - `scripts/setup-github.sh`
 
 Never delete, skip or weaken an existing test to make a change pass.
+
+## Agent skills
+
+### Issue tracker
+
+Tasks live on the Code Factory board, project `archidocs` (key `AD`), via the Code Factory MCP tools. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default roles mapped onto existing labels: `needs-triage`, `needs-clarification`, `ready-for-agent`, `needs-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` at the root, decision records in `.notes/adr/`. See `docs/agents/domain.md`.
