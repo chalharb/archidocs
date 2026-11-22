@@ -83,7 +83,7 @@ _Avoid_: Maintainer, steward
 ### Decisions
 
 **ADR**:
-An architecture decision record, stored as a markdown file and linked to the Elements it affects; a **Proposed** ADR is one awaiting acceptance via pull request.
+An architecture decision record, stored as a markdown file in its Project and linked to the Elements, Deployment Targets and Saved Views it affects; a **Proposed** ADR is one awaiting acceptance via pull request, and a **Superseded** ADR is one replaced by a later accepted ADR.
 _Avoid_: Design doc, RFC, decision log
 
 ### Distribution
