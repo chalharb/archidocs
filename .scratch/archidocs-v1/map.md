@@ -46,6 +46,7 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - [archidocs check](issues/16-archidocs-check.md): one validator shared by `check`, `build` and MCP writes; about 33 kebab-case rules (errors, plus two View warnings), records `{file, line, column?, rule, severity, message}`, `--format text|json|github`, exit 0/1/2 with `--strict`; nothing configurable in v1.
 - [Sequence chart prototype](issues/13-sequence-chart-prototype.md): Dynamic Views get a play transport over a numbered Step outline, the chart, and a detail panel whose buttons open the Generated Views holding the Step's Relationship; event Steps are left to their own ticket.
 - [Authoring skill](issues/12-authoring-skill.md): one `archidocs-authoring` skill served by `get_authoring_guide(topic)` and `archidocs guide`, with a thin stub installed by `archidocs init`; works from a code repo via `archidocs mcp --workspace`; edits through MCP write tools only, never committing; bootstrap is one-shot agent guidance (inventory with evidence, one approval, outbound Relationships only) plus a new `create_project` tool.
+- [Auto-layout engine prototype](issues/09-auto-layout-prototype.md): elkjs with each container laid out on its own and edges bundled at container borders (keeps untouched Systems stable); every rule met, about 90–125 ms for C2 up to 225 nodes; direction `TB | BT | LR | RL` per View; Deployment Views group Deployments by System inside each Target.
 
 ## Not yet specified
 

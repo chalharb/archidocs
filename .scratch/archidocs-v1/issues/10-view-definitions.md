@@ -38,6 +38,7 @@ Settled in a grilling session on 2026-11-22. Terms follow [GLOSSARY.md](../../..
 **Deployment View edges**
 - Edges come from the logical Model. A consumer Deployment connects to the provider Deployments that share its deepest common Deployment Target. If no Target is shared below the Environment, it connects to all of the provider's Deployments in that Environment.
 - A related Service with no Deployment in the Environment, such as an External provider, is shown as a plain logical node outside every Target.
+- Amended by [Auto-layout engine prototype](09-auto-layout-prototype.md): inside each Target, Deployments are grouped in a System box (drawing only, not a Target). Saved Views may also set `direction: TB | BT | LR | RL`.
 
 **Saved Views: where and how**
 - **Location:** under `views:` in any Project's YAML, sub-keyed `structural:` and `dynamic:`. A View may reference Elements in any Project. Workspace-wide Views live in a Project the org chooses, such as `architecture`. `workspace.yaml` stays limited to Teams and Environments.
