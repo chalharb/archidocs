@@ -26,6 +26,7 @@ Settled in a grilling session on 2026-11-22. Terms follow [GLOSSARY.md](../../..
 - **A checkout** builds a past Bundle on demand by reading files at the commit (`git show`, no worktree), and caches it and its index entry in `.archidocs/cache/` (gitignored).
 - **Older schemas:** two Bundles with different `schemaVersion`s are never compared raw. On a checkout, the older Revision is rebuilt with the current Archidocs and the cached Bundle is overwritten. From a Bundle URL, the reader upgrades it in memory through versioned migrations it ships with, or returns `history_unavailable`.
 - Where CI publishes these files is left to [Viewer build and publishing](19-viewer-build-publishing.md); this ticket fixes only the layout.
+- Amended by [Viewer build and publishing](19-viewer-build-publishing.md): published sites keep full Bundles for the latest 200 Revisions plus tags by default (`--keep all` for every one); older index entries carry `bundle: false`.
 
 **What a diff reports**
 - A diff is a flat list of **Changes**, each `added`, `removed` or `changed`, with before and after for every changed field.
