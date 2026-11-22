@@ -1,7 +1,10 @@
 name: CI
 
+# Pushes to main, plus every PR (which covers pushes to its branch).
+# Triggering on all pushes too would run CI twice for each PR push.
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
