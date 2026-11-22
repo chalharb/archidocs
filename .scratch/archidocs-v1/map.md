@@ -47,11 +47,11 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - [Sequence chart prototype](issues/13-sequence-chart-prototype.md): Dynamic Views get a play transport over a numbered Step outline, the chart, and a detail panel whose buttons open the Generated Views holding the Step's Relationship; event Steps are left to their own ticket.
 - [Authoring skill](issues/12-authoring-skill.md): one `archidocs-authoring` skill served by `get_authoring_guide(topic)` and `archidocs guide`, with a thin stub installed by `archidocs init`; works from a code repo via `archidocs mcp --workspace`; edits through MCP write tools only, never committing; bootstrap is one-shot agent guidance (inventory with evidence, one approval, outbound Relationships only) plus a new `create_project` tool.
 - [Auto-layout engine prototype](issues/09-auto-layout-prototype.md): elkjs with each container laid out on its own and edges bundled at container borders (keeps untouched Systems stable); every rule met, about 90–125 ms for C2 up to 225 nodes; direction `TB | BT | LR | RL` per View; Deployment Views group Deployments by System inside each Target.
+- [Viewer UX](issues/14-viewer-ux.md): variant D "Explorer, focused": a rail with collapsible Model and Views trees (by kind or by Team), a location bar whose state lives in the URL (back/forward, Recent, links), an Element panel only on selection (Overview, URLs, ADRs, Links); persona questions as lenses over any View; shift-click or start/end picking exports SVG/PNG or saves a Saved View; animation off above 100 nodes; Brandes-Köpf placement.
 
 ## Not yet specified
 
 - **Viewer build and hosting:** how the static viewer is built from a Workspace Bundle in CI and published.
-- **Search and Element pages:** finding Elements by name, owner or URL in the viewer; a detail page per Element (owner, Deployments, URLs, ADRs).
 - **Hosted remote MCP:** an always-on MCP endpoint and its sign-in, beyond stdio or a bundle URL.
 
 ## Out of scope
