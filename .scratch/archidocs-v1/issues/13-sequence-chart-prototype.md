@@ -1,7 +1,8 @@
 # Sequence chart prototype
 
 Type: prototype
-Status: open
+Status: claimed
+Assignee: Logan Harber
 Blocked by: 04, 10
 Map: [Archidocs v1](../map.md)
 Context: [View kinds and definitions](10-view-definitions.md) fixes the Step shape (`from`/`to`, return Steps, notes, flat list, interaction from the Relationship) and Dynamic View ids for linking.
