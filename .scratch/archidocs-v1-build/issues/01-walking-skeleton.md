@@ -1,6 +1,7 @@
 # 01: Walking skeleton: check and Bundle
 
 Status: ready-for-agent
+Assignee: Claude (session nervous-sinoussi-18c52b)
 Blocked by: None (can start immediately)
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -20,9 +21,9 @@ Tests go through the core engine seam with fixture Workspaces in temp folders, p
 
 ## Acceptance criteria
 
-- [ ] A valid fixture Workspace (two Projects, Teams, Environments, Services) builds a Bundle with qualified ids and source locations.
-- [ ] Building the same Workspace twice gives byte-identical Bundles.
-- [ ] Each listed rule has a failing fixture and a passing fixture.
-- [ ] A YAML syntax error in one file is reported as an issue, and the other files are still checked.
-- [ ] `build --bundle-only` writes nothing when there is an error.
-- [ ] CI runs the test suite on every push.
+- [x] A valid fixture Workspace (two Projects, Teams, Environments, Services) builds a Bundle with qualified ids and source locations.
+- [x] Building the same Workspace twice gives byte-identical Bundles.
+- [x] Each listed rule has a failing fixture and a passing fixture.
+- [x] A YAML syntax error in one file is reported as an issue, and the other files are still checked.
+- [x] `build --bundle-only` writes nothing when there is an error.
+- [x] CI runs the test suite on every push.
