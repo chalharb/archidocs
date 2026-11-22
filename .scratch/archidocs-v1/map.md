@@ -44,6 +44,7 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - [View kinds and definitions](issues/10-view-definitions.md): Generated Views for every scope (C1 and C2 Landscapes, C2 per System, C3 per Service, Deployment per Environment) plus optional Saved Views in Project YAML as structured include/exclude queries; Dynamic View Steps are `from`/`to` resolved to a Relationship, with return Steps; Deployment edges go to the nearest provider Deployment; `list_views`, `get_view`, `upsert_view`, `remove_view`.
 - [ADR format and linking](issues/11-adr-format.md): MADR-style markdown in each Project's `adr/` folder, numbered per Project (`project:NNNN`); frontmatter links `elements` and Saved `views`; Proposed lives on PR branches; `supersedes` declared once on the new ADR and `superseded` derived; overridable templates; an Element's timeline includes its descendants' ADRs.
 - [archidocs check](issues/16-archidocs-check.md): one validator shared by `check`, `build` and MCP writes; about 33 kebab-case rules (errors, plus two View warnings), records `{file, line, column?, rule, severity, message}`, `--format text|json|github`, exit 0/1/2 with `--strict`; nothing configurable in v1.
+- [Sequence chart prototype](issues/13-sequence-chart-prototype.md): Dynamic Views get a play transport over a numbered Step outline, the chart, and a detail panel whose buttons open the Generated Views holding the Step's Relationship; event Steps are left to their own ticket.
 
 ## Not yet specified
 
