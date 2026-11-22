@@ -45,7 +45,7 @@ Settled in a grilling session on 2026-11-22. No glossary change: rule, issue and
 - Plain kebab-case names, unique across the tool. A rule id is stable once shipped and never reused.
 - The catalogue (id, severity, meaning, a failing example, the fix) is generated from the rule definitions in code. It is published in the docs and in `get_authoring_guide`, so agents can look up a rule id. No `--explain` flag in v1.
 
-**Rules.** All are errors except the two marked warning.
+**Rules.** All are errors except those marked warning.
 
 | Area | Rule | Fires when |
 |---|---|---|
@@ -78,10 +78,13 @@ Settled in a grilling session on 2026-11-22. No glossary change: rule, issue and
 | | `missing-step` | no Relationship or derived edge between `from` and `to`, or the named `relationship` doesn't connect them |
 | | `ambiguous-step` | several Relationships match and no `relationship` is given |
 | | `return-without-relationship` | a return Step has no opposite Relationship |
+| | `return-on-async` | a return Step resolves to an async Relationship ([Event Steps in Dynamic Views](17-event-steps.md)) |
 | | `ancestor-descendant-participants` | an ancestor and its descendant are both participants |
 | | `target-outside-environment` | a `targets` entry is outside the View's `environment` |
 | | `empty-view` (warning) | a Saved View resolves to no nodes |
 | | `oversized-view` (warning) | a View resolves to more than 150 nodes |
+| | `bad-expand` | an `expand` or `collapse` id is not in the View or has no children ([Saved View export and selectors](18-saved-view-export.md)) |
+| | `unresolved-path` (warning) | a path selector finds no path ([Saved View export and selectors](18-saved-view-export.md)) |
 
 **Not in v1**
 - Lint-style warnings: orphan Elements, unused Targets, Teams or Environments, Services without Deployments, Deployments without a `url`. They have legitimate exceptions and would become noise; coverage gaps belong in a later report or the viewer.

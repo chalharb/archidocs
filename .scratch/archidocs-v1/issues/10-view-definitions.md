@@ -60,6 +60,7 @@ Settled in a grilling session on 2026-11-22. Terms follow [GLOSSARY.md](../../..
     4. Derive edges.
   - `upstream` and `downstream` follow Relationships, counting a `via` broker as a hop, as `find_paths` does.
   - **Not in v1:** boolean logic, wildcards on ids, and edge selectors.
+  - Amended by [Saved View export and selectors](18-saved-view-export.md): top-level `expand`/`collapse` id lists applied after collapsing to `level`; `upstream`/`downstream` accept `all`; a path selector `{from, to, paths: shortest | n}`; an optional presentation-only `lens:` (impact, Team or path), returned by `get_view` with node marks and lit edges.
 - **Deployment Views** add a required `environment` and an optional `targets: [ids]` (those Deployment Target subtrees only). `include` and `exclude` select Services, and the View shows their Deployments.
 
 **Dynamic Views**
@@ -68,6 +69,7 @@ Settled in a grilling session on 2026-11-22. Terms follow [GLOSSARY.md](../../..
 - **Return Steps:** `{from: api, to: web, return: true}` is valid only when the opposite Relationship (web → api) exists, and is drawn dashed.
 - **Labels:** `description` defaults to the Relationship's. Interaction (sync/async) always comes from the Relationship.
 - **Participants** are ordered by first appearance. An optional `participants: [ids]` list fixes the order.
+- Amended by [Event Steps in Dynamic Views](17-event-steps.md): event Steps are written publisher → subscriber and resolve to the reverse `via` subscription; `return` may only resolve to a sync Relationship; `get_view` Steps carry `kind: call | return | event` (replacing `return`) plus `via`/`channel`.
 - **Not in v1:** parallel blocks, loops, alt/opt branches, nested scenarios, and Steps that refer to other Dynamic Views.
 
 **Ids**

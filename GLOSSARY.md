@@ -52,6 +52,14 @@ _Avoid_: Diagram, graph (when meaning the source of truth)
 A directed edge from a consumer Element to the provider Element it depends on, declared once at the level the author knows; edges between higher-level Elements are derived from the Relationships beneath them, never declared.
 _Avoid_: Connection, dependency, link, edge (outside diagram contexts)
 
+**Publisher**:
+The provider of an asynchronous Relationship that runs through a broker: the Element that sends the events.
+_Avoid_: Producer, emitter
+
+**Subscriber**:
+The consumer of an asynchronous Relationship that runs through a broker: the Element that receives the publisher's events and declares the subscription.
+_Avoid_: Listener, consumer (when the event direction matters)
+
 **Upstream / Downstream**:
 For a given Element, upstream is everything that depends on it; downstream is everything it depends on.
 _Avoid_: Callers/callees, inbound/outbound
@@ -92,6 +100,14 @@ _Avoid_: Design doc, RFC, decision log
 The combined Model of a Workspace at one commit as a single file, built from the repository and consumed by the viewer and MCP server; it can be rebuilt for any past commit.
 _Avoid_: Export, snapshot (unless meaning a specific historical bundle)
 
+**Revision**:
+A commit on the Workspace's default branch that changed the Model; the points in time that history is told in.
+_Avoid_: Version, snapshot, release
+
+**Change**:
+One item of the Model added, removed or changed between two Revisions.
+_Avoid_: Delta, diff entry
+
 ### Presentation
 
 **View**:
@@ -115,8 +131,12 @@ A View of the ordered interactions in one scenario, shown as a sequence chart.
 _Avoid_: Flow, sequence diagram (as the stored thing), runtime view
 
 **Step**:
-One interaction in a Dynamic View: a consumer reaching a provider over a Relationship, or the provider's reply to it.
+One interaction in a Dynamic View: a consumer reaching a provider over a Relationship, the provider's reply to it, or an event a publisher sends to one subscriber, drawn the way the event travels even though the subscription points the other way.
 _Avoid_: Message, call, hop
+
+**Lens**:
+A highlighting over a View, such as impact around an Element, a Team's ownership or the paths between two Elements, that marks nodes without changing which ones the View contains.
+_Avoid_: Filter, overlay, mode
 
 **Layout**:
 The positions of Elements in a diagram, held apart from the model itself so it never changes what the architecture means.
