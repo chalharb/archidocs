@@ -7,12 +7,16 @@ A git-native architecture-as-code tool: teams declare their architecture as file
 ### Scope
 
 **Workspace**:
-The combined architecture landscape assembled from every Project; the org-wide view.
+The combined architecture landscape assembled from every Project, kept in one repository; the org-wide view, and the place Teams and Environments are defined.
 _Avoid_: Org, landscape, universe
 
 **Project**:
-One repository's slice of the architecture model, authored and versioned in that repository.
+One Team's slice of the Workspace, kept in its own folder; it namespaces the ids of everything declared in it and gives them a default Owner.
 _Avoid_: Repo (when meaning the model slice), module, package
+
+**Qualified id**:
+An id written with its Project, as `project:id`, so it names one thing across the whole Workspace; within its own Project the bare id is used.
+_Avoid_: Full id, global id, path
 
 ### Elements
 
@@ -85,7 +89,7 @@ _Avoid_: Design doc, RFC, decision log
 ### Distribution
 
 **Workspace Bundle**:
-The combined Model of a Workspace as a single published file, built in CI and consumed by the viewer and MCP server.
+The combined Model of a Workspace at one commit as a single file, built from the repository and consumed by the viewer and MCP server; it can be rebuilt for any past commit.
 _Avoid_: Export, snapshot (unless meaning a specific historical bundle)
 
 ### Presentation
