@@ -40,6 +40,7 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - [Core domain model](issues/05-core-domain-model.md): fixed Person/System/Service/Component kinds with strict nesting; Relationships stored as declared and higher edges derived; one Owner per Element; topics are `via`/`channel` fields on async Relationships; URLs live only on Deployments; flat per-Project slug ids.
 - [Authoring format](issues/06-authoring-format.md): YAML 1.2 checked against a JSON Schema generated from TypeScript (zod) types, not a TS API; an `archidocs/` folder of files per Project, Elements nested as a tree (`in:` to attach across files), Relationships listed under their consumer.
 - [Workspace aggregation](issues/07-workspace-aggregation.md): one repo per Workspace in v1; `workspace.yaml` holds Teams and Environments, Projects are auto-discovered folders with a `project.yaml`, other Projects are referenced as `project:id`, the Bundle is one JSON file per commit, and history comes from git.
+- [MCP tool surface](issues/08-mcp-tool-surface.md): about 10 specific read tools mapped to persona questions (`find_paths`, `get_impact`, `list_owned`, `get_deployments`, ADR tools) plus search and `get_element`; qualified ids only; one source per process (checkout or Bundle URL); comment-preserving write tools on a checkout only, validated against the whole Workspace and never committing; typed `isError` results.
 
 ## Not yet specified
 
