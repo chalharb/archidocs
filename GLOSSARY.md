@@ -1,6 +1,6 @@
 # Archidocs
 
-A git-native architecture-as-code tool: teams declare their architecture as files in their own repos, and Archidocs combines them into one queryable landscape for people (via a diagram viewer) and AI agents (via MCP).
+A git-native architecture-as-code tool: teams declare their architecture as files in one Workspace repo, each Team in its own Project folder, and Archidocs combines them into one queryable landscape for people (via a diagram viewer) and AI agents (via MCP).
 
 ## Language
 
