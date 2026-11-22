@@ -42,6 +42,7 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - [Workspace aggregation](issues/07-workspace-aggregation.md): one repo per Workspace in v1; `workspace.yaml` holds Teams and Environments, Projects are auto-discovered folders with a `project.yaml`, other Projects are referenced as `project:id`, the Bundle is one JSON file per commit, and history comes from git.
 - [MCP tool surface](issues/08-mcp-tool-surface.md): about 10 specific read tools mapped to persona questions (`find_paths`, `get_impact`, `list_owned`, `get_deployments`, ADR tools) plus search and `get_element`; qualified ids only; one source per process (checkout or Bundle URL); comment-preserving write tools on a checkout only, validated against the whole Workspace and never committing; typed `isError` results.
 - [View kinds and definitions](issues/10-view-definitions.md): Generated Views for every scope (C1 and C2 Landscapes, C2 per System, C3 per Service, Deployment per Environment) plus optional Saved Views in Project YAML as structured include/exclude queries; Dynamic View Steps are `from`/`to` resolved to a Relationship, with return Steps; Deployment edges go to the nearest provider Deployment; `list_views`, `get_view`, `upsert_view`, `remove_view`.
+- [Sequence chart prototype](issues/13-sequence-chart-prototype.md): Dynamic Views get a play transport over a numbered Step outline, the chart, and a detail panel whose buttons open the Generated Views holding the Step's Relationship; event Steps are left to their own ticket.
 
 ## Not yet specified
 
