@@ -98,6 +98,14 @@ _Avoid_: Export, snapshot (unless meaning a specific historical bundle)
 A diagram defined by a query over the Model; never a source of truth.
 _Avoid_: Diagram (as the stored thing), page, canvas
 
+**Generated View**:
+A View derived from the Model for one scope, such as a System's Services or one Environment's Deployments; it exists for every scope without anyone writing it.
+_Avoid_: Default view, auto view
+
+**Saved View**:
+A View written into a Project's files: a named selection of the Model, or a Dynamic View.
+_Avoid_: Custom view, stored diagram
+
 **Deployment View**:
 A View of Deployments placed on their Deployment Targets within an Environment.
 _Avoid_: Infrastructure diagram, topology
@@ -105,6 +113,10 @@ _Avoid_: Infrastructure diagram, topology
 **Dynamic View**:
 A View of the ordered interactions in one scenario, shown as a sequence chart.
 _Avoid_: Flow, sequence diagram (as the stored thing), runtime view
+
+**Step**:
+One interaction in a Dynamic View: a consumer reaching a provider over a Relationship, or the provider's reply to it.
+_Avoid_: Message, call, hop
 
 **Layout**:
 The positions of Elements in a diagram, held apart from the model itself so it never changes what the architecture means.

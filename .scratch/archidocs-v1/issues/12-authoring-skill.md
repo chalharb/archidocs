@@ -4,6 +4,7 @@ Type: grilling
 Status: open
 Blocked by: 03, 06, 08
 Map: [Archidocs v1](../map.md)
+Context: [View kinds and definitions](10-view-definitions.md) settles the YAML for Saved Views and Dynamic View Steps, and adds `upsert_view`/`remove_view` write tools.
 
 ## Question
 

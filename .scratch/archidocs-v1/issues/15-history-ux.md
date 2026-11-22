@@ -5,7 +5,7 @@ Status: open
 Blocked by: 07, 14
 Map: [Archidocs v1](../map.md)
 
-Context: [MCP tool surface](08-mcp-tool-surface.md) reserves an `at` (commit) argument on read tools for this ticket.
+Context: [MCP tool surface](08-mcp-tool-surface.md) reserves an `at` (commit) argument on read tools for this ticket. [View kinds and definitions](10-view-definitions.md) keeps Saved View definitions (not resolved results) in the Bundle, so View changes can be diffed too.
 
 ## Question
 

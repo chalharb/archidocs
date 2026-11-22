@@ -5,7 +5,7 @@ Status: open
 Blocked by: 07
 Map: [Archidocs v1](../map.md)
 
-Context: [MCP tool surface](08-mcp-tool-surface.md) reuses this ticket's `{file, line, rule, message}` issue records in MCP errors and the `check` tool.
+Context: [MCP tool surface](08-mcp-tool-surface.md) reuses this ticket's `{file, line, rule, message}` issue records in MCP errors and the `check` tool. [View kinds and definitions](10-view-definitions.md) lists the View errors and warnings this ticket assigns rule ids to.
 
 ## Question
 
