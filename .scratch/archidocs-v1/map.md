@@ -55,7 +55,8 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 
 ## Not yet specified
 
-- **Hosted remote MCP:** an always-on MCP endpoint and its sign-in, beyond stdio or a bundle URL.
+_Nothing left: the way to the destination is clear._
+
 
 ## Out of scope
 
@@ -65,3 +66,4 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - A chat panel inside the viewer; AI is used through MCP from the user's own harness.
 - A custom grammar for authoring; v1 uses a structured format.
 - Aggregating a Workspace across several repos, including version pinning per Project; v1 is one repo ([Workspace aggregation](issues/07-workspace-aggregation.md)). A later effort.
+- Hosted remote MCP: an always-on, shared MCP endpoint with sign-in, so web-based clients (claude.ai, ChatGPT connectors) can reach it. v1 stops at `archidocs mcp` over stdio or localhost HTTP, reading a checkout or a published site ([MCP tool surface](issues/08-mcp-tool-surface.md)). To explore after v1: a read-only serverless handler (Vercel, Netlify, Cloudflare) and a container image, both in Bundle mode, behind the host's protection or an OAuth layer rather than sign-in built into Archidocs.
