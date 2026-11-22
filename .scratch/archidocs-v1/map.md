@@ -38,11 +38,12 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - [MCP client support for a harness-agnostic server](issues/03-mcp-client-support.md): only tools are universal; stateless tools with structuredContent + text, stdio then Streamable HTTP on TS SDK v2, guidance via a `get_authoring_guide` tool plus a portable SKILL.md.
 - [Rendering sequence charts for Dynamic Views](issues/04-sequence-chart-rendering.md): React Flow plus our own row-based layout function (participant nodes with lifelines, steps as edges); no library fits, custom SVG rejected.
 - [Core domain model](issues/05-core-domain-model.md): fixed Person/System/Service/Component kinds with strict nesting; Relationships stored as declared and higher edges derived; one Owner per Element; topics are `via`/`channel` fields on async Relationships; URLs live only on Deployments; flat per-Project slug ids.
+- [Authoring format](issues/06-authoring-format.md): YAML 1.2 checked against a JSON Schema generated from TypeScript (zod) types, not a TS API; an `archidocs/` folder of files per Project, Elements nested as a tree (`in:` to attach across files), Relationships listed under their consumer.
 
 ## Not yet specified
 
 - **History UX:** Workspace Bundle snapshot format, where snapshots are stored, and how diffs between them are shown. Waits on Workspace aggregation.
-- **`archidocs check`:** the full list of validation rules, and how a Project's CI fetches the latest Workspace Bundle. Waits on Workspace aggregation.
+- **`archidocs check`:** the full list of validation rules, and how a Project's CI fetches the latest Workspace Bundle. Waits on Workspace aggregation. A starting rule list is in [Authoring format](issues/06-authoring-format.md).
 - **Viewer build and hosting:** how the static viewer is built from a Workspace Bundle in CI and published.
 - **Search and Element pages:** finding Elements by name, owner or URL in the viewer; a detail page per Element (owner, Deployments, URLs, ADRs).
 - **Hosted remote MCP:** an always-on MCP endpoint and its sign-in, beyond stdio or a bundle URL.
