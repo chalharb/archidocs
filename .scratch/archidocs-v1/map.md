@@ -37,6 +37,7 @@ A **v1 spec** for Archidocs, a git-native, AI-first architecture-as-code tool. I
 - [Auto-layout engines for React Flow](issues/02-auto-layout-engines.md): elkjs 0.12.1 alone (layered, nested, orthogonal, in a worker) met every rule at 150 nodes in ~100 ms; dagre fails, libavoid is the fallback; stability across edits is the open risk.
 - [MCP client support for a harness-agnostic server](issues/03-mcp-client-support.md): only tools are universal; stateless tools with structuredContent + text, stdio then Streamable HTTP on TS SDK v2, guidance via a `get_authoring_guide` tool plus a portable SKILL.md.
 - [Rendering sequence charts for Dynamic Views](issues/04-sequence-chart-rendering.md): React Flow plus our own row-based layout function (participant nodes with lifelines, steps as edges); no library fits, custom SVG rejected.
+- [Core domain model](issues/05-core-domain-model.md): fixed Person/System/Service/Component kinds with strict nesting; Relationships stored as declared and higher edges derived; one Owner per Element; topics are `via`/`channel` fields on async Relationships; URLs live only on Deployments; flat per-Project slug ids.
 
 ## Not yet specified
 

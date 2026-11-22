@@ -17,8 +17,12 @@ _Avoid_: Repo (when meaning the model slice), module, package
 ### Elements
 
 **Element**:
-Anything that can appear as a node in the architecture model and carry an owner.
+A node of the logical Model: a Person, System, Service or Component. Every Element has exactly one Owner.
 _Avoid_: Node (that is a diagram term), entity, component (unless meaning a C4 component)
+
+**Person**:
+A human or role that uses a System, such as a shopper or a support agent; only ever the consumer in a Relationship.
+_Avoid_: Actor, User, Persona
 
 **Service**:
 A deployable, addressable unit of software; the thing that has a URL and a deployment.
@@ -29,15 +33,19 @@ A part inside a Service that is not deployed on its own.
 _Avoid_: Module, class, package
 
 **System**:
-A named grouping of Services that together deliver a business capability.
+A named grouping of Services that together deliver a business capability; Systems do not nest.
 _Avoid_: Platform, domain, product (unless meaning the business product)
+
+**External**:
+Said of a System or Service run outside the organisation, such as a payment provider; its Owner is the Team accountable for the integration.
+_Avoid_: Third-party, vendor (as a kind)
 
 **Model**:
 The single source of truth: every Element and Relationship in a Workspace.
 _Avoid_: Diagram, graph (when meaning the source of truth)
 
 **Relationship**:
-A directed edge from a consumer Element to the provider Element it depends on.
+A directed edge from a consumer Element to the provider Element it depends on, declared once at the level the author knows; edges between higher-level Elements are derived from the Relationships beneath them, never declared.
 _Avoid_: Connection, dependency, link, edge (outside diagram contexts)
 
 **Upstream / Downstream**:
@@ -47,11 +55,11 @@ _Avoid_: Callers/callees, inbound/outbound
 ### Deployment
 
 **Environment**:
-A named stage that Services run in, such as prod or staging.
+A named stage that Services run in, such as prod or staging; defined once per Workspace so it means the same thing in every Project.
 _Avoid_: Stage, tier
 
 **Deployment Target**:
-The place a Service runs within an Environment, such as a cluster, platform, or region.
+The place a Service runs within an Environment, such as a region, a cluster within it, or a platform; Deployment Targets nest, have their own Owner, and are not Elements.
 _Avoid_: Infrastructure node, host
 
 **Deployment**:
@@ -65,7 +73,7 @@ A group defined once per Workspace that can own Elements.
 _Avoid_: Squad, group, org unit
 
 **Owner**:
-The Team accountable for an Element; defaults to the Team owning the Element's Project.
+The one Team accountable for an Element or Deployment Target; defaults to the Team owning the Project. A Relationship belongs to its consumer's Owner and a Deployment to its Service's.
 _Avoid_: Maintainer, steward
 
 ### Decisions
