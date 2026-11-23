@@ -3,6 +3,7 @@ import type { Bundle } from "../../src/schema/bundle.ts";
 import { compareView, unionBundle } from "../../src/core/compare.ts";
 import { diff, type Change } from "../../src/core/diff.ts";
 import type { ResolvedStep } from "../../src/core/dynamic-views.ts";
+import { AdrReader } from "./AdrReader.tsx";
 import { Canvas } from "./Canvas.tsx";
 import { DynamicScreen } from "./DynamicScreen.tsx";
 import { ElementPanel } from "./ElementPanel.tsx";
@@ -154,11 +155,17 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         setFinding(true);
-      } else if (e.key === "Escape" && !finding) setConnectFrom(null);
+      } else if (e.key === "Escape" && !finding) {
+        if (connectFrom !== null) setConnectFrom(null);
+        else if (place.adr !== null) go({ ...place, adr: null }, { replace: true });
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [finding]);
+  }, [finding, connectFrom, place]);
+
+  /** Opens an ADR in the reader, or closes it with null; like selection, it replaces the history entry. */
+  const openAdr = useCallback((adr: string | null) => go({ ...place, adr }, { replace: true }), [place]);
 
   const toggle = useCallback(
     (id: string, open: boolean) => {
@@ -186,11 +193,11 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
     [place, workspace],
   );
 
-  /** Focuses an Element: in the current View when opening its boxes shows it there, else in its own View. */
+  /** Focuses an Element, closing any ADR: in the current View when opening its boxes shows it there, else in its own View. */
   const focus = useCallback(
     (id: string) => {
       const open = opening(workspace, place, id);
-      if (open) return go({ ...place, open, selected: id }, { replace: open.length === place.open.length });
+      if (open) return go({ ...place, open, selected: id, adr: null }, { replace: open.length === place.open.length });
       const element = workspace.byId.get(id);
       const home = element?.kind === "component" ? workspace.ownView(element.parent!) : element?.kind === "person" ? "c1" : workspace.ownView(id);
       go(viewPlace(home ?? "c2", id, place.lens, place));
@@ -314,7 +321,19 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               onConnect={setConnectFrom}
               onFocus={focus}
               onOpenView={openView}
+              onOpenAdr={openAdr}
               onTime={(time) => go({ ...place, ...time })}
+            />
+          )}
+          {place.adr !== null && (
+            <AdrReader
+              workspace={workspace}
+              id={place.adr}
+              beside={place.selected !== null && workspace.byId.has(place.selected)}
+              onClose={() => openAdr(null)}
+              onOpenAdr={openAdr}
+              onFocus={focus}
+              onOpenView={(v) => go(viewPlace(v, null, place.lens, place))}
             />
           )}
         </div>

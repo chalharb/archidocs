@@ -1,6 +1,5 @@
-/** Where e2e/serve.ts serves each fixture site; each sits under a sub-path, never at the root. */
-/** `ARCHIDOCS_E2E_PORT` moves it, so two checkouts can run the suite at once. */
-export const PORT = Number(process.env.ARCHIDOCS_E2E_PORT ?? 4517);
+/** Where e2e/serve.ts serves each fixture site; each sits under a sub-path, never at the root. `E2E_PORT` moves the port, so suites in several checkouts can run side by side. */
+export const PORT = Number(process.env.E2E_PORT ?? 4517);
 export const SITES = {
   /** The landscape fixture: Systems, Services with Components, three Teams. */
   landscape: "/team/archidocs/",
@@ -12,4 +11,6 @@ export const SITES = {
   history: "/team/history/",
   /** A PR preview (`build --preview`): main has the Legacy shop (historyBefore); the PR adds Wishlist, renames Web and retires Legacy. */
   preview: "/team/preview/",
+  /** The landscape plus a Saved View and ADRs linked to Cart, Cart DB and Checkout. */
+  decisions: "/team/decisions/",
 } as const;

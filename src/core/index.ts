@@ -16,3 +16,4 @@ export { listAdrs, adrsFor, type ListAdrsOptions, type ListedAdr } from "./adrs.
 export { resolveDynamic, resolveDynamicView, takesPart, stepViews, dynamicViewsUsing, type DynamicResolution, type DynamicProblem, type ResolvedDynamicView, type ResolvedStep, type StepKind } from "./dynamic-views.ts";
 export { diff, countChanges, changedIds, changeKinds, type Change, type ChangeKind, type ChangeType, type ChangeItem, type ChangeCounts } from "./diff.ts";
 export { compareView, unionBundle, type CompareMark } from "./compare.ts";
+export { resolveScope, scopeMatcher, filterChanges, type HistoryScope, type ScopeResolution } from "./history-scope.ts";

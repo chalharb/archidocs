@@ -5,7 +5,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import { archidocs } from "../test/support/cli.ts";
-import { checkoutScenarioWorkspace, historyAfter, historyBefore, viewerWorkspace } from "../test/support/fixtures.ts";
+import { checkoutScenarioWorkspace, decisionsWorkspace, historyAfter, historyBefore, viewerWorkspace } from "../test/support/fixtures.ts";
 import { inWorkspace, scriptedRepo } from "../test/support/git-history.ts";
 import { writeWorkspace, type Files } from "../test/support/workspace.ts";
 import { syntheticWorkspace } from "../test/render/synthetic.ts";
@@ -52,6 +52,7 @@ const roots = new Map<string, string>([
   [SITES.checkout, await site(checkoutScenarioWorkspace)],
   [SITES.history, await historySite()],
   [SITES.preview, await previewSite()],
+  [SITES.decisions, await site(decisionsWorkspace)],
 ]);
 
 const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };
