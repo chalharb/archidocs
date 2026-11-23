@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Project, ViewDecl } from "../core/model.ts";
 import { suggest } from "../core/suggest.ts";
 import { StructuralView } from "../schema/workspace.ts";
+import { adrReferences } from "./adrs.ts";
 import { absolute, fail, findProject, local, modelFile, projectFile, type Edit, type Failure, type Planned } from "./edit.ts";
 
 export type ViewRequest =
@@ -49,8 +50,13 @@ export async function removeView(edit: Edit, request: Extract<ViewRequest, { op:
   if (!id.ok) return id;
   const view = viewIn(edit, project, id.id);
   if (!view) return notFoundView(edit, project, id.id);
+  const subject = { id: `${project.id}:${view.id}` };
+  const references = adrReferences(edit.ws, "views", subject.id);
+  if (references.length > 0) {
+    return fail("validation_failed", `${subject.id} is still referenced in ${references.length} place${references.length === 1 ? "" : "s"}; remove or change those first. Nothing was written.`, { references });
+  }
   (await edit.open(absolute(edit, view.file.path))).delete(view.path);
-  return { ok: true, action: "removed", item: "view", subject: { id: `${project.id}:${view.id}` } };
+  return { ok: true, action: "removed", item: "view", subject };
 }
 
 function viewIn(edit: Edit, project: Project, id: string): ViewDecl | undefined {

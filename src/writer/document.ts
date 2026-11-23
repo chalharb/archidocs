@@ -30,9 +30,9 @@ export class YamlFile {
     return isCollection(node) ? node.toJSON() : this.#doc.getIn(path);
   }
 
-  /** Sets the value at `path`, creating any missing maps on the way. */
-  set(path: Path, value: unknown): void {
-    this.#doc.setIn(path, this.#doc.createNode(value));
+  /** Sets the value at `path`, creating any missing maps on the way; `flow` writes a collection inline. */
+  set(path: Path, value: unknown, { flow = false } = {}): void {
+    this.#doc.setIn(path, this.#doc.createNode(value, { flow }));
   }
 
   /** Appends to the sequence at `path`, creating it if missing. */

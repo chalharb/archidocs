@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AdrStatus } from "./adr.ts";
 
 export const SCHEMA_VERSION = 1;
 
@@ -117,6 +118,31 @@ export const BundleView = z.object({
 });
 
 /**
+ * One ADR: qualified id (`project:NNNN`), its title (the first `# ` heading),
+ * the status as written and the effective one (`superseded` once an accepted
+ * ADR supersedes it), qualified links, the `supersededBy` derived from
+ * accepted ADRs, and the full markdown body after the frontmatter.
+ */
+export const BundleAdr = z.object({
+  id: z.string(),
+  project: z.string(),
+  title: z.string(),
+  status: AdrStatus,
+  effectiveStatus: AdrStatus,
+  date: z.string(),
+  elements: z.array(z.string()),
+  views: z.array(z.string()),
+  supersedes: z.array(z.string()),
+  supersededBy: z.array(z.string()),
+  decisionMakers: z.array(z.string()),
+  consulted: z.array(z.string()),
+  informed: z.array(z.string()),
+  tags: z.array(z.string()),
+  body: z.string(),
+  source: Source,
+});
+
+/**
  * The Workspace Bundle. Parsing through this schema also fixes key order,
  * since zod emits object keys in shape order.
  */
@@ -138,6 +164,7 @@ export const Bundle = z.object({
   targets: z.array(BundleTarget),
   deployments: z.array(BundleDeployment),
   views: z.array(BundleView),
+  adrs: z.array(BundleAdr),
 });
 
 export type Bundle = z.infer<typeof Bundle>;
@@ -146,5 +173,6 @@ export type BundleRelationship = z.infer<typeof BundleRelationship>;
 export type BundleTarget = z.infer<typeof BundleTarget>;
 export type BundleDeployment = z.infer<typeof BundleDeployment>;
 export type BundleView = z.infer<typeof BundleView>;
+export type BundleAdr = z.infer<typeof BundleAdr>;
 export type BundleSelector = z.infer<typeof BundleSelector>;
 export type BundleLens = z.infer<typeof BundleLens>;

@@ -15,7 +15,7 @@ export interface SourceRef {
 export type WriteErrorCode = "not_found" | "ambiguous" | "invalid_input" | "validation_failed";
 
 /** What a write is about. */
-export type WriteItem = "element" | "relationship" | "target" | "deployment" | "team" | "environment" | "project" | "view";
+export type WriteItem = "element" | "relationship" | "target" | "deployment" | "team" | "environment" | "project" | "view" | "adr";
 
 export interface Failure {
   ok: false;
@@ -40,6 +40,10 @@ export interface Edit {
   root: string;
   /** The file at an absolute path, parsed for editing; the same object on every call. */
   open(abs: string): Promise<YamlFile>;
+  /** A file's text as it is on disk, undefined when there is none. */
+  read(abs: string): Promise<string | undefined>;
+  /** Writes a new non-YAML file (an ADR) whole. */
+  create(abs: string, text: string): void;
 }
 
 export type Planned =

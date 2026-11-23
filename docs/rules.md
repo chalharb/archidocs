@@ -37,6 +37,15 @@
 | [`bad-expand`](#bad-expand) | error | A Saved View's `expand` or `collapse` id is not a node of the View once collapsed to its `level`, or has no children. |
 | [`empty-view`](#empty-view) | warning | A Saved View resolves to no nodes. |
 | [`unresolved-path`](#unresolved-path) | warning | A Saved View's path selector, or path Lens, finds no path between its two Elements. |
+| [`invalid-adr-frontmatter`](#invalid-adr-frontmatter) | error | An ADR has no frontmatter, frontmatter that isn't valid YAML, or a field that is unknown, missing (`status`, `date`) or invalid, such as a `status` outside proposed, accepted, rejected, deprecated and superseded. |
+| [`missing-adr-title`](#missing-adr-title) | error | An ADR's body has no `# ` heading to take its title from. |
+| [`bad-adr-filename`](#bad-adr-filename) | error | A file in a Project's `adr/` folder isn't named `NNNN-slug.md` (and isn't `template.md`). |
+| [`duplicate-adr-number`](#duplicate-adr-number) | error | Two ADRs in a Project share a number, as when two pull requests each take the next free one. |
+| [`unknown-adr-link`](#unknown-adr-link) | error | An ADR's `elements` names no Element or Deployment Target, its `views` no Saved View, or its `supersedes` no ADR. |
+| [`hand-written-superseded`](#hand-written-superseded) | error | An ADR's `status` is written as `superseded`; that status is derived once an accepted ADR lists it in `supersedes`. |
+| [`supersedes-cycle`](#supersedes-cycle) | error | ADRs supersede each other in a cycle, directly or through others. Reported once, at the cycle's last file. |
+| [`superseded-twice`](#superseded-twice) | warning | An ADR is superseded by more than one accepted ADR. Reported at the last of them. |
+| [`supersedes-unaccepted`](#supersedes-unaccepted) | warning | An ADR supersedes one that isn't accepted or deprecated, such as a proposed or rejected ADR. |
 
 ## `yaml-syntax`
 
@@ -1513,3 +1522,380 @@ views:
       level: c2
       include: [{ from: web, to: cart }]
 ```
+
+## `invalid-adr-frontmatter`
+
+**Severity:** error
+
+An ADR has no frontmatter, frontmatter that isn't valid YAML, or a field that is unknown, missing (`status`, `date`) or invalid, such as a `status` outside proposed, accepted, rejected, deprecated and superseded.
+
+**Failing example**
+
+`shop/adr/0001-use-kafka.md`:
+
+````markdown
+---
+status: approved
+date: 2026-03-01
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Start the file with `---`, `status` and `date` (YYYY-MM-DD), then `---`; use only the MADR fields and the `elements`, `views` and `supersedes` links.
+
+**Fixed**
+
+`shop/adr/0001-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+## `missing-adr-title`
+
+**Severity:** error
+
+An ADR's body has no `# ` heading to take its title from.
+
+**Failing example**
+
+`shop/adr/0001-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+---
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Start the body with a `# ` heading naming the decision.
+
+**Fixed**
+
+`shop/adr/0001-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+## `bad-adr-filename`
+
+**Severity:** error
+
+A file in a Project's `adr/` folder isn't named `NNNN-slug.md` (and isn't `template.md`).
+
+**Failing example**
+
+`shop/adr/use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Rename it to the next free four-digit number and a lowercase slug, such as `0002-use-kafka.md`.
+
+**Fixed**
+
+`shop/adr/0001-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+`shop/adr/use-kafka.md`: removed.
+
+## `duplicate-adr-number`
+
+**Severity:** error
+
+Two ADRs in a Project share a number, as when two pull requests each take the next free one.
+
+**Failing example**
+
+`shop/adr/0001-use-redis.md`:
+
+````markdown
+---
+status: proposed
+date: 2026-03-02
+---
+
+# Use Redis for carts
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Renumber the later ADR to the next free number, and update any `supersedes` that meant it.
+
+**Fixed**
+
+`shop/adr/0002-use-redis.md`:
+
+````markdown
+---
+status: proposed
+date: 2026-03-02
+---
+
+# Use Redis for carts
+
+We publish domain events on Kafka.
+````
+
+`shop/adr/0001-use-redis.md`: removed.
+
+## `unknown-adr-link`
+
+**Severity:** error
+
+An ADR's `elements` names no Element or Deployment Target, its `views` no Saved View, or its `supersedes` no ADR.
+
+**Failing example**
+
+`shop/adr/0001-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+elements: [wbe]
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Use an id declared in the ADR's Project, or `project:id` (`project:NNNN` for an ADR) for one in another Project.
+
+**Fixed**
+
+`shop/adr/0001-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+elements: [web]
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+## `hand-written-superseded`
+
+**Severity:** error
+
+An ADR's `status` is written as `superseded`; that status is derived once an accepted ADR lists it in `supersedes`.
+
+**Failing example**
+
+`shop/adr/0001-use-rabbitmq.md`:
+
+````markdown
+---
+status: superseded
+date: 2025-01-10
+---
+
+# Use RabbitMQ
+
+We publish domain events on Kafka.
+````
+
+`shop/adr/0002-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Give the old ADR back the status it had (usually accepted), and declare `supersedes` on the new ADR instead.
+
+**Fixed**
+
+`shop/adr/0001-use-rabbitmq.md`:
+
+````markdown
+---
+status: accepted
+date: 2025-01-10
+---
+
+# Use RabbitMQ
+
+We publish domain events on Kafka.
+````
+
+`shop/adr/0002-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+supersedes: ["0001"]
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+## `supersedes-cycle`
+
+**Severity:** error
+
+ADRs supersede each other in a cycle, directly or through others. Reported once, at the cycle's last file.
+
+**Failing example**
+
+`shop/adr/0001-use-rabbitmq.md`:
+
+````markdown
+---
+status: accepted
+date: 2025-01-10
+supersedes: ["0002"]
+---
+
+# Use RabbitMQ
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Remove the `supersedes` entry that points back to a newer ADR.
+
+**Fixed**
+
+`shop/adr/0001-use-rabbitmq.md`:
+
+````markdown
+---
+status: accepted
+date: 2025-01-10
+---
+
+# Use RabbitMQ
+
+We publish domain events on Kafka.
+````
+
+## `superseded-twice`
+
+**Severity:** warning
+
+An ADR is superseded by more than one accepted ADR. Reported at the last of them.
+
+**Failing example**
+
+`shop/adr/0003-use-nats.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-04-01
+supersedes: ["0001"]
+---
+
+# Use NATS for events
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Keep `supersedes` on the one ADR that replaces it; have the later one supersede that ADR instead, if it replaces it in turn.
+
+**Fixed**
+
+`shop/adr/0003-use-nats.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-04-01
+supersedes: ["0002"]
+---
+
+# Use NATS for events
+
+We publish domain events on Kafka.
+````
+
+## `supersedes-unaccepted`
+
+**Severity:** warning
+
+An ADR supersedes one that isn't accepted or deprecated, such as a proposed or rejected ADR.
+
+**Failing example**
+
+`shop/adr/0002-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+supersedes: ["0001"]
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````
+
+**Fix:** Remove the entry from `supersedes`, or point it at the accepted ADR this one replaces.
+
+**Fixed**
+
+`shop/adr/0002-use-kafka.md`:
+
+````markdown
+---
+status: accepted
+date: 2026-03-01
+---
+
+# Use Kafka for events
+
+We publish domain events on Kafka.
+````

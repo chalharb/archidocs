@@ -1,4 +1,5 @@
 import type { DeploymentDecl, Project, TargetDecl } from "../core/model.ts";
+import { adrReferences } from "./adrs.ts";
 import { qualify } from "../core/refs.ts";
 import { suggest } from "../core/suggest.ts";
 import {
@@ -82,6 +83,7 @@ export async function removeTarget(edit: Edit, request: Extract<TargetRequest, {
   const references: SourceRef[] = [
     ...edit.ws.targets.filter((t) => t.parent === target).map((t) => ({ file: t.file.path, line: t.line, what: `Target ${t.project.id}:${t.id} is in it` })),
     ...edit.ws.deployments.filter((d) => d.target === target).map((d) => ({ file: d.file.path, line: d.line, what: describeDeployment(d) })),
+    ...adrReferences(edit.ws, "elements", subject.id),
   ].sort(byPlace);
   if (references.length > 0) {
     return fail("validation_failed", `${subject.id} is still referenced in ${references.length} place${references.length === 1 ? "" : "s"}; remove or change those first. Nothing was written.`, { references });

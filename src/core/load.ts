@@ -6,6 +6,8 @@ import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, So
 import { indexByQualifiedId, qualified, qualify, referenceResolver } from "./refs.ts";
 import { rules } from "./rules.ts";
 import { checkSchema } from "./schema-check.ts";
+import { bundleAdrs } from "./adrs.ts";
+import { PROJECT_TEMPLATE, readAdr } from "./adr.ts";
 import { parseYaml } from "./yaml.ts";
 import type { z } from "zod";
 
@@ -27,6 +29,7 @@ export interface LoadResult {
 
 const WORKSPACE_FILE = "workspace.yaml";
 const PROJECT_FILE = "project.yaml";
+const ADR_DIR = "adr";
 
 /**
  * Reads a Workspace: discovers Projects, parses and merges their files,
@@ -44,14 +47,14 @@ export async function loadDetailed(options: LoadOptions): Promise<LoadResult & {
   const repoRoot = options.repoRoot ?? (await findRepoRoot(fs, root));
   const toRepoPath = (abs: string) => relative(repoRoot, abs).split(sep).join("/");
 
-  const { files: yamlPaths, dirs } = await walk(fs, root);
+  const { files: yamlPaths, markdown, dirs } = await walk(fs, root);
   const projectDirs = dirs.filter((d) => yamlPaths.includes(join(d, PROJECT_FILE)));
   const nearestProjectDir = (dir: string, strict: boolean) =>
     projectDirs
       .filter((p) => (strict ? dir.startsWith(p + sep) : dir === p || dir.startsWith(p + sep)))
       .sort((a, b) => b.length - a.length)[0];
 
-  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [], relationships: [], targets: [], deployments: [], views: [] };
+  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [], relationships: [], targets: [], deployments: [], views: [], adrs: [] };
   const projectByDir = new Map<string, Project>();
 
   // Read every file; project.yaml files first so model files can find their Project.
@@ -76,6 +79,14 @@ export async function loadDetailed(options: LoadOptions): Promise<LoadResult & {
     }
   }
   ws.files.sort((a, b) => cmp(a.path, b.path));
+
+  // ADRs: every `.md` directly in a Project's `adr/` folder, but its template.
+  for (const abs of markdown) {
+    const dir = dirname(abs);
+    const project = basename(dir) === ADR_DIR ? projectByDir.get(dirname(dir)) : undefined;
+    if (!project || basename(abs) === PROJECT_TEMPLATE) continue;
+    ws.adrs.push(readAdr(await fs.readFile(abs), { project, path: toRepoPath(abs), filename: basename(abs) }));
+  }
 
   // Projects in folder order: nesting and duplicate ids point back at the earlier one.
   const firstById = new Map<string, Project>();
@@ -125,8 +136,9 @@ async function findRepoRoot(fs: FileSystem, root: string): Promise<string> {
   }
 }
 
-async function walk(fs: FileSystem, root: string): Promise<{ files: string[]; dirs: string[] }> {
+async function walk(fs: FileSystem, root: string): Promise<{ files: string[]; markdown: string[]; dirs: string[] }> {
   const files: string[] = [];
+  const markdown: string[] = [];
   const dirs: string[] = [root];
   for (let i = 0; i < dirs.length; i++) {
     for (const entry of await fs.readDir(dirs[i]!)) {
@@ -134,9 +146,10 @@ async function walk(fs: FileSystem, root: string): Promise<{ files: string[]; di
       const path = join(dirs[i]!, entry.name);
       if (entry.isDirectory) dirs.push(path);
       else if (entry.name.endsWith(".yaml")) files.push(path);
+      else if (entry.name.endsWith(".md")) markdown.push(path);
     }
   }
-  return { files: files.sort(cmp), dirs: dirs.sort(cmp) };
+  return { files: files.sort(cmp), markdown: markdown.sort(cmp), dirs: dirs.sort(cmp) };
 }
 
 function readWorkspaceFile(file: SourceFile, ws: LoadedWorkspace) {
@@ -440,6 +453,7 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
     targets: targets.sort(byId),
     deployments: deployments.sort((a, b) => cmp(a.service, b.service) || cmp(a.environment, b.environment) || cmp(a.target, b.target) || cmp(a.source.file, b.source.file) || a.source.line - b.source.line),
     views: uniqueViews.sort(byId),
+    adrs: bundleAdrs(ws),
   };
   // Parsing fixes key order to the schema's.
   return Bundle.parse(bundle);

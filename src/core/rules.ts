@@ -7,6 +7,10 @@ import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, Relati
 import { qualified, qualify, referenceResolver, type Resolved } from "./refs.ts";
 import type { BundleView } from "../schema/bundle.ts";
 import { didYouMean } from "./suggest.ts";
+import type { AdrDecl } from "./model.ts";
+import { AdrFrontmatter } from "../schema/adr.ts";
+import { checkSchema } from "./schema-check.ts";
+import { qualifyAdr } from "./adr.ts";
 
 /**
  * A check rule. Its examples are small Workspaces (paths relative to the
@@ -185,6 +189,46 @@ const viewing = (views: string, extra: Files = {}) =>
     `services:\n  web:\n    name: Web\n    relationships:\n      - to: cart\n  cart:\n    name: Cart\n    components:\n      cart-api:\n        name: Cart API\n  search:\n    name: Search\nviews:\n  structural:\n${views.replace(/^/gm, "    ")}\n`,
     extra,
   );
+
+
+/** A position in an ADR's frontmatter, as an issue at its line in the file; line 1 when it has none. */
+const atAdr = (adr: AdrDecl, path: readonly (string | number)[], message: string, key = false): IssueDraft => {
+  if (!adr.frontmatter) return { file: adr.path, line: 1, message };
+  const pos = adr.frontmatter.positionOf(path, { key });
+  return { file: adr.path, line: pos.line + adr.lineOffset, column: pos.column, message };
+};
+
+/** An ADR file for examples: frontmatter lines, a `# ` title and a short body. */
+const adrText = (frontmatter: string, title = "Use Kafka for events") => `---\n${frontmatter}\n---\n\n# ${title}\n\nWe publish domain events on Kafka.\n`;
+
+/** An ADR example: one Service, a Saved View, and the given files under `shop/adr/`. */
+const deciding = (adrs: Files): Files =>
+  withServices(
+    "services:\n  web:\n    name: Web\ntargets:\n  eks-prod:\n    name: EKS prod\n    kind: cluster\nviews:\n  structural:\n    front:\n      title: Front\n      level: c2\n",
+    Object.fromEntries(Object.entries(adrs).map(([name, text]) => [`shop/adr/${name}`, text])),
+  );
+
+/** ADRs in a usable Project with an `NNNN` number, by qualified id (the first file of each number). */
+const numberedAdrs = (ws: LoadedWorkspace) => {
+  const byId = new Map<string, AdrDecl>();
+  for (const a of ws.adrs) {
+    if (a.project.id === undefined || a.project.duplicateOf || a.number === undefined) continue;
+    const id = `${a.project.id}:${a.number}`;
+    if (!byId.has(id)) byId.set(id, a);
+  }
+  return byId;
+};
+
+/** Each well-formed `supersedes` entry of a numbered ADR, qualified, with the ADR it names if any. */
+const supersedesEntries = (ws: LoadedWorkspace) => {
+  const adrs = numberedAdrs(ws);
+  return [...adrs].flatMap(([id, a]) =>
+    asList(a.data.supersedes).flatMap((ref, i) => {
+      const to = qualifyAdr(ref, a.project);
+      return to === undefined ? [] : [{ id, adr: a, index: i, to, target: adrs.get(to) }];
+    }),
+  );
+};
 
 export const rules: RuleDefinition[] = [
   {
@@ -789,6 +833,195 @@ export const rules: RuleDefinition[] = [
       resolvedSavedViews(ws, bundle).flatMap(({ decl, resolution }) =>
         resolution.unresolvedPaths.map((u) => at(decl.file, [...decl.path, ...u.at], `No path between "${u.from}" and "${u.to}"`)),
       ),
+  },
+  {
+    id: "invalid-adr-frontmatter",
+    severity: "error",
+    summary: "An ADR has no frontmatter, frontmatter that isn't valid YAML, or a field that is unknown, missing (`status`, `date`) or invalid, such as a `status` outside proposed, accepted, rejected, deprecated and superseded.",
+    fix: "Start the file with `---`, `status` and `date` (YYYY-MM-DD), then `---`; use only the MADR fields and the `elements`, `views` and `supersedes` links.",
+    example: {
+      failing: deciding({ "0001-use-kafka.md": adrText("status: approved\ndate: 2026-03-01") }),
+      passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
+    },
+    check: (ws) =>
+      ws.adrs.flatMap((a): IssueDraft[] => {
+        if (!a.frontmatter) return [{ file: a.path, line: 1, message: "ADR has no frontmatter: start the file with `---`, then `status` and `date`, then `---`" }];
+        const e = a.frontmatter.syntaxError;
+        if (e) return [{ file: a.path, line: e.line + a.lineOffset, column: e.column, message: e.message }];
+        return checkSchema(AdrFrontmatter, a.frontmatter.data, a.frontmatter).map((f) => ({ file: a.path, line: f.line + a.lineOffset, column: f.column, message: f.message }));
+      }),
+  },
+  {
+    id: "missing-adr-title",
+    severity: "error",
+    summary: "An ADR's body has no `# ` heading to take its title from.",
+    fix: "Start the body with a `# ` heading naming the decision.",
+    example: {
+      failing: deciding({ "0001-use-kafka.md": "---\nstatus: accepted\ndate: 2026-03-01\n---\n\nWe publish domain events on Kafka.\n" }),
+      passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
+    },
+    check: (ws) =>
+      ws.adrs.flatMap((a) => (a.title || !a.frontmatter ? [] : [{ file: a.path, line: a.bodyLine, message: "ADR has no title: start the body with a `# ` heading" }])),
+  },
+  {
+    id: "bad-adr-filename",
+    severity: "error",
+    summary: "A file in a Project's `adr/` folder isn't named `NNNN-slug.md` (and isn't `template.md`).",
+    fix: "Rename it to the next free four-digit number and a lowercase slug, such as `0002-use-kafka.md`.",
+    example: {
+      failing: deciding({ "use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
+      passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
+    },
+    check: (ws) => {
+      const next = new Map<Project, number>();
+      for (const a of ws.adrs) if (a.number !== undefined) next.set(a.project, Math.max(next.get(a.project) ?? 0, Number(a.number)));
+      return ws.adrs.flatMap((a) => {
+        if (a.number !== undefined) return [];
+        const slug = a.filename.replace(/\.md$/, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "decision";
+        const number = String((next.get(a.project) ?? 0) + 1).padStart(4, "0");
+        return [{ file: a.path, line: 1, message: `ADR file "${a.filename}" must be named NNNN-slug.md, such as ${number}-${slug}.md` }];
+      });
+    },
+  },
+  {
+    id: "duplicate-adr-number",
+    severity: "error",
+    summary: "Two ADRs in a Project share a number, as when two pull requests each take the next free one.",
+    fix: "Renumber the later ADR to the next free number, and update any `supersedes` that meant it.",
+    example: {
+      failing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01"), "0001-use-redis.md": adrText("status: proposed\ndate: 2026-03-02", "Use Redis for carts") }),
+      passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01"), "0002-use-redis.md": adrText("status: proposed\ndate: 2026-03-02", "Use Redis for carts") }),
+    },
+    check: (ws) => {
+      const first = numberedAdrs(ws);
+      return ws.adrs.flatMap((a) => {
+        const earlier = a.number === undefined || a.project.id === undefined ? undefined : first.get(`${a.project.id}:${a.number}`);
+        return earlier && earlier !== a ? [{ file: a.path, line: 1, message: `ADR number ${a.number!} is already used in Project "${a.project.id!}" by ${earlier.path}` }] : [];
+      });
+    },
+  },
+  {
+    id: "unknown-adr-link",
+    severity: "error",
+    summary: "An ADR's `elements` names no Element or Deployment Target, its `views` no Saved View, or its `supersedes` no ADR.",
+    fix: "Use an id declared in the ADR's Project, or `project:id` (`project:NNNN` for an ADR) for one in another Project.",
+    example: {
+      failing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nelements: [wbe]") }),
+      passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nelements: [web]") }),
+    },
+    check: (ws) => {
+      const projects = new Set(ws.projects.filter((p) => p.id !== undefined && !p.duplicateOf).map((p) => p.id!));
+      const linkable = [...ws.elements, ...ws.targets];
+      const adrIds = ws.adrs.flatMap((a) => (a.number === undefined ? [] : [{ id: a.number, project: a.project }]));
+      const kinds = [
+        { field: "elements", what: "Element or Deployment Target", decls: linkable, qualifyRef: qualify },
+        { field: "views", what: "Saved View", decls: ws.views, qualifyRef: qualify },
+        { field: "supersedes", what: "ADR", decls: adrIds, qualifyRef: qualifyAdr },
+      ] as const;
+      return ws.adrs.flatMap((a) =>
+        kinds.flatMap(({ field, what, decls, qualifyRef }) => {
+          const known = qualifiedIds(decls);
+          return asList(a.data[field]).flatMap((ref, i) => {
+            const id = qualifyRef(ref, a.project);
+            if (id === undefined || known.has(id)) return [];
+            const project = id.slice(0, id.indexOf(":"));
+            return [atAdr(a, [field, i], projects.has(project) ? unknownIn(what, id, decls) : `Unknown Project "${project}"`)];
+          });
+        }),
+      );
+    },
+  },
+  {
+    id: "hand-written-superseded",
+    severity: "error",
+    summary: "An ADR's `status` is written as `superseded`; that status is derived once an accepted ADR lists it in `supersedes`.",
+    fix: "Give the old ADR back the status it had (usually accepted), and declare `supersedes` on the new ADR instead.",
+    example: {
+      failing: deciding({ "0001-use-rabbitmq.md": adrText("status: superseded\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
+      passing: deciding({ "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
+    },
+    check: (ws) =>
+      ws.adrs.flatMap((a) =>
+        a.data.status === "superseded" ? [atAdr(a, ["status"], "`superseded` is derived, never written: give this ADR the status it had, and list it in the new ADR's `supersedes`")] : [],
+      ),
+  },
+  {
+    id: "supersedes-cycle",
+    severity: "error",
+    summary: "ADRs supersede each other in a cycle, directly or through others. Reported once, at the cycle's last file.",
+    fix: "Remove the `supersedes` entry that points back to a newer ADR.",
+    example: {
+      failing: deciding({ "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10\nsupersedes: [\"0002\"]", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
+      passing: deciding({ "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
+    },
+    check: (ws) => {
+      const entries = supersedesEntries(ws);
+      const next = new Map<string, string[]>();
+      for (const e of entries) if (e.target) next.set(e.id, [...(next.get(e.id) ?? []), e.to]);
+      const reach = (from: string) => {
+        const seen = new Set<string>();
+        const todo = [...(next.get(from) ?? [])];
+        while (todo.length) {
+          const id = todo.pop()!;
+          if (!seen.has(id)) todo.push(...(seen.add(id), next.get(id) ?? []));
+        }
+        return seen;
+      };
+      const reachable = new Map([...next.keys()].map((id) => [id, reach(id)]));
+      const done = new Set<string>();
+      return [...reachable].flatMap(([id, seen]): IssueDraft[] => {
+        if (!seen.has(id) || done.has(id)) return [];
+        const cycle = [...seen].filter((other) => reachable.get(other)?.has(id)).sort();
+        cycle.forEach((c) => done.add(c));
+        const last = entries
+          .filter((e) => cycle.includes(e.id) && cycle.includes(e.to))
+          .sort((a, b) => (a.adr.path < b.adr.path ? 1 : a.adr.path > b.adr.path ? -1 : a.index - b.index))[0]!;
+        return [atAdr(last.adr, ["supersedes", last.index], `ADRs supersede each other in a cycle: ${cycle.join(", ")}`)];
+      });
+    },
+  },
+  {
+    id: "superseded-twice",
+    severity: "warning",
+    summary: "An ADR is superseded by more than one accepted ADR. Reported at the last of them.",
+    fix: "Keep `supersedes` on the one ADR that replaces it; have the later one supersede that ADR instead, if it replaces it in turn.",
+    example: {
+      failing: deciding({
+        "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10", "Use RabbitMQ"),
+        "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]"),
+        "0003-use-nats.md": adrText("status: accepted\ndate: 2026-04-01\nsupersedes: [\"0001\"]", "Use NATS for events"),
+      }),
+      passing: deciding({
+        "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10", "Use RabbitMQ"),
+        "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]"),
+        "0003-use-nats.md": adrText("status: accepted\ndate: 2026-04-01\nsupersedes: [\"0002\"]", "Use NATS for events"),
+      }),
+    },
+    check: (ws, bundle) => {
+      const entries = supersedesEntries(ws);
+      return bundle.adrs
+        .filter((a) => a.supersededBy.length > 1)
+        .map((a) => {
+          const last = entries.filter((e) => e.to === a.id && a.supersededBy.includes(e.id)).sort((x, y) => (x.adr.path < y.adr.path ? 1 : -1))[0]!;
+          return atAdr(last.adr, ["supersedes", last.index], `${a.id} is superseded by more than one accepted ADR: ${a.supersededBy.join(", ")}`);
+        });
+    },
+  },
+  {
+    id: "supersedes-unaccepted",
+    severity: "warning",
+    summary: "An ADR supersedes one that isn't accepted or deprecated, such as a proposed or rejected ADR.",
+    fix: "Remove the entry from `supersedes`, or point it at the accepted ADR this one replaces.",
+    example: {
+      failing: deciding({ "0001-use-rabbitmq.md": adrText("status: rejected\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
+      passing: deciding({ "0001-use-rabbitmq.md": adrText("status: rejected\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
+    },
+    check: (ws) =>
+      supersedesEntries(ws).flatMap(({ adr, index, to, target }) => {
+        const status = target?.data.status;
+        if (typeof status !== "string" || ["accepted", "deprecated", "superseded"].includes(status)) return [];
+        return [atAdr(adr, ["supersedes", index], `Supersedes ${to}, which is ${status}; only an accepted or deprecated ADR is superseded`)];
+      }),
   },
 ];
 
