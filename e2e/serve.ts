@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,10 +14,16 @@ import { PORT, SITES } from "./sites.ts";
 // Build the viewer as `pnpm build` does, then each fixture site with the real CLI.
 await build({ configFile: fileURLToPath(new URL("../viewer/vite.config.ts", import.meta.url)), logLevel: "warn" });
 
-async function site(files: Files): Promise<string> {
+/** Builds a fixture site; `exports` are Views `archidocs export` also draws into the site's `expected/`, for the viewer's exports to match. */
+async function site(files: Files, exports: string[] = []): Promise<string> {
   const { repoRoot } = await writeWorkspace(files);
-  const { code, stdout, stderr } = await archidocs(repoRoot, "build", "--out", "site");
-  if (code !== 0) throw new Error(`archidocs build failed:\n${stdout}${stderr}`);
+  const run = async (...args: string[]) => {
+    const { code, stdout, stderr } = await archidocs(repoRoot, ...args);
+    if (code !== 0) throw new Error(`archidocs ${args.join(" ")} failed:\n${stdout}${stderr}`);
+  };
+  await run("build", "--out", "site");
+  await mkdir(join(repoRoot, "site", "expected"));
+  for (const view of exports) await run("export", view, "--out", join("site", "expected", `${view.replace(/[/:]/g, "-")}.svg`));
   return join(repoRoot, "site");
 }
 
@@ -47,7 +53,7 @@ async function previewSite(): Promise<string> {
 }
 
 const roots = new Map<string, string>([
-  [SITES.landscape, await site(viewerWorkspace)],
+  [SITES.landscape, await site(viewerWorkspace, ["c2", "shop:checkout-impact"])],
   [SITES.big, await site(syntheticWorkspace({ systems: 6, services: 20 }))],
   [SITES.checkout, await site(checkoutScenarioWorkspace)],
   [SITES.history, await historySite()],

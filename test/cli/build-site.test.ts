@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { readdir, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { landscapeWorkspace, relationshipWorkspace } from "../support/fixtures.ts";
 import { inWorkspace, scriptedRepo } from "../support/git-history.ts";
@@ -16,9 +16,16 @@ describe("archidocs build --out", () => {
     expect(code).toBe(0);
     expect(stdout).toBe("Wrote the site to site\n");
     const site = join(repoRoot, "site");
-    expect((await readdir(site)).sort()).toEqual(["assets", "bundles", "index.html", "workspace.bundle.json"]);
+    expect((await readdir(site)).sort()).toEqual(["assets", "bundles", "index.html", "site.json", "workspace.bundle.json"]);
     const bundle = JSON.parse(await readFile(join(site, "workspace.bundle.json"), "utf8"));
     expect(bundle.elements.map((e: { id: string }) => e.id)).toContain("shop:checkout");
+  });
+
+  it("names the Workspace in site.json as archidocs export names it, so viewer exports carry the same source line", async () => {
+    const { repoRoot } = await writeWorkspace(landscapeWorkspace);
+    await archidocs(repoRoot, "build", "--out", "site");
+
+    expect(JSON.parse(await readFile(join(repoRoot, "site", "site.json"), "utf8"))).toEqual({ workspace: basename(repoRoot) });
   });
 
   it("refers to every asset by a relative URL, so the site works under any base path", async () => {

@@ -7,6 +7,7 @@ import { AdrReader } from "./AdrReader.tsx";
 import { Canvas } from "./Canvas.tsx";
 import { DynamicScreen } from "./DynamicScreen.tsx";
 import { ElementPanel } from "./ElementPanel.tsx";
+import { fileName, picture, save, type ExportFormat } from "./export.ts";
 import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
 import { useLayout, type LaidOut } from "./layout.ts";
@@ -16,20 +17,26 @@ import { Rail } from "./Rail.tsx";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
 import { loadTimeline, pointLabel, type Revision, type Timeline } from "./revisions.ts";
 import { remember } from "./recent.ts";
+import { SaveAsView } from "./SaveAsView.tsx";
 import { Workspace } from "./workspace.ts";
 
 /**
  * Loads the latest Bundle and the Revision index next to index.html;
  * relative URLs, so the site works under any base path.
  */
-function useSite(): { latest?: Bundle; timeline?: Timeline; error?: string } {
-  const [state, setState] = useState<{ latest?: Bundle; timeline?: Timeline; error?: string }>({});
+function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error?: string } {
+  const [state, setState] = useState<{ latest?: Bundle; timeline?: Timeline; name?: string; error?: string }>({});
   useEffect(() => {
+    // site.json names the Workspace for exports; a site without it still opens.
+    const name = fetch("./site.json")
+      .then((r): Promise<{ workspace?: string }> | { workspace?: string } => (r.ok ? r.json() : {}))
+      .then((site) => site.workspace)
+      .catch(() => undefined);
     const latest = fetch("./workspace.bundle.json").then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`workspace.bundle.json: HTTP ${r.status}`))));
-    Promise.all([latest, loadTimeline()])
-      .then(([bundle, timeline]) => {
+    Promise.all([latest, loadTimeline(), name])
+      .then(([bundle, timeline, workspaceName]) => {
         openPreview(timeline);
-        setState({ latest: bundle, timeline });
+        setState({ latest: bundle, timeline, name: workspaceName });
       })
       .catch((e: unknown) => setState({ error: e instanceof Error ? e.message : String(e) }));
   }, []);
@@ -46,10 +53,10 @@ function openPreview(timeline: Timeline) {
 }
 
 export function App() {
-  const { latest, timeline, error } = useSite();
+  const { latest, timeline, name, error } = useSite();
   if (error) return <Message title="Couldn't load the Workspace">{error}</Message>;
   if (!latest || !timeline) return <Message title="Loading the Workspace…" />;
-  return <AtTime latest={latest} timeline={timeline} />;
+  return <AtTime latest={latest} timeline={timeline} name={name} />;
 }
 
 /** What Compare shows: both sides, their Changes, and how the chip and list name them. */
@@ -62,18 +69,18 @@ export interface Comparison {
 }
 
 /** Loads the Bundles the URL's `at` and `vs` name, then shows the screen at that time, or why it can't. */
-function AtTime({ latest, timeline }: { latest: Bundle; timeline: Timeline }) {
+function AtTime({ latest, timeline, name }: { latest: Bundle; timeline: Timeline; name: string | undefined }) {
   const place = usePlace();
   const { state, loading } = useTimes(latest, timeline, place.at, place.vs);
   const times = state?.kind === "ready" ? state.times : undefined;
   const current = times?.current;
-  const plain = useMemo(() => (current ? new Workspace(current) : undefined), [current]);
+  const plain = useMemo(() => (current ? new Workspace(current, name) : undefined), [current, name]);
   const comparison = useMemo<Comparison | undefined>(() => {
     if (!times?.before) return undefined;
     const { before, current: after, vs, at: atRevision } = times;
     return { before, after, changes: diff(before, after), label: timeline.compareLabel(vs!, atRevision) };
   }, [times, timeline]);
-  const workspace = useMemo(() => (comparison ? new Workspace(unionBundle(comparison.before, comparison.after)) : plain), [comparison, plain]);
+  const workspace = useMemo(() => (comparison ? new Workspace(unionBundle(comparison.before, comparison.after), name) : plain), [comparison, plain, name]);
   if (state?.kind === "problem") return <Unavailable problem={state.problem} place={place} />;
   if (!workspace || !plain) return <Message title="Loading the Revision…" />;
   return <Screen workspace={workspace} plain={plain} comparison={comparison} timeline={timeline} at={times?.at} loading={loading} />;
@@ -100,7 +107,8 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
     [workspace, comparison, place.view, openKey],
   );
   const dynamic = useMemo(() => plain.dynamic(place.view), [plain, place.view]);
-  const direction = place.direction ?? defaultDirection(place.view);
+  const ownDirection = plain.ownDirection(place.view) ?? defaultDirection(place.view);
+  const direction = place.direction ?? ownDirection;
   const { laidOut, error } = useLayout(view, direction);
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
@@ -207,7 +215,21 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
     [place, workspace],
   );
 
-  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === defaultDirection(place.view) ? null : d }), [place]);
+  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === ownDirection ? null : d }), [place, ownDirection]);
+
+  /** Opens a View from the rail: a Saved View with its own Lens, any other keeping the current Lens. */
+  const pickView = useCallback((v: string) => go(viewPlace(v, null, workspace.ownLens(v) ?? place.lens, place)), [workspace, place]);
+
+  const [saving, setSaving] = useState(false);
+  const exportPicture = useCallback(
+    (what: "view" | "picks", format: ExportFormat) => {
+      const shown = lensed ?? view;
+      if (!shown) return;
+      const drawn = what === "picks" ? workspace.picked(shown, place.picks) : shown;
+      void picture(workspace, drawn, direction, format).then((blob) => save(blob, fileName(place.view, format, what === "picks")));
+    },
+    [workspace, lensed, view, place.picks, place.view, direction],
+  );
 
   /** Opens a Generated View from a Step: the boxes that show both ends of its Relationship open, its consumer (or what shows it) selected. */
   const openStepView = useCallback(
@@ -228,7 +250,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       view={place.view}
       selected={place.selected}
       onPickElement={focus}
-      onPickView={(v) => go(viewPlace(v, null, place.lens, place))}
+      onPickView={pickView}
       onPickTeam={(team) => setLens({ team })}
       onFind={() => setFinding(true)}
     />
@@ -288,8 +310,18 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
           onDirection={setDirection}
           onLens={setLens}
           onPicks={(picks) => go({ ...place, picks }, { replace: true })}
+          onExport={exportPicture}
+          onSaveAsView={() => setSaving(true)}
           onTime={(time) => go({ ...place, ...time })}
         />
+        {saving && (
+          <SaveAsView
+            workspace={workspace}
+            screen={{ view: place.view, open: place.open, lens: place.lens, picks: place.picks, direction: place.direction }}
+            title={title ?? view.title}
+            onClose={() => setSaving(false)}
+          />
+        )}
         {at && <AtBanner revision={at} place={place} />}
         {connectFrom !== null && (
           <p className="ad-banner" role="status">

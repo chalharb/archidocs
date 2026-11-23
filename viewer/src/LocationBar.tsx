@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { ExportFormat } from "./export.ts";
 import { directions, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { readRecent, type RecentPlace } from "./recent.ts";
 import type { Workspace } from "./workspace.ts";
@@ -18,10 +19,13 @@ export interface LocationBarProps {
   timeline: Timeline;
   /** Moves to another `at` or `vs`; null clears it. */
   onTime: (time: Partial<Pick<Place, "at" | "vs">>) => void;
+  /** Exports the whole View, or only the picks, as SVG or PNG. */
+  onExport: (what: "view" | "picks", format: ExportFormat) => void;
+  onSaveAsView: () => void;
 }
 
 /** Where am I: breadcrumbs up the scope ladder, chips for open boxes, the Lens and picks, then direction, Recent and Copy link. */
-export function LocationBar({ workspace, place, direction, compare, timeline, onCollapse, onDirection, onLens, onPicks, onTime }: LocationBarProps) {
+export function LocationBar({ workspace, place, direction, compare, timeline, onCollapse, onDirection, onLens, onPicks, onTime, onExport, onSaveAsView }: LocationBarProps) {
   const crumbs = workspace.crumbs(place.view);
   const name = (id: string) => workspace.byId.get(id)?.name ?? id;
   return (
@@ -31,8 +35,8 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1;
             return (
-              <li key={c.view} aria-current={last ? "page" : undefined}>
-                {last ? <span>{c.label}</span> : <a href={formatPlace(viewPlace(c.view, null, place.lens, place))}>{c.label}</a>}
+              <li key={`${i}:${c.label}`} aria-current={last ? "page" : undefined}>
+                {last || c.view === undefined ? <span>{c.label}</span> : <a href={formatPlace(viewPlace(c.view, null, place.lens, place))}>{c.label}</a>}
               </li>
             );
           })}
@@ -79,12 +83,74 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
             </button>
           ))}
         </div>
+        <ExportMenu picks={place.picks.length} onExport={onExport} />
+        <button type="button" className="ad-tool" onClick={onSaveAsView}>
+          Save as View
+        </button>
         <RevisionsMenu timeline={timeline} onAt={(r) => onTime({ at: timeline.isLatest(r) ? null : pointLabel(r) })} onVs={(r) => onTime({ vs: pointLabel(r) })} />
         <RecentMenu />
         <CopyLink />
       </div>
     </header>
   );
+}
+
+/** Export: the whole View, or the picks once there are any, as SVG or PNG. */
+function ExportMenu({ picks, onExport }: { picks: number; onExport: LocationBarProps["onExport"] }) {
+  const [open, setOpen] = useState(false);
+  const root = useDismiss(open, () => setOpen(false));
+  const items: (readonly [string, "view" | "picks", ExportFormat])[] = [
+    ["View as SVG", "view", "svg"],
+    ["View as PNG", "view", "png"],
+    ...(picks > 0
+      ? ([
+          ["Picks as SVG", "picks", "svg"],
+          ["Picks as PNG", "picks", "png"],
+        ] as const)
+      : []),
+  ];
+  return (
+    <div className="ad-menu-root" ref={root}>
+      <button type="button" className="ad-tool" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        Export
+      </button>
+      {open && (
+        <div className="ad-menu" role="menu" aria-label="Export">
+          {items.map(([label, what, format]) => (
+            <button
+              key={label}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onExport(what, format);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Closes a menu on Escape or a pointer down outside it; returns the ref for the menu's root. */
+function useDismiss(open: boolean, close: () => void) {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onEvent = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !root.current?.contains(e.target as Node)) close();
+    };
+    window.addEventListener("keydown", onEvent);
+    window.addEventListener("pointerdown", onEvent);
+    return () => {
+      window.removeEventListener("keydown", onEvent);
+      window.removeEventListener("pointerdown", onEvent);
+    };
+  }, [open, close]);
+  return root;
 }
 
 /** One link per Environment to its Deployment View, the current one marked. */

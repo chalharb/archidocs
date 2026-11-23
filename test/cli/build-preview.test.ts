@@ -40,7 +40,7 @@ describe("archidocs build --preview", () => {
     expect(code).toBe(0);
     expect(stdout).toBe(`Wrote the preview site to preview: Compare origin/main (${base.slice(0, 7)}) → PR (${head.slice(0, 7)})\n`);
     const site = join(repo.repoRoot, "preview");
-    expect((await readdir(site)).sort()).toEqual(["assets", "bundles", "index.html", "workspace.bundle.json"]);
+    expect((await readdir(site)).sort()).toEqual(["assets", "bundles", "index.html", "site.json", "workspace.bundle.json"]);
     expect((await readdir(join(site, "bundles"))).sort()).toEqual([`${base}.json`, `${head}.json`, "index.json"].sort());
     const index = await readJson(join(site, "bundles", "index.json"));
     expect(index.preview).toEqual({ base: "main", baseSha: base, headSha: head });
