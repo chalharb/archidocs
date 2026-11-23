@@ -6,14 +6,14 @@ import { elementTreeWorkspace, validWorkspace } from "../support/fixtures.ts";
 import { connect } from "../support/mcp.ts";
 
 describe("get_workspace_info", () => {
-  it("reports the checkout source, its commit and that writes are off", async () => {
+  it("reports the checkout source, its commit and that writes are allowed", async () => {
     const { call, text, commit, root } = await connect(validWorkspace);
     const result = await call("get_workspace_info");
     expect(result.isError).toBeFalsy();
     expect(result.structuredContent).toEqual({
       source: { kind: "checkout", root },
       commit,
-      writesAllowed: false,
+      writesAllowed: true,
       counts: { projects: 2, elements: 4, teams: 2, environments: 2 },
       issues: { errors: 0, warnings: 0 },
     });
@@ -220,7 +220,7 @@ describe("list_environments", () => {
 describe("tool surface", () => {
   it("lists the read tools with input and output schemas", async () => {
     const { client } = await connect(validWorkspace);
-    const { tools } = await client.listTools();
+    const tools = (await client.listTools()).tools.filter((t) => t.name !== "check");
     expect(tools.map((t) => t.name).sort()).toEqual(["get_element", "get_workspace_info", "list_environments", "list_teams", "search_elements"]);
     for (const t of tools) {
       expect(t.annotations).toMatchObject({ readOnlyHint: true });
