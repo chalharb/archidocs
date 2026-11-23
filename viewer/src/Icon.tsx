@@ -27,6 +27,15 @@ const PATHS = {
   minus: <path d="M3 8h10" />,
   copy: <path d="M5.5 5.5h8v8h-8zM2.5 10.5v-8h8" />,
   check: <path d="M2.5 8.5 6 12l7.5-8" />,
+  recent: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 4.5V8l2.5 2" />
+    </>
+  ),
+  revisions: <path d="M2.5 3v3.5H6M3 6.5A5.5 5.5 0 1 1 2.5 9M8 5v3l2 1.5" />,
+  export: <path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 11v2.5h11V11" />,
+  layout: <path d="M2 4h4v8H2zM10 4h4v8h-4zM6 8h4" />,
   arrow: <path d="M2 8h11M9 4l4 4-4 4" />,
   person: (
     <>

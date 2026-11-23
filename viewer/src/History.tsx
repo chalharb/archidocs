@@ -3,6 +3,7 @@ import type { Change } from "../../src/core/diff.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { formatPlace, type Place } from "./place.ts";
 import { HistoryUnavailable, loadBundle, pointLabel, shortDate, type Revision, type Timeline } from "./revisions.ts";
+import { Icon } from "./Icon.tsx";
 
 /** The Bundles a place's `at` and `vs` name, once loaded; `before` only while Comparing. */
 export interface Times {
@@ -224,8 +225,9 @@ export function RevisionsMenu({ timeline, onAt, onVs }: { timeline: Timeline; on
   if (timeline.revisions.length === 0) return null;
   return (
     <div className="arc-menu-root" ref={root}>
-      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
-        Revisions
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} title="Revisions" onClick={() => setOpen(!open)}>
+        <Icon name="revisions" />
+        <span className="arc-tool-label">Revisions</span>
       </button>
       {open && (
         <div className="arc-menu arc-timeline" role="menu" aria-label="Revisions">

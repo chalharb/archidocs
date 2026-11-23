@@ -2787,3 +2787,84 @@ button.arc-change:focus-visible {
     mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
   }
 }
+
+/* Narrower desktops: the plate's secondary tools keep their pictograms and drop their words
+   (still named for screen readers and in a tooltip), so the plate holds one row for longer. */
+@media (max-width: 1279px) {
+  .arc-tool-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .arc-tools .arc-tool:not(.arc-primary):not(select) {
+    padding: 0 8px;
+    gap: 4px;
+  }
+
+  .arc-tools select.arc-direction {
+    padding: 0 4px 0 8px;
+    font-size: 13px;
+  }
+}
+
+/* Narrower still: the Deployment tiles speak for themselves. */
+@media (max-width: 1099px) {
+  .arc-deployments-label {
+    display: none;
+  }
+}
+
+/* Phones: the rail becomes a bottom tab bar (home mark, Find, Model, Teams, Views) within thumb reach,
+   giving the canvas the full width; flyouts open full width above it. */
+@media (max-width: 640px) {
+  .arc-app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .arc-main {
+    grid-row: 1;
+    min-height: 0;
+  }
+
+  .arc-rail {
+    grid-row: 2;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1.5px solid var(--ink);
+  }
+
+  .arc-logo-link {
+    margin: 0;
+    padding: 8px;
+  }
+
+  .arc-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .arc-rail-button {
+    width: 64px;
+    min-height: 48px;
+  }
+
+  .arc-scrim {
+    inset: 0 0 var(--tabbar, 65px) 0;
+  }
+
+  .arc-flyout {
+    left: 0;
+    width: 100%;
+    bottom: var(--tabbar, 65px);
+    border-right: 0;
+    border-bottom: 1.5px solid var(--ink);
+  }
+}
