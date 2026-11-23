@@ -4,9 +4,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { parseArgs, promisify } from "node:util";
 import { findWorkspaceRoot, load, nodeFileSystem, serializeBundle } from "../core/index.ts";
-import { formatText } from "./format.ts";
+import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 
-/** Exit codes: 0 no errors, 1 errors found, 2 could not run. */
+/** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
 const OK = 0;
 const FOUND_ERRORS = 1;
 const COULD_NOT_RUN = 2;
@@ -14,17 +14,23 @@ const COULD_NOT_RUN = 2;
 class UsageError extends Error {}
 
 const usage = `Usage:
-  archidocs check
+  archidocs check [--format text|json|github] [--strict]
   archidocs build --bundle-only [--out <dir>]
 `;
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   if (command === "check") {
-    parseArgs({ args: rest, options: {}, strict: true });
+    const { values } = parseArgs({
+      args: rest,
+      options: { format: { type: "string", default: "text" }, strict: { type: "boolean", default: false } },
+      strict: true,
+    });
+    const format = values.format as Format;
+    if (!formats.includes(format)) throw new UsageError(`Unknown format "${values.format}"; use ${formats.join(", ")}.`);
     const { issues } = await loadFromCwd();
-    process.stdout.write(formatText(issues));
-    return issues.some((i) => i.severity === "error") ? FOUND_ERRORS : OK;
+    process.stdout.write(formatIssues(issues, format, { color: useColor() }));
+    return exitCodeFor(issues, { strict: values.strict });
   }
   if (command === "build") {
     const { values } = parseArgs({
@@ -35,7 +41,7 @@ async function main(argv: string[]): Promise<number> {
     if (!values["bundle-only"]) throw new UsageError("Only `build --bundle-only` is available so far.");
     const { bundle, issues } = await loadFromCwd();
     if (issues.some((i) => i.severity === "error")) {
-      process.stdout.write(formatText(issues));
+      process.stdout.write(formatText(issues, { color: useColor() }));
       process.stderr.write("Not writing the Bundle: the Workspace has errors.\n");
       return FOUND_ERRORS;
     }
@@ -46,6 +52,14 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   throw new UsageError(command ? `Unknown command "${command}".` : "No command given.");
+}
+
+/** Colour only on a terminal; `NO_COLOR` turns it off and `FORCE_COLOR` on. */
+function useColor(): boolean {
+  const { NO_COLOR, FORCE_COLOR } = process.env;
+  if (NO_COLOR) return false;
+  if (FORCE_COLOR !== undefined) return FORCE_COLOR !== "0";
+  return process.stdout.isTTY === true;
 }
 
 async function loadFromCwd() {

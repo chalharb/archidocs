@@ -1,6 +1,7 @@
 # 02: Check output formats and exit codes
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-02 session)
 Blocked by: 01
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -18,8 +19,12 @@ Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
 ## Acceptance criteria
 
-- [ ] CLI tests cover all three formats against the same fixture.
-- [ ] Exit codes are 0/1/2, and `--strict` turns warnings into exit 1.
-- [ ] A missing `workspace.yaml` and a bad flag both exit 2.
-- [ ] A schema-invalid Element referenced elsewhere produces only the root-cause issue.
-- [ ] The generated catalogue lists every registered rule with its example and fix.
+- [x] CLI tests cover all three formats against the same fixture.
+- [x] Exit codes are 0/1/2, and `--strict` turns warnings into exit 1.
+- [x] A missing `workspace.yaml` and a bad flag both exit 2.
+- [x] A schema-invalid Element referenced elsewhere produces only the root-cause issue.
+- [x] The generated catalogue lists every registered rule with its example and fix.
+
+## Comments
+
+- **Implementation notes (2026-11-22):** `--strict` with warnings is tested at the CLI's output layer (`test/cli/format.test.ts`) on literal issue records, because no v1 warning rule exists yet; add an end-to-end CLI test when the first warning rule lands (Saved Views). The cascade test uses what references exist today (`owner`, `duplicate-id`); Relationship and View references should get the same "root cause only" fixture when they land. The catalogue is `ruleCatalogue()` in the core engine, published as `docs/rules.md` and regenerated with `pnpm rules:catalogue`; a test fails if the file is stale.

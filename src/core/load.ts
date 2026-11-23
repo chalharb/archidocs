@@ -165,9 +165,8 @@ function readElements(file: SourceFile, ws: LoadedWorkspace, container: Record<s
       const path = [...at, key, id];
       const data = asRecord(value);
       // Each Element is checked on its own, without collections that `invalid-nesting` reports; a bad one still registers its id.
-      if (value !== null && typeof value === "object") {
-        file.findings.push(...checkSchema(shallow[kind], withoutForeignCollections(kind, data), file.parsed, path));
-      }
+      const checked = value !== null && typeof value === "object" && !Array.isArray(value) ? withoutForeignCollections(kind, data) : value;
+      file.findings.push(...checkSchema(shallow[kind], checked, file.parsed, path));
       const element: ElementDecl = { kind, id, project: file.project!, file, path, data, nestedIn, ...file.parsed.positionOf(path, { key: true }) };
       ws.elements.push(element);
       readElements(file, ws, data, path, element);

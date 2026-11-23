@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "rules:catalogue": "node scripts/rule-catalogue.ts",
     "schemas": "node scripts/generate-schemas.ts"
   },
   "dependencies": {

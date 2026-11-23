@@ -171,13 +171,15 @@ export const rules: RuleDefinition[] = [
     check: (ws) => {
       const teams = new Set(ws.teams.map((t) => t.id));
       const message = (owner: string) => `Unknown Team "${owner}"${didYouMean(owner, teams)}`;
+      // A malformed owner is already an `invalid-value`; report only that root cause.
+      const unknown = (owner: unknown): owner is string => typeof owner === "string" && Id.safeParse(owner).success && !teams.has(owner);
       const issues: IssueDraft[] = [];
       for (const p of ws.projects) {
-        if (p.owner !== undefined && !teams.has(p.owner)) issues.push(at(p.file, ["owner"], message(p.owner)));
+        if (unknown(p.owner)) issues.push(at(p.file, ["owner"], message(p.owner)));
       }
       for (const e of ws.elements) {
         const owner = e.data.owner;
-        if (typeof owner === "string" && !teams.has(owner)) issues.push(at(e.file, [...e.path, "owner"], message(owner)));
+        if (unknown(owner)) issues.push(at(e.file, [...e.path, "owner"], message(owner)));
       }
       return issues;
     },

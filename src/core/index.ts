@@ -3,3 +3,4 @@ export { nodeFileSystem, type FileSystem, type DirEntry } from "./fs.ts";
 export { rules, type RuleDefinition } from "./rules.ts";
 export type { Issue, Severity } from "./model.ts";
 export type { Files } from "./files.ts";
+export { ruleCatalogue } from "./catalogue.ts";
