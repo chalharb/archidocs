@@ -65,10 +65,10 @@ Its outputs are `site` (the site folder's path) and `page-url`.
 
 ### Saved View images
 
-With `images: true`, every Saved View is rendered to `views/<view-id>.svg` (a `:` or `/` in the id becomes `-`, so `shop:overview` is `views/shop-overview.svg`). The URLs are stable, so wikis and READMEs always show the latest diagram:
+With `images: true`, every Saved View is rendered to `views/<view-id>.svg` (a `:` or `/` in the id becomes `-`, so `shop:checkout-impact` is `views/shop-checkout-impact.svg`). The URLs are stable, so wikis and READMEs always show the latest diagram:
 
 ```markdown
-![Shop overview](https://<owner>.github.io/<repo>/views/shop-overview.svg)
+![Checkout impact](https://<owner>.github.io/<repo>/views/shop-checkout-impact.svg)
 ```
 
 Images are only rendered for the latest Revision, never per Revision.
