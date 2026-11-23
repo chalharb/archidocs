@@ -12,6 +12,12 @@ export interface ServerOptions {
   source: Source;
   /** Base URL of a published viewer; when set, results carry `viewerUrl` links. */
   viewerUrl?: string;
+  /**
+   * Whether the transport lets write tools run. True by default (stdio);
+   * false over HTTP unless `--allow-writes` is passed. Writes also need a
+   * source that takes them: a Bundle never does.
+   */
+  allowWrites?: boolean;
 }
 
 /** The typed error codes a tool result can carry in `structuredContent.code`. */
@@ -23,34 +29,47 @@ const ok = (data: Record<string, unknown>, text: string): ToolOutcome => ({ ok: 
 const fail = (code: ErrorCode, message: string, suggestions?: string[]): ToolOutcome => ({ ok: false, code, message, ...(suggestions ? { suggestions } : {}) });
 
 /**
- * The Archidocs MCP server: stateless read tools over one Source. Every
- * result is `structuredContent` plus a compact Markdown copy; a lookup that
- * fails is a tool result with `isError` and `{code, message, suggestions?}`.
- * Only a malformed request (unknown tool, arguments that are not an object)
- * is a protocol error.
+ * The Archidocs MCP server: stateless tools over one Source. Every result is
+ * `structuredContent` plus a compact Markdown copy; a lookup that fails is a
+ * tool result with `isError` and `{code, message, suggestions?}`. Only a
+ * malformed request (unknown tool, arguments that are not an object) is a
+ * protocol error. Write tools return `read_only` unless both the source and
+ * the transport allow writes.
  */
 export function createServer(options: ServerOptions): McpServer {
   const { source } = options;
   const server = new McpServer({ name: "archidocs", version: "0.0.0" }, { capabilities: { tools: {} } });
+  const writesAllowed = source.writesAllowed && options.allowWrites !== false;
+  const readOnlyReason =
+    source.kind === "bundle"
+      ? `This server reads a published Bundle (${source.location}); write tools need a checkout.`
+      : "Write tools are off over HTTP; restart the server with --allow-writes to allow them.";
 
   const tool = <I extends z.ZodObject>(
     name: string,
-    config: { title: string; description: string; input: I; output: z.ZodType },
-    run: (args: z.output<I>, snapshot: Snapshot) => ToolOutcome,
+    config: { title: string; description: string; input: I; output: z.ZodType; write?: boolean },
+    run: (args: z.output<I>, snapshot: Snapshot) => ToolOutcome | Promise<ToolOutcome>,
   ) => {
     server.registerTool(
       name,
-      { title: config.title, description: config.description, inputSchema: advertise(config.input), outputSchema: config.output, annotations: { readOnlyHint: true, openWorldHint: false } },
+      {
+        title: config.title,
+        description: config.description,
+        inputSchema: advertise(config.input),
+        outputSchema: config.output,
+        annotations: { readOnlyHint: !config.write, openWorldHint: false },
+      },
       async (raw: unknown): Promise<CallToolResult> => {
+        if (config.write && !writesAllowed) return toResult(fail("read_only", readOnlyReason));
         const args = config.input.safeParse(raw ?? {});
         if (!args.success) return toResult(fail("invalid_input", z.prettifyError(args.error)));
         let snapshot: Snapshot;
         try {
           snapshot = await source.snapshot();
         } catch (error) {
-          return toResult(fail("source_unavailable", `Could not read the Workspace at ${source.root}: ${error instanceof Error ? error.message : String(error)}`));
+          return toResult(fail("source_unavailable", `Could not read the Workspace from ${where(source)}: ${error instanceof Error ? error.message : String(error)}`));
         }
-        return toResult(run(args.data, snapshot));
+        return toResult(await run(args.data, snapshot));
       },
     );
   };
@@ -62,7 +81,10 @@ export function createServer(options: ServerOptions): McpServer {
       description: "Where this server reads the Workspace from, the commit it reflects, whether write tools are allowed, and how big the Model is.",
       input: z.object({}),
       output: z.object({
-        source: z.object({ kind: z.literal("checkout"), root: z.string() }),
+        source: z.discriminatedUnion("kind", [
+          z.object({ kind: z.literal("checkout"), root: z.string() }),
+          z.object({ kind: z.literal("bundle"), location: z.string() }),
+        ]),
         commit: z.string().nullable(),
         writesAllowed: z.boolean(),
         counts: z.object({ projects: z.number(), elements: z.number(), teams: z.number(), environments: z.number() }),
@@ -74,9 +96,9 @@ export function createServer(options: ServerOptions): McpServer {
       const counts = { projects: bundle.projects.length, elements: bundle.elements.length, teams: bundle.teams.length, environments: bundle.environments.length };
       const errors = issues.filter((i) => i.severity === "error").length;
       const data = {
-        source: { kind: source.kind, root: source.root },
+        source: source.kind === "checkout" ? { kind: source.kind, root: source.root } : { kind: source.kind, location: source.location },
         commit: bundle.commit,
-        writesAllowed: source.writesAllowed,
+        writesAllowed,
         counts,
         issues: { errors, warnings: issues.length - errors },
         ...(options.viewerUrl ? { viewerUrl: options.viewerUrl } : {}),
@@ -85,7 +107,7 @@ export function createServer(options: ServerOptions): McpServer {
       return ok(
         data,
         [
-          `Workspace from a checkout ${at} (${source.root}); writes ${source.writesAllowed ? "allowed" : "off"}.`,
+          `Workspace from a ${source.kind === "checkout" ? "checkout" : "Bundle"} ${at} (${where(source)}); writes ${writesAllowed ? "allowed" : "off"}.`,
           `- ${counts.projects} Projects, ${counts.elements} Elements, ${counts.teams} Teams, ${counts.environments} Environments`,
           `- ${errors} errors, ${issues.length - errors} warnings from check`,
         ].join("\n"),
@@ -497,8 +519,43 @@ export function createServer(options: ServerOptions): McpServer {
     },
   );
 
+  tool(
+    "check",
+    {
+      title: "Check the Workspace",
+      description:
+        "Validate the Workspace as it is on disk, as `archidocs check` does, and return its issues. Use it after editing YAML with your own file tools.",
+      input: z.object({}),
+      output: z.object({ issues: z.array(IssueRecord), summary: z.object({ errors: z.number(), warnings: z.number() }) }),
+      write: true,
+    },
+    (_, { issues }) => {
+      const errors = issues.filter((i) => i.severity === "error").length;
+      const summary = { errors, warnings: issues.length - errors };
+      const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+      return ok(
+        { issues, summary },
+        [
+          `${plural(errors, "error")}, ${plural(summary.warnings, "warning")}.`,
+          ...issues.map((i) => `- ${i.file}:${i.line} ${i.severity} ${i.rule}: ${i.message}`),
+        ].join("\n"),
+      );
+    },
+  );
+
   return server;
 }
+
+const IssueRecord = z.object({
+  file: z.string(),
+  line: z.number(),
+  column: z.number().optional(),
+  rule: z.string(),
+  severity: z.enum(["error", "warning"]),
+  message: z.string(),
+});
+
+const where = (source: Source) => (source.kind === "checkout" ? source.root : source.location);
 
 const ElementKind = z.enum(["person", "system", "service", "component"]);
 const ViewKind = z.enum(["c1", "c2", "c3"]);
