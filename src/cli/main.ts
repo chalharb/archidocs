@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
-import { cp, mkdir, realpath, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -33,7 +33,11 @@ class UsageError extends Error {}
  */
 const VIEWER_DIR = fileURLToPath(new URL("../../dist/viewer/", import.meta.url));
 
+/** The package's own package.json, two levels up from dist/cli/ or src/cli/ like the viewer. */
+const PACKAGE_JSON = fileURLToPath(new URL("../../package.json", import.meta.url));
+
 const usage = `Usage:
+  archidocs version [--format text|json]
   archidocs init [--skill [--workspace <dir>]]
   archidocs guide [topic]
   archidocs check [--format text|json|github] [--strict]
@@ -56,6 +60,13 @@ async function main(argv: string[]): Promise<number> {
     const repoRoot = (await gitTopLevel(cwd)) ?? cwd;
     const lines = await init({ repoRoot, cwd, skillOnly: values.skill, ...(values.workspace === undefined ? {} : { workspace: values.workspace }) });
     process.stdout.write(lines.join("\n") + "\n");
+    return OK;
+  }
+  if (command === "version") {
+    const { values } = parseArgs({ args: rest, options: { format: { type: "string", default: "text" } }, strict: true });
+    if (values.format !== "text" && values.format !== "json") throw new UsageError(`Unknown format "${values.format}"; use text or json.`);
+    const { version } = JSON.parse(await readFile(PACKAGE_JSON, "utf8")) as { version: string };
+    process.stdout.write(values.format === "json" ? JSON.stringify({ version, schemaVersion: SCHEMA_VERSION }) + "\n" : `archidocs ${version} (Bundle schemaVersion ${SCHEMA_VERSION})\n`);
     return OK;
   }
   if (command === "guide") {

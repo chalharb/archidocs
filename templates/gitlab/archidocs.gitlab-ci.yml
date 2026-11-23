@@ -1,0 +1,83 @@
+# Archidocs for GitLab CI: check the Workspace, build the static viewer site
+# with past Bundles and publish it to GitLab Pages on default-branch pushes
+# and tags; on merge requests, build a preview with Compare "base → MR".
+#
+#   include:
+#     - remote: https://raw.githubusercontent.com/chalharb/archidocs/<ref>/templates/gitlab/archidocs.gitlab-ci.yml
+#       inputs:
+#         images: true
+#
+# See docs/publishing.md.
+spec:
+  inputs:
+    working-directory:
+      description: Where to run Archidocs; the Workspace is found from here.
+      default: "."
+    keep:
+      description: Past Bundles to keep, latest first, plus every tagged Revision; a count or `all`.
+      default: "200"
+    images:
+      description: Also render every Saved View to `views/<view-id>.svg` in the site.
+      type: boolean
+      default: false
+    preview:
+      description: Add the `archidocs-preview` job on merge requests.
+      type: boolean
+      default: true
+    version:
+      description: The archidocs npm version to run.
+      default: latest
+    image:
+      description: The Node.js image the jobs run in.
+      default: node:24
+---
+.archidocs:
+  image: $[[ inputs.image ]]
+  variables:
+    # Past Bundles are rebuilt from git, so the jobs need the full history.
+    GIT_DEPTH: "0"
+    ARCHIDOCS_DIR: $[[ inputs.working-directory ]]
+  # Keyed by the Bundle schemaVersion: a new schema misses and rebuilds every past Bundle from git.
+  # Saved only when the job succeeds.
+  cache:
+    key: archidocs-bundles-schema-1
+    paths:
+      - .archidocs/cache/
+  before_script:
+    - npm install --global "archidocs@$[[ inputs.version ]]"
+
+# GitLab Pages publishes the `public/` artifact of the job named `pages`.
+# A failed check fails the job before anything is built, so the last good site stays up.
+pages:
+  extends: .archidocs
+  script:
+    - cd "$ARCHIDOCS_DIR"
+    - archidocs check
+    - archidocs build --out "$CI_PROJECT_DIR/public" --keep "$[[ inputs.keep ]]"
+    - if [ "$[[ inputs.images ]]" = "true" ]; then archidocs export --all-saved --format svg --out "$CI_PROJECT_DIR/public/views"; fi
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# A merge request preview, kept as a browsable artifact. Archidocs reads the
+# target branch from origin/<target> and never fetches; this job fetches it.
+archidocs-preview:
+  extends: .archidocs
+  variables:
+    ARCHIDOCS_PREVIEW: "$[[ inputs.preview ]]"
+  script:
+    - git fetch --quiet origin "+refs/heads/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME:refs/remotes/origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - cd "$ARCHIDOCS_DIR"
+    - archidocs check
+    - archidocs build --preview --base "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" --out "$CI_PROJECT_DIR/preview"
+    - if [ "$[[ inputs.images ]]" = "true" ]; then archidocs export --all-saved --format svg --out "$CI_PROJECT_DIR/preview/views"; fi
+  artifacts:
+    paths:
+      - preview/
+    expose_as: Archidocs preview
+    expire_in: 2 weeks
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $ARCHIDOCS_PREVIEW == "true"

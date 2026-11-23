@@ -31,6 +31,18 @@ const unknownField = {
 };
 
 describe("archidocs CLI", () => {
+  it("version prints the package version and the Bundle schemaVersion, which CI cache keys use", async () => {
+    const { repoRoot } = await writeWorkspace(validWorkspace);
+    const pkg = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
+
+    const text = await archidocs(repoRoot, "version");
+    const json = await archidocs(repoRoot, "version", "--format", "json");
+
+    expect(text).toMatchObject({ code: 0, stdout: `archidocs ${pkg.version} (Bundle schemaVersion 1)\n` });
+    expect(json.code).toBe(0);
+    expect(JSON.parse(json.stdout)).toEqual({ version: pkg.version, schemaVersion: 1 });
+  });
+
   it("check prints issues as text grouped by file, with a summary, and exits 1 on errors", async () => {
     const { repoRoot } = await writeWorkspace(broken);
     const { code, stdout } = await archidocs(join(repoRoot, "archidocs", "shop"), "check");
