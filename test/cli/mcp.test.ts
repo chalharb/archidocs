@@ -1,5 +1,5 @@
 import { execFile, spawn } from "node:child_process";
-import { mkdtemp, realpath, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -57,6 +57,18 @@ describe("archidocs mcp", () => {
     const client = await serve(repoRoot, "--workspace", join(repoRoot, "archidocs"), "--viewer-url", "https://arch.example.com/");
     const result = await client.callTool({ name: "get_element", arguments: { id: "shop:web" } });
     expect(result.structuredContent).toMatchObject({ element: { name: "Web" }, viewerUrl: "https://arch.example.com/#/element/shop:web" });
+  });
+
+  it("serves and edits the Workspace named by --workspace from a separate folder, such as a code repo", async () => {
+    const { root } = await writeWorkspace(validWorkspace);
+    const codeRepo = await mkdtemp(join(tmpdir(), "archidocs-code-"));
+    const client = await serve(codeRepo, "--workspace", root);
+
+    const written = await client.callTool({ name: "upsert_element", arguments: { project: "shop", kind: "service", id: "cart", fields: { name: "Cart" }, file: "services.yaml" } });
+    expect(written.structuredContent).toMatchObject({ action: "created", id: "shop:cart" });
+    expect(await readFile(join(root, "shop/services.yaml"), "utf8")).toContain("  cart:\n    name: Cart\n");
+    const read = await client.callTool({ name: "get_element", arguments: { id: "shop:cart" } });
+    expect(read.structuredContent).toMatchObject({ element: { name: "Cart" } });
   });
 
   it("exits with 2 when there is no Workspace", async () => {

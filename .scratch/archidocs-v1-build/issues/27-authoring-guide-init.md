@@ -1,6 +1,7 @@
 # 27: Authoring guide, skill and init
 
-Status: ready-for-agent
+Status: done
+Assignee: Logan Harber (Claude)
 Blocked by: 10, 19, 21
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -16,6 +17,6 @@ Any agent harness knows how to author the Model.
 
 ## Acceptance criteria
 
-- [ ] MCP and CLI tests show the guide text matches across both and lists every topic.
-- [ ] `init` writes the expected files into an empty temp repo and is safe to re-run.
-- [ ] `mcp --workspace` from a separate folder serves and edits the fixture Workspace.
+- [x] MCP and CLI tests show the guide text matches across both and lists every topic.
+- [x] `init` writes the expected files into an empty temp repo and is safe to re-run.
+- [x] `mcp --workspace` from a separate folder serves and edits the fixture Workspace.
