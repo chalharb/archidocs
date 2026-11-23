@@ -1,9 +1,10 @@
 import type { ResolvedView, ViewEdge, ViewNode } from "../core/views.ts";
 import { describeLens } from "../core/saved-views.ts";
 import type { Bundle, BundleElement } from "../schema/bundle.ts";
-import { ADVANCES, FONT_BASE64, FONT_FAMILY, UNITS_PER_EM } from "./font.ts";
+import { FONT_BASE64, FONT_FAMILY } from "./font.ts";
 import type { Layout, LaidOutNode } from "./layout.ts";
 import { teamStyles, type TeamStyle } from "./teams.ts";
+import { cut, fmt, text, textWidth } from "./text.ts";
 
 /** Where a picture comes from, for its source line: the Workspace's name, the commit and its date (both null before the first commit). */
 export interface RenderSource {
@@ -186,31 +187,4 @@ function subLabel(n: ViewNode, element: BundleElement | undefined): string {
   const type = element?.kind === "service" && element.type !== "app" ? { datastore: "Datastore", broker: "Broker" }[element.type] : kindName(n);
   const technology = element && "technology" in element ? element.technology : null;
   return [`${n.external ? "External " : ""}${type}`, ...(technology ? [technology] : [])].join(" · ");
-}
-
-/** A string's width in the embedded font at `size` px. */
-export function textWidth(s: string, size: number): number {
-  let units = 0;
-  for (const ch of s) units += ADVANCES[ch.codePointAt(0)!] ?? ADVANCES[77]!;
-  return (units * size) / UNITS_PER_EM;
-}
-
-/** `s` if it fits in `max` px, else as much of it as fits followed by an ellipsis. */
-export function cut(s: string, size: number, max: number): string {
-  if (textWidth(s, size) <= max) return s;
-  const chars = [...s];
-  while (chars.length > 0 && textWidth(chars.join("").trimEnd() + "…", size) > max) chars.pop();
-  return chars.join("").trimEnd() + "…";
-}
-
-function text(x: number, y: number, s: string, { size, fill, anchor }: { size: number; fill: string; anchor?: "end" }): string {
-  return `<text x="${fmt(x)}" y="${fmt(y)}" font-size="${size}" fill="${fill}"${anchor ? ` text-anchor="${anchor}"` : ""}>${escape(s)}</text>`;
-}
-
-const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-/** A coordinate to at most two decimals, so output doesn't depend on float noise. */
-function fmt(n: number): string {
-  const r = Math.round(n * 100) / 100;
-  return String(Object.is(r, -0) ? 0 : r);
 }

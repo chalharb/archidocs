@@ -1,6 +1,7 @@
 # 20: Dynamic View screen
 
 Status: ready-for-agent
+Assignee: Claude (ticket-20 session)
 Blocked by: 14, 19
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
