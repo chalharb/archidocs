@@ -1,6 +1,7 @@
 # 10: Remaining write tools
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-10 session)
 Blocked by: 05, 09
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -16,6 +17,6 @@ Agents can author everything else through MCP.
 
 ## Acceptance criteria
 
-- [ ] Each tool round-trips through the fixture and keeps comments.
-- [ ] Removing a Target still used by a Deployment is refused, with the reference.
-- [ ] `create_project` inside an existing Project is refused.
+- [x] Each tool round-trips through the fixture and keeps comments.
+- [x] Removing a Target still used by a Deployment is refused, with the reference.
+- [x] `create_project` inside an existing Project is refused.

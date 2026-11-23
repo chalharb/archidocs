@@ -411,11 +411,26 @@ describe("remove_relationship", () => {
 });
 
 describe("write tools", () => {
-  it("are listed as writes, each taking project and dry_run", async () => {
+  it("are listed as writes, each taking dry_run, and project unless it writes workspace.yaml or a new Project", async () => {
     const { client } = await setup();
     const tools = (await client.listTools()).tools.filter((t) => t.annotations?.readOnlyHint === false);
-    expect(tools.map((t) => t.name).sort()).toEqual(["check", "remove_element", "remove_relationship", "upsert_element", "upsert_relationship"]);
-    for (const t of tools.filter((t) => t.name !== "check")) expect(t.inputSchema.properties).toMatchObject({ project: { type: "string" }, dry_run: { type: "boolean", default: false } });
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "check",
+      "create_project",
+      "remove_deployment",
+      "remove_element",
+      "remove_relationship",
+      "remove_target",
+      "upsert_deployment",
+      "upsert_element",
+      "upsert_environment",
+      "upsert_relationship",
+      "upsert_target",
+      "upsert_team",
+    ]);
+    const unscoped = ["check", "create_project", "upsert_team", "upsert_environment"];
+    for (const t of tools.filter((t) => t.name !== "check")) expect(t.inputSchema.properties, t.name).toMatchObject({ dry_run: { type: "boolean", default: false } });
+    for (const t of tools.filter((t) => !unscoped.includes(t.name))) expect(t.inputSchema.properties, t.name).toMatchObject({ project: { type: "string" } });
   });
 });
 
