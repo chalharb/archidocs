@@ -54,7 +54,11 @@ export interface ResolvedView {
 }
 
 export interface ResolveOptions {
-  /** Systems to open in the C2 Landscape, showing their Services; viewer state, not a different View. */
+  /**
+   * Systems and Services to open, showing their children; viewer state, not a
+   * different View. A box opens only while it is itself shown, so a Service
+   * stays shut inside a closed System. C1 opens nothing.
+   */
   expand?: readonly string[];
 }
 
@@ -75,8 +79,9 @@ export function resolveView(bundle: Bundle, id: string, options: ResolveOptions 
   const scope = id.slice(0, slash);
   const focus = model.byId.get(id.slice(slash + 1));
   if (!focus) return undefined;
-  if (scope === "c2" && focus.kind === "system") return focused(model, { id, kind: "c2", title: `${focus.name} (C2)` }, focus);
-  if (scope === "c3" && focus.kind === "service" && model.children(focus.id).length > 0) return focused(model, { id, kind: "c3", title: `${focus.name} (C3)` }, focus);
+  const expand = options.expand ?? [];
+  if (scope === "c2" && focus.kind === "system") return focused(model, { id, kind: "c2", title: `${focus.name} (C2)` }, focus, expand);
+  if (scope === "c3" && focus.kind === "service" && model.children(focus.id).length > 0) return focused(model, { id, kind: "c3", title: `${focus.name} (C3)` }, focus, expand);
   return undefined;
 }
 
@@ -127,14 +132,25 @@ function summarise(id: string, bundle: Bundle): ViewSummary & { kind: ViewKind }
   return { id, kind, title: `${bundle.elements.find((e) => e.id === elementId)!.name} (${kind.toUpperCase()})` };
 }
 
-/** Every top-level Element, each standing for everything beneath it, with the `expand`ed Systems open. */
+/** Every top-level Element, each standing for everything beneath it, with the `expand`ed boxes open. */
 function landscape(model: ModelIndex, kind: ViewKind, title: string, expand: readonly string[]): ResolvedView {
   const shown = new Set(model.elements.filter((e) => e.parent === null).map((e) => e.id));
-  for (const id of expand) {
-    if (model.byId.get(id)?.kind !== "system") continue;
-    for (const child of model.children(id)) shown.add(child.id);
-  }
+  open(model, shown, expand);
   return build(model, { id: kind, kind, title }, shown, () => true);
+}
+
+/** Adds the children of each `expand`ed System or Service that is shown, repeating so a Service opens once its System has. */
+function open(model: ModelIndex, shown: Set<string>, expand: readonly string[]): void {
+  const pending = new Set(expand.filter((id) => ["system", "service"].includes(model.byId.get(id)?.kind ?? "")));
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const id of pending) {
+      if (!shown.has(id)) continue;
+      for (const child of model.children(id)) shown.add(child.id);
+      pending.delete(id);
+      grew = true;
+    }
+  }
 }
 
 /**
@@ -143,7 +159,7 @@ function landscape(model: ModelIndex, kind: ViewKind, title: string, expand: rea
  * inside it, collapsed to its highest ancestor that does not contain the
  * focus. Only Relationships touching the focus become edges.
  */
-function focused(model: ModelIndex, head: Pick<ResolvedView, "id" | "kind" | "title">, focus: BundleElement): ResolvedView {
+function focused(model: ModelIndex, head: Pick<ResolvedView, "id" | "kind" | "title">, focus: BundleElement, expand: readonly string[]): ResolvedView {
   const inside = (id: string) => model.ancestry(id).includes(focus.id);
   const touches = (r: BundleRelationship) => inside(r.from) || inside(r.to);
   const shown = new Set([focus.id, ...model.children(focus.id).map((c) => c.id)]);
@@ -155,6 +171,7 @@ function focused(model: ModelIndex, head: Pick<ResolvedView, "id" | "kind" | "ti
       shown.add(separating.at(-1)!);
     }
   }
+  open(model, shown, expand);
   return build(model, head, shown, touches);
 }
 

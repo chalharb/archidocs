@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-import { mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { cp, mkdir, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle, type ResolvedView } from "../core/index.ts";
 import { directions, layoutView, renderSvg, type Direction } from "../render/index.ts";
@@ -17,9 +19,16 @@ const COULD_NOT_RUN = 2;
 
 class UsageError extends Error {}
 
+/**
+ * The prebuilt viewer, which `build --out` copies as is. The CLI runs from
+ * dist/cli/ when installed and from src/cli/ in this repo; both sit two
+ * levels below the package root, whose dist/viewer/ holds the viewer.
+ */
+const VIEWER_DIR = fileURLToPath(new URL("../../dist/viewer/", import.meta.url));
+
 const usage = `Usage:
   archidocs check [--format text|json|github] [--strict]
-  archidocs build --bundle-only [--out <dir>]
+  archidocs build [--out <dir>] [--bundle-only]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
   archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
   archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
@@ -46,17 +55,20 @@ async function main(argv: string[]): Promise<number> {
       options: { "bundle-only": { type: "boolean" }, out: { type: "string", default: "dist" } },
       strict: true,
     });
-    if (!values["bundle-only"]) throw new UsageError("Only `build --bundle-only` is available so far.");
     const { bundle, issues } = await loadFromCwd();
     if (issues.some((i) => i.severity === "error")) {
       process.stdout.write(formatText(issues, { color: useColor() }));
-      process.stderr.write("Not writing the Bundle: the Workspace has errors.\n");
+      process.stderr.write(`Not writing the ${values["bundle-only"] ? "Bundle" : "site"}: the Workspace has errors.\n`);
       return FOUND_ERRORS;
     }
     const out = resolve(values.out);
+    if (!values["bundle-only"]) {
+      if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
+      await cp(VIEWER_DIR, out, { recursive: true });
+    }
     await mkdir(out, { recursive: true });
     await writeFile(join(out, "workspace.bundle.json"), serializeBundle(bundle));
-    process.stdout.write(`Wrote ${join(values.out, "workspace.bundle.json")}\n`);
+    process.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, "workspace.bundle.json")}\n` : `Wrote the site to ${values.out}\n`);
     return OK;
   }
   if (command === "export") {

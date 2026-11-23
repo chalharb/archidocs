@@ -1,0 +1,603 @@
+:root {
+  --ink: #1f2430;
+  --muted: #667085;
+  --faint: #98a2b3;
+  --line: #d6dae1;
+  --panel: #ffffff;
+  --canvas: #f6f7f9;
+  --tint: #eef2ff;
+  --accent: #4f5bd5;
+  --edge: #7c8597;
+  --container: rgba(99, 112, 140, 0.06);
+  --radius: 8px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color: var(--ink);
+  font: 14px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--canvas);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Shell: rail | location bar over canvas */
+.ad-app {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  height: 100%;
+}
+
+.ad-main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  position: relative;
+}
+
+.ad-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  z-index: 30;
+}
+
+.ad-rail-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 2px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ad-rail-button:hover,
+.ad-rail-button[aria-expanded="true"] {
+  background: var(--tint);
+  color: var(--ink);
+}
+
+.ad-rail-icon {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+}
+
+.ad-rail-views {
+  border-radius: 50%;
+}
+
+.ad-scrim {
+  position: fixed;
+  inset: 0 0 0 72px;
+  background: rgba(15, 20, 30, 0.08);
+  z-index: 20;
+}
+
+.ad-flyout {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 72px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  box-shadow: 8px 0 24px rgba(15, 20, 30, 0.08);
+  z-index: 25;
+}
+
+.ad-flyout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ad-flyout-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ad-segmented {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--canvas);
+}
+
+.ad-segmented label,
+.ad-segmented button {
+  position: relative;
+}
+
+.ad-segmented input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.ad-segmented span,
+.ad-segmented button {
+  display: block;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ad-segmented input:checked + span,
+.ad-segmented button[aria-pressed="true"] {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(15, 20, 30, 0.12);
+}
+
+.ad-segmented input:focus-visible + span {
+  outline: 2px solid var(--accent);
+}
+
+/* Trees */
+.ad-tree,
+.ad-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ad-tree {
+  overflow: auto;
+  padding: 6px 0;
+}
+
+.ad-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 12px;
+  min-height: 30px;
+}
+
+.ad-row:hover {
+  background: var(--canvas);
+}
+
+.ad-row.ad-current {
+  background: var(--tint);
+}
+
+.ad-disclosure,
+.ad-disclosure-space {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+}
+
+.ad-disclosure::before {
+  content: "›" / "";
+  display: inline-block;
+  color: var(--muted);
+  transition: transform 120ms var(--ease);
+}
+
+.ad-disclosure.ad-open::before {
+  transform: rotate(90deg);
+}
+
+.ad-row-label {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-row-label[data-glyph]::before {
+  content: attr(data-glyph) / "";
+  display: inline-block;
+  width: 18px;
+  color: var(--muted);
+}
+
+.ad-row-label.ad-group {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.ad-count {
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.ad-row-team {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 4px;
+  border-left: 3px solid;
+  color: var(--muted);
+}
+
+/* Location bar */
+.ad-location {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: 10;
+}
+
+.ad-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-crumbs li + li::before {
+  content: "›" / "";
+  margin-right: 4px;
+  color: var(--faint);
+}
+
+.ad-crumbs a {
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.ad-crumbs a:hover {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.ad-crumbs [aria-current="page"] span {
+  font-weight: 600;
+  padding: 2px 4px;
+}
+
+.ad-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ad-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--tint);
+  font-size: 12px;
+}
+
+.ad-chip-x::before {
+  content: "✕" / "";
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.ad-chip-all {
+  background: none;
+  color: var(--muted);
+}
+
+.ad-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.ad-tool {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  font-size: 12px;
+}
+
+.ad-tool:hover {
+  background: var(--canvas);
+}
+
+.ad-primary {
+  min-width: 76px;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.ad-primary:hover {
+  background: #343b4c;
+}
+
+.ad-menu-root {
+  position: relative;
+}
+
+.ad-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 240px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(15, 20, 30, 0.12);
+  z-index: 40;
+}
+
+.ad-menu a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ad-menu a:hover,
+.ad-menu a:focus-visible {
+  background: var(--tint);
+}
+
+.ad-menu-empty {
+  margin: 6px 10px;
+  color: var(--muted);
+}
+
+/* Canvas */
+.ad-canvas {
+  position: relative;
+  min-height: 0;
+}
+
+.ad-flow {
+  background: var(--canvas);
+}
+
+.ad-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgba(15, 20, 30, 0.06);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.ad-box.ad-person {
+  border-radius: 36px;
+}
+
+.ad-box.ad-external {
+  border-style: dashed;
+  background: #fafafa;
+}
+
+.ad-box.ad-container {
+  align-items: flex-start;
+  background: var(--container);
+  box-shadow: none;
+  border-style: dashed;
+  overflow: visible;
+}
+
+.ad-box.ad-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.ad-stripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.ad-container .ad-stripe {
+  bottom: auto;
+  height: 36px;
+}
+
+.ad-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ad-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-sublabel {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-container .ad-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ad-team {
+  flex: none;
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.ad-toggle {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  line-height: 1;
+}
+
+.ad-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ad-handle.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+}
+
+.ad-edge {
+  stroke: var(--edge);
+  stroke-width: 1.4;
+  transition: opacity 150ms var(--ease);
+}
+
+.ad-edge.ad-faded {
+  opacity: 0.15;
+}
+
+.ad-flow .react-flow__edge-path,
+.ad-flow .react-flow__edge {
+  pointer-events: none;
+}
+
+.ad-flow .react-flow__arrowhead polyline {
+  stroke: var(--edge);
+  fill: var(--edge);
+}
+
+/* Below 45% zoom, sub-labels and Team codes hide. */
+.ad-zoomed-out .ad-sublabel,
+.ad-zoomed-out .ad-team {
+  display: none;
+}
+
+/* Animated transitions: on up to 100 nodes, and never with reduced motion. */
+.ad-animate .react-flow__node {
+  transition:
+    transform 300ms var(--ease),
+    width 300ms var(--ease),
+    height 300ms var(--ease);
+}
+
+.ad-animate .ad-edge {
+  transition:
+    d 300ms var(--ease),
+    opacity 150ms var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-animate .react-flow__node,
+  .ad-animate .ad-edge,
+  .ad-edge,
+  .ad-disclosure::before {
+    transition: none;
+  }
+}
+
+.ad-flow .react-flow__controls {
+  box-shadow: 0 1px 3px rgba(15, 20, 30, 0.12);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.ad-flow .react-flow__controls-button {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  width: 28px;
+  height: 28px;
+}
+
+.ad-error,
+.ad-message {
+  margin: 0;
+  padding: 24px;
+  color: var(--muted);
+}
+
+.ad-message h1 {
+  font-size: 18px;
+  color: var(--ink);
+}

@@ -2,3 +2,5 @@ node_modules/
 dist/
 .archidocs/cache/
 coverage/
+test-results/
+playwright-report/
