@@ -158,7 +158,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
 
   return (
     <ReactFlow
-      className={["ad-flow", animate ? "ad-animate" : "", zoomedOut ? "ad-zoomed-out" : ""].filter(Boolean).join(" ")}
+      className={["arc-flow", animate ? "arc-animate" : "", zoomedOut ? "arc-zoomed-out" : ""].filter(Boolean).join(" ")}
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -221,16 +221,16 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
   const { node, sublabel, team, container, toggle, onToggle, mark, ring, picked, change } = data;
   const stop = (e: MouseEvent) => e.stopPropagation();
   const classes = [
-    "ad-box",
-    `ad-${node.kind}`,
-    container ? "ad-container" : "",
-    node.external ? "ad-external" : "",
-    selected ? "ad-selected" : "",
-    mark ? (mark.hit ? "ad-hit" : "ad-dim") : "",
-    mark?.hit && ring ? "ad-ringed" : "",
-    mark?.hit && node.collapsed ? "ad-holds-hit" : "",
-    picked ? "ad-picked" : "",
-    change ? `ad-${change}` : "",
+    "arc-box",
+    `arc-${node.kind}`,
+    container ? "arc-container" : "",
+    node.external ? "arc-external" : "",
+    selected ? "arc-selected" : "",
+    mark ? (mark.hit ? "arc-hit" : "arc-dim") : "",
+    mark?.hit && ring ? "arc-ringed" : "",
+    mark?.hit && node.collapsed ? "arc-holds-hit" : "",
+    picked ? "arc-picked" : "",
+    change ? `arc-${change}` : "",
   ];
   return (
     <div
@@ -244,36 +244,36 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       aria-selected={selected ? "true" : "false"}
       title={change && change !== "unchanged" ? `${node.name}: ${change === "changed" && node.collapsed ? "changed, or something inside changed" : change}` : mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
     >
-      <Handle type="target" position={Position.Left} isConnectable={false} className="ad-handle" />
-      <Handle type="source" position={Position.Right} isConnectable={false} className="ad-handle" />
-      {team && <span className="ad-stripe" data-testid="stripe" style={{ background: team.color }} />}
-      <div className="ad-text">
-        <div className="ad-name">{node.name}</div>
-        <div className="ad-sublabel" data-testid="sublabel">
+      <Handle type="target" position={Position.Left} isConnectable={false} className="arc-handle" />
+      <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
+      {team && <span className="arc-stripe" data-testid="stripe" style={{ background: team.color }} />}
+      <div className="arc-text">
+        <div className="arc-name">{node.name}</div>
+        <div className="arc-sublabel" data-testid="sublabel">
           {sublabel}
         </div>
       </div>
       {mark?.distance !== undefined && (
-        <span className="ad-distance" data-testid="distance" aria-label={`distance ${mark.distance}`}>
+        <span className="arc-distance" data-testid="distance" aria-label={`distance ${mark.distance}`}>
           {mark.distance}
         </span>
       )}
-      {mark?.hit && node.collapsed && <span className="ad-holds" aria-hidden="true" />}
+      {mark?.hit && node.collapsed && <span className="arc-holds" aria-hidden="true" />}
       {change === "added" && (
-        <span className="ad-added-mark" data-testid="added" aria-label="added">
+        <span className="arc-added-mark" data-testid="added" aria-label="added">
           +
         </span>
       )}
-      {change === "changed" && <span className="ad-changed-mark" data-testid="changed" aria-label="changed" />}
+      {change === "changed" && <span className="arc-changed-mark" data-testid="changed" aria-label="changed" />}
       {team && (
-        <span className="ad-team" data-testid="team">
+        <span className="arc-team" data-testid="team">
           {team.code}
         </span>
       )}
       {toggle && (
         <button
           type="button"
-          className="ad-toggle nodrag nopan"
+          className="arc-toggle nodrag nopan"
           aria-label={`${toggle === "expand" ? "Expand" : "Collapse"} ${node.name}`}
           onClick={(e) => {
             stop(e);
@@ -292,7 +292,7 @@ function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
   const d = data!.points.map((p, i) => `${i === 0 ? "M" : "L"}${round(p.x)} ${round(p.y)}`).join(" ");
   const { faded, lit, change } = data!;
   // While a Lens is on it decides which edges stand out; selection fades edges only without one.
-  const classes = ["ad-edge", (lit === undefined ? faded : !lit) ? "ad-faded" : "", lit ? "ad-lit" : "", change ? `ad-${change}` : ""];
+  const classes = ["arc-edge", (lit === undefined ? faded : !lit) ? "arc-faded" : "", lit ? "arc-lit" : "", change ? `arc-${change}` : ""];
   const path = (
     <path
       className={classes.filter(Boolean).join(" ")}
@@ -311,11 +311,11 @@ function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
     <>
       {path}
       {change === "added" ? (
-        <text className="ad-edge-added" x={mid.x} y={mid.y} dy="0.35em" textAnchor="middle" aria-hidden="true">
+        <text className="arc-edge-added" x={mid.x} y={mid.y} dy="0.35em" textAnchor="middle" aria-hidden="true">
           +
         </text>
       ) : (
-        <circle className="ad-edge-changed" cx={mid.x} cy={mid.y} r={4} aria-hidden="true" />
+        <circle className="arc-edge-changed" cx={mid.x} cy={mid.y} r={4} aria-hidden="true" />
       )}
     </>
   );

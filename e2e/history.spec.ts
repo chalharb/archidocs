@@ -30,7 +30,7 @@ test.describe("Compare", () => {
     });
     await expect(node(page, "shop:wishlist").getByTestId("added")).toHaveText("+");
     await expect(node(page, "shop:web").getByTestId("changed")).toBeVisible();
-    await expect(node(page, "shop:legacy")).toHaveClass(/ad-removed/);
+    await expect(node(page, "shop:legacy")).toHaveClass(/arc-removed/);
     await expect(edge(page, "shop:wishlist", "shop:checkout")).toHaveAttribute("data-change", "added");
     await expect(edge(page, "shop:legacy", "payments:payments")).toHaveAttribute("data-change", "removed");
     await expect(page.getByRole("region", { name: "Compare" })).toContainText("Compare v1 → latest");

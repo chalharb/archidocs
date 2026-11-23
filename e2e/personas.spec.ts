@@ -71,7 +71,8 @@ test.describe("Enterprise Architect: how are two Services connected?", () => {
 
     await expect(page.getByRole("region", { name: "Lens" })).toContainText("Paths from Web to Payments");
     expect(await hits(page)).toEqual(["payments:payments", "shop:checkout", "shop:web"]);
-    expect(await lit(page)).toEqual(["shop:checkout>payments:payments", "shop:web>shop:checkout"]);
+    // Edges are marked lit once React Flow has drawn them, which can trail the nodes under load.
+    await expect.poll(() => lit(page)).toEqual(["shop:checkout>payments:payments", "shop:web>shop:checkout"]);
     await expect(page.getByRole("region", { name: "Picks" })).toContainText("3 picked");
     for (const id of ["payments:payments", "shop:checkout", "shop:web"]) await expect(node(page, id)).toHaveAttribute("data-picked", "true");
     await expect(node(page, "shop:shopper")).not.toHaveAttribute("data-picked", "true");
@@ -105,7 +106,7 @@ test.describe("Developer: what does my Team own?", () => {
     expect(hash(page)).toBe("#/view/c2?team=payments-team");
     await expect(page.getByRole("region", { name: "Lens" })).toContainText("Team Payments");
     expect(await hits(page)).toEqual(["payments:payments", "shop:checkout"]);
-    await expect(node(page, "payments:payments")).toHaveClass(/ad-ringed/);
+    await expect(node(page, "payments:payments")).toHaveClass(/arc-ringed/);
   });
 
   test("the Owner chip in the Element panel opens the Team Lens", async ({ page }) => {
@@ -182,6 +183,6 @@ test.describe("the Element panel", () => {
 
 test("a lit edge stays lit while a node is selected", async ({ page }) => {
   await open(page, "#/view/c2?sel=shop:web&from=shop:web&to=payments:payments");
-  await expect(page.locator('path[data-edge-from="shop:checkout"][data-edge-to="payments:payments"]')).not.toHaveClass(/ad-faded/);
-  await expect(page.locator('path[data-edge-from="shop:shopper"][data-edge-to="shop:web"]')).toHaveClass(/ad-faded/);
+  await expect(page.locator('path[data-edge-from="shop:checkout"][data-edge-to="payments:payments"]')).not.toHaveClass(/arc-faded/);
+  await expect(page.locator('path[data-edge-from="shop:shopper"][data-edge-to="shop:web"]')).toHaveClass(/arc-faded/);
 });

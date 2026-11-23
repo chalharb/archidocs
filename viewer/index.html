@@ -4,6 +4,45 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Archidocs</title>
+    <script>
+      // If the app fails before it draws anything (an unsupported browser feature, a failed script load),
+      // say why on the page instead of leaving it blank. Plain script, so it runs even when the module can't.
+      (function () {
+        var shown = false;
+        function show(message) {
+          setTimeout(function () {
+            var root = document.getElementById("root");
+            if (shown || !root || root.childElementCount > 0) return;
+            shown = true;
+            var box = document.createElement("div");
+            box.setAttribute("role", "alert");
+            box.style.cssText = "font: 15px/1.5 system-ui, sans-serif; padding: 24px; color: #1f2430; max-width: 640px";
+            var title = document.createElement("h1");
+            title.style.cssText = "font-size: 18px; margin: 0 0 8px";
+            title.textContent = "The viewer couldn't start in this browser";
+            var detail = document.createElement("pre");
+            detail.style.cssText = "white-space: pre-wrap; word-break: break-word; font: 12px/1.5 ui-monospace, monospace; background: #fff; border: 1px solid #dde1e7; border-radius: 8px; padding: 12px";
+            detail.textContent = message + "\n\n" + navigator.userAgent;
+            box.appendChild(title);
+            box.appendChild(detail);
+            root.appendChild(box);
+          }, 100);
+        }
+        window.addEventListener(
+          "error",
+          function (e) {
+            var target = e.target;
+            if (target && target !== window && (target.src || target.href)) show("Couldn't load " + (target.src || target.href));
+            else show(e.message + " (" + e.filename + ":" + e.lineno + ":" + e.colno + ")\n" + ((e.error && e.error.stack) || ""));
+          },
+          true,
+        );
+        window.addEventListener("unhandledrejection", function (e) {
+          var r = e.reason;
+          show("Unhandled rejection: " + ((r && (r.stack || r.message)) || String(r)));
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
