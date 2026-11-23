@@ -15,7 +15,7 @@ export interface SourceRef {
 export type WriteErrorCode = "not_found" | "ambiguous" | "invalid_input" | "validation_failed";
 
 /** What a write is about. */
-export type WriteItem = "element" | "relationship" | "target" | "deployment" | "team" | "environment" | "project";
+export type WriteItem = "element" | "relationship" | "target" | "deployment" | "team" | "environment" | "project" | "view";
 
 export interface Failure {
   ok: false;

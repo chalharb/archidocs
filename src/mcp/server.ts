@@ -5,7 +5,7 @@ import { search } from "../core/search.ts";
 import { deriveEdges, findPaths, getImpact, levelOf, listOwned, type ImpactRing } from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
 import { listViews, resolveView, type ViewNode } from "../core/views.ts";
-import { BundleDeployment, BundleElement, BundleRelationship, type Bundle } from "../schema/bundle.ts";
+import { BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 import { registerWriteTools } from "./writes.ts";
 
@@ -333,7 +333,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "List Views",
       description:
-        "The Generated Views: c1 and c2 (the Landscapes), c2/<system> and c3/<service> (Services with Components). With `element`, only the Views that show that Element as a node.",
+        "The Generated Views: c1 and c2 (the Landscapes), c2/<system> and c3/<service> (Services with Components); then the Saved Views (project:view-id), listed under their level. With `element`, only the Views that show that Element as a node.",
       input: z.object({
         kind: ViewKind.optional(),
         element: QualifiedId.optional().describe("Only Views containing this Element (project:id)"),
@@ -353,9 +353,11 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get View",
       description:
-        "One View by id (c1, c2, c2/<system> or c3/<service>) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it.",
-      input: z.object({ id: z.string().min(1).describe("A View id, such as c1, c2/shop:checkout or c3/shop:cart") }),
+        "One View by id (c1, c2, c2/<system>, c3/<service>, or a Saved View's project:view-id) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it. A Saved View with a Lens also returns the Lens, a `mark` ({hit, distance?}) per node and `lit` per edge; the Lens never changes which nodes the View holds.",
+      input: z.object({ id: z.string().min(1).describe("A View id, such as c1, c2/shop:checkout, c3/shop:cart or architecture:purchase") }),
       output: ViewSummary.extend({
+        direction: z.enum(["TB", "BT", "LR", "RL"]).optional(),
+        lens: BundleLens.optional(),
         nodes: z.array(
           z.object({
             id: z.string(),
@@ -364,12 +366,15 @@ export function createServer(options: ServerOptions): McpServer {
             parent: z.string().nullable(),
             collapsed: z.boolean(),
             external: z.boolean(),
+            mark: z.object({ hit: z.boolean(), distance: z.number().optional() }).optional(),
           }),
         ),
-        edges: z.array(z.object({ from: z.string(), to: z.string(), relationships: z.array(BundleRelationship) })),
+        edges: z.array(z.object({ from: z.string(), to: z.string(), relationships: z.array(BundleRelationship), lit: z.boolean().optional() })),
       }),
     },
     ({ id }, { bundle }) => {
+      const saved = bundle.views.find((v) => v.id === id);
+      if (saved?.level === "deployment") return fail("invalid_input", `Saved View "${id}" is a Deployment View, which can't be resolved yet.`);
       const view = resolveView(bundle, id);
       if (!view) return notFound("View", id, listViews(bundle).map((v) => v.id));
       const edgeCount = `${view.edges.length} edge${view.edges.length === 1 ? "" : "s"}`;
@@ -377,9 +382,10 @@ export function createServer(options: ServerOptions): McpServer {
         { ...view },
         [
           `${view.title} (${view.id}): ${view.nodes.length} node${view.nodes.length === 1 ? "" : "s"}, ${edgeCount}.`,
+          ...(view.lens ? [`Lens: ${lensLabel(view.lens)}.`] : []),
           "Nodes:",
           ...view.nodes.map(nodeLine),
-          ...(view.edges.length ? ["Edges:", ...view.edges.map((e) => `- ${e.from} → ${e.to}: ${e.relationships.map(relationshipLabel).join("; ")}`)] : []),
+          ...(view.edges.length ? ["Edges:", ...view.edges.map((e) => `- ${e.from} → ${e.to}: ${e.relationships.map(relationshipLabel).join("; ")}${e.lit ? " (lit)" : ""}`)] : []),
         ].join("\n"),
       );
     },
@@ -562,11 +568,14 @@ const IssueRecord = z.object({
 const where = (source: Source) => (source.kind === "checkout" ? source.root : source.location);
 
 const ElementKind = z.enum(["person", "system", "service", "component"]);
-const ViewKind = z.enum(["c1", "c2", "c3"]);
+const ViewKind = z.enum(["c1", "c2", "c3", "deployment"]);
 const ViewSummary = z.object({ id: z.string(), kind: ViewKind, title: z.string() });
 
 const nodeLine = (n: ViewNode) =>
-  `- ${label(n)}: ${kindName[n.kind]}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}`;
+  `- ${label(n)}: ${kindName[n.kind]}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}` : ""}`;
+
+const lensLabel = (lens: BundleLens) =>
+  "impact" in lens ? `impact of ${lens.impact}, ${lens.direction}` : "team" in lens ? `Team ${lens.team}` : `paths from ${lens.path.from} to ${lens.path.to} (${lens.path.paths ?? "shortest"})`;
 
 const relationshipLabel = (r: BundleRelationship) => r.description ?? r.id ?? `${r.from} → ${r.to}`;
 
