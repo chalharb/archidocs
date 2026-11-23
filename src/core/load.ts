@@ -1,6 +1,6 @@
 import { basename, dirname, join, relative, sep } from "node:path";
 import { Bundle, SCHEMA_VERSION, type BundleElement } from "../schema/bundle.ts";
-import { ModelFile, ProjectFile, Service, WorkspaceFile, workspaceOnlyKeys } from "../schema/workspace.ts";
+import { ProjectFile, WorkspaceFile, childKindOf, collectionOf, kindOfCollection, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
 import type { FileSystem } from "./fs.ts";
 import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile } from "./model.ts";
 import { rules } from "./rules.ts";
@@ -84,6 +84,7 @@ export async function load(options: LoadOptions): Promise<LoadResult> {
     ws.projects.push(project);
   }
   ws.elements.sort((a, b) => cmp(a.file.path, b.file.path) || a.line - b.line);
+  resolveParents(ws);
 
   const issues = rules
     .flatMap((rule) => rule.check(ws).map(({ file, line, column, message }) => ({ file, line, ...(column === undefined ? {} : { column }), rule: rule.id, severity: rule.severity, message })))
@@ -148,13 +149,47 @@ function readProjectFile(file: SourceFile, folder: string): Project {
 
 function readModelFile(file: SourceFile, ws: LoadedWorkspace) {
   const data = withoutWorkspaceKeys(file);
-  file.findings.push(...checkSchema(ModelFile, data, file.parsed));
-  for (const [id, value] of Object.entries(asRecord(data.services))) {
-    const path = ["services", id];
-    // Each Element is checked on its own; a bad one still registers its id.
-    if (value !== null && typeof value === "object") file.findings.push(...checkSchema(Service, value, file.parsed, path));
-    const element: ElementDecl = { kind: "service", id, project: file.project!, file, path, data: asRecord(value), ...file.parsed.positionOf(path, { key: true }) };
-    ws.elements.push(element);
+  file.findings.push(...checkSchema(shallow.file, data, file.parsed));
+  readElements(file, ws, data, [], undefined);
+}
+
+/**
+ * Registers every Element declared under `container` (a file's top level, or
+ * an Element), recursing into nested collections. A collection under the
+ * wrong kind (say `components` under a System) is still read, so its Elements
+ * keep their ids; `invalid-nesting` reports them.
+ */
+function readElements(file: SourceFile, ws: LoadedWorkspace, container: Record<string, unknown>, at: string[], nestedIn: ElementDecl | undefined) {
+  for (const [key, kind] of Object.entries(kindOfCollection)) {
+    for (const [id, value] of Object.entries(asRecord(container[key]))) {
+      const path = [...at, key, id];
+      const data = asRecord(value);
+      // Each Element is checked on its own, without collections that `invalid-nesting` reports; a bad one still registers its id.
+      if (value !== null && typeof value === "object") {
+        file.findings.push(...checkSchema(shallow[kind], withoutForeignCollections(kind, data), file.parsed, path));
+      }
+      const element: ElementDecl = { kind, id, project: file.project!, file, path, data, nestedIn, ...file.parsed.positionOf(path, { key: true }) };
+      ws.elements.push(element);
+      readElements(file, ws, data, path, element);
+    }
+  }
+}
+
+function withoutForeignCollections(kind: ElementKind, data: Record<string, unknown>): Record<string, unknown> {
+  const own = childKindOf[kind] && collectionOf[childKindOf[kind]];
+  return Object.fromEntries(Object.entries(data).filter(([k]) => k === own || !(k in kindOfCollection)));
+}
+
+/** Sets each Element's parent: the Element it is nested under, else the one its `in:` names in its Project. */
+function resolveParents(ws: LoadedWorkspace) {
+  const byId = new Map<string, ElementDecl>();
+  for (const e of ws.elements) {
+    const key = `${e.project.folder}\0${e.id}`;
+    if (!byId.has(key)) byId.set(key, e);
+  }
+  for (const e of ws.elements) {
+    const ref = e.data.in;
+    e.parent = e.nestedIn ?? (typeof ref === "string" ? byId.get(`${e.project.folder}\0${ref}`) : undefined);
   }
 }
 
@@ -184,22 +219,30 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
 
   const elements: BundleElement[] = ws.elements
     .filter((e) => e.project.id !== undefined && !e.project.duplicateOf)
-    .map((e) => {
+    .map((e): BundleElement => {
       const d = e.data;
-      return {
+      const common = {
         id: `${e.project.id}:${e.id}`,
-        kind: e.kind,
-        parent: null,
+        parent: e.parent ? `${e.parent.project.id}:${e.parent.id}` : null,
         name: str(d.name) ?? e.id,
         description: str(d.description),
         owner: str(d.owner) ?? e.project.owner ?? "",
         tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
         links: links(d.links),
-        type: (["app", "datastore", "broker"] as const).find((t) => t === d.type) ?? "app",
-        technology: str(d.technology),
-        external: d.external === true,
         source: source(e),
       };
+      const external = d.external === true;
+      const technology = str(d.technology);
+      switch (e.kind) {
+        case "person":
+          return { ...common, kind: e.kind };
+        case "system":
+          return { ...common, kind: e.kind, external };
+        case "service":
+          return { ...common, kind: e.kind, type: (["app", "datastore", "broker"] as const).find((t) => t === d.type) ?? "app", technology, external };
+        case "component":
+          return { ...common, kind: e.kind, technology };
+      }
     });
 
   const bundle: z.input<typeof Bundle> = {

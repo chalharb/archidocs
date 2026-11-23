@@ -1,5 +1,6 @@
 import type { Files } from "./files.ts";
-import type { Finding, IssueDraft, LoadedWorkspace, Severity, SourceFile } from "./model.ts";
+import { Id, parentKindOf, type ElementKind } from "../schema/workspace.ts";
+import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Severity, SourceFile } from "./model.ts";
 import { didYouMean } from "./suggest.ts";
 
 /**
@@ -36,6 +37,20 @@ const at = (file: SourceFile, path: string[], message: string, key = false): Iss
   const pos = file.parsed.positionOf(path, { key });
   return { file: file.path, line: pos.line, column: pos.column, message };
 };
+
+const kindName: Record<ElementKind, string> = { person: "Person", system: "System", service: "Service", component: "Component" };
+const named = (e: ElementDecl) => `${kindName[e.kind]} "${e.id}"`;
+
+/** Where each kind belongs, said when it is nested somewhere it can't be. */
+const belongs: Record<ElementKind, string> = {
+  person: "a Person is declared only at the top level, under `people`",
+  system: "Systems don't nest; declare it at the top level, under `systems`",
+  service: "a Service goes inside a System, or at the top level",
+  component: "a Component goes inside a Service",
+};
+
+/** The `in:` an Element names, if it is a usable id. */
+const inRef = (e: ElementDecl): string | undefined => (Id.safeParse(e.data.in).success ? (e.data.in as string) : undefined);
 
 export const rules: RuleDefinition[] = [
   {
@@ -170,7 +185,7 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-id",
     severity: "error",
-    summary: "An Element id is declared twice in a Project, across files too.",
+    summary: "An Element id is declared twice in a Project, across files too, whatever its kind or nesting.",
     fix: "Rename one of the Elements, or remove the second declaration.",
     example: {
       failing: withServices("services:\n  web:\n    name: Web\n", { "shop/more.yaml": "services:\n  web:\n    name: Web v2\n" }),
@@ -191,5 +206,74 @@ export const rules: RuleDefinition[] = [
       }
       return issues;
     },
+  },
+  {
+    id: "invalid-nesting",
+    severity: "error",
+    summary: "System > Service > Component is broken, by nesting or `in:`.",
+    fix: "Move the Element under a parent of the right kind (a Service under a System, a Component under a Service), or point `in:` at one.",
+    example: {
+      failing: withServices("systems:\n  checkout:\n    name: Checkout\n    components:\n      cart-api:\n        name: Cart API\n"),
+      passing: withServices(
+        "systems:\n  checkout:\n    name: Checkout\n    services:\n      cart:\n        name: Cart\n        components:\n          cart-api:\n            name: Cart API\n",
+      ),
+    },
+    check: (ws) =>
+      ws.elements.flatMap((e): IssueDraft[] => {
+        const ref = inRef(e);
+        if (e.nestedIn) {
+          const issues: IssueDraft[] = [];
+          if (parentKindOf[e.kind] !== e.nestedIn.kind) issues.push(at(e.file, e.path, `${named(e)} can't sit inside ${named(e.nestedIn)}; ${belongs[e.kind]}`, true));
+          if (ref !== undefined) issues.push(at(e.file, [...e.path, "in"], `${named(e)} is nested under ${named(e.nestedIn)} and also names \`in: ${ref}\`; remove \`in:\``));
+          return issues;
+        }
+        if (e.parent && parentKindOf[e.kind] !== e.parent.kind) {
+          return [at(e.file, [...e.path, "in"], `${named(e)} can't sit inside ${named(e.parent)}; \`in:\` must name a ${kindName[parentKindOf[e.kind]!]}`)];
+        }
+        if (e.kind === "component" && ref === undefined) {
+          return [at(e.file, e.path, `${named(e)} has no parent; nest it under a Service or add \`in: <service>\``, true)];
+        }
+        return [];
+      }),
+  },
+  {
+    id: "external-with-components",
+    severity: "error",
+    summary: "An External System or Service declares Components.",
+    fix: "Remove the Components, or drop `external` if the organisation runs the Element itself.",
+    example: {
+      failing: withServices("services:\n  stripe:\n    name: Stripe\n    external: true\n    components:\n      stripe-sdk:\n        name: Stripe SDK\n"),
+      passing: withServices("services:\n  stripe:\n    name: Stripe\n    external: true\n"),
+    },
+    check: (ws) =>
+      ws.elements
+        .filter((e) => e.kind === "component")
+        .flatMap((e) => {
+          const seen = new Set<ElementDecl>();
+          for (let p = e.parent; p && !seen.has(p); p = p.parent) {
+            seen.add(p);
+            if (p.data.external === true && (p.kind === "service" || p.kind === "system")) {
+              return [at(e.file, e.path, `${named(e)} is inside External ${named(p)}; an External Element can't contain declared Components`, true)];
+            }
+          }
+          return [];
+        }),
+  },
+  {
+    id: "unknown-element",
+    severity: "error",
+    summary: "A reference names no Element.",
+    fix: "Use the id of an Element declared in the Project, or declare it.",
+    example: {
+      failing: withServices("systems:\n  checkout:\n    name: Checkout\n", { "shop/cart.yaml": "services:\n  cart:\n    name: Cart\n    in: chekout\n" }),
+      passing: withServices("systems:\n  checkout:\n    name: Checkout\n", { "shop/cart.yaml": "services:\n  cart:\n    name: Cart\n    in: checkout\n" }),
+    },
+    check: (ws) =>
+      ws.elements.flatMap((e) => {
+        const ref = inRef(e);
+        if (ref === undefined || e.nestedIn || e.parent) return [];
+        const ids = ws.elements.filter((o) => o.project === e.project).map((o) => o.id);
+        return [at(e.file, [...e.path, "in"], `Unknown Element "${ref}" in Project "${e.project.id ?? e.project.folder}"${didYouMean(ref, ids)}`)];
+      }),
   },
 ];
