@@ -5,7 +5,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import { archidocs } from "../test/support/cli.ts";
-import { checkoutScenarioWorkspace, viewerWorkspace } from "../test/support/fixtures.ts";
+import { checkoutScenarioWorkspace, decisionsWorkspace, viewerWorkspace } from "../test/support/fixtures.ts";
 import { writeWorkspace, type Files } from "../test/support/workspace.ts";
 import { syntheticWorkspace } from "../test/render/synthetic.ts";
 import { PORT, SITES } from "./sites.ts";
@@ -30,6 +30,7 @@ const roots = new Map<string, string>([
   [SITES.landscape, await site(viewerWorkspace, ["c2", "shop:checkout-impact"])],
   [SITES.big, await site(syntheticWorkspace({ systems: 6, services: 20 }))],
   [SITES.checkout, await site(checkoutScenarioWorkspace)],
+  [SITES.decisions, await site(decisionsWorkspace)],
 ]);
 
 const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };

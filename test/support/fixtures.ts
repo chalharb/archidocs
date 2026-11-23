@@ -365,6 +365,79 @@ deployments:
 `,
 };
 
+/**
+ * The viewer's landscape with a Saved View and an ADR log: Cart's decisions
+ * (one superseded by a newer one, one proposed from Payments), and one on the
+ * Checkout System that links only Cart's ancestor.
+ */
+export const decisionsWorkspace: Files = {
+  ...viewerWorkspace,
+  "shop/views.yaml": `views:
+  structural:
+    cart-flow:
+      title: Cart flow
+      level: c2
+      include: [shopper, web, cart, cart-db]
+`,
+  "shop/adr/0001-keep-carts-in-postgres.md": `---
+status: accepted
+date: 2025-05-02
+elements: [cart, cart-db]
+views: [cart-flow]
+---
+
+# Keep carts in Postgres
+
+Carts live in the shared Postgres cluster.
+`,
+  "shop/adr/0002-keep-carts-in-redis.md": `---
+status: accepted
+date: 2026-02-01
+decision-makers: [storefront-team, Ana]
+consulted: [platform-team]
+tags: [storage]
+elements: [cart, platform:eks-prod]
+views: [cart-flow]
+supersedes: ["0001"]
+---
+
+# Keep carts in Redis
+
+## Context and Problem Statement
+
+Cart reads dominate checkout latency, and **Postgres** is the bottleneck.
+
+## Decision Outcome
+
+Chosen option: Redis, because:
+
+- reads stay under \`5 ms\`
+- carts expire on their own
+
+\`\`\`yaml
+ttl: 7d
+\`\`\`
+
+See [the Redis docs](https://redis.io/docs/) for details.
+`,
+  "shop/adr/0003-group-checkout.md": `---
+status: accepted
+date: 2025-01-10
+elements: [checkout]
+---
+
+# Group the checkout Services
+`,
+  "payments/adr/0001-charge-from-cart.md": `---
+status: proposed
+date: 2026-03-01
+elements: [shop:cart, payments-api]
+---
+
+# Charge from the cart
+`,
+};
+
 /** One Step of a fixture Dynamic View, as written in YAML. */
 type StepRow = { from: string; to: string; description?: string; relationship?: string; return?: true; note?: string };
 const stepYaml = (s: StepRow) =>

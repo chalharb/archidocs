@@ -1,6 +1,7 @@
 # 24: History in MCP
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude
 Blocked by: 11, 23
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -15,6 +16,6 @@ Agents answer "what changed?" and query the past.
 
 ## Acceptance criteria
 
-- [ ] In-memory client tests over both a checkout and a fixture site.
-- [ ] `list_history` never diffs Bundles on the fly; it reads the index only.
-- [ ] Write tools reject `at`.
+- [x] In-memory client tests over both a checkout and a fixture site.
+- [x] `list_history` never diffs Bundles on the fly; it reads the index only.
+- [x] Write tools reject `at`.
