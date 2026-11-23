@@ -1,6 +1,7 @@
 # 06: MCP read server over a checkout
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (session epic-nightingale-c60076)
 Blocked by: 03
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -20,7 +21,7 @@ Tests use an in-memory MCP client against a fixture checkout.
 
 ## Acceptance criteria
 
-- [ ] Each tool returns structured and text output for the fixture.
-- [ ] Editing a fixture file is reflected in the next call.
-- [ ] An unknown id gives `not_found` with did-you-mean; a malformed call gives a protocol error.
-- [ ] `limit` truncates and reports the total.
+- [x] Each tool returns structured and text output for the fixture.
+- [x] Editing a fixture file is reflected in the next call.
+- [x] An unknown id gives `not_found` with did-you-mean; a malformed call gives a protocol error.
+- [x] `limit` truncates and reports the total.

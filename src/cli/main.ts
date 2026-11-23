@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { parseArgs, promisify } from "node:util";
+import { parseArgs } from "node:util";
 import { findWorkspaceRoot, load, nodeFileSystem, serializeBundle } from "../core/index.ts";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import { gitHead } from "../git.ts";
+import { checkoutSource, createServer } from "../mcp/index.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 
 /** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
@@ -16,6 +18,7 @@ class UsageError extends Error {}
 const usage = `Usage:
   archidocs check [--format text|json|github] [--strict]
   archidocs build --bundle-only [--out <dir>]
+  archidocs mcp [--workspace <dir>] [--viewer-url <url>]
 `;
 
 async function main(argv: string[]): Promise<number> {
@@ -51,6 +54,20 @@ async function main(argv: string[]): Promise<number> {
     process.stdout.write(`Wrote ${join(values.out, "workspace.bundle.json")}\n`);
     return OK;
   }
+  if (command === "mcp") {
+    const { values } = parseArgs({
+      args: rest,
+      options: { workspace: { type: "string" }, "viewer-url": { type: "string" } },
+      strict: true,
+    });
+    const viewerUrl = values["viewer-url"];
+    if (viewerUrl !== undefined && !URL.canParse(viewerUrl)) throw new UsageError(`--viewer-url "${viewerUrl}" is not a URL.`);
+    const root = await workspaceRoot(values.workspace === undefined ? process.cwd() : resolve(values.workspace));
+    const source = checkoutSource({ root });
+    // stdout carries the protocol; the server runs until the client closes stdin.
+    serveStdio(() => createServer({ source, ...(viewerUrl === undefined ? {} : { viewerUrl }) }));
+    return OK;
+  }
   throw new UsageError(command ? `Unknown command "${command}".` : "No command given.");
 }
 
@@ -62,23 +79,16 @@ function useColor(): boolean {
   return process.stdout.isTTY === true;
 }
 
-async function loadFromCwd() {
-  const fs = nodeFileSystem();
-  const root = await findWorkspaceRoot(fs, process.cwd());
+async function workspaceRoot(start: string): Promise<string> {
+  const root = await findWorkspaceRoot(nodeFileSystem(), start);
   if (!root) throw new UsageError("No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.");
-  const { commit, builtAt } = await gitHead(root);
-  return load({ fs, root, commit, builtAt });
+  return root;
 }
 
-/** HEAD's sha and commit time, so a Bundle built twice at one commit is byte-identical. */
-async function gitHead(cwd: string): Promise<{ commit: string | null; builtAt: string | null }> {
-  try {
-    const { stdout } = await promisify(execFile)("git", ["log", "-1", "--format=%H %cI"], { cwd });
-    const [commit, builtAt] = stdout.trim().split(" ");
-    return { commit: commit || null, builtAt: builtAt || null };
-  } catch {
-    return { commit: null, builtAt: null };
-  }
+async function loadFromCwd() {
+  const root = await workspaceRoot(process.cwd());
+  const { commit, builtAt } = await gitHead(root);
+  return load({ fs: nodeFileSystem(), root, commit, builtAt });
 }
 
 main(process.argv.slice(2)).then(
