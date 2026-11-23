@@ -1,0 +1,71 @@
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
+import { serveDev, type DevServer } from "../../src/cli/dev.ts";
+import { landscapeWorkspace } from "../support/fixtures.ts";
+import { writeWorkspace } from "../support/workspace.ts";
+
+// Serves the prebuilt viewer, which test/support/viewer-build.ts builds once per run.
+const viewerDir = fileURLToPath(new URL("../../dist/viewer/", import.meta.url));
+
+/** Reads Server-Sent Events from the dev server until `want` arrives. */
+async function nextEvent(url: string, want: string): Promise<string> {
+  const res = await fetch(new URL("__archidocs/events", url));
+  const reader = res.body!.pipeThrough(new TextDecoderStream()).getReader();
+  let text = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) throw new Error(`stream ended before "${want}"`);
+    text += value;
+    const match = text.split("\n\n").find((block) => block.startsWith(`event: ${want}\n`));
+    if (match) {
+      await reader.cancel();
+      return JSON.parse(match.split("\ndata: ")[1]!) as string;
+    }
+  }
+}
+
+describe("archidocs dev", () => {
+  let dev: DevServer | undefined;
+  afterEach(async () => dev?.close());
+
+  async function start() {
+    const { root } = await writeWorkspace(landscapeWorkspace);
+    dev = await serveDev({ root, viewerDir, workspace: "fixture", port: 0 });
+    return { root, url: dev.url };
+  }
+
+  it("serves the viewer with a live-reload client, the Workspace's Bundle, its name and no history", async () => {
+    const { url } = await start();
+
+    const html = await (await fetch(url)).text();
+    expect(html).toContain("__archidocs/events");
+    const bundle = await (await fetch(new URL("workspace.bundle.json", url))).json();
+    expect(bundle.elements.map((e: { id: string }) => e.id)).toContain("shop:checkout");
+    expect(await (await fetch(new URL("site.json", url))).json()).toEqual({ workspace: "fixture" });
+    expect((await (await fetch(new URL("bundles/index.json", url))).json()).revisions).toEqual([]);
+    expect((await fetch(new URL("../../package.json", url))).status).toBe(404);
+  });
+
+  it("rebuilds the Bundle and tells the page to reload when a Workspace file changes", async () => {
+    const { root, url } = await start();
+    const reload = nextEvent(url, "reload");
+    const systems = join(root, "shop/systems.yaml");
+    await writeFile(systems, (await readFile(systems, "utf8")).replace("name: Checkout\n", "name: Checkout v2\n"));
+
+    await reload;
+    const bundle = await (await fetch(new URL("workspace.bundle.json", url))).json();
+    expect(bundle.elements.find((e: { id: string }) => e.id === "shop:checkout").name).toBe("Checkout v2");
+  });
+
+  it("keeps the last good Bundle and sends the errors while the Workspace is broken", async () => {
+    const { root, url } = await start();
+    const errors = nextEvent(url, "errors");
+    await writeFile(join(root, "shop/people.yaml"), "people:\n  shopper:\n    relationships:\n      - to: nowhere\n");
+
+    expect(await errors).toContain("nowhere");
+    const bundle = await (await fetch(new URL("workspace.bundle.json", url))).json();
+    expect(bundle.elements.map((e: { id: string }) => e.id)).toContain("shop:shopper");
+  });
+});

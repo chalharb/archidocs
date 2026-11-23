@@ -13,6 +13,7 @@ import { gitHead, gitTopLevel } from "../git.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { authoringGuide } from "../guide/index.ts";
 import { init } from "./init.ts";
+import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 import { diff } from "../core/index.ts";
 import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, history, previewSides, publishHistory, publishPreview, resolvePoint, type History, type PreviewSides } from "../history/index.ts";
@@ -43,6 +44,7 @@ const usage = `Usage:
   archidocs check [--format text|json|github] [--strict]
   archidocs build [--out <dir>] [--bundle-only] [--keep <n|all>]
   archidocs build --preview [--base <branch>] [--out <dir>]
+  archidocs dev [--port <n>] [--host <host>]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
   archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
   archidocs diff <from> [<to>] [--format text|json|markdown]
@@ -136,6 +138,32 @@ async function main(argv: string[]): Promise<number> {
     }
     if (!values["bundle-only"]) await writeSiteHistory(out, keep);
     process.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, "workspace.bundle.json")}\n` : `Wrote the site to ${values.out}\n`);
+    return OK;
+  }
+  if (command === "dev") {
+    const { values } = parseArgs({ args: rest, options: { port: { type: "string" }, host: { type: "string" } }, strict: true });
+    const port = values.port === undefined ? DEFAULT_DEV_PORT : Number(values.port);
+    if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`--port "${values.port}" is not a port.`);
+    if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
+    const root = await workspaceRoot(process.cwd());
+    const color = useColor();
+    const dev = await serveDev({
+      root,
+      viewerDir: VIEWER_DIR,
+      workspace: await workspaceName(root),
+      port,
+      ...(values.host === undefined ? {} : { host: values.host }),
+      onLoad: ({ issues, kept, first }) => {
+        const shown = issues.filter((i) => i.severity === "error" || first);
+        if (shown.length > 0) process.stdout.write(formatText(shown, { color }));
+        if (kept) process.stderr.write("The Workspace has errors; still serving the last good Bundle.\n");
+        else if (!first) process.stderr.write(`Reloaded the Workspace (${new Date().toLocaleTimeString()})\n`);
+      },
+    }).catch((e: unknown) => {
+      if ((e as { code?: string }).code === "EADDRINUSE") throw new UsageError(`Port ${port} is in use; pick another with --port.`);
+      throw e;
+    });
+    process.stderr.write(`Archidocs dev server on ${dev.url} (watching ${root}; Ctrl+C to stop)\n`);
     return OK;
   }
   if (command === "export") {
