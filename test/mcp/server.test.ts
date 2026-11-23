@@ -229,10 +229,12 @@ describe("tool surface", () => {
       "get_deployments",
       "get_element",
       "get_impact",
+      "get_view",
       "get_workspace_info",
       "list_environments",
       "list_owned",
       "list_teams",
+      "list_views",
       "search_elements",
     ]);
     for (const t of tools) {

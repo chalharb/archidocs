@@ -1,4 +1,6 @@
+import type { Bundle } from "../schema/bundle.ts";
 import type { Files } from "./files.ts";
+import { generatedViews, MAX_VIEW_NODES } from "./views.ts";
 import { Id, parentKindOf, type ElementKind } from "../schema/workspace.ts";
 import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, RelationshipDecl, Severity, SourceFile } from "./model.ts";
 import { qualified, qualify, referenceResolver } from "./refs.ts";
@@ -15,7 +17,8 @@ export interface RuleDefinition {
   summary: string;
   fix: string;
   example: { failing: Files; passing: Files };
-  check(workspace: LoadedWorkspace): IssueDraft[];
+  /** `bundle` is the Bundle built from the same Workspace, for rules about what it resolves to. */
+  check(workspace: LoadedWorkspace, bundle: Bundle): IssueDraft[];
 }
 
 const base: Files = {
@@ -576,4 +579,32 @@ export const rules: RuleDefinition[] = [
       return [...deployments, ...vias];
     },
   },
+  {
+    id: "oversized-view",
+    severity: "warning",
+    summary: `A Generated View has more than ${MAX_VIEW_NODES} nodes, too many for a readable diagram. It is reported at its System or Service, or at \`workspace.yaml\` for the Landscapes.`,
+    fix: "Split the System, or group top-level Services and Systems, so each View stays within the limit.",
+    example: {
+      failing: withServices(`systems:\n  big:\n    name: Big\n    services:\n${numbered(MAX_VIEW_NODES, "s", 6)}`),
+      passing: withServices(
+        `systems:\n  big:\n    name: Big\n    services:\n${numbered(MAX_VIEW_NODES / 2, "s", 6)}  more:\n    name: More\n    services:\n${numbered(MAX_VIEW_NODES / 2, "s", 6, MAX_VIEW_NODES / 2)}`,
+      ),
+    },
+    check: (ws, bundle) => {
+      const workspaceFile = ws.files.find((f) => f.role === "workspace");
+      return generatedViews(bundle)
+        .filter((v) => v.nodes.length > MAX_VIEW_NODES)
+        .flatMap((v) => {
+          const focus = bundle.elements.find((e) => e.id === v.id.slice(v.id.indexOf("/") + 1));
+          const where = focus ? focus.source : workspaceFile ? { file: workspaceFile.path, line: 1 } : undefined;
+          if (!where) return [];
+          return [{ file: where.file, line: where.line, message: `Generated View "${v.id}" has ${v.nodes.length} nodes, more than the ${MAX_VIEW_NODES} a diagram stays readable at` }];
+        });
+    },
+  },
 ];
+
+/** `count` Services as one-line YAML entries `<prefix>N: { name: <PREFIX>N }`, indented by `indent`, numbered from `from + 1`. */
+function numbered(count: number, prefix: string, indent: number, from = 0): string {
+  return Array.from({ length: count }, (_, i) => `${" ".repeat(indent)}${prefix}${from + i + 1}: { name: ${prefix.toUpperCase()}${from + i + 1} }\n`).join("");
+}

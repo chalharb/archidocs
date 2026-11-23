@@ -7,6 +7,7 @@ export { ruleCatalogue } from "./catalogue.ts";
 export { deriveEdges, levelOf, type DerivedEdge, type Level } from "./query.ts";
 export { getDeployments, type DeploymentDetail, type TargetStep } from "./deployments.ts";
 export { search, type SearchMatch, type SearchOptions, type MatchRank } from "./search.ts";
+export { listViews, resolveView, type ViewSummary, type ResolveOptions, type ResolvedView, type ViewKind, type ViewNode, type ViewEdge } from "./views.ts";
 export { findPaths, type PathsResult, type Path, type Hop, type DirectEdge } from "./paths.ts";
 export { getImpact, type ImpactResult, type ImpactRing, type ImpactedElement, type Direction } from "./impact.ts";
 export { listOwned, type OwnedResult, type OwnedGroup, type OwnedItem, type OwnedKind } from "./ownership.ts";
