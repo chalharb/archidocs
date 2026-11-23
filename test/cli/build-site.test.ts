@@ -16,7 +16,7 @@ describe("archidocs build --out", () => {
     expect(code).toBe(0);
     expect(stdout).toBe("Wrote the site to site\n");
     const site = join(repoRoot, "site");
-    expect((await readdir(site)).sort()).toEqual(["assets", "bundles", "index.html", "site.json", "workspace.bundle.json"]);
+    expect((await readdir(site)).sort()).toEqual(["assets", "bundles", "favicon.svg", "index.html", "site.json", "workspace.bundle.json"]);
     const bundle = JSON.parse(await readFile(join(site, "workspace.bundle.json"), "utf8"));
     expect(bundle.elements.map((e: { id: string }) => e.id)).toContain("shop:checkout");
   });
