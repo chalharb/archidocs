@@ -7,6 +7,8 @@ export const SITES = {
   big: "/team/big/",
   /** The sequence chart scenario: the 46-Step full checkout and a short payment, with event Steps via a broker. */
   checkout: "/team/checkout/",
+  /** A git history: the first model (dropped by `--keep 1`), Legacy added (tag v1), then Wishlist added, Web renamed and Legacy removed. */
+  history: "/team/history/",
   /** The landscape plus a Saved View and ADRs linked to Cart, Cart DB and Checkout. */
   decisions: "/team/decisions/",
 } as const;

@@ -5,7 +5,8 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import { archidocs } from "../test/support/cli.ts";
-import { checkoutScenarioWorkspace, decisionsWorkspace, viewerWorkspace } from "../test/support/fixtures.ts";
+import { checkoutScenarioWorkspace, decisionsWorkspace, historyAfter, historyBefore, viewerWorkspace } from "../test/support/fixtures.ts";
+import { inWorkspace, scriptedRepo } from "../test/support/git-history.ts";
 import { writeWorkspace, type Files } from "../test/support/workspace.ts";
 import { syntheticWorkspace } from "../test/render/synthetic.ts";
 import { PORT, SITES } from "./sites.ts";
@@ -26,10 +27,23 @@ async function site(files: Files, exports: string[] = []): Promise<string> {
   return join(repoRoot, "site");
 }
 
+/** The history site: three Revisions, built keeping only the latest plus tags, so the first one's Bundle is dropped. */
+async function historySite(): Promise<string> {
+  const repo = await scriptedRepo();
+  await repo.commit("First model", "2026-01-10T12:00:00Z", inWorkspace(viewerWorkspace));
+  const legacy = await repo.commit("Add the Legacy shop", "2026-02-10T12:00:00Z", inWorkspace(historyBefore));
+  await repo.commit("Add Wishlist, rename Web, retire Legacy", "2026-03-10T12:00:00Z", { ...inWorkspace(historyAfter), "archidocs/shop/legacy.yaml": null });
+  repo.git("tag", "v1", legacy);
+  const { code, stdout, stderr } = await archidocs(repo.repoRoot, "build", "--out", "site", "--keep", "1");
+  if (code !== 0) throw new Error(`archidocs build failed:\n${stdout}${stderr}`);
+  return join(repo.repoRoot, "site");
+}
+
 const roots = new Map<string, string>([
   [SITES.landscape, await site(viewerWorkspace, ["c2", "shop:checkout-impact"])],
   [SITES.big, await site(syntheticWorkspace({ systems: 6, services: 20 }))],
   [SITES.checkout, await site(checkoutScenarioWorkspace)],
+  [SITES.history, await historySite()],
   [SITES.decisions, await site(decisionsWorkspace)],
 ]);
 

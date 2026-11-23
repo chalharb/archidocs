@@ -3,6 +3,8 @@ import type { ExportFormat } from "./export.ts";
 import { directions, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { readRecent, type RecentPlace } from "./recent.ts";
 import type { Workspace } from "./workspace.ts";
+import { RevisionsMenu } from "./History.tsx";
+import { pointLabel, type Timeline } from "./revisions.ts";
 
 export interface LocationBarProps {
   workspace: Workspace;
@@ -12,13 +14,18 @@ export interface LocationBarProps {
   onDirection: (direction: Direction) => void;
   onLens: (lens: Lens | null) => void;
   onPicks: (picks: string[]) => void;
+  /** While Comparing, what with what: "v1 → latest". */
+  compare: string | undefined;
+  timeline: Timeline;
+  /** Moves to another `at` or `vs`; null clears it. */
+  onTime: (time: Partial<Pick<Place, "at" | "vs">>) => void;
   /** Exports the whole View, or only the picks, as SVG or PNG. */
   onExport: (what: "view" | "picks", format: ExportFormat) => void;
   onSaveAsView: () => void;
 }
 
 /** Where am I: breadcrumbs up the scope ladder, chips for open boxes, the Lens and picks, then direction, Recent and Copy link. */
-export function LocationBar({ workspace, place, direction, onCollapse, onDirection, onLens, onPicks, onExport, onSaveAsView }: LocationBarProps) {
+export function LocationBar({ workspace, place, direction, compare, timeline, onCollapse, onDirection, onLens, onPicks, onTime, onExport, onSaveAsView }: LocationBarProps) {
   const crumbs = workspace.crumbs(place.view);
   const name = (id: string) => workspace.byId.get(id)?.name ?? id;
   return (
@@ -29,7 +36,7 @@ export function LocationBar({ workspace, place, direction, onCollapse, onDirecti
             const last = i === crumbs.length - 1;
             return (
               <li key={`${i}:${c.label}`} aria-current={last ? "page" : undefined}>
-                {last || c.view === undefined ? <span>{c.label}</span> : <a href={formatPlace(viewPlace(c.view, null, place.lens))}>{c.label}</a>}
+                {last || c.view === undefined ? <span>{c.label}</span> : <a href={formatPlace(viewPlace(c.view, null, place.lens, place))}>{c.label}</a>}
               </li>
             );
           })}
@@ -46,6 +53,16 @@ export function LocationBar({ workspace, place, direction, onCollapse, onDirecti
           <button type="button" className="ad-chip ad-chip-all" onClick={() => onCollapse(place.open)}>
             Collapse all
           </button>
+        </section>
+      )}
+      {compare && (
+        <section className="ad-chips" role="region" aria-label="Compare">
+          <span className="ad-chip ad-chip-lens">
+            <span className="ad-lens-kind">Compare</span> {compare}
+            <button type="button" className="ad-chip-clear" aria-label="Clear compare" onClick={() => onTime({ vs: null })}>
+              <span className="ad-chip-x" aria-hidden="true" />
+            </button>
+          </span>
         </section>
       )}
       {place.lens && <LensChip workspace={workspace} lens={place.lens} onLens={onLens} />}
@@ -69,6 +86,7 @@ export function LocationBar({ workspace, place, direction, onCollapse, onDirecti
         <button type="button" className="ad-tool" onClick={onSaveAsView}>
           Save as View
         </button>
+        <RevisionsMenu timeline={timeline} onAt={(r) => onTime({ at: timeline.isLatest(r) ? null : pointLabel(r) })} onVs={(r) => onTime({ vs: pointLabel(r) })} />
         <RecentMenu />
         <CopyLink />
       </div>

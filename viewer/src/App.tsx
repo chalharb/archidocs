@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Bundle } from "../../src/schema/bundle.ts";
+import { compareView, unionBundle } from "../../src/core/compare.ts";
+import { diff, type Change } from "../../src/core/diff.ts";
 import type { ResolvedStep } from "../../src/core/dynamic-views.ts";
 import { AdrReader } from "./AdrReader.tsx";
 import { Canvas } from "./Canvas.tsx";
@@ -12,46 +14,93 @@ import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
 import { defaultDirection, HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
+import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
+import { loadTimeline, pointLabel, type Revision, type Timeline } from "./revisions.ts";
 import { remember } from "./recent.ts";
 import { SaveAsView } from "./SaveAsView.tsx";
 import { Workspace } from "./workspace.ts";
 
-/** Loads the latest Bundle next to index.html; a relative URL, so the site works under any base path. */
-function useWorkspace(): { workspace?: Workspace; error?: string } {
-  const [state, setState] = useState<{ workspace?: Workspace; error?: string }>({});
+/**
+ * Loads the latest Bundle and the Revision index next to index.html;
+ * relative URLs, so the site works under any base path.
+ */
+function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error?: string } {
+  const [state, setState] = useState<{ latest?: Bundle; timeline?: Timeline; name?: string; error?: string }>({});
   useEffect(() => {
     // site.json names the Workspace for exports; a site without it still opens.
     const name = fetch("./site.json")
       .then((r): Promise<{ workspace?: string }> | { workspace?: string } => (r.ok ? r.json() : {}))
       .then((site) => site.workspace)
       .catch(() => undefined);
-    fetch("./workspace.bundle.json")
-      .then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`workspace.bundle.json: HTTP ${r.status}`))))
-      .then(async (bundle) => setState({ workspace: new Workspace(bundle, await name) }))
+    const latest = fetch("./workspace.bundle.json").then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`workspace.bundle.json: HTTP ${r.status}`))));
+    Promise.all([latest, loadTimeline(), name])
+      .then(([bundle, timeline, workspaceName]) => setState({ latest: bundle, timeline, name: workspaceName }))
       .catch((e: unknown) => setState({ error: e instanceof Error ? e.message : String(e) }));
   }, []);
   return state;
 }
 
 export function App() {
-  const { workspace, error } = useWorkspace();
+  const { latest, timeline, name, error } = useSite();
   if (error) return <Message title="Couldn't load the Workspace">{error}</Message>;
-  if (!workspace) return <Message title="Loading the Workspace…" />;
-  return <Screen workspace={workspace} />;
+  if (!latest || !timeline) return <Message title="Loading the Workspace…" />;
+  return <AtTime latest={latest} timeline={timeline} name={name} />;
 }
 
-function Screen({ workspace }: { workspace: Workspace }) {
+/** What Compare shows: both sides, their Changes, and how the chip and list name them. */
+export interface Comparison {
+  before: Bundle;
+  after: Bundle;
+  changes: Change[];
+  /** "v1 → latest" */
+  label: string;
+}
+
+/** Loads the Bundles the URL's `at` and `vs` name, then shows the screen at that time, or why it can't. */
+function AtTime({ latest, timeline, name }: { latest: Bundle; timeline: Timeline; name: string | undefined }) {
+  const place = usePlace();
+  const { state, loading } = useTimes(latest, timeline, place.at, place.vs);
+  const times = state?.kind === "ready" ? state.times : undefined;
+  const current = times?.current;
+  const plain = useMemo(() => (current ? new Workspace(current, name) : undefined), [current, name]);
+  const comparison = useMemo<Comparison | undefined>(() => {
+    if (!times?.before) return undefined;
+    const { before, current: after, vs, at: atRevision } = times;
+    return { before, after, changes: diff(before, after), label: `${pointLabel(vs!)} → ${atRevision ? pointLabel(atRevision) : "latest"}` };
+  }, [times]);
+  const workspace = useMemo(() => (comparison ? new Workspace(unionBundle(comparison.before, comparison.after), name) : plain), [comparison, plain, name]);
+  if (state?.kind === "problem") return <Unavailable problem={state.problem} place={place} />;
+  if (!workspace || !plain) return <Message title="Loading the Revision…" />;
+  return <Screen workspace={workspace} plain={plain} comparison={comparison} timeline={timeline} at={times?.at} loading={loading} />;
+}
+
+interface ScreenProps {
+  /** The Workspace on screen: at `at` (or the latest), or while Comparing the union of both sides. */
+  workspace: Workspace;
+  /** The Workspace at `at` (or the latest) alone, for screens Compare doesn't mark. */
+  plain: Workspace;
+  comparison: Comparison | undefined;
+  timeline: Timeline;
+  at: Revision | undefined;
+  /** New `at` or `vs` Bundles are loading; the screen shows the last ones meanwhile. */
+  loading: boolean;
+}
+
+function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenProps) {
   const place = usePlace();
   const openKey = place.open.join(",");
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
-  const view = useMemo(() => workspace.resolve(place.view, place.open), [workspace, place.view, openKey]);
-  const dynamic = useMemo(() => workspace.dynamic(place.view), [workspace, place.view]);
-  const ownDirection = workspace.ownDirection(place.view) ?? defaultDirection(place.view);
+  const view = useMemo(
+    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open }) : workspace.resolve(place.view, place.open)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
+    [workspace, comparison, place.view, openKey],
+  );
+  const dynamic = useMemo(() => plain.dynamic(place.view), [plain, place.view]);
+  const ownDirection = plain.ownDirection(place.view) ?? defaultDirection(place.view);
   const direction = place.direction ?? ownDirection;
   const { laidOut, error } = useLayout(view, direction);
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
-  const ready = laidOut !== undefined && settled === laidOut && laidOut.view === view && laidOut.layout.direction === direction;
+  const ready = !loading && laidOut !== undefined && settled === laidOut && laidOut.view === view && laidOut.layout.direction === direction;
   const title = workspace.title(place.view);
   const lensKey = place.lens ? JSON.stringify(place.lens) : "";
   // The Lens is drawn over the Layout of the plain View, so turning it on never moves a node.
@@ -135,9 +184,9 @@ function Screen({ workspace }: { workspace: Workspace }) {
   const openView = useCallback(
     (id: string) => {
       const target = workspace.ownView(id);
-      if (target !== undefined && target !== place.view) go(viewPlace(target, null, place.lens));
+      if (target !== undefined && target !== place.view) go(viewPlace(target, null, place.lens, place));
     },
-    [place.view, place.lens, workspace],
+    [place, workspace],
   );
 
   /** Focuses an Element, closing any ADR: in the current View when opening its boxes shows it there, else in its own View. */
@@ -147,7 +196,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
       if (open) return go({ ...place, open, selected: id, adr: null }, { replace: open.length === place.open.length });
       const element = workspace.byId.get(id);
       const home = element?.kind === "component" ? workspace.ownView(element.parent!) : element?.kind === "person" ? "c1" : workspace.ownView(id);
-      go(viewPlace(home ?? "c2", id, place.lens));
+      go(viewPlace(home ?? "c2", id, place.lens, place));
     },
     [place, workspace],
   );
@@ -155,7 +204,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
   const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === ownDirection ? null : d }), [place, ownDirection]);
 
   /** Opens a View from the rail: a Saved View with its own Lens, any other keeping the current Lens. */
-  const pickView = useCallback((v: string) => go(viewPlace(v, null, workspace.ownLens(v) ?? place.lens)), [workspace, place.lens]);
+  const pickView = useCallback((v: string) => go(viewPlace(v, null, workspace.ownLens(v) ?? place.lens, place)), [workspace, place]);
 
   const [saving, setSaving] = useState(false);
   const exportPicture = useCallback(
@@ -176,9 +225,9 @@ function Screen({ workspace }: { workspace: Workspace }) {
       for (const id of ends) open = opening(workspace, { ...viewPlace(target), open }, id) ?? open;
       const shown = new Set(workspace.resolve(target, open)?.nodes.map((n) => n.id) ?? []);
       const selected = [ends[0]!, ...workspace.ancestors(ends[0]!).reverse()].find((id) => shown.has(id)) ?? null;
-      go({ ...viewPlace(target), open, selected });
+      go({ ...viewPlace(target, null, null, place), open, selected });
     },
-    [workspace],
+    [workspace, place],
   );
 
   const rail = (
@@ -203,7 +252,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
             }}
           />}
         <main className="ad-main ad-main-dynamic">
-          <DynamicScreen workspace={workspace} view={dynamic} place={place} keys={!finding} onOpenStepView={openStepView} onOpenView={(v) => go(viewPlace(v))} />
+          <DynamicScreen workspace={plain} view={dynamic} place={place} keys={!finding} onOpenStepView={openStepView} onOpenView={(v) => go(viewPlace(v, null, null, place))} />
         </main>
       </div>
     );
@@ -212,7 +261,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
   if (!view) {
     return (
       <Message title={`No View ${place.view}`}>
-        <a href={formatPlace(HOME)}>Open the C2 Landscape</a>
+        <a href={formatPlace({ ...HOME, at: place.at, vs: place.vs })}>Open the C2 Landscape</a>
       </Message>
     );
   }
@@ -232,17 +281,20 @@ function Screen({ workspace }: { workspace: Workspace }) {
           }}
         />
       )}
-      <main className="ad-main">
+      <main className={at ? "ad-main ad-has-time" : "ad-main"}>
         <LocationBar
           workspace={workspace}
           place={place}
           direction={direction}
+          compare={comparison?.label}
+          timeline={timeline}
           onCollapse={collapse}
           onDirection={setDirection}
           onLens={setLens}
           onPicks={(picks) => go({ ...place, picks }, { replace: true })}
           onExport={exportPicture}
           onSaveAsView={() => setSaving(true)}
+          onTime={(time) => go({ ...place, ...time })}
         />
         {saving && (
           <SaveAsView
@@ -252,11 +304,14 @@ function Screen({ workspace }: { workspace: Workspace }) {
             onClose={() => setSaving(false)}
           />
         )}
+        {at && <AtBanner revision={at} place={place} />}
         {connectFrom !== null && (
           <p className="ad-banner" role="status">
             Pick the node to connect {workspace.name(connectFrom)} to: click it, or press / to find it. Escape cancels.
           </p>
         )}
+        <div className="ad-stage">
+        {comparison && <ChangesList changes={comparison.changes} label={comparison.label} onElement={focus} onView={(v) => go(viewPlace(v, null, place.lens, place))} />}
         <div className="ad-canvas" data-canvas data-state={ready ? "ready" : "busy"}>
           {error && <p className="ad-error">Layout failed: {error}</p>}
           {laidOut && (
@@ -277,7 +332,18 @@ function Screen({ workspace }: { workspace: Workspace }) {
             />
           )}
           {place.selected !== null && workspace.byId.has(place.selected) && (
-            <ElementPanel workspace={workspace} id={place.selected} onLens={setLens} onConnect={setConnectFrom} onFocus={focus} onOpenView={openView} onOpenAdr={openAdr} />
+            <ElementPanel
+              workspace={workspace}
+              id={place.selected}
+              timeline={timeline}
+              comparison={comparison}
+              onLens={setLens}
+              onConnect={setConnectFrom}
+              onFocus={focus}
+              onOpenView={openView}
+              onTime={(time) => go({ ...place, ...time })}
+              onOpenAdr={openAdr}
+            />
           )}
           {place.adr !== null && (
             <AdrReader
@@ -287,9 +353,10 @@ function Screen({ workspace }: { workspace: Workspace }) {
               onClose={() => openAdr(null)}
               onOpenAdr={openAdr}
               onFocus={focus}
-              onOpenView={(v) => go(viewPlace(v, null, place.lens))}
+              onOpenView={(v) => go(viewPlace(v, null, place.lens, place))}
             />
           )}
+        </div>
         </div>
       </main>
     </div>

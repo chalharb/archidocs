@@ -13,6 +13,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import { memo, useEffect, useMemo, useRef, type MouseEvent } from "react";
+import type { CompareMark } from "../../src/core/compare.ts";
 import type { NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
@@ -60,6 +61,8 @@ interface BoxData extends Record<string, unknown> {
   mark: NodeMark | undefined;
   ring: boolean;
   picked: boolean;
+  /** Set while Comparing: how this node changed between the two Revisions. */
+  change: CompareMark | undefined;
 }
 
 interface RouteData extends Record<string, unknown> {
@@ -67,6 +70,7 @@ interface RouteData extends Record<string, unknown> {
   faded: boolean;
   /** Set while a Lens is on: whether it lights this edge. */
   lit: boolean | undefined;
+  change: CompareMark | undefined;
   from: string;
   to: string;
 }
@@ -123,11 +127,13 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
           mark: marks.get(box.id),
           ring,
           picked: picks.includes(box.id),
+          change: node.change,
         },
       };
     });
   }, [view, layout, workspace, selected, open, onToggle, marks, ring, picks]);
 
+  const edgeChanges = useMemo(() => new Map(view.edges.map((e) => [`${e.from}>${e.to}`, e.change])), [view]);
   const edges = useMemo<Edge<RouteData>[]>(
     () =>
       layout.edges.map((e) => ({
@@ -141,11 +147,12 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
           points: e.points,
           faded: selected !== null && e.from !== selected && e.to !== selected,
           lit: litEdges?.get(`${e.from}>${e.to}`),
+          change: edgeChanges.get(`${e.from}>${e.to}`),
           from: e.from,
           to: e.to,
         },
       })),
-    [layout, selected, litEdges],
+    [layout, selected, litEdges, edgeChanges],
   );
 
   return (
@@ -185,8 +192,9 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
     const { layout } = laidOut;
     const pad = 32;
     // Leave room for the Element panel, so opening it never hides or moves a node.
-    const room = width - PANEL_WIDTH;
-    const zoom = Math.min(1, (room - 2 * pad) / Math.max(layout.width, 1), (height - 2 * pad) / Math.max(layout.height, 1));
+    // On a canvas too narrow to spare it (such as beside the Changes list on a small screen), the panel may cover the drawing.
+    const room = width - PANEL_WIDTH >= width / 2 ? width - PANEL_WIDTH : width;
+    const zoom = Math.max(0.05, Math.min(1, (room - 2 * pad) / Math.max(layout.width, 1), (height - 2 * pad) / Math.max(layout.height, 1)));
     const duration = animate && !first.current ? DURATION : 0;
     first.current = false;
     void setViewport({ x: (room - layout.width * zoom) / 2, y: (height - layout.height * zoom) / 2, zoom }, { duration });
@@ -209,7 +217,7 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
-  const { node, sublabel, team, container, toggle, onToggle, mark, ring, picked } = data;
+  const { node, sublabel, team, container, toggle, onToggle, mark, ring, picked, change } = data;
   const stop = (e: MouseEvent) => e.stopPropagation();
   const classes = [
     "ad-box",
@@ -221,6 +229,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     mark?.hit && ring ? "ad-ringed" : "",
     mark?.hit && node.collapsed ? "ad-holds-hit" : "",
     picked ? "ad-picked" : "",
+    change ? `ad-${change}` : "",
   ];
   return (
     <div
@@ -230,8 +239,9 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       data-hit={mark ? String(mark.hit) : undefined}
       data-distance={mark?.distance}
       data-picked={picked ? "true" : undefined}
+      data-change={change}
       aria-selected={selected ? "true" : "false"}
-      title={mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
+      title={change && change !== "unchanged" ? `${node.name}: ${change === "changed" && node.collapsed ? "changed, or something inside changed" : change}` : mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
     >
       <Handle type="target" position={Position.Left} isConnectable={false} className="ad-handle" />
       <Handle type="source" position={Position.Right} isConnectable={false} className="ad-handle" />
@@ -248,6 +258,12 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
         </span>
       )}
       {mark?.hit && node.collapsed && <span className="ad-holds" aria-hidden="true" />}
+      {change === "added" && (
+        <span className="ad-added-mark" data-testid="added" aria-label="added">
+          +
+        </span>
+      )}
+      {change === "changed" && <span className="ad-changed-mark" data-testid="changed" aria-label="changed" />}
       {team && (
         <span className="ad-team" data-testid="team">
           {team.code}
@@ -273,10 +289,10 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
 
 function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
   const d = data!.points.map((p, i) => `${i === 0 ? "M" : "L"}${round(p.x)} ${round(p.y)}`).join(" ");
-  const { faded, lit } = data!;
+  const { faded, lit, change } = data!;
   // While a Lens is on it decides which edges stand out; selection fades edges only without one.
-  const classes = ["ad-edge", (lit === undefined ? faded : !lit) ? "ad-faded" : "", lit ? "ad-lit" : ""];
-  return (
+  const classes = ["ad-edge", (lit === undefined ? faded : !lit) ? "ad-faded" : "", lit ? "ad-lit" : "", change ? `ad-${change}` : ""];
+  const path = (
     <path
       className={classes.filter(Boolean).join(" ")}
       d={d}
@@ -285,8 +301,37 @@ function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
       data-edge-from={data!.from}
       data-edge-to={data!.to}
       data-lit={lit === undefined ? undefined : String(lit)}
+      data-change={change}
     />
   );
+  if (change !== "added" && change !== "changed") return path;
+  const mid = midpoint(data!.points);
+  return (
+    <>
+      {path}
+      {change === "added" ? (
+        <text className="ad-edge-added" x={mid.x} y={mid.y} dy="0.35em" textAnchor="middle" aria-hidden="true">
+          +
+        </text>
+      ) : (
+        <circle className="ad-edge-changed" cx={mid.x} cy={mid.y} r={4} aria-hidden="true" />
+      )}
+    </>
+  );
+}
+
+/** The point halfway along a polyline. */
+function midpoint(points: { x: number; y: number }[]): { x: number; y: number } {
+  const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i]!.x, p.y - points[i]!.y));
+  let left = lengths.reduce((a, b) => a + b, 0) / 2;
+  for (let i = 0; i < lengths.length; i++) {
+    if (left <= lengths[i]! && lengths[i]! > 0) {
+      const t = left / lengths[i]!;
+      return { x: points[i]!.x + t * (points[i + 1]!.x - points[i]!.x), y: points[i]!.y + t * (points[i + 1]!.y - points[i]!.y) };
+    }
+    left -= lengths[i]!;
+  }
+  return points[0] ?? { x: 0, y: 0 };
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;

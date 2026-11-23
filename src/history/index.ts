@@ -1,8 +1,8 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { changedIds, countChanges, diff, load, serializeBundle, type ChangeCounts } from "../core/index.ts";
 import { Bundle, SCHEMA_VERSION } from "../schema/bundle.ts";
-import { commitInfo, defaultBranch, firstParentCommitsTouching, gitFileSystem, isDate, joinRepo, resolvePoint, tagsByCommit, type CommitInfo } from "./git.ts";
+import { commitInfo, defaultBranch, git, firstParentCommitsTouching, gitFileSystem, isDate, joinRepo, resolvePoint, tagsByCommit, type CommitInfo } from "./git.ts";
 
 export { migrateBundle, migrations, type Migration } from "./migrate.ts";
 export { resolvePoint, isDate, type CommitInfo } from "./git.ts";
@@ -163,6 +163,45 @@ async function sinceTime(h: History, since: string): Promise<number> {
   const sha = await resolvePoint(h.repoRoot, since);
   if (!sha) throw new HistoryError(`Unknown ref or date "${since}".`);
   return Date.parse((await commitInfo(h.repoRoot, sha)).date);
+}
+
+/** Past Bundles a published site keeps by default: the latest 200 Revisions, plus every tagged one. */
+export const DEFAULT_KEEP = 200;
+
+export interface PublishResult {
+  revisions: number;
+  kept: number;
+}
+
+/**
+ * Writes the site's `bundles/` folder: `bundles/<sha>.json` for each kept
+ * Revision and `bundles/index.json` listing every Revision. Kept are the
+ * latest `keep` Revisions plus every tagged one; the others stay in the
+ * index with `bundle: false`. Bundles come from the checkout's cache,
+ * backfilled from git first, so nothing is fetched. A Bundle file left in
+ * the folder by an earlier build is removed once its Revision is dropped.
+ */
+export async function publishHistory(h: History, out: string, { keep = DEFAULT_KEEP }: { keep?: number | "all" } = {}): Promise<PublishResult> {
+  const dir = join(out, "bundles");
+  const hasCommits = await gitHasCommits(h.repoRoot);
+  if (hasCommits) await buildHistory(h);
+  const index = hasCommits ? await readIndex(h) : { schemaVersion: SCHEMA_VERSION, revisions: [] };
+  const revisionsOut = index.revisions.map((entry, i) => ({ ...entry, bundle: keep === "all" || i < keep || entry.tags.length > 0 }));
+  await mkdir(dir, { recursive: true });
+  const keptFiles = new Set(revisionsOut.filter((e) => e.bundle).map((e) => `${e.sha}.json`));
+  for (const file of await readdir(dir)) {
+    if (/^[0-9a-f]{40,64}\.json$/.test(file) && !keptFiles.has(file)) await rm(join(dir, file));
+  }
+  for (const file of keptFiles) await copyFile(join(bundlesDir(h), file), join(dir, file));
+  await writeFile(join(dir, "index.json"), JSON.stringify({ schemaVersion: SCHEMA_VERSION, revisions: revisionsOut }, null, 2) + "\n");
+  return { revisions: revisionsOut.length, kept: keptFiles.size };
+}
+
+async function gitHasCommits(repoRoot: string): Promise<boolean> {
+  return git(repoRoot, "rev-parse", "--verify", "--quiet", "HEAD^{commit}").then(
+    () => true,
+    () => false,
+  );
 }
 
 /** A point in time that names no commit, or history that can't be read. */

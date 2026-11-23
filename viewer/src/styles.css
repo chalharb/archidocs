@@ -1431,6 +1431,247 @@ a {
   background: var(--tint);
 }
 
+/* History: the `at` banner, Compare marks, the Changes list and the Revision timeline */
+.ad-main.ad-has-time {
+  grid-template-rows: auto auto 1fr;
+}
+
+.ad-stage {
+  display: flex;
+  min-height: 0;
+}
+
+.ad-stage > .ad-canvas {
+  flex: 1;
+  min-width: 0;
+}
+
+.ad-at {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+  padding: 6px 16px;
+  background: #fff7e6;
+  border-bottom: 1px solid #f0c36d;
+  font-size: 13px;
+}
+
+.ad-at a {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.ad-box.ad-added {
+  border-color: #2f9e5b;
+  box-shadow: 0 0 0 2px rgba(47, 158, 91, 0.3);
+}
+
+.ad-box.ad-removed {
+  border: 1.5px dashed #d64545;
+  background: rgba(214, 69, 69, 0.06);
+  opacity: 0.75;
+}
+
+.ad-box.ad-unchanged {
+  opacity: 0.45;
+}
+
+.ad-added-mark {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2f9e5b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.ad-changed-mark {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e0a030;
+  box-shadow: 0 0 0 2px var(--panel);
+}
+
+.ad-edge.ad-added {
+  stroke: #2f9e5b;
+  stroke-width: 2;
+}
+
+.ad-edge.ad-removed {
+  stroke: #d64545;
+  stroke-dasharray: 5 4;
+}
+
+.ad-edge.ad-changed {
+  stroke: #d08a10;
+}
+
+.ad-edge.ad-unchanged {
+  opacity: 0.35;
+}
+
+.ad-edge-added {
+  fill: #2f9e5b;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.ad-edge-changed {
+  fill: #e0a030;
+}
+
+.ad-changes {
+  width: 280px;
+  flex: none;
+  overflow: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 12px 10px;
+}
+
+.ad-changes h2 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+
+.ad-changes ul,
+.ad-timeline ol,
+.ad-history-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.ad-change {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  text-align: left;
+}
+
+button.ad-change:hover,
+button.ad-change:focus-visible {
+  background: var(--tint);
+}
+
+.ad-change-sign {
+  flex: none;
+  width: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ad-change-added .ad-change-sign {
+  color: #2f9e5b;
+}
+
+.ad-change-removed .ad-change-sign {
+  color: #d64545;
+}
+
+.ad-change-changed .ad-change-sign {
+  color: #d08a10;
+}
+
+.ad-change-kind {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ad-timeline {
+  min-width: 360px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.ad-timeline li,
+.ad-history-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ad-revision-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ad-tag {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--tint);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ad-dropped {
+  color: var(--faint);
+  font-style: italic;
+}
+
+.ad-revision-actions {
+  display: flex;
+  gap: 4px;
+  align-items: start;
+}
+
+.ad-revision-actions button,
+.ad-history-list button {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  font-size: 12px;
+}
+
+.ad-fields {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.ad-fields dt {
+  font-weight: 600;
+}
+
+.ad-fields dd {
+  margin: 0 0 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-word;
+}
+
+.ad-unavailable {
+  max-width: 560px;
+  margin: 15vh auto 0;
+  padding: 20px 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.ad-unavailable code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 /* ADRs tab and reader */
 .ad-adr-row {
   display: flex;
