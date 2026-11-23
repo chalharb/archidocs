@@ -44,7 +44,7 @@ const usage = `Usage:
   archidocs check [--format text|json|github] [--strict]
   archidocs build [--out <dir>] [--bundle-only] [--keep <n|all>]
   archidocs build --preview [--base <branch>] [--out <dir>]
-  archidocs dev [--port <n>] [--host <host>]
+  archidocs dev [--workspace <dir>] [--port <n>] [--host <host>]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
   archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
   archidocs diff <from> [<to>] [--format text|json|markdown]
@@ -141,11 +141,11 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   if (command === "dev") {
-    const { values } = parseArgs({ args: rest, options: { port: { type: "string" }, host: { type: "string" } }, strict: true });
+    const { values } = parseArgs({ args: rest, options: { port: { type: "string" }, host: { type: "string" }, workspace: { type: "string" } }, strict: true });
     const port = values.port === undefined ? DEFAULT_DEV_PORT : Number(values.port);
     if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`--port "${values.port}" is not a port.`);
     if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
-    const root = await workspaceRoot(process.cwd());
+    const root = await workspaceRoot(values.workspace === undefined ? process.cwd() : resolve(values.workspace));
     const color = useColor();
     const dev = await serveDev({
       root,

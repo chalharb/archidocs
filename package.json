@@ -25,6 +25,7 @@
     "schemas": "node scripts/generate-schemas.ts",
     "build:viewer": "vite build --config viewer/vite.config.ts",
     "test:e2e": "playwright test",
+    "dev": "pnpm build:viewer && node src/cli/main.ts dev --workspace \"${INIT_CWD:-.}\"",
     "dev:viewer": "vite --config viewer/vite.config.ts"
   },
   "dependencies": {
