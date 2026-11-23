@@ -18,11 +18,19 @@
 | [`duplicate-id`](#duplicate-id) | error | An Element or Deployment Target id is declared twice in a Project, across files too, whatever its kind or nesting. |
 | [`invalid-nesting`](#invalid-nesting) | error | System > Service > Component is broken, by nesting or `in:`. |
 | [`external-with-components`](#external-with-components) | error | An External System or Service declares Components. |
-| [`unknown-element`](#unknown-element) | error | A reference names no Element. |
+| [`unknown-element`](#unknown-element) | error | A reference names no Element: in `to`, `via`, `in` or a Deployment's `service`. |
+| [`unknown-project`](#unknown-project) | error | A `project:` prefix names no Project. |
+| [`own-project-prefix`](#own-project-prefix) | error | A Project qualifies its own ids. |
+| [`duplicate-relationship-id`](#duplicate-relationship-id) | error | A Relationship `id` repeats in a Project. |
+| [`self-relationship`](#self-relationship) | error | An Element has a Relationship to itself. |
+| [`person-as-provider`](#person-as-provider) | error | The provider of a Relationship is a Person. |
+| [`ancestor-descendant-relationship`](#ancestor-descendant-relationship) | error | An Element is linked to its own ancestor or descendant. |
+| [`via-on-sync`](#via-on-sync) | error | `via` or `channel` on a sync Relationship. |
+| [`via-not-broker`](#via-not-broker) | error | `via` names a Service that isn't `type: broker`. |
 | [`duplicate-deployment`](#duplicate-deployment) | error | The same Service, Environment and Target appear twice. |
 | [`unknown-environment`](#unknown-environment) | error | A Deployment names no Environment. |
 | [`unknown-target`](#unknown-target) | error | A Deployment names no Deployment Target. |
-| [`wrong-kind`](#wrong-kind) | error | An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System. |
+| [`wrong-kind`](#wrong-kind) | error | An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service. |
 
 ## `yaml-syntax`
 
@@ -407,7 +415,7 @@ services:
 
 **Severity:** error
 
-A reference names no Element.
+A reference names no Element: in `to`, `via`, `in` or a Deployment's `service`.
 
 **Failing example**
 
@@ -431,6 +439,325 @@ services:
   cart:
     name: Cart
     in: checkout
+```
+
+## `unknown-project`
+
+**Severity:** error
+
+A `project:` prefix names no Project.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: paymnts:payments-api
+```
+
+**Fix:** Correct the prefix to the id of an existing Project.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: payments:payments-api
+```
+
+## `own-project-prefix`
+
+**Severity:** error
+
+A Project qualifies its own ids.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: shop:cart
+  cart:
+    name: Cart
+```
+
+**Fix:** Drop the `project:` prefix; within its own Project an id is written bare.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+```
+
+## `duplicate-relationship-id`
+
+**Severity:** error
+
+A Relationship `id` repeats in a Project.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - id: add-item
+        to: cart
+      - id: add-item
+        to: cart
+        description: Adds a gift card
+  cart:
+    name: Cart
+```
+
+**Fix:** Give one of the Relationships a different id.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - id: add-item
+        to: cart
+      - id: add-gift-card
+        to: cart
+        description: Adds a gift card
+  cart:
+    name: Cart
+```
+
+## `self-relationship`
+
+**Severity:** error
+
+An Element has a Relationship to itself.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: web
+  cart:
+    name: Cart
+```
+
+**Fix:** Point `to` at the Element depended on, or remove the Relationship.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+```
+
+## `person-as-provider`
+
+**Severity:** error
+
+The provider of a Relationship is a Person.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: shopper
+people:
+  shopper:
+    name: Shopper
+```
+
+**Fix:** A Person is only ever a consumer: declare the Relationship under the Person, pointing at what it uses.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+people:
+  shopper:
+    name: Shopper
+    relationships:
+      - to: web
+```
+
+## `ancestor-descendant-relationship`
+
+**Severity:** error
+
+An Element is linked to its own ancestor or descendant.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    components:
+      web-ui:
+        name: Web UI
+        relationships:
+          - to: web
+```
+
+**Fix:** Point `to` at an Element outside the consumer's own branch, such as a sibling.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    components:
+      web-ui:
+        name: Web UI
+        relationships:
+          - to: web-api
+      web-api:
+        name: Web API
+```
+
+## `via-on-sync`
+
+**Severity:** error
+
+`via` or `channel` on a sync Relationship.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+        via: events
+        channel: cart.updated
+  cart:
+    name: Cart
+  events:
+    name: Events
+    type: broker
+```
+
+**Fix:** Set `interaction: async` if the Relationship runs through a broker, or remove `via` and `channel`.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+        interaction: async
+        via: events
+        channel: cart.updated
+  cart:
+    name: Cart
+  events:
+    name: Events
+    type: broker
+```
+
+## `via-not-broker`
+
+**Severity:** error
+
+`via` names a Service that isn't `type: broker`.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+        interaction: async
+        via: events
+  cart:
+    name: Cart
+  events:
+    name: Events
+    type: app
+```
+
+**Fix:** Point `via` at a broker Service, or mark the Service `type: broker`.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+        interaction: async
+        via: events
+  cart:
+    name: Cart
+  events:
+    name: Events
+    type: broker
 ```
 
 ## `duplicate-deployment`
@@ -558,7 +885,7 @@ deployments:
 
 **Severity:** error
 
-An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System.
+An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service.
 
 **Failing example**
 
@@ -581,7 +908,7 @@ deployments:
   - { service: cart, environment: prod, target: eks-prod }
 ```
 
-**Fix:** Point the field at an id of the kind it accepts: a Deployment's `service` names a Service.
+**Fix:** Point the field at an id of the kind it accepts: a Deployment's `service` and a Relationship's `via` each name a Service.
 
 **Fixed**
 

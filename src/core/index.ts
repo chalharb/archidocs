@@ -4,3 +4,4 @@ export { rules, type RuleDefinition } from "./rules.ts";
 export type { Issue, Severity } from "./model.ts";
 export type { Files } from "./files.ts";
 export { ruleCatalogue } from "./catalogue.ts";
+export { deriveEdges, type DerivedEdge, type Level } from "./query.ts";

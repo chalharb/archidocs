@@ -47,6 +47,54 @@
               ],
               "additionalProperties": false
             }
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "to": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "technology": {
+                  "type": "string"
+                },
+                "interaction": {
+                  "type": "string",
+                  "enum": [
+                    "sync",
+                    "async"
+                  ]
+                },
+                "via": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "channel": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "to"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -100,6 +148,54 @@
               "additionalProperties": false
             }
           },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "to": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "technology": {
+                  "type": "string"
+                },
+                "interaction": {
+                  "type": "string",
+                  "enum": [
+                    "sync",
+                    "async"
+                  ]
+                },
+                "via": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "channel": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "to"
+              ],
+              "additionalProperties": false
+            }
+          },
           "external": {
             "type": "boolean"
           },
@@ -144,6 +240,54 @@
                     "required": [
                       "label",
                       "url"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "relationships": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "to": {
+                        "type": "string",
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]*$"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "technology": {
+                        "type": "string"
+                      },
+                      "interaction": {
+                        "type": "string",
+                        "enum": [
+                          "sync",
+                          "async"
+                        ]
+                      },
+                      "via": {
+                        "type": "string",
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
+                      },
+                      "channel": {
+                        "type": "string"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "to"
                     ],
                     "additionalProperties": false
                   }
@@ -208,6 +352,54 @@
                           "required": [
                             "label",
                             "url"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "relationships": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "to": {
+                              "type": "string",
+                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                              "description": "An id in this Project, or `project:id` for one in another Project"
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9][a-z0-9-]*$"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "technology": {
+                              "type": "string"
+                            },
+                            "interaction": {
+                              "type": "string",
+                              "enum": [
+                                "sync",
+                                "async"
+                              ]
+                            },
+                            "via": {
+                              "type": "string",
+                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                              "description": "An id in this Project, or `project:id` for one in another Project"
+                            },
+                            "channel": {
+                              "type": "string"
+                            },
+                            "tags": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "to"
                           ],
                           "additionalProperties": false
                         }
@@ -286,6 +478,54 @@
               "additionalProperties": false
             }
           },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "to": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "technology": {
+                  "type": "string"
+                },
+                "interaction": {
+                  "type": "string",
+                  "enum": [
+                    "sync",
+                    "async"
+                  ]
+                },
+                "via": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "channel": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "to"
+              ],
+              "additionalProperties": false
+            }
+          },
           "type": {
             "type": "string",
             "enum": [
@@ -346,6 +586,54 @@
                     "required": [
                       "label",
                       "url"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "relationships": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "to": {
+                        "type": "string",
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]*$"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "technology": {
+                        "type": "string"
+                      },
+                      "interaction": {
+                        "type": "string",
+                        "enum": [
+                          "sync",
+                          "async"
+                        ]
+                      },
+                      "via": {
+                        "type": "string",
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
+                      },
+                      "channel": {
+                        "type": "string"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "to"
                     ],
                     "additionalProperties": false
                   }
@@ -413,6 +701,54 @@
               "required": [
                 "label",
                 "url"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "to": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "technology": {
+                  "type": "string"
+                },
+                "interaction": {
+                  "type": "string",
+                  "enum": [
+                    "sync",
+                    "async"
+                  ]
+                },
+                "via": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                },
+                "channel": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "to"
               ],
               "additionalProperties": false
             }

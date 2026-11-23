@@ -177,3 +177,84 @@ deployments:
   - { service: payments-api, environment: prod, target: platform:eks-prod }
 `,
 };
+
+/**
+ * Two Projects with Relationships declared at Person, Service and Component
+ * level, across Projects, several on one pair, and one async via a broker.
+ */
+export const relationshipWorkspace: Files = {
+  "workspace.yaml": `teams:
+  storefront-team:
+    name: Storefront
+  payments-team:
+    name: Payments
+`,
+  "shop/project.yaml": `id: shop
+name: Shop
+owner: storefront-team
+`,
+  "shop/people.yaml": `people:
+  shopper:
+    name: Shopper
+    relationships:
+      - to: web
+        description: Browses and buys
+        technology: HTTPS
+`,
+  "shop/systems.yaml": `systems:
+  checkout:
+    name: Checkout
+    services:
+      cart:
+        name: Cart
+        relationships:
+          - to: cart-db
+            description: Reads and writes carts
+        components:
+          checkout-ui:
+            name: Checkout UI
+            relationships:
+              - id: authorise
+                to: payments:charges
+                description: Authorises a card
+              - id: capture
+                to: payments:charges
+                description: Captures a payment
+      cart-db:
+        name: Cart DB
+        type: datastore
+      order-history:
+        name: Order history
+        relationships:
+          - to: payments:charges
+            description: Payment events
+            interaction: async
+            via: events
+            channel: payment.captured
+`,
+  "shop/web.yaml": `services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+        description: Manages the cart
+  events:
+    name: Events
+    type: broker
+    technology: Kafka
+`,
+  "payments/project.yaml": `id: payments
+name: Payments
+owner: payments-team
+`,
+  "payments/model.yaml": `systems:
+  payments:
+    name: Payments
+    services:
+      payments-api:
+        name: Payments API
+        components:
+          charges:
+            name: Charges
+`,
+};

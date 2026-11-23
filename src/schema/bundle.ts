@@ -56,6 +56,24 @@ export const BundleDeployment = z.object({
 });
 
 /**
+ * One declared Relationship, consumer (`from`) → provider (`to`), all ids
+ * qualified. `id` is the author's optional id, qualified with the consumer's
+ * Project. Derived edges are never stored.
+ */
+export const BundleRelationship = z.object({
+  id: z.string().nullable(),
+  from: z.string(),
+  to: z.string(),
+  description: z.string().nullable(),
+  technology: z.string().nullable(),
+  interaction: z.enum(["sync", "async"]),
+  via: z.string().nullable(),
+  channel: z.string().nullable(),
+  tags: z.array(z.string()),
+  source: Source,
+});
+
+/**
  * The Workspace Bundle. Parsing through this schema also fixes key order,
  * since zod emits object keys in shape order.
  */
@@ -73,12 +91,13 @@ export const Bundle = z.object({
     z.object({ id: z.string(), name: z.string(), owner: z.string(), folder: z.string(), source: Source }),
   ),
   elements: z.array(BundleElement),
-  relationships: z.array(z.never()),
+  relationships: z.array(BundleRelationship),
   targets: z.array(BundleTarget),
   deployments: z.array(BundleDeployment),
 });
 
 export type Bundle = z.infer<typeof Bundle>;
 export type BundleElement = z.infer<typeof BundleElement>;
+export type BundleRelationship = z.infer<typeof BundleRelationship>;
 export type BundleTarget = z.infer<typeof BundleTarget>;
 export type BundleDeployment = z.infer<typeof BundleDeployment>;
