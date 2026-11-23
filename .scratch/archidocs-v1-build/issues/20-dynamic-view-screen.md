@@ -1,6 +1,6 @@
 # 20: Dynamic View screen
 
-Status: ready-for-agent
+Status: done
 Assignee: Claude (ticket-20 session)
 Blocked by: 14, 19
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
@@ -22,6 +22,6 @@ People walk through a scenario in the viewer and export it as a sequence chart.
 
 ## Acceptance criteria
 
-- [ ] Layout unit tests on a 46-Step fixture.
-- [ ] Playwright covers playback, keyboard, shared selection, broker legs and the View-link buttons.
-- [ ] A golden SVG of a sequence chart.
+- [x] Layout unit tests on a 46-Step fixture.
+- [x] Playwright covers playback, keyboard, shared selection, broker legs and the View-link buttons.
+- [x] A golden SVG of a sequence chart.

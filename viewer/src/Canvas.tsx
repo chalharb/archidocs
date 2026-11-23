@@ -12,10 +12,11 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { memo, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { memo, useEffect, useMemo, useRef, type MouseEvent } from "react";
 import type { NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
+import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
 
 /** Animated transitions run up to this many nodes, and never with `prefers-reduced-motion`. */
@@ -205,18 +206,6 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laidOut, fitKey, sized]);
   return null;
-}
-
-function useReducedMotion(): boolean {
-  const query = "(prefers-reduced-motion: reduce)";
-  const [reduced, setReduced] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const list = window.matchMedia(query);
-    const onChange = () => setReduced(list.matches);
-    list.addEventListener("change", onChange);
-    return () => list.removeEventListener("change", onChange);
-  }, []);
-  return reduced;
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Bundle } from "../../src/schema/bundle.ts";
+import type { ResolvedStep } from "../../src/core/dynamic-views.ts";
 import { Canvas } from "./Canvas.tsx";
+import { DynamicScreen } from "./DynamicScreen.tsx";
 import { ElementPanel } from "./ElementPanel.tsx";
 import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
@@ -35,6 +37,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
   const openKey = place.open.join(",");
   // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
   const view = useMemo(() => workspace.resolve(place.view, place.open), [workspace, place.view, openKey]);
+  const dynamic = useMemo(() => workspace.dynamic(place.view), [workspace, place.view]);
   const direction = place.direction ?? defaultDirection(place.view);
   const { laidOut, error } = useLayout(view, direction);
   const [settled, setSettled] = useState<LaidOut>();
@@ -136,6 +139,47 @@ function Screen({ workspace }: { workspace: Workspace }) {
 
   const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === defaultDirection(place.view) ? null : d }), [place]);
 
+  /** Opens a Generated View from a Step: the boxes that show both ends of its Relationship open, its consumer (or what shows it) selected. */
+  const openStepView = useCallback(
+    (target: string, step: ResolvedStep) => {
+      const ends = [step.relationship.from, step.relationship.to];
+      let open: string[] = [];
+      for (const id of ends) open = opening(workspace, { ...viewPlace(target), open }, id) ?? open;
+      const shown = new Set(workspace.resolve(target, open)?.nodes.map((n) => n.id) ?? []);
+      const selected = [ends[0]!, ...workspace.ancestors(ends[0]!).reverse()].find((id) => shown.has(id)) ?? null;
+      go({ ...viewPlace(target), open, selected });
+    },
+    [workspace],
+  );
+
+  const rail = (
+    <Rail
+      workspace={workspace}
+      view={place.view}
+      selected={place.selected}
+      onPickElement={focus}
+      onPickView={(v) => go(viewPlace(v, null, place.lens))}
+      onPickTeam={(team) => setLens({ team })}
+      onFind={() => setFinding(true)}
+    />
+  );
+
+  if (dynamic) {
+    return (
+      <div className="ad-app">
+        {rail}
+        {finding && <Find workspace={workspace} onClose={() => setFinding(false)} onPick={(id) => {
+              setFinding(false);
+              focus(id);
+            }}
+          />}
+        <main className="ad-main ad-main-dynamic">
+          <DynamicScreen workspace={workspace} view={dynamic} place={place} keys={!finding} onOpenStepView={openStepView} onOpenView={(v) => go(viewPlace(v))} />
+        </main>
+      </div>
+    );
+  }
+
   if (!view) {
     return (
       <Message title={`No View ${place.view}`}>
@@ -146,15 +190,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
 
   return (
     <div className="ad-app">
-      <Rail
-        workspace={workspace}
-        view={place.view}
-        selected={place.selected}
-        onPickElement={focus}
-        onPickView={(v) => go(viewPlace(v, null, place.lens))}
-        onPickTeam={(team) => setLens({ team })}
-        onFind={() => setFinding(true)}
-      />
+      {rail}
       {finding && (
         <Find
           workspace={workspace}
