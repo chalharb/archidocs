@@ -1,0 +1,142 @@
+name: Archidocs
+description: Check an Archidocs Workspace, build its static viewer site with past Bundles, and publish it to GitHub Pages or as a PR preview.
+author: Archidocs
+branding:
+  icon: layers
+  color: blue
+
+# Use it from a workflow that checks out with full history (`fetch-depth: 0`):
+# past Bundles are rebuilt from git and the cache, never fetched from the live site.
+# See docs/publishing.md for the workflows and the permissions Pages needs.
+inputs:
+  working-directory:
+    description: Where to run Archidocs; the Workspace is found from here, as `archidocs check` finds it.
+    default: "."
+  out:
+    description: The site folder, relative to working-directory.
+    default: _site
+  keep:
+    description: Past Bundles to keep, latest first, plus every tagged Revision; a count or `all`.
+    default: "200"
+  images:
+    description: Also render every Saved View to `views/<view-id>.svg` in the site, for wikis and READMEs.
+    default: "false"
+  preview:
+    description: Build a PR preview (`archidocs build --preview`) and upload it as a workflow artifact instead of deploying to Pages.
+    default: "false"
+  base:
+    description: The preview's base branch, read from `origin/<base>`; defaults to the PR's base branch.
+    default: ${{ github.base_ref }}
+  deploy:
+    description: Deploy the site to GitHub Pages. It only ever deploys on a push to the default branch or a tag.
+    default: "true"
+  version:
+    description: The archidocs npm version to run, such as `1.2.0`. Empty runs the version this Action was checked out at.
+    default: ""
+  node-version:
+    description: The Node.js version to set up.
+    default: "24"
+
+outputs:
+  site:
+    description: The site folder's path.
+    value: ${{ steps.paths.outputs.site }}
+  page-url:
+    description: The deployed site's URL, when it was deployed.
+    value: ${{ steps.deployment.outputs.page_url }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install archidocs
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        if [ -n "$VERSION" ]; then
+          npm install --global "archidocs@$VERSION"
+        else
+          # The CLI and the prebuilt viewer, from this Action's own source.
+          cd "$GITHUB_ACTION_PATH"
+          npm install --global pnpm@10.32.1
+          pnpm install --frozen-lockfile
+          pnpm build
+          mkdir -p "$RUNNER_TEMP/archidocs-bin"
+          printf '#!/bin/sh\nexec node "%s/dist/cli/main.js" "$@"\n' "$GITHUB_ACTION_PATH" > "$RUNNER_TEMP/archidocs-bin/archidocs"
+          chmod +x "$RUNNER_TEMP/archidocs-bin/archidocs"
+          echo "$RUNNER_TEMP/archidocs-bin" >> "$GITHUB_PATH"
+        fi
+
+    - name: Find the cache and site paths
+      id: paths
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        OUT: ${{ inputs.out }}
+      run: |
+        if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+          echo "::error::Archidocs needs the full history; check out with fetch-depth: 0."
+          exit 1
+        fi
+        root="$(git rev-parse --show-toplevel)"
+        echo "cache=$root/.archidocs/cache" >> "$GITHUB_OUTPUT"
+        echo "schema=$(archidocs version --format json | jq -r .schemaVersion)" >> "$GITHUB_OUTPUT"
+        echo "site=$(pwd)/$OUT" >> "$GITHUB_OUTPUT"
+
+    # Past Bundles, keyed by the Bundle schemaVersion: a new schema misses and rebuilds them all from git.
+    - uses: actions/cache@v4
+      with:
+        path: ${{ steps.paths.outputs.cache }}
+        key: archidocs-bundles-v${{ steps.paths.outputs.schema }}-${{ github.sha }}
+        restore-keys: archidocs-bundles-v${{ steps.paths.outputs.schema }}-
+
+    # A failed check stops here: nothing is built or deployed, and the last good site stays up.
+    - name: Check the Workspace
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: archidocs check --format github
+
+    - name: Build the site
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        OUT: ${{ inputs.out }}
+        KEEP: ${{ inputs.keep }}
+        PREVIEW: ${{ inputs.preview }}
+        BASE: ${{ inputs.base }}
+      run: |
+        if [ "$PREVIEW" = "true" ]; then
+          archidocs build --preview --out "$OUT" ${BASE:+--base "$BASE"}
+        else
+          archidocs build --out "$OUT" --keep "$KEEP"
+        fi
+
+    - name: Render Saved Views
+      if: inputs.images == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        OUT: ${{ inputs.out }}
+      run: archidocs export --all-saved --format svg --out "$OUT/views"
+
+    - name: Upload the preview
+      if: inputs.preview == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: archidocs-preview
+        path: ${{ steps.paths.outputs.site }}
+
+    - name: Upload the Pages artifact
+      if: inputs.preview != 'true' && inputs.deploy == 'true' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ steps.paths.outputs.site }}
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      if: inputs.preview != 'true' && inputs.deploy == 'true' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+      uses: actions/deploy-pages@v4

@@ -197,6 +197,78 @@ export async function publishHistory(h: History, out: string, { keep = DEFAULT_K
   return { revisions: revisionsOut.length, kept: keptFiles.size };
 }
 
+/** The two sides a preview site Compares: the base branch's latest Revision and the PR head. */
+export interface PreviewSides {
+  /** The base branch's name, such as `main`; its Revision is read from `origin/<base>`. */
+  base: string;
+  baseRevision: CommitInfo;
+  baseBundle: Bundle;
+  /** The Bundle of the Revision before the base's, for the base entry's counts. */
+  beforeBase: Bundle;
+  head: CommitInfo;
+}
+
+/**
+ * Finds a preview's sides from what the checkout already has: the latest
+ * Revision on `origin/<base>` (or its tip, when the base has no Revision
+ * yet) and HEAD. It never fetches; a missing `origin/<base>` is an error.
+ */
+export async function previewSides(h: History, base: string): Promise<PreviewSides> {
+  const ref = `refs/remotes/origin/${base}`;
+  const tip = (await git(h.repoRoot, "rev-parse", "--verify", "--quiet", `${ref}^{commit}`).catch(() => "")).trim();
+  if (!tip) throw new HistoryError(`origin/${base} is not in this checkout; fetch the base branch before building (archidocs never fetches).`);
+  const headSha = (await git(h.repoRoot, "rev-parse", "--verify", "--quiet", "HEAD^{commit}").catch(() => "")).trim();
+  if (!headSha) throw new HistoryError("A preview needs HEAD to be a commit.");
+  const onBase = await firstParentCommitsTouching(h.repoRoot, ref, h.workspacePath);
+  const baseRevision = onBase[0] ?? (await commitInfo(h.repoRoot, tip));
+  const before = onBase[1];
+  return {
+    base,
+    baseRevision,
+    baseBundle: (await bundleAt(h, baseRevision.sha)).bundle,
+    beforeBase: before ? (await bundleAt(h, before.sha)).bundle : emptyBundle(null, null),
+    head: await commitInfo(h.repoRoot, headSha),
+  };
+}
+
+/** What a preview site's `bundles/index.json` adds: the base branch and both sides' shas, so the viewer opens with Compare "base → PR". */
+export interface PreviewMark {
+  base: string;
+  baseSha: string;
+  headSha: string;
+}
+
+/**
+ * Writes a preview site's `bundles/`: the base's Bundle, the head's (the
+ * checkout as built) and an index of the two, newest first, marked with
+ * `preview`. The head's counts are against the base.
+ */
+export async function publishPreview(h: History, out: string, sides: PreviewSides, head: Bundle): Promise<PreviewMark> {
+  const dir = join(out, "bundles");
+  const tags = await tagsByCommit(h.repoRoot);
+  const entry = (rev: CommitInfo, before: Bundle, after: Bundle): RevisionEntry => {
+    const changes = diff(before, after);
+    const { sha, date, subject, author } = rev;
+    return { sha, date, subject, author, tags: tags.get(sha) ?? [], counts: countChanges(changes), changedIds: changedIds(changes), bundle: true };
+  };
+  const { baseRevision, baseBundle } = sides;
+  const revisionsOut = [entry(sides.head, baseBundle, head)];
+  if (sides.head.sha !== baseRevision.sha) revisionsOut.push(entry(baseRevision, sides.beforeBase, baseBundle));
+  const preview = { base: sides.base, baseSha: baseRevision.sha, headSha: sides.head.sha };
+  await rm(dir, { recursive: true, force: true });
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, `${baseRevision.sha}.json`), serializeBundle(baseBundle));
+  await writeFile(join(dir, `${sides.head.sha}.json`), serializeBundle(head));
+  await writeFile(join(dir, "index.json"), JSON.stringify({ schemaVersion: SCHEMA_VERSION, preview, revisions: revisionsOut }, null, 2) + "\n");
+  return preview;
+}
+
+/** The base branch origin/HEAD names, else `main`. */
+export async function defaultBaseBranch(repoRoot: string): Promise<string> {
+  const ref = (await git(repoRoot, "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD").catch(() => "")).trim();
+  return ref.startsWith("refs/remotes/origin/") ? ref.slice("refs/remotes/origin/".length) : "main";
+}
+
 async function gitHasCommits(repoRoot: string): Promise<boolean> {
   return git(repoRoot, "rev-parse", "--verify", "--quiet", "HEAD^{commit}").then(
     () => true,

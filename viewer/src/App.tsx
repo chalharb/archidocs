@@ -34,10 +34,22 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error
       .catch(() => undefined);
     const latest = fetch("./workspace.bundle.json").then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`workspace.bundle.json: HTTP ${r.status}`))));
     Promise.all([latest, loadTimeline(), name])
-      .then(([bundle, timeline, workspaceName]) => setState({ latest: bundle, timeline, name: workspaceName }))
+      .then(([bundle, timeline, workspaceName]) => {
+        openPreview(timeline);
+        setState({ latest: bundle, timeline, name: workspaceName });
+      })
       .catch((e: unknown) => setState({ error: e instanceof Error ? e.message : String(e) }));
   }, []);
   return state;
+}
+
+/**
+ * A PR preview site opened at its root (no View in the URL) starts with
+ * Compare "base → PR" on the C2 Landscape; a link to a place opens as is.
+ */
+function openPreview(timeline: Timeline) {
+  const base = timeline.previewBase();
+  if (base && !/^#\/view\//.test(window.location.hash)) go({ ...HOME, vs: pointLabel(base) }, { replace: true });
 }
 
 export function App() {
@@ -66,8 +78,8 @@ function AtTime({ latest, timeline, name }: { latest: Bundle; timeline: Timeline
   const comparison = useMemo<Comparison | undefined>(() => {
     if (!times?.before) return undefined;
     const { before, current: after, vs, at: atRevision } = times;
-    return { before, after, changes: diff(before, after), label: `${pointLabel(vs!)} → ${atRevision ? pointLabel(atRevision) : "latest"}` };
-  }, [times]);
+    return { before, after, changes: diff(before, after), label: timeline.compareLabel(vs!, atRevision) };
+  }, [times, timeline]);
   const workspace = useMemo(() => (comparison ? new Workspace(unionBundle(comparison.before, comparison.after), name) : plain), [comparison, plain, name]);
   if (state?.kind === "problem") return <Unavailable problem={state.problem} place={place} />;
   if (!workspace || !plain) return <Message title="Loading the Revision…" />;
@@ -347,8 +359,8 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               onConnect={setConnectFrom}
               onFocus={focus}
               onOpenView={openView}
-              onTime={(time) => go({ ...place, ...time })}
               onOpenAdr={openAdr}
+              onTime={(time) => go({ ...place, ...time })}
               onDeployed={(target, nodes) => go({ ...viewPlace(target, null, null, place), picks: nodes })}
             />
           )}

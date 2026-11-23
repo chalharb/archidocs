@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { landscapeWorkspace, relationshipWorkspace } from "../support/fixtures.ts";
@@ -101,6 +101,21 @@ describe("archidocs build --out", () => {
     expect(all).toEqual([...shas].map((s) => `${s}.json`).sort());
     expect(one).toEqual([shas[0], shas[2]].map((s) => `${s}.json`).sort());
     expect((await readJson(join(site, "bundles", "index.json"))).revisions.map((r: { bundle: boolean }) => r.bundle)).toEqual([true, false, true, false]);
+  });
+
+  it("rebuilds every past Bundle from git when the cache is empty, byte for byte, fetching nothing", async () => {
+    const { repo, shas } = await repoWithFourRevisions();
+    await archidocs(repo.repoRoot, "build", "--out", "warm", "--keep", "all");
+    await rm(join(repo.repoRoot, ".archidocs"), { recursive: true });
+
+    const { code } = await archidocs(repo.repoRoot, "build", "--out", "cold", "--keep", "all");
+
+    expect(code).toBe(0);
+    expect(await bundleFiles(join(repo.repoRoot, "cold"))).toEqual([...shas].map((s) => `${s}.json`).sort());
+    for (const file of [...(await bundleFiles(join(repo.repoRoot, "warm"))), "index.json"]) {
+      expect(await readFile(join(repo.repoRoot, "cold", "bundles", file), "utf8")).toBe(await readFile(join(repo.repoRoot, "warm", "bundles", file), "utf8"));
+    }
+    expect(existsSync(join(repo.repoRoot, ".archidocs", "cache", "bundles", `${shas[3]}.json`))).toBe(true);
   });
 
   it("refuses a --keep that is not a count or all", async () => {

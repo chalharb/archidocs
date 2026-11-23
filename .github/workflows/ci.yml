@@ -56,3 +56,71 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  action:
+    # The reusable Action (action.yml) against fixture Workspace repos: a site with
+    # images, a failed check that publishes nothing, and a PR preview. It never deploys.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Write the fixture Workspace repos
+        run: |
+          node scripts/fixture-workspace.ts "$RUNNER_TEMP/site"
+          node scripts/fixture-workspace.ts "$RUNNER_TEMP/broken" --broken
+          node scripts/fixture-workspace.ts "$RUNNER_TEMP/pr" --pr
+
+      - name: Build a site with images
+        id: site
+        uses: ./
+        with:
+          working-directory: ${{ runner.temp }}/site
+          keep: "1"
+          images: "true"
+          deploy: "false"
+      - name: The site holds the viewer, the kept past Bundles and the Saved View images
+        env:
+          SITE: ${{ steps.site.outputs.site }}
+        run: |
+          set -eux
+          test -f "$SITE/index.html"
+          test -f "$SITE/workspace.bundle.json"
+          # One picture per Saved View the latest Bundle holds (Deployment Views can't be exported yet).
+          ids="$(jq -r '.views[] | select(.level != "deployment") | .id | gsub("[/:]"; "-")' "$SITE/workspace.bundle.json")"
+          test -n "$ids"
+          for id in $ids; do test -f "$SITE/views/$id.svg"; done
+          test "$(jq -c '[.revisions[] | [.subject, .tags, .bundle]]' "$SITE/bundles/index.json")" = \
+            '[["Add Wishlist, rename Web, retire Legacy",[],true],["Add the Legacy shop",["v1"],true],["First model",[],false]]'
+          test "$(ls "$SITE/bundles" | wc -l)" -eq 3
+
+      - name: A failed check
+        id: broken
+        continue-on-error: true
+        uses: ./
+        with:
+          working-directory: ${{ runner.temp }}/broken
+          deploy: "false"
+      - name: The failed check stopped the Action and built nothing
+        env:
+          OUTCOME: ${{ steps.broken.outcome }}
+        run: |
+          set -eux
+          test "$OUTCOME" = failure
+          test ! -e "$RUNNER_TEMP/broken/_site"
+
+      - name: Build a PR preview
+        id: preview
+        uses: ./
+        with:
+          working-directory: ${{ runner.temp }}/pr
+          preview: "true"
+          base: main
+      - name: The preview holds the base and the PR head, marked for Compare
+        env:
+          SITE: ${{ steps.preview.outputs.site }}
+        run: |
+          set -eux
+          test "$(jq -r .preview.base "$SITE/bundles/index.json")" = main
+          test "$(jq -c '[.revisions[].subject]' "$SITE/bundles/index.json")" = '["Add Gift cards","Add Wishlist, rename Web, retire Legacy"]'

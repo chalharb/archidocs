@@ -119,8 +119,8 @@ const encode = (s: string) => encodeURIComponent(s).replace(/%3A/gi, ":").replac
 
 /**
  * Opens a View afresh: nothing open, nothing selected or picked, its default
- * direction; a Lens carries over when given, and `at` and `vs` from the
- * place it is opened from, so moving around stays at the same Revisions.
+ * direction, no ADR; a Lens carries over when given, and `at` and `vs` from
+ * the place it is opened from, so moving around stays at the same Revisions.
  */
 export const viewPlace = (view: string, selected: string | null = null, lens: Lens | null = null, from?: Pick<Place, "at" | "vs">): Place => ({
   view,
