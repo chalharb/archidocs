@@ -2,6 +2,8 @@ import {
   Controls,
   Handle,
   MarkerType,
+  MiniMap,
+  Panel,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -19,6 +21,15 @@ import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
+
+/** What a collapsed box holds, as the prototype shows it: "4 Services", "1 Component". */
+function countInside(workspace: Workspace, id: string | undefined): string | undefined {
+  if (id === undefined) return undefined;
+  const kids = workspace.children(id);
+  if (kids.length === 0) return undefined;
+  const noun = kids[0]!.kind === "service" ? "Service" : kids[0]!.kind === "component" ? "Component" : "Element";
+  return `${kids.length} ${noun}${kids.length === 1 ? "" : "s"}`;
+}
 
 /** Animated transitions run up to this many nodes, and never with `prefers-reduced-motion`. */
 export const ANIMATE_MAX_NODES = 100;
@@ -106,6 +117,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       const element = workspace.byId.get(node.element ?? box.id);
       const target = node.kind === "target" ? workspace.targets.get(box.id) : undefined;
       const technology = element && "technology" in element ? element.technology : null;
+      const inside = (id: string | undefined) => countInside(workspace, id);
       const canOpen = view.kind !== "c1" && view.kind !== "deployment" && node.collapsed && (node.kind === "system" || node.kind === "service");
       return {
         id: box.id,
@@ -120,7 +132,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         connectable: false,
         data: {
           node,
-          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : [node.external ? `External ${KIND_LABEL[node.kind].toLowerCase()}` : KIND_LABEL[node.kind], technology].filter(Boolean).join(" · "),
+          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : [node.external ? `External ${KIND_LABEL[node.kind].toLowerCase()}` : KIND_LABEL[node.kind], technology, containers.has(box.id) ? undefined : inside(element?.id)].filter(Boolean).join(" · "),
           team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
@@ -174,7 +186,11 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       onNodeDoubleClick={(_, node) => onOpenView(node.id)}
       onPaneClick={() => onSelect(null)}
     >
-      <Controls showInteractive={false} />
+      <Panel position="top-center" className="arc-hintline">
+        Shift-click to pick for export · double-click to open a box's own View · / to find
+      </Panel>
+      <MiniMap position="bottom-left" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeColor="#a3acb9" nodeStrokeWidth={0} maskColor="rgba(246, 247, 249, 0.6)" />
+      <Controls position="bottom-right" showInteractive={false} />
       <Fitter laidOut={laidOut} fitKey={fitKey} animate={animate} onSettled={onSettled} />
     </ReactFlow>
   );

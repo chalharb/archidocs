@@ -30,6 +30,14 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
   const name = (id: string) => workspace.byId.get(id)?.name ?? id;
   return (
     <header className="arc-location">
+      <span className="arc-history-buttons">
+        <button type="button" className="arc-tool arc-step" aria-label="Back" title="Back" onClick={() => window.history.back()}>
+          ‹
+        </button>
+        <button type="button" className="arc-tool arc-step" aria-label="Forward" title="Forward" onClick={() => window.history.forward()}>
+          ›
+        </button>
+      </span>
       <nav aria-label="Breadcrumbs">
         <ol className="arc-crumbs">
           {crumbs.map((c, i) => {
@@ -76,20 +84,20 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
         </section>
       )}
       <div className="arc-tools">
-        <div className="arc-segmented arc-direction" role="group" aria-label="Direction">
-          {directions.map((d) => (
-            <button key={d} type="button" aria-pressed={d === direction} onClick={() => onDirection(d)}>
-              {d}
-            </button>
-          ))}
-        </div>
-        <ExportMenu picks={place.picks.length} onExport={onExport} />
-        <button type="button" className="arc-tool" onClick={onSaveAsView}>
-          Save as View
-        </button>
         <RevisionsMenu timeline={timeline} onAt={(r) => onTime({ at: timeline.isLatest(r) ? null : pointLabel(r) })} onVs={(r) => onTime({ vs: pointLabel(r) })} />
         <RecentMenu />
+        <select className="arc-tool arc-direction" aria-label="Direction" title="Direction" value={direction} onChange={(e) => onDirection(e.target.value as Direction)}>
+          {directions.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
         <CopyLink />
+        <ExportMenu picks={place.picks.length} onExport={onExport} />
+        <button type="button" className="arc-tool arc-primary" onClick={onSaveAsView}>
+          Save as View
+        </button>
       </div>
     </header>
   );
@@ -111,7 +119,7 @@ function ExportMenu({ picks, onExport }: { picks: number; onExport: LocationBarP
   ];
   return (
     <div className="arc-menu-root" ref={root}>
-      <button type="button" className="arc-tool" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         Export
       </button>
       {open && (
@@ -160,7 +168,7 @@ function DeploymentLinks({ workspace, place }: { workspace: Workspace; place: Pl
   return (
     <nav className="arc-deployments" aria-label="Deployment Views">
       <span className="arc-deployments-label" aria-hidden="true">
-        Deployment
+        Deployment:
       </span>
       {links.map((l) =>
         l.view === place.view ? (
@@ -227,7 +235,7 @@ export function RecentMenu() {
   }, [items]);
   return (
     <div className="arc-menu-root" ref={root}>
-      <button type="button" className="arc-tool" aria-haspopup="menu" aria-expanded={items !== null} onClick={() => setItems(items ? null : readRecent())}>
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={items !== null} onClick={() => setItems(items ? null : readRecent())}>
         Recent
       </button>
       {items && (
@@ -254,13 +262,13 @@ export function CopyLink() {
   return (
     <button
       type="button"
-      className="arc-tool arc-primary"
+      className="arc-tool"
       aria-label="Copy link"
       onClick={() => {
         void navigator.clipboard.writeText(window.location.href).then(() => setCopied(true));
       }}
     >
-      {copied ? "Copied" : "Copy link"}
+      {copied ? "✓ Copied" : "⧉ Link"}
     </button>
   );
 }

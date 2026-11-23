@@ -20,7 +20,7 @@ test.describe("Solutions Architect: where is a Service deployed?", () => {
     await expect(page.getByRole("navigation", { name: "Breadcrumbs" })).toContainText("Production (Deployment)");
     expect(await picked(page)).toEqual(["shop:cart@platform:eks-prod"]);
     await expect(node(page, "payments:payments-api@platform:eks-prod")).not.toHaveAttribute("data-picked", "true");
-    await expect(page.getByRole("group", { name: "Direction" }).getByRole("button", { name: "TB" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByLabel("Direction")).toHaveValue("TB");
 
     // The Deployment sits in its System's box, inside the cluster, inside the region.
     const boxes = new Map((await renderedGeometry(page)).nodes.map((n) => [n.id, n]));

@@ -82,13 +82,13 @@ test.describe("selection", () => {
 test.describe("direction", () => {
   test("defaults to LR and redraws the View in the direction picked", async ({ page }) => {
     await open(page, "#/view/c1");
-    const direction = page.getByRole("group", { name: "Direction" });
-    await expect(direction.getByRole("button", { name: "LR" })).toHaveAttribute("aria-pressed", "true");
+    const direction = page.getByLabel("Direction");
+    await expect(direction).toHaveValue("LR");
     const lr = await node(page, "shop:shopper").boundingBox();
     const lrWeb = await node(page, "shop:web").boundingBox();
     expect(lrWeb!.x).toBeGreaterThan(lr!.x + lr!.width);
 
-    await direction.getByRole("button", { name: "TB" }).click();
+    await direction.selectOption("TB");
     await settled(page);
     expect(hash(page)).toBe("#/view/c1?dir=TB");
     const tb = await node(page, "shop:shopper").boundingBox();

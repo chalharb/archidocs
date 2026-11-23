@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { TreeRow, Workspace } from "./workspace.ts";
 
 type Panel = "Model" | "Views" | "Teams";
+
+const GLYPHS: Record<Panel, string> = { Model: "☰", Teams: "⚑", Views: "▦" };
 type Grouping = "kind" | "team";
 
 export interface RailProps {
@@ -48,17 +50,26 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
   return (
     <>
       <nav className="arc-rail" aria-label="Rail">
-        <button type="button" className="arc-rail-button" aria-keyshortcuts="/" onClick={() => (setPanel(null), onFind())}>
-          <span className="arc-rail-icon arc-rail-find" aria-hidden="true" />
-          Find
+        <div className="arc-logo" aria-hidden="true" title="Archidocs">
+          A
+        </div>
+        <button type="button" className="arc-rail-button" title="Find ( / )" aria-label="Find" aria-keyshortcuts="/" aria-pressed={finding} onClick={() => (setPanel(null), onFind())}>
+          <span aria-hidden="true">⌕</span>
         </button>
-        {(["Model", "Views", "Teams"] as const).map((name) => (
-          <button key={name} type="button" className="arc-rail-button" aria-expanded={panel === name} onClick={() => {
+        {(["Model", "Teams", "Views"] as const).map((name) => (
+          <button
+            key={name}
+            type="button"
+            className="arc-rail-button"
+            title={name}
+            aria-label={name}
+            aria-expanded={panel === name}
+            onClick={() => {
               if (panel !== name) onOpenPanel();
               setPanel(panel === name ? null : name);
-            }}>
-            <span className={`arc-rail-icon arc-rail-${name.toLowerCase()}`} aria-hidden="true" />
-            {name}
+            }}
+          >
+            <span aria-hidden="true">{GLYPHS[name]}</span>
           </button>
         ))}
       </nav>
@@ -68,6 +79,7 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
           <section className="arc-flyout" role="dialog" aria-label="Teams">
             <header className="arc-flyout-head">
               <h2>Teams</h2>
+              <Close onClose={() => setPanel(null)} />
             </header>
             <ul className="arc-team-list">
               {[...workspace.bundle.teams]
@@ -102,6 +114,9 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
           <section className="arc-flyout" role="dialog" aria-label={panel}>
             <header className="arc-flyout-head">
               <h2>{panel}</h2>
+              <Close onClose={() => setPanel(null)} />
+            </header>
+            <div className="arc-flyout-by">
               <div className="arc-segmented" role="radiogroup" aria-label="Group">
                 {(["kind", "team"] as const).map((g) => (
                   <label key={g}>
@@ -110,7 +125,7 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
                   </label>
                 ))}
               </div>
-            </header>
+            </div>
             <Tree
               key={`${panel}:${grouping[panel]}`}
               label={panel}
@@ -126,6 +141,14 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
         </>
       )}
     </>
+  );
+}
+
+function Close({ onClose }: { onClose: () => void }) {
+  return (
+    <button type="button" className="arc-flyout-close" aria-label="Close" onClick={onClose}>
+      ✕
+    </button>
   );
 }
 
@@ -150,10 +173,11 @@ function Tree({ label, rows, isCurrent, onPick }: { label: string; rows: TreeRow
           ) : (
             <span className="arc-disclosure-space" />
           )}
+          {viewTag(row) && <span className={`arc-vtag arc-vtag-${viewTag(row)!.toLowerCase()}`}>{viewTag(row)}</span>}
           <button
             type="button"
             className={pickable ? "arc-row-label" : "arc-row-label arc-group"}
-            data-glyph={row.glyph}
+            data-glyph={row.view === undefined ? row.glyph : undefined}
             aria-current={isCurrent(row) ? "page" : undefined}
             onClick={() => (pickable ? onPick(row) : toggle(row.key))}
           >
@@ -176,6 +200,18 @@ function Tree({ label, rows, isCurrent, onPick }: { label: string; rows: TreeRow
       {rows.map((r) => item(r, 1))}
     </ul>
   );
+}
+
+/** A View row's tag, as the scope ladder names it: C1, C2, C3, Env, Saved or Dyn. */
+function viewTag(row: TreeRow): string | undefined {
+  if (row.view === undefined) return undefined;
+  if (row.glyph === "▶") return "Dyn";
+  if (row.glyph === "◇") return "Saved";
+  if (row.glyph === "⛁" || row.view.startsWith("deployment/")) return "Env";
+  if (row.view === "c1") return "C1";
+  if (row.view === "c2" || row.view.startsWith("c2/")) return "C2";
+  if (row.view.startsWith("c3/")) return "C3";
+  return undefined;
 }
 
 /** The keys of the rows above the current one, so its branch opens. */

@@ -20,7 +20,9 @@ test.describe("Product Owner: what is upstream and downstream of an outage?", ()
   test("an Impact Lens from the Element panel badges each node with its distance and lights only edges one hop closer", async ({ page }) => {
     await open(page, "#/view/c2?open=shop:checkout");
     await node(page, "shop:cart").click();
-    await panel(page).getByRole("button", { name: "Upstream impact" }).click();
+    await panel(page).getByRole("button", { name: "Both ways impact" }).click();
+    await settled(page);
+    await page.getByRole("region", { name: "Lens" }).getByRole("group", { name: "Impact direction" }).getByRole("button", { name: "Upstream" }).click();
     await settled(page);
 
     await expect(page.getByRole("region", { name: "Lens" })).toContainText("Impact of Cart, upstream");

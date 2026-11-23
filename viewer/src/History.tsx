@@ -224,7 +224,7 @@ export function RevisionsMenu({ timeline, onAt, onVs }: { timeline: Timeline; on
   if (timeline.revisions.length === 0) return null;
   return (
     <div className="arc-menu-root" ref={root}>
-      <button type="button" className="arc-tool" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         Revisions
       </button>
       {open && (

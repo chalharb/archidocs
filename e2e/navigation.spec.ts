@@ -8,7 +8,7 @@ test.describe("the URL holds the screen", () => {
     await page.getByRole("button", { name: "Expand Checkout" }).click();
     await settled(page);
     await node(page, "shop:cart").click();
-    await page.getByRole("group", { name: "Direction" }).getByRole("button", { name: "TB" }).click();
+    await page.getByLabel("Direction").selectOption("TB");
     await settled(page);
     await page.getByRole("button", { name: "Copy link" }).click();
     const link = await page.evaluate(() => navigator.clipboard.readText());
@@ -21,7 +21,7 @@ test.describe("the URL holds the screen", () => {
     expect(await nodeIds(other)).toEqual(await nodeIds(page));
     await expect(other.getByRole("region", { name: "Open boxes" }).getByRole("button", { name: "Close Checkout" })).toBeVisible();
     await expect(node(other, "shop:cart")).toHaveAttribute("aria-selected", "true");
-    await expect(other.getByRole("group", { name: "Direction" }).getByRole("button", { name: "TB" })).toHaveAttribute("aria-pressed", "true");
+    await expect(other.getByLabel("Direction")).toHaveValue("TB");
     await other.close();
   });
 
