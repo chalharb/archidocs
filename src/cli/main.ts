@@ -15,7 +15,8 @@ import { authoringGuide } from "../guide/index.ts";
 import { init } from "./init.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 import { diff } from "../core/index.ts";
-import { bundleAt, buildHistory, history, resolvePoint, type History } from "../history/index.ts";
+import { bundleAt, buildHistory, DEFAULT_KEEP, history, publishHistory, resolvePoint, type History } from "../history/index.ts";
+import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
 
 /** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
@@ -36,7 +37,7 @@ const usage = `Usage:
   archidocs init [--skill [--workspace <dir>]]
   archidocs guide [topic]
   archidocs check [--format text|json|github] [--strict]
-  archidocs build [--out <dir>] [--bundle-only]
+  archidocs build [--out <dir>] [--bundle-only] [--keep <n|all>]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
   archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
   archidocs diff <from> [<to>] [--format text|json|markdown]
@@ -79,9 +80,12 @@ async function main(argv: string[]): Promise<number> {
   if (command === "build") {
     const { values } = parseArgs({
       args: rest,
-      options: { "bundle-only": { type: "boolean" }, out: { type: "string", default: "dist" } },
+      options: { "bundle-only": { type: "boolean" }, out: { type: "string", default: "dist" }, keep: { type: "string" } },
       strict: true,
     });
+    const keep = values.keep === undefined ? DEFAULT_KEEP : values.keep === "all" ? "all" : Number(values.keep);
+    if (keep !== "all" && !(Number.isInteger(keep) && keep >= 0)) throw new UsageError(`--keep "${values.keep}" is not a count or all.`);
+    if (values["bundle-only"] && values.keep !== undefined) throw new UsageError("--keep only applies to a site; --bundle-only writes no past Bundles.");
     const { bundle, issues } = await loadFromCwd();
     if (issues.some((i) => i.severity === "error")) {
       process.stdout.write(formatText(issues, { color: useColor() }));
@@ -95,6 +99,7 @@ async function main(argv: string[]): Promise<number> {
     }
     await mkdir(out, { recursive: true });
     await writeFile(join(out, "workspace.bundle.json"), serializeBundle(bundle));
+    if (!values["bundle-only"]) await writeSiteHistory(out, keep);
     process.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, "workspace.bundle.json")}\n` : `Wrote the site to ${values.out}\n`);
     return OK;
   }
@@ -247,6 +252,17 @@ async function historyFromCwd(): Promise<History> {
   const repoRoot = await gitTopLevel(root);
   if (!repoRoot) throw new UsageError("History needs the Workspace in a git repository.");
   return history(repoRoot, await realpath(root));
+}
+
+/** The site's past Bundles and Revision index; outside git, an empty index, so the viewer knows there is no history. */
+async function writeSiteHistory(out: string, keep: number | "all") {
+  const root = await workspaceRoot(process.cwd());
+  const repoRoot = await gitTopLevel(root);
+  if (repoRoot) await publishHistory(history(repoRoot, await realpath(root)), out, { keep });
+  else {
+    await mkdir(join(out, "bundles"), { recursive: true });
+    await writeFile(join(out, "bundles", "index.json"), JSON.stringify({ schemaVersion: SCHEMA_VERSION, revisions: [] }, null, 2) + "\n");
+  }
 }
 
 async function loadFromCwd() {

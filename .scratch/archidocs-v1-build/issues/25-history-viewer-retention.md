@@ -1,6 +1,7 @@
 # 25: History in the viewer and site retention
 
 Status: ready-for-agent
+Assignee: Claude (ticket-25 session)
 Blocked by: 15, 23
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
