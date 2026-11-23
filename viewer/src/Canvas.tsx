@@ -156,6 +156,8 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         width: box.width,
         height: box.height,
         style: { width: box.width, height: box.height },
+        // A rebuilt node without `measured` loses its handle bounds, and React Flow hides its edges until it measures it again.
+        measured: { width: box.width, height: box.height },
         zIndex: depth(box.id),
         selected: box.id === selected,
         draggable: false,
