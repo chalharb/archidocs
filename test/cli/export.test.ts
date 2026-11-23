@@ -102,14 +102,24 @@ describe("archidocs export", () => {
     expect(tb[0]! / tb[1]!).toBeLessThan(lr[0]! / lr[1]!);
   });
 
-  it("--all-saved writes every Saved View into --out, skipping Deployment Views", async () => {
+  it("--all-saved writes every Saved View into --out, Deployment Views included", async () => {
     const { repoRoot } = await committedLandscape(withSavedViews);
     const { code, stdout, stderr } = await archidocs(repoRoot, "export", "--all-saved", "--out", "docs/views", "--format", "png");
 
     expect(code).toBe(0);
-    expect(stdout).toBe("Wrote docs/views/architecture-purchase.png\nWrote docs/views/architecture-systems.png\n");
-    expect(stderr).toBe("Skipped architecture:runtime: Deployment Views can't be exported yet.\n");
-    expect((await readdir(join(repoRoot, "docs/views"))).sort()).toEqual(["architecture-purchase.png", "architecture-systems.png"]);
+    expect(stdout).toBe("Wrote docs/views/architecture-purchase.png\nWrote docs/views/architecture-runtime.png\nWrote docs/views/architecture-systems.png\n");
+    expect(stderr).toBe("");
+    expect((await readdir(join(repoRoot, "docs/views"))).sort()).toEqual(["architecture-purchase.png", "architecture-runtime.png", "architecture-systems.png"]);
+  });
+
+  it("draws an Environment's Deployment View top to bottom, with its Targets, System boxes and Deployments", async () => {
+    const { repoRoot } = await committedLandscape();
+    const { code, stdout } = await archidocs(repoRoot, "export", "deployment/prod");
+
+    expect([code, stdout]).toEqual([0, "Wrote deployment-prod.svg\n"]);
+    const svg = await readFile(join(repoRoot, "deployment-prod.svg"), "utf8");
+    expect(texts(svg)[0]).toBe("Production (Deployment)");
+    expect(texts(svg)).toEqual(expect.arrayContaining(["AWS eu-west-1 · region", "EKS prod · cluster", "Checkout · System", "Cart", "Payments API"]));
   });
 
   it("draws a Dynamic View as a sequence chart, as SVG or PNG", async () => {

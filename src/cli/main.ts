@@ -180,18 +180,12 @@ async function main(argv: string[]): Promise<number> {
       await mkdir(resolve(values.out!), { recursive: true });
       for (const saved of bundle.views) {
         const view = resolveAny(saved.id);
-        if (!view) {
-          process.stderr.write(`Skipped ${saved.id}: Deployment Views can't be exported yet.\n`);
-          continue;
-        }
-        await draw(view, join(values.out!, fileName(saved.id)));
+        if (view) await draw(view, join(values.out!, fileName(saved.id)));
       }
       return OK;
     }
-    const saved = bundle.views.find((v) => v.id === viewId);
-    if (saved?.kind === "structural" && saved.level === "deployment") throw new UsageError(`"${viewId}" is a Deployment View, which can't be exported yet.`);
     const view = resolveAny(viewId!);
-    if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components> and Saved Views (project:view-id).`);
+    if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components>, deployment/<environment> and Saved Views (project:view-id).`);
     await draw(view, values.out ?? fileName(viewId!));
     return OK;
   }

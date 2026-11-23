@@ -173,7 +173,7 @@ test.describe("the rail", () => {
     await page.getByRole("button", { name: "Views" }).click();
     const flyout = page.getByRole("dialog", { name: "Views" });
     const tree = flyout.getByRole("tree");
-    await expect(tree.getByRole("treeitem", { level: 1 })).toHaveText([/^Landscapes/, /^Systems/]);
+    await expect(tree.getByRole("treeitem", { level: 1 })).toHaveText([/^Landscapes/, /^Systems/, /^Deployment/]);
 
     await tree.getByRole("treeitem", { name: /^Systems/ }).getByRole("button", { name: "Expand Systems" }).click();
     await tree.getByRole("treeitem", { name: /^Checkout/ }).getByRole("button", { name: "Expand Checkout" }).click();

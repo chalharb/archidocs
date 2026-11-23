@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveView } from "../../src/core/index.ts";
 import { layoutView, renderSvg, type RenderSource } from "../../src/render/index.ts";
-import { landscapeWorkspace } from "../support/fixtures.ts";
+import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
 
 /** The landscape fixture plus an External System, so every part of the key is drawn. */
@@ -128,5 +128,24 @@ describe("renderSvg with a Lens", () => {
 
     expect(svg).not.toContain("arrow-lit");
     expect(texts(svg).some((t) => t.startsWith("Lens:"))).toBe(false);
+  });
+});
+
+describe("a Deployment View", () => {
+  async function renderDeployment() {
+    const { bundle } = await loadWorkspace(deploymentViewWorkspace);
+    const view = resolveView(bundle, "deployment/prod")!;
+    return renderSvg({ bundle, view, layout: await layoutView(view, { direction: view.direction }), source });
+  }
+
+  it("draws exactly as its golden file", async () => {
+    await expect(await renderDeployment()).toMatchFileSnapshot("golden/deployment-prod.svg");
+  });
+
+  it("labels Targets with their kind, System boxes as Systems and Deployments as Deployments", async () => {
+    const t = texts(await renderDeployment());
+
+    expect(t[0]).toBe("Production (Deployment)");
+    expect(t).toEqual(expect.arrayContaining(["AWS eu-west-1 · region", "EKS eu · cluster", "shop namespace · namespace", "Checkout · System", "Web", "Deployment · Next.js", "Stripe", "External Service"]));
   });
 });

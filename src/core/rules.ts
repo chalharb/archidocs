@@ -173,12 +173,16 @@ const elementRefs = (ws: LoadedWorkspace): ElementRef[] => {
   ];
 };
 
-/** Each Saved View that made it into the Bundle (the first of a repeated id), with its definition and resolution; Deployment Views aren't resolved. */
+/**
+ * Each Saved View that made it into the Bundle (the first of a repeated id), with its definition and resolution;
+ * a Deployment View with a missing or unknown Environment, which other rules report, isn't resolved.
+ */
 const resolvedSavedViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDecl; def: BundleStructuralView; resolution: SavedResolution }[] =>
   ws.views.flatMap((decl) => {
     const def = bundledView(decl, bundle);
-    const resolution = def?.kind === "structural" ? resolveSaved(bundle, def) : undefined;
-    return def?.kind === "structural" && resolution ? [{ decl, def, resolution }] : [];
+    if (def?.kind !== "structural") return [];
+    if (def.level === "deployment" && !bundle.environments.some((e) => e.id === def.environment)) return [];
+    return [{ decl, def, resolution: resolveSaved(bundle, def) }];
   });
 
 /** The Bundle definition a View declaration became, if it made it into the Bundle (the first of a repeated id). */

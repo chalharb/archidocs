@@ -186,11 +186,13 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   );
 
   const openView = useCallback(
-    (id: string) => {
+    (node: string) => {
+      // A Deployment or a Target's System box opens the View of the Element it draws.
+      const id = view?.nodes.find((n) => n.id === node)?.element ?? node;
       const target = workspace.ownView(id);
       if (target !== undefined && target !== place.view) go(viewPlace(target, null, place.lens, place));
     },
-    [place, workspace],
+    [place, workspace, view],
   );
 
   /** Focuses an Element, closing any ADR: in the current View when opening its boxes shows it there, else in its own View. */
@@ -247,6 +249,10 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       </div>
     );
   }
+
+  // The panel shows the selected node's Element: a Deployment's is its Service.
+  const selectedElement = place.selected === null ? undefined : (view?.nodes.find((n) => n.id === place.selected)?.element ?? place.selected);
+  const panelFor = selectedElement !== undefined && workspace.byId.has(selectedElement) ? selectedElement : undefined;
 
   if (!view) {
     return (
@@ -311,10 +317,10 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               onSettled={setSettled}
             />
           )}
-          {place.selected !== null && workspace.byId.has(place.selected) && (
+          {panelFor !== undefined && (
             <ElementPanel
               workspace={workspace}
-              id={place.selected}
+              id={panelFor}
               timeline={timeline}
               comparison={comparison}
               onLens={setLens}
@@ -323,13 +329,14 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               onOpenView={openView}
               onOpenAdr={openAdr}
               onTime={(time) => go({ ...place, ...time })}
+              onDeployed={(target, nodes) => go({ ...viewPlace(target, null, null, place), picks: nodes })}
             />
           )}
           {place.adr !== null && (
             <AdrReader
               workspace={workspace}
               id={place.adr}
-              beside={place.selected !== null && workspace.byId.has(place.selected)}
+              beside={panelFor !== undefined}
               onClose={() => openAdr(null)}
               onOpenAdr={openAdr}
               onFocus={focus}
