@@ -1,6 +1,7 @@
 # 12: Generated structural Views
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-12 session)
 Blocked by: 04, 06
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -15,6 +16,6 @@ The Generated C1–C3 Views exist as data, through one shared resolver, and agen
 
 ## Acceptance criteria
 
-- [ ] Resolver tests for each scope on the fixture, including neighbour collapsing.
-- [ ] `list_views(element)` returns the Views containing that Element.
-- [ ] A View id with an unknown scope returns `not_found`.
+- [x] Resolver tests for each scope on the fixture, including neighbour collapsing.
+- [x] `list_views(element)` returns the Views containing that Element.
+- [x] A View id with an unknown scope returns `not_found`.

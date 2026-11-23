@@ -6,7 +6,7 @@ import { elementTreeWorkspace, validWorkspace } from "../support/fixtures.ts";
 import { connect } from "../support/mcp.ts";
 
 describe("get_workspace_info", () => {
-  it("reports the checkout source, its commit and that writes are on", async () => {
+  it("reports the checkout source, its commit and that writes are allowed", async () => {
     const { call, text, commit, root } = await connect(validWorkspace);
     const result = await call("get_workspace_info");
     expect(result.isError).toBeFalsy();
@@ -72,6 +72,7 @@ describe("get_element", () => {
         { id: "shop:cart-api", kind: "component", name: "Cart API" },
         { id: "shop:cart-store", kind: "component", name: "Cart store" },
       ],
+      deployments: [],
     });
     expect(text(result)).toBe(
       [
@@ -221,7 +222,7 @@ describe("tool surface", () => {
   it("lists the read tools with input and output schemas", async () => {
     const { client } = await connect(validWorkspace);
     const tools = (await client.listTools()).tools.filter((t) => t.annotations?.readOnlyHint);
-    expect(tools.map((t) => t.name).sort()).toEqual(["check", "get_element", "get_workspace_info", "list_environments", "list_teams", "search_elements"]);
+    expect(tools.map((t) => t.name).sort()).toEqual(["get_deployments", "get_element", "get_view", "get_workspace_info", "list_environments", "list_teams", "list_views", "search_elements"]);
     for (const t of tools) {
       expect(t.annotations).toMatchObject({ readOnlyHint: true });
       expect(t.outputSchema).toMatchObject({ type: "object" });

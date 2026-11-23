@@ -99,11 +99,12 @@ export async function loadDetailed(options: LoadOptions): Promise<LoadResult & {
   resolveParents(ws);
   resolveDeployments(ws);
 
+  const bundle = toBundle(ws, options);
   const issues = rules
-    .flatMap((rule) => rule.check(ws).map(({ file, line, column, message }) => ({ file, line, ...(column === undefined ? {} : { column }), rule: rule.id, severity: rule.severity, message })))
+    .flatMap((rule) => rule.check(ws, bundle).map(({ file, line, column, message }) => ({ file, line, ...(column === undefined ? {} : { column }), rule: rule.id, severity: rule.severity, message })))
     .sort((a, b) => cmp(a.file, b.file) || a.line - b.line || cmp(a.rule, b.rule) || (a.column ?? 0) - (b.column ?? 0) || cmp(a.message, b.message));
 
-  return { bundle: toBundle(ws, options), issues, workspace: ws, repoRoot };
+  return { bundle, issues, workspace: ws, repoRoot };
 }
 
 /** Walks up from `start` to the folder holding `workspace.yaml`, also looking in each folder's `archidocs/`. */

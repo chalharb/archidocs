@@ -13,7 +13,6 @@ const Fields = z
   .default({})
   .describe("Fields to set, as in YAML; null removes a field. Fields not given are left as they are.");
 
-const IssueRecord = z.object({ file: z.string(), line: z.number(), column: z.number().optional(), rule: z.string(), severity: z.enum(["error", "warning"]), message: z.string() });
 const WriteOutput = z.object({
   action: z.enum(["created", "updated", "removed", "unchanged"]),
   id: z.string().nullable(),
@@ -25,13 +24,14 @@ const WriteOutput = z.object({
 });
 
 /**
- * The write tools: thin adapters over the YAML writer. Each edits the
+ * The Model write tools: thin adapters over the YAML writer. Each edits the
  * checkout's YAML in place, refuses with `validation_failed` if the edit
  * would introduce an error, takes `dry_run` and returns a unified diff.
- * They never touch git. `check` validates what is on disk.
+ * They never touch git. With `readOnly` set (a Bundle source, or HTTP
+ * without --allow-writes) each returns `read_only` with that reason.
  */
-export function registerWriteTools(server: McpServer, source: Source): void {
-  const writer = { fs: nodeFileSystem(), root: source.root };
+export function registerWriteTools(server: McpServer, source: Source, readOnly: string | undefined): void {
+  const fs = nodeFileSystem();
 
   const writeTool = <I extends z.ZodObject>(name: string, config: { title: string; description: string; input: I; destructive?: boolean }, toRequest: (args: z.output<I>) => WriteRequest) => {
     server.registerTool(
@@ -44,13 +44,13 @@ export function registerWriteTools(server: McpServer, source: Source): void {
         annotations: { readOnlyHint: false, destructiveHint: config.destructive ?? false, idempotentHint: true, openWorldHint: false },
       },
       async (raw: unknown): Promise<CallToolResult> => {
-        if (!source.writesAllowed) return toResult({ ok: false, code: "read_only", message: "Write tools are off for this server." });
+        if (readOnly !== undefined || source.kind !== "checkout") return toResult({ ok: false, code: "read_only", message: readOnly ?? "Write tools need a checkout." });
         const args = config.input.safeParse(raw ?? {});
         if (!args.success) return toResult({ ok: false, code: "invalid_input", message: z.prettifyError(args.error) });
         const dryRun = (args.data as { dry_run: boolean }).dry_run;
         let result: WriteResult;
         try {
-          result = await write(writer, toRequest(args.data), { dryRun });
+          result = await write({ fs, root: source.root }, toRequest(args.data), { dryRun });
         } catch (error) {
           return toResult({ ok: false, code: "source_unavailable", message: `Could not write the Workspace at ${source.root}: ${error instanceof Error ? error.message : String(error)}` });
         }
@@ -58,29 +58,6 @@ export function registerWriteTools(server: McpServer, source: Source): void {
       },
     );
   };
-
-  server.registerTool(
-    "check",
-    {
-      title: "Check the Workspace",
-      description: "Validates the Workspace as it is on disk, as `archidocs check` does, so edits made with other file tools can be verified. Returns every issue record.",
-      inputSchema: advertise(z.object({})),
-      outputSchema: z.object({ issues: z.array(IssueRecord), errors: z.number(), warnings: z.number() }),
-      annotations: { readOnlyHint: true, openWorldHint: false },
-    },
-    async (): Promise<CallToolResult> => {
-      let issues;
-      try {
-        ({ issues } = await source.snapshot());
-      } catch (error) {
-        return toResult({ ok: false, code: "source_unavailable", message: `Could not read the Workspace at ${source.root}: ${error instanceof Error ? error.message : String(error)}` });
-      }
-      const errors = issues.filter((i) => i.severity === "error").length;
-      const warnings = issues.length - errors;
-      const head = issues.length === 0 ? "No issues." : `${errors} error${errors === 1 ? "" : "s"}, ${warnings} warning${warnings === 1 ? "" : "s"}.`;
-      return toResult({ ok: true, data: { issues, errors, warnings }, text: [head, ...issues.map((i) => `- ${i.file}:${i.line} ${i.severity} ${i.rule}: ${i.message}`)].join("\n") });
-    },
-  );
 
   writeTool(
     "upsert_element",

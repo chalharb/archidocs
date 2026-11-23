@@ -3,11 +3,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Files } from "../support/workspace.ts";
-import { connect } from "../support/mcp.ts";
-import { checkoutSource, createServer } from "../../src/mcp/index.ts";
-import { Client } from "@modelcontextprotocol/client";
-import { InMemoryTransport } from "@modelcontextprotocol/server";
-import { writeWorkspace } from "../support/workspace.ts";
+import { connect, connectTo } from "../support/mcp.ts";
+import { bundleSource } from "../../src/mcp/index.ts";
+import { bundleText, serveBundleSite } from "../support/bundle-site.ts";
+import { validWorkspace } from "../support/fixtures.ts";
 
 /** A commented Workspace for write tests: the comments and key order must survive every write. */
 const commented: Files = {
@@ -411,24 +410,12 @@ describe("remove_relationship", () => {
   });
 });
 
-describe("check", () => {
-  it("validates what is on disk, including edits made with other tools", async () => {
-    const { call, root, text } = await setup();
-    expect((await call("check")).structuredContent).toEqual({ issues: [], errors: 0, warnings: 0 });
-    await writeFile(join(root, "shop/extra.yaml"), "people:\n  shopper:\n    name: Shopper\n    owner: nobody\n");
-    const result = await call("check");
-    expect(result.isError).toBeFalsy();
-    expect(result.structuredContent).toMatchObject({ errors: 1, warnings: 0, issues: [{ file: "archidocs/shop/extra.yaml", line: 4, rule: "unknown-team" }] });
-    expect(text(result)).toContain("archidocs/shop/extra.yaml:4");
-  });
-});
-
 describe("write tools", () => {
   it("are listed as writes, each taking project and dry_run", async () => {
     const { client } = await setup();
     const tools = (await client.listTools()).tools.filter((t) => t.annotations?.readOnlyHint === false);
-    expect(tools.map((t) => t.name).sort()).toEqual(["remove_element", "remove_relationship", "upsert_element", "upsert_relationship"]);
-    for (const t of tools) expect(t.inputSchema.properties).toMatchObject({ project: { type: "string" }, dry_run: { type: "boolean", default: false } });
+    expect(tools.map((t) => t.name).sort()).toEqual(["check", "remove_element", "remove_relationship", "upsert_element", "upsert_relationship"]);
+    for (const t of tools.filter((t) => t.name !== "check")) expect(t.inputSchema.properties).toMatchObject({ project: { type: "string" }, dry_run: { type: "boolean", default: false } });
   });
 });
 
@@ -440,16 +427,56 @@ describe("writes and git", () => {
     expect(git("rev-parse", "HEAD")).toBe(commit);
     expect(git("status", "--porcelain")).toBe("?? archidocs/shop/model.yaml");
   });
+});
 
-  it("are refused with read_only when the source does not allow writes", async () => {
-    const { root } = await writeWorkspace(commented);
-    const server = createServer({ source: checkoutSource({ root, writesAllowed: false }) });
-    const client = new Client({ name: "test", version: "0.0.0" });
-    const [a, b] = InMemoryTransport.createLinkedPair();
-    await server.connect(a);
-    await client.connect(b);
-    const result = await client.callTool({ name: "upsert_element", arguments: { project: "shop", kind: "person", id: "x", fields: { name: "X" } } });
-    expect(result.structuredContent).toMatchObject({ code: "read_only" });
-    await client.close();
+describe("check and write gating", () => {
+  it("run against a checkout: check validates what is on disk", async () => {
+    const { call, text, root } = await connect(validWorkspace);
+    expect((await call("check")).structuredContent).toEqual({ issues: [], summary: { errors: 0, warnings: 0 } });
+
+    await writeFile(join(root, "shop/broken.yaml"), "services:\n  cart:\n    name: Cart\n    owner: nobody\n");
+    const result = await call("check");
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({
+      issues: [{ file: "archidocs/shop/broken.yaml", line: 4, rule: "unknown-team", severity: "error" }],
+      summary: { errors: 1, warnings: 0 },
+    });
+    expect(text(result)).toContain("1 error, 0 warnings");
+  });
+
+  it("return read_only from a Bundle source", async () => {
+    const site = await serveBundleSite(await bundleText(validWorkspace, "a".repeat(40)));
+    const { call } = await connectTo(bundleSource({ location: site.url }));
+    const result = await call("check");
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({ code: "read_only", message: expect.stringContaining("published Bundle") });
+  });
+
+  it("return read_only when the transport doesn't allow writes, as over HTTP without --allow-writes", async () => {
+    const { call } = await connect(validWorkspace, { allowWrites: false });
+    expect((await call("get_workspace_info")).structuredContent).toMatchObject({ writesAllowed: false });
+    const result = await call("check");
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({ code: "read_only", message: expect.stringContaining("--allow-writes") });
+  });
+
+  it("are advertised as not read-only", async () => {
+    const { client } = await connect(validWorkspace);
+    const { tools } = await client.listTools();
+    expect(tools.find((t) => t.name === "check")?.annotations).toMatchObject({ readOnlyHint: false });
+    expect(tools.find((t) => t.name === "get_element")?.annotations).toMatchObject({ readOnlyHint: true });
+  });
+});
+
+describe("Model write tools when writes are off", () => {
+  it("return read_only from a Bundle source and over HTTP without --allow-writes", async () => {
+    const site = await serveBundleSite(await bundleText(validWorkspace, "b".repeat(40)));
+    const { call } = await connectTo(bundleSource({ location: site.url }));
+    const args = { project: "shop", kind: "person", id: "x", fields: { name: "X" } };
+    expect((await call("upsert_element", args)).structuredContent).toMatchObject({ code: "read_only", message: expect.stringContaining("published Bundle") });
+
+    const { call: callHttp, root } = await connect(commented, { allowWrites: false });
+    expect((await callHttp("upsert_element", { ...args, project: "shop" })).structuredContent).toMatchObject({ code: "read_only", message: expect.stringContaining("--allow-writes") });
+    await expect(readFile(join(root, "shop/model.yaml"), "utf8")).rejects.toThrow();
   });
 });
