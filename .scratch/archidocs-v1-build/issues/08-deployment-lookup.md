@@ -1,6 +1,7 @@
 # 08: Deployment and URL lookup
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-08 session)
 Blocked by: 05, 06
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -14,5 +15,5 @@ The Solutions Architect and QA Tester questions can be answered through MCP.
 
 ## Acceptance criteria
 
-- [ ] Acceptance tests answer "where is a Service deployed?" and "what is a Service's URL in staging?" on the fixture.
-- [ ] Searching for a URL or host finds its Service.
+- [x] Acceptance tests answer "where is a Service deployed?" and "what is a Service's URL in staging?" on the fixture.
+- [x] Searching for a URL or host finds its Service.

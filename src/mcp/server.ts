@@ -1,8 +1,10 @@
 import { McpServer, type CallToolResult, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { getDeployments, type DeploymentDetail } from "../core/deployments.ts";
+import { search } from "../core/search.ts";
 import { suggest } from "../core/suggest.ts";
 import { listViews, resolveView, type ViewNode } from "../core/views.ts";
-import { BundleElement, BundleRelationship } from "../schema/bundle.ts";
+import { BundleDeployment, BundleElement, BundleRelationship } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 
 export interface ServerOptions {
@@ -94,13 +96,15 @@ export function createServer(options: ServerOptions): McpServer {
     "get_element",
     {
       title: "Get Element",
-      description: "One Element by qualified id (project:id): its fields, Owner Team, parent and children, and the file and line it is declared at.",
+      description:
+        "One Element by qualified id (project:id): its fields, Owner Team, parent and children, a Service's Deployments with their URLs, and the file and line it is declared at.",
       input: z.object({ id: QualifiedId }),
       output: z.object({
         element: BundleElement,
         owner: z.object({ id: z.string(), name: z.string() }).nullable(),
         parent: ElementSummary.nullable(),
         children: z.array(ElementSummary),
+        deployments: z.array(DeploymentResult),
         viewerUrl: z.string().optional(),
       }),
     },
@@ -110,11 +114,13 @@ export function createServer(options: ServerOptions): McpServer {
       const parent = bundle.elements.find((e) => e.id === element.parent);
       const children = bundle.elements.filter((e) => e.parent === id);
       const team = bundle.teams.find((t) => t.id === element.owner);
+      const deployments = getDeployments(bundle, id).map(deploymentResult);
       const data = {
         element,
         owner: team ? { id: team.id, name: team.name } : null,
         parent: parent ? summary(parent) : null,
         children: children.map(summary),
+        deployments,
         ...viewerLink(options.viewerUrl, id),
       };
       const fields: [string, unknown][] = [
@@ -125,6 +131,7 @@ export function createServer(options: ServerOptions): McpServer {
         ["tags", element.tags.join(", ")],
         ["links", element.links.map((l) => `[${l.label}](${l.url})`).join(", ")],
         ["children", children.map(label).join(", ")],
+        ["deployments", deployments.map((d) => `${d.environment} on ${d.target}${d.url ? ` (${d.url})` : ""}`).join(", ")],
       ];
       return ok(
         data,
@@ -141,7 +148,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Search Elements",
       description:
-        "Find Elements whose qualified id or name contains the query (case-insensitive). Exact matches come first, then prefixes, then the rest, each by id.",
+        "Find Elements whose qualified id or name contains the query, or the Service behind a URL or host (a Deployment's url or an endpoint; a longer URL below one also matches). Case-insensitive. Exact matches come first, then prefixes, then the rest, each by id. A URL match carries the Deployment it matched.",
       input: z.object({
         query: z.string().min(1),
         kind: z.enum(["person", "system", "service", "component"]).optional(),
@@ -151,17 +158,26 @@ export function createServer(options: ServerOptions): McpServer {
         query: z.string(),
         total: z.number(),
         truncated: z.boolean(),
-        elements: z.array(ElementSummary.extend({ owner: z.string(), parent: z.string().nullable(), viewerUrl: z.string().optional() })),
+        elements: z.array(
+          ElementSummary.extend({
+            owner: z.string(),
+            parent: z.string().nullable(),
+            deployment: z.object({ environment: z.string(), target: z.string(), url: z.string() }).optional(),
+            viewerUrl: z.string().optional(),
+          }),
+        ),
       }),
     },
     ({ query, kind, limit }, { bundle }) => {
-      const q = query.toLowerCase();
-      const ranked = bundle.elements
-        .filter((e) => !kind || e.kind === kind)
-        .map((e) => ({ e, rank: matchRank(q, e) }))
-        .filter((m) => m.rank !== undefined)
-        .sort((a, b) => a.rank! - b.rank! || (a.e.id < b.e.id ? -1 : 1))
-        .map(({ e }) => ({ id: e.id, kind: e.kind, name: e.name, owner: e.owner, parent: e.parent, ...viewerLink(options.viewerUrl, e.id) }));
+      const ranked = search(bundle, query, { kind }).map(({ element: e, deployment }) => ({
+        id: e.id,
+        kind: e.kind,
+        name: e.name,
+        owner: e.owner,
+        parent: e.parent,
+        ...(deployment ? { deployment } : {}),
+        ...viewerLink(options.viewerUrl, e.id),
+      }));
       const { items, total, truncated } = page(ranked, limit);
       const head =
         total === 0
@@ -169,7 +185,58 @@ export function createServer(options: ServerOptions): McpServer {
           : `${total} ${total === 1 ? "Element matches" : "Elements match"} "${query}"${truncated ? `; showing the first ${limit}` : ""}.`;
       return ok(
         { query, total, truncated, elements: items },
-        [head, ...items.map((e) => `- ${label(e)}: ${kindName[e.kind]}, ${e.owner || "no Team"}`)].join("\n"),
+        [
+          head,
+          ...items.map(
+            (e) =>
+              `- ${label(e)}: ${kindName[e.kind]}, ${e.owner || "no Team"}${e.deployment ? `; URL ${e.deployment.url} in ${e.deployment.environment}` : ""}`,
+          ),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
+    "get_deployments",
+    {
+      title: "Get Deployments",
+      description:
+        "Where a Service runs: each Deployment's Environment, its full Deployment Target chain (outermost first), main url and named endpoints. Pass `environment` for one Environment, e.g. a Service's URL in staging.",
+      input: z.object({
+        service: QualifiedId.describe("The Service's qualified id, project:id"),
+        environment: z.string().min(1).optional().describe("An Environment id, such as prod or staging"),
+        limit: Limit,
+      }),
+      output: z.object({
+        service: ElementSummary,
+        environment: z.string().nullable(),
+        total: z.number(),
+        truncated: z.boolean(),
+        deployments: z.array(DeploymentResult),
+      }),
+    },
+    ({ service: id, environment, limit }, { bundle }) => {
+      const service = bundle.elements.find((e) => e.id === id);
+      if (!service) return notFound("Service", id, bundle.elements.filter((e) => e.kind === "service").map((e) => e.id));
+      if (service.kind !== "service") return fail("invalid_input", `"${id}" is a ${kindName[service.kind]}, not a Service; only Services have Deployments.`);
+      if (environment !== undefined && !bundle.environments.some((e) => e.id === environment)) {
+        const near = suggest(environment, bundle.environments.map((e) => e.id));
+        return fail("not_found", `No Environment "${environment}".`, near ? [near] : undefined);
+      }
+      const { items, total, truncated } = page(getDeployments(bundle, id, environment).map(deploymentResult), limit);
+      const where = environment ? ` in ${environment}` : "";
+      const head =
+        total === 0 ? `${label(service)} has no Deployments${where}.` : `${label(service)} has ${total} Deployment${total === 1 ? "" : "s"}${where}${truncated ? `; showing the first ${limit}` : ""}.`;
+      return ok(
+        { service: summary(service), environment: environment ?? null, total, truncated, deployments: items },
+        [
+          head,
+          ...items.map((d) => {
+            const chain = d.targetPath.length ? d.targetPath.map((t) => t.id).join(" › ") : d.target;
+            const urls = [d.url ?? "no URL", ...d.endpoints.map((e) => `${e.name}: ${e.url}`)].join("; ");
+            return `- ${d.environment} on ${chain}: ${urls}`;
+          }),
+        ].join("\n"),
       );
     },
   );
@@ -299,18 +366,23 @@ function page<T>(all: T[], limit: number): { items: T[]; total: number; truncate
 const listHead = (total: number, noun: string, truncated: boolean, limit: number) =>
   `${total} ${noun}${total === 1 ? "" : "s"}${truncated ? `; showing the first ${limit}` : ""}.`;
 
-/** 0 for an exact id, bare id or name; 1 for a prefix of one; 2 for a substring of one; undefined for no match. */
-function matchRank(q: string, e: BundleElement): number | undefined {
-  const fields = [e.id, e.id.slice(e.id.indexOf(":") + 1), e.name].map((f) => f.toLowerCase());
-  if (fields.some((f) => f === q)) return 0;
-  if (fields.some((f) => f.startsWith(q))) return 1;
-  if (fields.some((f) => f.includes(q))) return 2;
-  return undefined;
-}
-
 const QualifiedId = z.string().min(1).describe("A qualified id, project:id");
 
 const ElementSummary = z.object({ id: z.string(), kind: z.enum(["person", "system", "service", "component"]), name: z.string() });
+/** A Deployment as tools return it: its Service is implied by the question. */
+const DeploymentResult = BundleDeployment.omit({ service: true }).extend({
+  targetPath: z.array(z.object({ id: z.string(), name: z.string(), kind: z.string() })),
+});
+const deploymentResult = (d: DeploymentDetail) => ({
+  environment: d.environment,
+  target: d.target,
+  targetPath: d.targetPath,
+  url: d.url,
+  endpoints: d.endpoints,
+  owner: d.owner,
+  source: d.source,
+});
+
 const summary = (e: BundleElement) => ({ id: e.id, kind: e.kind, name: e.name });
 const label = (e: { id: string; name: string }) => `${e.id} (${e.name})`;
 const kindName = { person: "Person", system: "System", service: "Service", component: "Component" } as const;

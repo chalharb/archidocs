@@ -72,6 +72,7 @@ describe("get_element", () => {
         { id: "shop:cart-api", kind: "component", name: "Cart API" },
         { id: "shop:cart-store", kind: "component", name: "Cart store" },
       ],
+      deployments: [],
     });
     expect(text(result)).toBe(
       [
@@ -221,7 +222,7 @@ describe("tool surface", () => {
   it("lists the read tools with input and output schemas", async () => {
     const { client } = await connect(validWorkspace);
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(["get_element", "get_view", "get_workspace_info", "list_environments", "list_teams", "list_views", "search_elements"]);
+    expect(tools.map((t) => t.name).sort()).toEqual(["get_deployments", "get_element", "get_view", "get_workspace_info", "list_environments", "list_teams", "list_views", "search_elements"]);
     for (const t of tools) {
       expect(t.annotations).toMatchObject({ readOnlyHint: true });
       expect(t.outputSchema).toMatchObject({ type: "object" });
