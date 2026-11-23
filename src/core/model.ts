@@ -75,6 +75,28 @@ export interface ElementDecl extends Position {
   parent?: ElementDecl;
 }
 
+export interface TargetDecl extends Position {
+  id: string;
+  project: Project;
+  file: SourceFile;
+  /** Where the declaration sits in its file, e.g. `["targets", "aws-eu", "targets", "eks-prod"]`. */
+  path: string[];
+  data: Record<string, unknown>;
+  /** The Target it is nested under, if any. */
+  parent?: TargetDecl;
+}
+
+export interface DeploymentDecl extends Position {
+  project: Project;
+  file: SourceFile;
+  /** `["deployments", index]` in its file. */
+  path: (string | number)[];
+  data: Record<string, unknown>;
+  /** What `service` and `target` resolve to, if anything. Set once every file is read. */
+  service?: ElementDecl;
+  target?: TargetDecl;
+}
+
 /** Everything Load read from disk, before rules run and the Bundle is built. */
 export interface LoadedWorkspace {
   files: SourceFile[];
@@ -84,4 +106,8 @@ export interface LoadedWorkspace {
   environments: Located<Record<string, unknown>>[];
   /** Sorted by file, then line. */
   elements: ElementDecl[];
+  /** Sorted by file, then line. */
+  targets: TargetDecl[];
+  /** Sorted by file, then line. */
+  deployments: DeploymentDecl[];
 }
