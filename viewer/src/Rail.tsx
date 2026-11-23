@@ -11,6 +11,8 @@ export interface RailProps {
   workspace: Workspace;
   view: string;
   selected: string | null;
+  /** Where the logo leads: the C2 Landscape, keeping the Revision and any Compare being looked at. */
+  home: string;
   onPickElement: (id: string) => void;
   onPickView: (id: string) => void;
   onPickTeam: (id: string) => void;
@@ -22,7 +24,7 @@ export interface RailProps {
 }
 
 /** The rail: Find, then Model, Views and Teams open as a flyout over the canvas, and close on a pick or Escape. */
-export function Rail({ workspace, view, selected, onPickElement, onPickView, onPickTeam, finding, onFind, onOpenPanel }: RailProps) {
+export function Rail({ workspace, view, selected, home, onPickElement, onPickView, onPickTeam, finding, onFind, onOpenPanel }: RailProps) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [grouping, setGrouping] = useState<Record<"Model" | "Views", Grouping>>({ Model: "kind", Views: "kind" });
 
@@ -52,11 +54,13 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
     <>
       <nav className="arc-rail" aria-label="Rail">
         {/* The Archidocs mark, "Doorway tile": the tile takes the rail's ink, so it follows light and dark mode. */}
-        <svg className="arc-logo" viewBox="0 0 64 64" role="img" aria-label="Archidocs">
-          <title>Archidocs</title>
-          <path className="arc-logo-tile" d="M17 4H47A13 13 0 0 1 60 17V47A13 13 0 0 1 47 60H42V38A10 10 0 0 0 22 38V60H17A13 13 0 0 1 4 47V17A13 13 0 0 1 17 4Z" />
-          <path className="arc-logo-key" d="M26.5 12.5H37.5L35.5 21H28.5Z" />
-        </svg>
+        {/* It goes home: the C2 Landscape with nothing selected, opened or filtered, as an ordinary link. */}
+        <a className="arc-logo-link" href={home} aria-label="Archidocs home" title="Archidocs home">
+          <svg className="arc-logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <path className="arc-logo-tile" d="M17 4H47A13 13 0 0 1 60 17V47A13 13 0 0 1 47 60H42V38A10 10 0 0 0 22 38V60H17A13 13 0 0 1 4 47V17A13 13 0 0 1 17 4Z" />
+            <path className="arc-logo-key" d="M26.5 12.5H37.5L35.5 21H28.5Z" />
+          </svg>
+        </a>
         <button type="button" className="arc-rail-button" title="Find ( / )" aria-label="Find" aria-keyshortcuts="/" aria-pressed={finding} onClick={() => (setPanel(null), onFind())}>
           <Icon name="find" />
           <span className="arc-rail-label" aria-hidden="true">

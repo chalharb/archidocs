@@ -249,6 +249,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       workspace={workspace}
       view={place.view}
       selected={place.selected}
+      home={formatPlace({ ...HOME, at: place.at, vs: place.vs })}
       onPickElement={focus}
       onPickView={pickView}
       onPickTeam={(team) => setLens({ team })}

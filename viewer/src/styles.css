@@ -222,10 +222,19 @@ pre {
 }
 
 /* The Archidocs mark: the tile in ink, the keystone in the brand indigo. */
+.arc-logo-link {
+  display: block;
+  margin-bottom: 12px;
+}
+
 .arc-logo {
+  display: block;
   width: 40px;
   height: 40px;
-  margin-bottom: 12px;
+}
+
+.arc-logo-link:hover .arc-logo-tile {
+  fill: var(--muted);
 }
 
 .arc-logo-tile {
