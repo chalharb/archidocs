@@ -13,11 +13,12 @@ describe("archidocs guide", () => {
     const cli = await archidocs(tmpdir(), "guide");
     expect(cli.code).toBe(0);
     expect(cli.stdout).toBe(text(index));
-    for (const topic of topics) {
-      const printed = await archidocs(tmpdir(), "guide", topic);
-      expect(printed.stdout, topic).toBe(text(await call("get_authoring_guide", { topic })));
+    // One CLI process per topic: run them together, so the test does not grow with the topic count.
+    const printed = await Promise.all(topics.map((topic) => archidocs(tmpdir(), "guide", topic)));
+    for (const [i, topic] of topics.entries()) {
+      expect(printed[i]!.stdout, topic).toBe(text(await call("get_authoring_guide", { topic })));
     }
-  });
+  }, 30_000);
 
   it("exits 2 on an unknown topic, naming the closest one", async () => {
     const { code, stderr } = await archidocs(tmpdir(), "guide", "bootstrp");
