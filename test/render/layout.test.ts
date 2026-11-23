@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveView } from "../../src/core/index.ts";
 import { layoutView } from "../../src/render/index.ts";
-import { landscapeWorkspace } from "../support/fixtures.ts";
+import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 import { layoutProblems } from "./geometry.ts";
 import { syntheticWorkspace } from "./synthetic.ts";
@@ -35,6 +35,23 @@ describe("the auto-layout definition", () => {
       expect(layoutProblems(layout)).toEqual(noProblems);
     });
   }
+});
+
+describe("a Deployment View's layout", () => {
+  it.each(["TB", "LR"] as const)("meets the auto-layout definition drawn %s, with every Deployment inside its Target", async (direction) => {
+    const { bundle } = await loadWorkspace(deploymentViewWorkspace);
+    const view = resolveView(bundle, "deployment/prod")!;
+    const layout = await layoutView(view, { direction });
+    const boxes = new Map(layout.nodes.map((n) => [n.id, n]));
+    const inside = (a: string, b: string) => {
+      const [x, y] = [boxes.get(a)!, boxes.get(b)!];
+      return x.x >= y.x && x.y >= y.y && x.x + x.width <= y.x + y.width && x.y + x.height <= y.y + y.height;
+    };
+
+    expect(layout.edges).toHaveLength(view.edges.length);
+    expect(layoutProblems(layout)).toEqual(noProblems);
+    for (const n of view.nodes) if (n.parent !== null) expect(inside(n.id, n.parent), `${n.id} in ${n.parent}`).toBe(true);
+  });
 });
 
 /** Positions to the hundredth of a pixel, so float noise from adding offsets is not movement. */

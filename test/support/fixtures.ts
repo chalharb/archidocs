@@ -544,3 +544,119 @@ ${fullCheckoutSteps.map(stepYaml).join("\n")}
     external: true
 `,
 };
+
+/**
+ * A prod Environment over nested Targets (region › cluster › namespace in
+ * two regions, plus a separate data-centre), for Deployment Views: Web and
+ * Cart run in both regions, Payments API in its own namespace and in the US,
+ * Analytics only in the data-centre, Search nowhere, and Stripe is External.
+ */
+export const deploymentViewWorkspace: Files = {
+  "workspace.yaml": `teams:
+  storefront-team:
+    name: Storefront
+  payments-team:
+    name: Payments
+  platform-team:
+    name: Platform
+environments:
+  prod:
+    name: Production
+  staging:
+    name: Staging
+`,
+  "platform/project.yaml": `id: platform
+name: Platform
+owner: platform-team
+`,
+  "platform/targets.yaml": `targets:
+  aws-eu:
+    name: AWS eu-west-1
+    kind: region
+    targets:
+      eks-eu:
+        name: EKS eu
+        kind: cluster
+        targets:
+          ns-shop:
+            name: shop namespace
+            kind: namespace
+          ns-pay:
+            name: payments namespace
+            kind: namespace
+  aws-us:
+    name: AWS us-east-1
+    kind: region
+    targets:
+      eks-us:
+        name: EKS us
+        kind: cluster
+  dc:
+    name: Data centre
+    kind: datacentre
+`,
+  "shop/project.yaml": `id: shop
+name: Shop
+owner: storefront-team
+`,
+  "shop/model.yaml": `people:
+  shopper:
+    name: Shopper
+    relationships:
+      - to: web
+        description: Shops
+systems:
+  checkout:
+    name: Checkout
+    services:
+      web:
+        name: Web
+        technology: Next.js
+        relationships:
+          - to: cart
+            description: Reads the basket
+          - to: search
+            description: Searches products
+      cart:
+        name: Cart
+        technology: Go
+        components:
+          cart-api:
+            name: Cart API
+            relationships:
+              - to: payments:payments-api
+                description: Takes payment
+services:
+  search:
+    name: Search
+  analytics:
+    name: Analytics
+    relationships:
+      - to: payments:payments-api
+        description: Reads payments
+deployments:
+  - { service: web, environment: prod, target: platform:ns-shop, url: https://shop.example.com }
+  - { service: web, environment: prod, target: platform:eks-us }
+  - { service: cart, environment: prod, target: platform:ns-shop }
+  - { service: cart, environment: prod, target: platform:eks-us }
+  - { service: analytics, environment: prod, target: platform:dc }
+  - { service: web, environment: staging, target: platform:eks-eu }
+`,
+  "payments/project.yaml": `id: payments
+name: Payments
+owner: payments-team
+`,
+  "payments/model.yaml": `services:
+  payments-api:
+    name: Payments API
+    relationships:
+      - to: stripe
+        description: Charges cards
+  stripe:
+    name: Stripe
+    external: true
+deployments:
+  - { service: payments-api, environment: prod, target: platform:ns-pay }
+  - { service: payments-api, environment: prod, target: platform:eks-us }
+`,
+};

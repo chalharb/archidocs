@@ -118,11 +118,13 @@ function Screen({ workspace }: { workspace: Workspace }) {
   );
 
   const openView = useCallback(
-    (id: string) => {
+    (node: string) => {
+      // A Deployment or a Target's System box opens the View of the Element it draws.
+      const id = view?.nodes.find((n) => n.id === node)?.element ?? node;
       const target = workspace.ownView(id);
       if (target !== undefined && target !== place.view) go(viewPlace(target, null, place.lens));
     },
-    [place.view, place.lens, workspace],
+    [place.view, place.lens, workspace, view],
   );
 
   /** Focuses an Element: in the current View when opening its boxes shows it there, else in its own View. */
@@ -180,6 +182,10 @@ function Screen({ workspace }: { workspace: Workspace }) {
     );
   }
 
+  // The panel shows the selected node's Element: a Deployment's is its Service.
+  const selectedElement = place.selected === null ? undefined : (view?.nodes.find((n) => n.id === place.selected)?.element ?? place.selected);
+  const panelFor = selectedElement !== undefined && workspace.byId.has(selectedElement) ? selectedElement : undefined;
+
   if (!view) {
     return (
       <Message title={`No View ${place.view}`}>
@@ -229,8 +235,16 @@ function Screen({ workspace }: { workspace: Workspace }) {
               onSettled={setSettled}
             />
           )}
-          {place.selected !== null && workspace.byId.has(place.selected) && (
-            <ElementPanel workspace={workspace} id={place.selected} onLens={setLens} onConnect={setConnectFrom} onFocus={focus} onOpenView={openView} />
+          {panelFor !== undefined && (
+            <ElementPanel
+              workspace={workspace}
+              id={panelFor}
+              onLens={setLens}
+              onConnect={setConnectFrom}
+              onFocus={focus}
+              onOpenView={openView}
+              onDeployed={(target, nodes) => go({ ...viewPlace(target), picks: nodes })}
+            />
           )}
         </div>
       </main>

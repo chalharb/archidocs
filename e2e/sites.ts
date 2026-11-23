@@ -1,5 +1,6 @@
 /** Where e2e/serve.ts serves each fixture site; each sits under a sub-path, never at the root. */
-export const PORT = 4517;
+/** `E2E_PORT` moves it, so suites in two checkouts can run at once. */
+export const PORT = Number(process.env.E2E_PORT ?? 4517);
 export const SITES = {
   /** The landscape fixture: Systems, Services with Components, three Teams. */
   landscape: "/team/archidocs/",

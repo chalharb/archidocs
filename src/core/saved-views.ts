@@ -1,4 +1,5 @@
 import type { Bundle, BundleLens, BundleRelationship, BundleSelector, BundleStructuralView } from "../schema/bundle.ts";
+import { resolveDeployment } from "./deployment-views.ts";
 import { getImpact } from "./impact.ts";
 import { pathsBetween, type Path } from "./paths.ts";
 import { lifter, type Level } from "./query.ts";
@@ -27,7 +28,7 @@ export interface SavedResolution {
   unresolvedPaths: UnresolvedPath[];
 }
 
-const levelOf: Record<ViewKind, Level> = { c1: "system", c2: "service", c3: "component" };
+const levelOf: Record<Exclude<ViewKind, "deployment">, Level> = { c1: "system", c2: "service", c3: "component" };
 
 /**
  * Resolves a Saved structural View:
@@ -37,12 +38,12 @@ const levelOf: Record<ViewKind, Level> = { c1: "system", c2: "service", c3: "com
  * 4. open each `expand` Element one level deeper, then close each `collapse` Element;
  * 5. derive edges, leaving out Relationships of excluded Elements.
  * The Lens marks nodes and lights edges but never changes membership.
- * Returns undefined for a Deployment View, which is not resolved here yet.
+ * A Deployment View is resolved by `savedDeployment` instead.
  */
-export function resolveSaved(bundle: Bundle, def: BundleStructuralView): SavedResolution | undefined {
-  if (def.level === "deployment") return undefined;
-  const kind = def.level;
+export function resolveSaved(bundle: Bundle, def: BundleStructuralView): SavedResolution {
   const model = new ModelIndex(bundle);
+  if (def.level === "deployment") return savedDeployment(bundle, model, def);
+  const kind = def.level;
   const unresolvedPaths: UnresolvedPath[] = [];
   const select = (selectors: BundleSelector[], field: string) => {
     const ids = new Set<string>();
@@ -78,6 +79,46 @@ export function resolveSaved(bundle: Bundle, def: BundleStructuralView): SavedRe
     if (lensed.unresolved) unresolvedPaths.push({ at: ["lens", "path"], ...lensed.unresolved });
   }
   return { view, badExpand, unresolvedPaths };
+}
+
+/**
+ * Resolves a Saved Deployment View over its `environment`: `include` and
+ * `exclude` select Services (a System or Component selects the Services in
+ * it or holding it), and `targets` keeps the Deployments in those Target
+ * subtrees. A Service that is selected but has no Deployment kept is drawn,
+ * when related, as a logical node; an excluded one is left out altogether.
+ * `expand` and `collapse` don't apply to a Deployment View.
+ */
+function savedDeployment(bundle: Bundle, model: ModelIndex, def: BundleStructuralView): SavedResolution {
+  const unresolvedPaths: UnresolvedPath[] = [];
+  const services = (selectors: BundleSelector[], field: string) => {
+    const ids = new Set<string>();
+    selectors.forEach((s, i) => {
+      const found = selected(bundle, model, s);
+      if (found.unresolved) unresolvedPaths.push({ at: [field, i], ...found.unresolved });
+      for (const id of found.ids) {
+        for (const e of model.elements) if (e.kind === "service" && (model.ancestry(e.id).includes(id) || model.ancestry(id).includes(e.id))) ids.add(e.id);
+      }
+    });
+    return ids;
+  };
+  const included = def.include === null ? undefined : services(def.include, "include");
+  const excluded = services(def.exclude, "exclude");
+  const parentOf = new Map(bundle.targets.map((t) => [t.id, t.parent]));
+  const under = (target: string) => {
+    for (let t: string | null | undefined = target; t; t = parentOf.get(t)) if (def.targets.includes(t)) return true;
+    return false;
+  };
+  const view = resolveDeployment(bundle, { id: def.id, title: def.title }, def.environment ?? "", {
+    keep: (s) => !excluded.has(s),
+    deployed: (d) => (included === undefined || included.has(d.service)) && (def.targets.length === 0 || under(d.target)),
+  });
+  if (def.direction !== null) view.direction = def.direction;
+  if (def.lens !== null) {
+    const lensed = applyLens(bundle, model, view, def.lens);
+    if (lensed.unresolved) unresolvedPaths.push({ at: ["lens", "path"], ...lensed.unresolved });
+  }
+  return { view, badExpand: [], unresolvedPaths };
 }
 
 /** A Lens in words, for tool text and a picture's key. */
@@ -144,6 +185,7 @@ export function applyLens(bundle: Bundle, model: ModelIndex, view: ResolvedView,
     }
   } else if ("team" in lens) {
     for (const e of model.elements) if (e.owner === lens.team) reached.set(e.id, undefined);
+    for (const t of bundle.targets) if (t.owner === lens.team) reached.set(t.id, undefined);
   } else {
     const paths = pathsBetween(bundle, lens.path.from, lens.path.to, lens.path.paths ?? "shortest");
     for (const id of nodesOn(paths)) reached.set(id, undefined);
@@ -152,17 +194,20 @@ export function applyLens(bundle: Bundle, model: ModelIndex, view: ResolvedView,
   }
 
   // Each reached Element marks the nearest node holding it; an impact or path Lens also marks the nodes inside it.
-  const shown = new Set(view.nodes.map((n) => n.id));
+  // A node stands for its own id, or for the Element it draws: a Deployment View draws one Service as several Deployments.
+  const standing = new Map<string, string[]>();
+  for (const n of view.nodes) standing.set(n.element ?? n.id, [...(standing.get(n.element ?? n.id) ?? []), n.id]);
   const marks = new Map(view.nodes.map((n) => [n.id, { hit: false } as { hit: boolean; distance?: number }]));
-  const mark = (node: string | undefined, d: number | undefined) => {
-    const m = node === undefined ? undefined : marks.get(node);
+  const mark = (node: string, d: number | undefined) => {
+    const m = marks.get(node);
     if (!m) return;
     m.hit = true;
     if (d !== undefined) m.distance = Math.min(m.distance ?? Infinity, d);
   };
   for (const [id, d] of reached) {
-    mark(model.ancestry(id).find((a) => shown.has(a)), d);
-    if (!("team" in lens)) for (const n of view.nodes) if (n.id !== id && model.ancestry(n.id).includes(id)) mark(n.id, d);
+    const holder = model.ancestry(id).find((a) => standing.has(a));
+    for (const n of holder === undefined ? [] : standing.get(holder)!) mark(n, d);
+    if (!("team" in lens)) for (const n of view.nodes) if ((n.element ?? n.id) !== id && model.ancestry(n.element ?? n.id).includes(id)) mark(n.id, d);
   }
   for (const n of view.nodes) n.mark = marks.get(n.id)!;
 

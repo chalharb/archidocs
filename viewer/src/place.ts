@@ -87,7 +87,7 @@ function formatLens(lens: Lens): string[] {
   return [`from=${encode(from)}`, `to=${encode(to)}`, ...(paths !== undefined && paths !== "shortest" ? [`paths=${paths}`] : [])];
 }
 
-/** Writes a place as a hash; ids keep their `:` and `/` so links stay readable. */
+/** Writes a place as a hash; ids keep their `:`, `/` and `@` (a Deployment's `<service>@<target>`) so links stay readable. */
 export function formatPlace(place: Place): string {
   const query: string[] = [];
   if (place.open.length > 0) query.push(`open=${place.open.map(encode).join(",")}`);
@@ -101,7 +101,7 @@ export function formatPlace(place: Place): string {
   return `#/view/${encode(place.view)}${query.length > 0 ? `?${query.join("&")}` : ""}`;
 }
 
-const encode = (s: string) => encodeURIComponent(s).replace(/%3A/gi, ":").replace(/%2F/gi, "/");
+const encode = (s: string) => encodeURIComponent(s).replace(/%3A/gi, ":").replace(/%2F/gi, "/").replace(/%40/gi, "@");
 
 /** Opens a View afresh: nothing open, nothing selected or picked, its default direction; a Lens carries over when given. */
 export const viewPlace = (view: string, selected: string | null = null, lens: Lens | null = null): Place => ({ view, open: [], selected, direction: null, lens, picks: [], step: null, graph: false, brokers: false });

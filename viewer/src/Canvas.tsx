@@ -71,7 +71,7 @@ interface RouteData extends Record<string, unknown> {
   to: string;
 }
 
-const KIND_LABEL: Record<ViewNode["kind"], string> = { person: "Person", system: "System", service: "Service", component: "Component" };
+const KIND_LABEL: Record<ViewNode["kind"], string> = { person: "Person", system: "System", service: "Service", component: "Component", target: "Deployment Target", deployment: "Deployment" };
 
 export function Canvas(props: CanvasProps) {
   return (
@@ -99,9 +99,10 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
     };
     return layout.nodes.map((box) => {
       const node = byId.get(box.id)!;
-      const element = workspace.byId.get(box.id);
+      const element = workspace.byId.get(node.element ?? box.id);
+      const target = node.kind === "target" ? workspace.targets.get(box.id) : undefined;
       const technology = element && "technology" in element ? element.technology : null;
-      const canOpen = view.kind !== "c1" && node.collapsed && (node.kind === "system" || node.kind === "service");
+      const canOpen = view.kind !== "c1" && view.kind !== "deployment" && node.collapsed && (node.kind === "system" || node.kind === "service");
       return {
         id: box.id,
         type: "box",
@@ -115,8 +116,8 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         connectable: false,
         data: {
           node,
-          sublabel: [node.external ? `External ${KIND_LABEL[node.kind].toLowerCase()}` : KIND_LABEL[node.kind], technology].filter(Boolean).join(" · "),
-          team: element ? workspace.teams.get(element.owner) : undefined,
+          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : [node.external ? `External ${KIND_LABEL[node.kind].toLowerCase()}` : KIND_LABEL[node.kind], technology].filter(Boolean).join(" · "),
+          team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
           onToggle,

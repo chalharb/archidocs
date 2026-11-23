@@ -45,6 +45,8 @@ export const NODE_SIZES: Record<ViewNode["kind"], { width: number; height: numbe
   system: { width: 200, height: 72 },
   service: { width: 180, height: 64 },
   component: { width: 170, height: 60 },
+  target: { width: 200, height: 72 },
+  deployment: { width: 180, height: 64 },
 };
 
 /** Room at the top of a container for its label. */

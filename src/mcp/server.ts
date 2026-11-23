@@ -365,7 +365,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get View",
       description:
-        "One View by id (c1, c2, c2/<system>, c3/<service>, or a Saved View's project:view-id) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it. A Saved View with a Lens also returns the Lens, a `mark` ({hit, distance?}) per node and `lit` per edge; the Lens never changes which nodes the View holds. A Dynamic View instead returns `participants` in drawing order and `steps` [{n, kind: call|return|event, from, to, relationship, interaction, via?, channel?, description, note?}]: an event is drawn publisher → subscriber while `relationship` is the stored subscriber → publisher subscription; a return replies over the sync `relationship` the other way. Steps that don't resolve are left out (`check` reports them).",
+        "One View by id (c1, c2, c2/<system>, c3/<service>, deployment/<environment>, or a Saved View's project:view-id) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it. A Deployment View nests Deployment Targets (kind `target`), a System box per System inside each Target (id `<system>@<target>`) and the Deployments (kind `deployment`, id `<service>@<target>`, `element` the Service); a consumer Deployment connects to the provider's Deployments under their deepest shared Target, else to all of them, and a related Service with no Deployment there is a node outside every Target. A Saved View with a Lens also returns the Lens, a `mark` ({hit, distance?}) per node and `lit` per edge; the Lens never changes which nodes the View holds. A Dynamic View instead returns `participants` in drawing order and `steps` [{n, kind: call|return|event, from, to, relationship, interaction, via?, channel?, description, note?}]: an event is drawn publisher → subscriber while `relationship` is the stored subscriber → publisher subscription; a return replies over the sync `relationship` the other way. Steps that don't resolve are left out (`check` reports them).",
       input: z.object({ id: z.string().min(1).describe("A View id, such as c1, c2/shop:checkout, c3/shop:cart or architecture:purchase") }),
       output: ViewSummary.extend({
         direction: z.enum(["TB", "BT", "LR", "RL"]).optional(),
@@ -374,8 +374,9 @@ export function createServer(options: ServerOptions): McpServer {
           .array(
             z.object({
               id: z.string(),
-              kind: ElementKind,
+              kind: z.enum([...ElementKind.options, "target", "deployment"]),
               name: z.string(),
+              element: z.string().optional(),
               parent: z.string().nullable(),
               collapsed: z.boolean(),
               external: z.boolean(),
@@ -404,7 +405,6 @@ export function createServer(options: ServerOptions): McpServer {
       }),
     },
     ({ id }, { bundle }) => {
-      const saved = bundle.views.find((v) => v.id === id);
       const dynamic = resolveDynamicView(bundle, id);
       if (dynamic) {
         return ok(
@@ -416,7 +416,6 @@ export function createServer(options: ServerOptions): McpServer {
           ].join("\n"),
         );
       }
-      if (saved?.kind === "structural" && saved.level === "deployment") return fail("invalid_input", `Saved View "${id}" is a Deployment View, which can't be resolved yet.`);
       const view = resolveView(bundle, id);
       if (!view) return notFound("View", id, listViews(bundle).map((v) => v.id));
       const edgeCount = `${view.edges.length} edge${view.edges.length === 1 ? "" : "s"}`;
@@ -699,8 +698,9 @@ const ElementKind = z.enum(["person", "system", "service", "component"]);
 const ViewKind = z.enum(["c1", "c2", "c3", "deployment", "dynamic"]);
 const ViewSummary = z.object({ id: z.string(), kind: ViewKind, title: z.string() });
 
+const nodeKind = (n: ViewNode) => (n.kind === "deployment" ? `Deployment of ${n.element}` : n.kind === "target" ? "Deployment Target" : kindName[n.kind]);
 const nodeLine = (n: ViewNode) =>
-  `- ${label(n)}: ${kindName[n.kind]}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}` : ""}`;
+  `- ${label(n)}: ${nodeKind(n)}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}` : ""}`;
 
 /** A Step as one line: a return drawn dashed (⇠), an event with its broker and channel. */
 const stepLine = (s: ResolvedStep) => {
