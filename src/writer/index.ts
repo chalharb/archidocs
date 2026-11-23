@@ -1,13 +1,18 @@
-import { isAbsolute, join, normalize, sep } from "node:path";
+import { join, sep } from "node:path";
 import type { WritableFileSystem } from "../core/fs.ts";
 import { loadDetailed } from "../core/load.ts";
 import type { ElementDecl, Issue, LoadedWorkspace, Project, RelationshipDecl } from "../core/model.ts";
 import { qualified, qualify, referenceResolver } from "../core/refs.ts";
 import { suggest } from "../core/suggest.ts";
-import { collectionOf, Id, kindOfCollection, Ref, parentKindOf, type ElementKind } from "../schema/workspace.ts";
+import { collectionOf, kindOfCollection, Ref, parentKindOf, type ElementKind } from "../schema/workspace.ts";
+import { removeDeployment, removeTarget, upsertDeployment, upsertTarget, type DeploymentRequest, type TargetRequest } from "./deployments.ts";
 import { unifiedDiff } from "./diff.ts";
 import { YamlFile } from "./document.ts";
+import { byPlace, fail, findProject, local, modelFile, projectFile, type Edit, type Failure, type Planned, type SourceRef, type WriteItem } from "./edit.ts";
 import { overlayFileSystem } from "./overlay.ts";
+import { createProject, upsertDefinition, type DefinitionRequest, type ProjectRequest } from "./workspace.ts";
+
+export type { SourceRef, WriteErrorCode, WriteItem } from "./edit.ts";
 
 export interface WriterOptions {
   fs: WritableFileSystem;
@@ -22,23 +27,22 @@ export type WriteRequest =
   | { op: "upsert-element"; project: string; kind: ElementKind; id: string; fields: Record<string, unknown>; parent?: string; file?: string }
   | { op: "remove-element"; project: string; id: string }
   | { op: "upsert-relationship"; project: string; from: string; to: string; fields: Record<string, unknown>; id?: string }
-  | { op: "remove-relationship"; project: string; from: string; to: string; id?: string };
-
-/** A place in the Workspace's files, repo-relative. */
-export interface SourceRef {
-  file: string;
-  line: number;
-  /** What sits there, in words. */
-  what: string;
-}
-
-export type WriteErrorCode = "not_found" | "ambiguous" | "invalid_input" | "validation_failed";
+  | { op: "remove-relationship"; project: string; from: string; to: string; id?: string }
+  | TargetRequest
+  | DeploymentRequest
+  | DefinitionRequest
+  | ProjectRequest;
 
 export type WriteResult =
   | {
       ok: true;
       action: "created" | "updated" | "removed" | "unchanged";
-      /** What was written: `{id}` for an Element, `{from, to, id}` for a Relationship, all qualified. */
+      item: WriteItem;
+      /**
+       * What was written, all qualified: `{id}` for an Element, Target, Team,
+       * Environment or Project; `{from, to, id}` for a Relationship;
+       * `{service, environment, target}` for a Deployment.
+       */
       subject: Record<string, string | null>;
       /** Repo-relative paths of the files changed (or that would be, on a dry run). */
       files: string[];
@@ -46,21 +50,7 @@ export type WriteResult =
       diff: string;
       dryRun: boolean;
     }
-  | {
-      ok: false;
-      code: WriteErrorCode;
-      message: string;
-      suggestions?: string[];
-      /** For `validation_failed`: the errors the write would introduce, as `check` reports them. */
-      issues?: Issue[];
-      /** For `ambiguous`: each item the request could mean. */
-      candidates?: SourceRef[];
-      /** For a refused removal: everything that still references the item. */
-      references?: SourceRef[];
-    };
-
-type Failure = Extract<WriteResult, { ok: false }>;
-const fail = (code: WriteErrorCode, message: string, extra: Partial<Failure> = {}): Failure => ({ ok: false, code, message, ...extra });
+  | Failure;
 
 /**
  * The YAML writer. Applies one edit to the Model's YAML files in memory,
@@ -77,6 +67,7 @@ export async function write(options: WriterOptions, request: WriteRequest, { dry
   const edit: Edit = {
     ws,
     repoRoot,
+    root,
     async open(abs) {
       let file = files.get(abs);
       if (!file) {
@@ -87,14 +78,7 @@ export async function write(options: WriterOptions, request: WriteRequest, { dry
     },
   };
 
-  const project = ws.projects.find((p) => p.id === request.project && !p.duplicateOf);
-  if (!project) {
-    const known = ws.projects.flatMap((p) => (p.id === undefined ? [] : [p.id]));
-    const near = suggest(request.project, known);
-    return fail("not_found", `No Project "${request.project}".`, near ? { suggestions: [near] } : {});
-  }
-
-  const planned = await plan(edit, project, request);
+  const planned = await plan(edit, request);
   if (!planned.ok) return planned;
 
   const changed = new Map<string, string>();
@@ -107,6 +91,7 @@ export async function write(options: WriterOptions, request: WriteRequest, { dry
   const result = {
     ok: true as const,
     action: changed.size === 0 ? ("unchanged" as const) : planned.action,
+    item: planned.item,
     subject: planned.subject,
     files: ordered.map(rel),
     diff: ordered.map((abs) => unifiedDiff(rel(abs), files.get(abs)!.original, changed.get(abs)!)).join(""),
@@ -123,16 +108,24 @@ export async function write(options: WriterOptions, request: WriteRequest, { dry
   return result;
 }
 
-interface Edit {
-  ws: LoadedWorkspace;
-  repoRoot: string;
-  /** The file at an absolute path, parsed for editing; the same object on every call. */
-  open(abs: string): Promise<YamlFile>;
-}
-
-type Planned = { ok: true; action: "created" | "updated" | "removed"; subject: Record<string, string | null> } | Failure;
-
-async function plan(edit: Edit, project: Project, request: WriteRequest): Promise<Planned> {
+async function plan(edit: Edit, request: WriteRequest): Promise<Planned> {
+  switch (request.op) {
+    case "upsert-target":
+      return upsertTarget(edit, request);
+    case "remove-target":
+      return removeTarget(edit, request);
+    case "upsert-deployment":
+      return upsertDeployment(edit, request);
+    case "remove-deployment":
+      return removeDeployment(edit, request);
+    case "upsert-team":
+    case "upsert-environment":
+      return upsertDefinition(edit, request);
+    case "create-project":
+      return createProject(edit, request);
+  }
+  const project = findProject(edit, request.project);
+  if ("ok" in project) return project;
   switch (request.op) {
     case "upsert-element":
       return upsertElement(edit, project, request);
@@ -171,7 +164,7 @@ async function upsertElement(edit: Edit, project: Project, request: Extract<Writ
       if (value === null) file.delete([...existing.path, key]);
       else file.set([...existing.path, key], value);
     }
-    return { ok: true, action: "updated", subject };
+    return { ok: true, action: "updated", item: "element", subject };
   }
 
   const collection = collectionOf[request.kind];
@@ -190,16 +183,16 @@ async function upsertElement(edit: Edit, project: Project, request: Extract<Writ
       if (!parentKindOf[request.kind]) return fail("invalid_input", `A ${request.kind} can't attach to a parent with in:, so it must go in its parent's file.`);
       const file = await edit.open(target.abs);
       file.set([collection, id.id], { ...named, in: parent.id, ...fields });
-      return { ok: true, action: "created", subject };
+      return { ok: true, action: "created", item: "element", subject };
     }
     const file = await edit.open(abs(parent.file.path));
     file.set([...parent.path, collection, id.id], { ...named, ...fields });
-    return { ok: true, action: "created", subject };
+    return { ok: true, action: "created", item: "element", subject };
   }
 
-  const file = await edit.open(target?.abs ?? join(edit.repoRoot, ...project.folder.split("/"), "model.yaml"));
+  const file = await edit.open(target?.abs ?? modelFile(edit, project));
   file.set([collection, id.id], { ...named, ...fields });
-  return { ok: true, action: "created", subject };
+  return { ok: true, action: "created", item: "element", subject };
 }
 
 async function upsertRelationship(edit: Edit, project: Project, request: Extract<WriteRequest, { op: "upsert-relationship" }>): Promise<Planned> {
@@ -216,11 +209,11 @@ async function upsertRelationship(edit: Edit, project: Project, request: Extract
       if (value === null) file.delete([...match.path, key]);
       else file.set([...match.path, key], value);
     }
-    return { ok: true, action: "updated", subject };
+    return { ok: true, action: "updated", item: "relationship", subject };
   }
   const fields = Object.fromEntries(Object.entries(request.fields).filter(([, v]) => v !== null));
   file.append([...consumer.path, "relationships"], { to, ...(id === undefined ? {} : { id }), ...fields });
-  return { ok: true, action: "created", subject };
+  return { ok: true, action: "created", item: "relationship", subject };
 }
 
 type FoundRelationship = {
@@ -300,13 +293,13 @@ async function removeElement(edit: Edit, project: Project, request: Extract<Writ
     ...edit.ws.deployments
       .filter((d) => d.service === element)
       .map((d) => ({ file: d.file.path, line: d.line, what: `Deployment of ${subject.id} to ${String(d.data.environment)} on ${qualify(d.data.target, d.project) ?? String(d.data.target)}` })),
-  ].sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
+  ].sort(byPlace);
   if (references.length > 0) {
     return fail("validation_failed", `${subject.id} is still referenced in ${references.length} place${references.length === 1 ? "" : "s"}; remove or change those first. Nothing was written.`, { references });
   }
   const file = await edit.open(join(edit.repoRoot, ...element.file.path.split("/")));
   file.delete(element.path);
-  return { ok: true, action: "removed", subject };
+  return { ok: true, action: "removed", item: "element", subject };
 }
 
 async function removeRelationship(edit: Edit, project: Project, request: Extract<WriteRequest, { op: "remove-relationship" }>): Promise<Planned> {
@@ -317,28 +310,10 @@ async function removeRelationship(edit: Edit, project: Project, request: Extract
   }
   const file = await edit.open(join(edit.repoRoot, ...found.consumer.file.path.split("/")));
   file.delete(found.match.path);
-  return { ok: true, action: "removed", subject: found.subject };
+  return { ok: true, action: "removed", item: "relationship", subject: found.subject };
 }
 
 const kindName = { person: "Person", system: "System", service: "Service", component: "Component" } as const;
-
-/** A `file` argument: a `.yaml` path inside the Project's folder, relative to it. */
-function projectFile(edit: Edit, project: Project, file: string): { ok: true; abs: string } | Failure {
-  const clean = normalize(file);
-  const reserved = ["project.yaml", "workspace.yaml"];
-  if (isAbsolute(file) || clean.startsWith("..") || !clean.endsWith(".yaml") || reserved.includes(clean)) {
-    return fail("invalid_input", `file "${file}" must be a .yaml path inside the Project's folder, relative to it, other than project.yaml.`);
-  }
-  return { ok: true, abs: join(edit.repoRoot, ...project.folder.split("/"), clean) };
-}
-
-/** A bare id for an id written in `project`: `id` or `project:id`. */
-function local(ref: string, project: Project): { ok: true; id: string } | Failure {
-  const [prefix, id] = ref.includes(":") ? (ref.split(":", 2) as [string, string]) : [undefined, ref];
-  if (prefix !== undefined && prefix !== project.id) return fail("invalid_input", `"${ref}" is not in Project ${project.id}; write tools edit one Project at a time.`);
-  if (!Id.safeParse(id).success) return fail("invalid_input", `"${ref}" is not a valid id: use a lowercase slug (a-z, 0-9 and -).`);
-  return { ok: true, id };
-}
 
 function elementIn(ws: LoadedWorkspace, project: Project, id: string): ElementDecl | undefined {
   return ws.elements.find((e) => e.project === project && e.id === id);
