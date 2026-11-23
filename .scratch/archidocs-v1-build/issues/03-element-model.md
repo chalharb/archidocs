@@ -1,6 +1,7 @@
 # 03: Full Element model
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (element-model session)
 Blocked by: 01
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -18,7 +19,7 @@ Authors can declare the whole logical Element tree, and the Bundle carries it.
 
 ## Acceptance criteria
 
-- [ ] A fixture spread over several files, using `in:`, builds the expected Element tree.
-- [ ] Re-parenting an Element keeps its id.
-- [ ] Every new rule has failing and passing fixtures.
-- [ ] The generated JSON Schema validates the fixture's YAML and rejects an unknown key.
+- [x] A fixture spread over several files, using `in:`, builds the expected Element tree.
+- [x] Re-parenting an Element keeps its id.
+- [x] Every new rule has failing and passing fixtures.
+- [x] The generated JSON Schema validates the fixture's YAML and rejects an unknown key.
