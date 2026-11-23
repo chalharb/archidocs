@@ -1,6 +1,7 @@
 # 18: Saved Views in the viewer
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude
 Blocked by: 15, 17
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -21,5 +22,5 @@ People find, build and export Saved Views from the viewer.
 
 ## Acceptance criteria
 
-- [ ] Playwright: the YAML that Save as View produces resolves (through the core engine) to the same nodes as the screen.
-- [ ] An exported SVG from the viewer matches `archidocs export` for the same View.
+- [x] Playwright: the YAML that Save as View produces resolves (through the core engine) to the same nodes as the screen.
+- [x] An exported SVG from the viewer matches `archidocs export` for the same View.

@@ -92,7 +92,7 @@ export function formatPlace(place: Place): string {
   const query: string[] = [];
   if (place.open.length > 0) query.push(`open=${place.open.map(encode).join(",")}`);
   if (place.selected !== null) query.push(`sel=${encode(place.selected)}`);
-  if (place.direction !== null && place.direction !== defaultDirection(place.view)) query.push(`dir=${place.direction}`);
+  if (place.direction !== null) query.push(`dir=${place.direction}`);
   if (place.lens !== null) query.push(...formatLens(place.lens));
   if (place.picks.length > 0) query.push(`picks=${place.picks.map(encode).join(",")}`);
   if (place.step !== null) query.push(`step=${place.step}`);

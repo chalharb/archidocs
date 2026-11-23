@@ -7,7 +7,7 @@ export { ruleCatalogue } from "./catalogue.ts";
 export { deriveEdges, levelOf, type DerivedEdge, type Level } from "./query.ts";
 export { getDeployments, type DeploymentDetail, type TargetStep } from "./deployments.ts";
 export { search, type SearchMatch, type SearchOptions, type MatchRank } from "./search.ts";
-export { listViews, resolveView, type ViewSummary, type ResolveOptions, type ResolvedView, type ViewKind, type ListedKind, type ViewNode, type ViewEdge, type NodeMark, type ViewDirection } from "./views.ts";
+export { listViews, resolveView, pickedView, type ViewSummary, type ResolveOptions, type ResolvedView, type ViewKind, type ListedKind, type ViewNode, type ViewEdge, type NodeMark, type ViewDirection } from "./views.ts";
 export { resolveSaved, type SavedResolution, type BadExpand, type UnresolvedPath } from "./saved-views.ts";
 export { findPaths, type PathsResult, type Path, type Hop, type DirectEdge } from "./paths.ts";
 export { getImpact, type ImpactResult, type ImpactRing, type ImpactedElement, type Direction } from "./impact.ts";
@@ -15,3 +15,4 @@ export { listOwned, type OwnedResult, type OwnedGroup, type OwnedItem, type Owne
 export { listAdrs, adrsFor, type ListAdrsOptions, type ListedAdr } from "./adrs.ts";
 export { resolveDynamic, resolveDynamicView, takesPart, stepViews, dynamicViewsUsing, type DynamicResolution, type DynamicProblem, type ResolvedDynamicView, type ResolvedStep, type StepKind } from "./dynamic-views.ts";
 export { diff, countChanges, changedIds, changeKinds, type Change, type ChangeKind, type ChangeType, type ChangeItem, type ChangeCounts } from "./diff.ts";
+export { saveAsView, type Screen, type SavedScreen, type SavedViewDefinition } from "./save-as-view.ts";

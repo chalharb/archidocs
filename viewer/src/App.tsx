@@ -4,6 +4,7 @@ import type { ResolvedStep } from "../../src/core/dynamic-views.ts";
 import { Canvas } from "./Canvas.tsx";
 import { DynamicScreen } from "./DynamicScreen.tsx";
 import { ElementPanel } from "./ElementPanel.tsx";
+import { fileName, picture, save, type ExportFormat } from "./export.ts";
 import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
 import { useLayout, type LaidOut } from "./layout.ts";
@@ -11,15 +12,21 @@ import { LocationBar } from "./LocationBar.tsx";
 import { defaultDirection, HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { remember } from "./recent.ts";
+import { SaveAsView } from "./SaveAsView.tsx";
 import { Workspace } from "./workspace.ts";
 
 /** Loads the latest Bundle next to index.html; a relative URL, so the site works under any base path. */
 function useWorkspace(): { workspace?: Workspace; error?: string } {
   const [state, setState] = useState<{ workspace?: Workspace; error?: string }>({});
   useEffect(() => {
+    // site.json names the Workspace for exports; a site without it still opens.
+    const name = fetch("./site.json")
+      .then((r): Promise<{ workspace?: string }> | { workspace?: string } => (r.ok ? r.json() : {}))
+      .then((site) => site.workspace)
+      .catch(() => undefined);
     fetch("./workspace.bundle.json")
       .then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`workspace.bundle.json: HTTP ${r.status}`))))
-      .then((bundle) => setState({ workspace: new Workspace(bundle) }))
+      .then(async (bundle) => setState({ workspace: new Workspace(bundle, await name) }))
       .catch((e: unknown) => setState({ error: e instanceof Error ? e.message : String(e) }));
   }, []);
   return state;
@@ -38,7 +45,8 @@ function Screen({ workspace }: { workspace: Workspace }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
   const view = useMemo(() => workspace.resolve(place.view, place.open), [workspace, place.view, openKey]);
   const dynamic = useMemo(() => workspace.dynamic(place.view), [workspace, place.view]);
-  const direction = place.direction ?? defaultDirection(place.view);
+  const ownDirection = workspace.ownDirection(place.view) ?? defaultDirection(place.view);
+  const direction = place.direction ?? ownDirection;
   const { laidOut, error } = useLayout(view, direction);
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
@@ -137,7 +145,21 @@ function Screen({ workspace }: { workspace: Workspace }) {
     [place, workspace],
   );
 
-  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === defaultDirection(place.view) ? null : d }), [place]);
+  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === ownDirection ? null : d }), [place, ownDirection]);
+
+  /** Opens a View from the rail: a Saved View with its own Lens, any other keeping the current Lens. */
+  const pickView = useCallback((v: string) => go(viewPlace(v, null, workspace.ownLens(v) ?? place.lens)), [workspace, place.lens]);
+
+  const [saving, setSaving] = useState(false);
+  const exportPicture = useCallback(
+    (what: "view" | "picks", format: ExportFormat) => {
+      const shown = lensed ?? view;
+      if (!shown) return;
+      const drawn = what === "picks" ? workspace.picked(shown, place.picks) : shown;
+      void picture(workspace, drawn, direction, format).then((blob) => save(blob, fileName(place.view, format, what === "picks")));
+    },
+    [workspace, lensed, view, place.picks, place.view, direction],
+  );
 
   /** Opens a Generated View from a Step: the boxes that show both ends of its Relationship open, its consumer (or what shows it) selected. */
   const openStepView = useCallback(
@@ -158,7 +180,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
       view={place.view}
       selected={place.selected}
       onPickElement={focus}
-      onPickView={(v) => go(viewPlace(v, null, place.lens))}
+      onPickView={pickView}
       onPickTeam={(team) => setLens({ team })}
       onFind={() => setFinding(true)}
     />
@@ -204,7 +226,25 @@ function Screen({ workspace }: { workspace: Workspace }) {
         />
       )}
       <main className="ad-main">
-        <LocationBar workspace={workspace} place={place} direction={direction} onCollapse={collapse} onDirection={setDirection} onLens={setLens} onPicks={(picks) => go({ ...place, picks }, { replace: true })} />
+        <LocationBar
+          workspace={workspace}
+          place={place}
+          direction={direction}
+          onCollapse={collapse}
+          onDirection={setDirection}
+          onLens={setLens}
+          onPicks={(picks) => go({ ...place, picks }, { replace: true })}
+          onExport={exportPicture}
+          onSaveAsView={() => setSaving(true)}
+        />
+        {saving && (
+          <SaveAsView
+            workspace={workspace}
+            screen={{ view: place.view, open: place.open, lens: place.lens, picks: place.picks, direction: place.direction }}
+            title={title ?? view.title}
+            onClose={() => setSaving(false)}
+          />
+        )}
         {connectFrom !== null && (
           <p className="ad-banner" role="status">
             Pick the node to connect {workspace.name(connectFrom)} to: click it, or press / to find it. Escape cancels.

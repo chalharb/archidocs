@@ -64,9 +64,9 @@ export interface ResolveOptions {
   /**
    * A Lens over the View, as the viewer holds it: marks nodes and lights
    * edges without changing which nodes the View holds. It replaces a Saved
-   * View's own Lens.
+   * View's own Lens; null clears a Saved View's own Lens.
    */
-  lens?: BundleLens;
+  lens?: BundleLens | null;
 }
 
 /**
@@ -83,7 +83,7 @@ export function resolveView(bundle: Bundle, id: string, options: ResolveOptions 
 
 function resolveUnlensed(bundle: Bundle, id: string, options: ResolveOptions): ResolvedView | undefined {
   const saved = bundle.views.find((v) => v.id === id);
-  if (saved) return saved.kind === "structural" ? resolveSaved(bundle, saved)?.view : undefined;
+  if (saved) return saved.kind === "structural" ? resolveSaved(bundle, options.lens === undefined ? saved : { ...saved, lens: null })?.view : undefined;
   const model = new ModelIndex(bundle);
   if (id === "c1") return landscape(model, "c1", "C1 Landscape", []);
   if (id === "c2") return landscape(model, "c2", "C2 Landscape", options.expand ?? []);
@@ -96,6 +96,17 @@ function resolveUnlensed(bundle: Bundle, id: string, options: ResolveOptions): R
   if (scope === "c2" && focus.kind === "system") return focused(model, { id, kind: "c2", title: `${focus.name} (C2)` }, focus, expand);
   if (scope === "c3" && focus.kind === "service" && model.children(focus.id).length > 0) return focused(model, { id, kind: "c3", title: `${focus.name} (C3)` }, focus, expand);
   return undefined;
+}
+
+/**
+ * The picked nodes of a View, laid out again on their own: each pick with the
+ * containers it sits in, and the edges among them, Lens marks kept.
+ */
+export function pickedView(view: ResolvedView, picks: readonly string[]): ResolvedView {
+  const parentOf = new Map(view.nodes.map((n) => [n.id, n.parent]));
+  const kept = new Set<string>();
+  for (const pick of picks) for (let at: string | null | undefined = parentOf.has(pick) ? pick : undefined; at; at = parentOf.get(at)) kept.add(at);
+  return { ...view, nodes: view.nodes.filter((n) => kept.has(n.id)), edges: view.edges.filter((e) => kept.has(e.from) && kept.has(e.to)) };
 }
 
 /** The kinds a View is listed under: a Saved structural View's is its `level`. */
