@@ -80,6 +80,10 @@ export function resolveSaved(bundle: Bundle, def: BundleView): SavedResolution |
   return { view, badExpand, unresolvedPaths };
 }
 
+/** A Lens in words, for tool text and a picture's key. */
+export const describeLens = (lens: BundleLens): string =>
+  "impact" in lens ? `impact of ${lens.impact}, ${lens.direction}` : "team" in lens ? `Team ${lens.team}` : `paths from ${lens.path.from} to ${lens.path.to} (${lens.path.paths ?? "shortest"})`;
+
 type Found = { ids: Set<string>; unresolved?: { from: string; to: string } };
 
 /** The Elements one selector names; unknown ids name none (`unknown-element` reports them). */

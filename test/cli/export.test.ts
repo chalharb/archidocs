@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
@@ -7,9 +7,31 @@ import { archidocs } from "../support/cli.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
 import { writeWorkspace } from "../support/workspace.ts";
 
+/** The landscape fixture plus Saved Views in an `architecture` Project, one of them a Deployment View. */
+const withSavedViews = {
+  ...landscapeWorkspace,
+  "architecture/project.yaml": "id: architecture\nname: Architecture\nowner: platform-team\n",
+  "architecture/views.yaml": `views:
+  structural:
+    purchase:
+      title: Purchase
+      level: c2
+      include: [{ from: shop:shopper, to: payments:payments-api }]
+      direction: TB
+      lens: { impact: shop:cart, direction: upstream }
+    systems:
+      title: Systems
+      level: c1
+    runtime:
+      title: Runtime
+      level: deployment
+      environment: prod
+`,
+};
+
 /** The landscape fixture committed once, so pictures have a source commit. */
-async function committedLandscape() {
-  const { repoRoot } = await writeWorkspace(landscapeWorkspace);
+async function committedLandscape(files = landscapeWorkspace) {
+  const { repoRoot } = await writeWorkspace(files);
   const git = (...args: string[]) => execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", ...args], { cwd: repoRoot, encoding: "utf8" }).trim();
   git("add", ".");
   git("commit", "--quiet", "-m", "Landscape", "--date", "2026-11-20T09:00:00Z");
@@ -67,7 +89,32 @@ describe("archidocs export", () => {
     expect(lr[0]! / lr[1]!).toBeGreaterThan(tb[0]! / tb[1]!);
   });
 
+  it("writes a Saved View with its Lens, in the View's own direction unless --direction overrides it", async () => {
+    const { repoRoot } = await committedLandscape(withSavedViews);
+    const { code, stdout } = await archidocs(repoRoot, "export", "architecture:purchase");
+    await archidocs(repoRoot, "export", "architecture:purchase", "--direction", "LR", "--out", "lr.svg");
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("Wrote architecture-purchase.svg\n");
+    const svg = await readFile(join(repoRoot, "architecture-purchase.svg"), "utf8");
+    expect(texts(svg)).toContain("Lens: impact of shop:cart, upstream");
+    const [tb, lr] = [svgSize(svg), svgSize(await readFile(join(repoRoot, "lr.svg"), "utf8"))];
+    expect(tb[0]! / tb[1]!).toBeLessThan(lr[0]! / lr[1]!);
+  });
+
+  it("--all-saved writes every Saved View into --out, skipping Deployment Views", async () => {
+    const { repoRoot } = await committedLandscape(withSavedViews);
+    const { code, stdout, stderr } = await archidocs(repoRoot, "export", "--all-saved", "--out", "docs/views", "--format", "png");
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("Wrote docs/views/architecture-purchase.png\nWrote docs/views/architecture-systems.png\n");
+    expect(stderr).toBe("Skipped architecture:runtime: Deployment Views can't be exported yet.\n");
+    expect((await readdir(join(repoRoot, "docs/views"))).sort()).toEqual(["architecture-purchase.png", "architecture-systems.png"]);
+  });
+
   it.each([
+    [["export", "--all-saved"], "--all-saved needs --out"],
+    [["export", "c1", "--all-saved", "--out", "x"], "Give a View or --all-saved, not both"],
     [["export", "c9"], 'Unknown View "c9"'],
     [["export"], "Give the View to export"],
     [["export", "c1", "--format", "pdf"], 'Unknown format "pdf"'],

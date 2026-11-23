@@ -5,6 +5,7 @@ import { search } from "../core/search.ts";
 import { deriveEdges, findPaths, getImpact, levelOf, listOwned, type ImpactRing } from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
 import { listViews, resolveView, type ViewNode } from "../core/views.ts";
+import { describeLens } from "../core/saved-views.ts";
 import { BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 import { registerWriteTools } from "./writes.ts";
@@ -382,7 +383,7 @@ export function createServer(options: ServerOptions): McpServer {
         { ...view },
         [
           `${view.title} (${view.id}): ${view.nodes.length} node${view.nodes.length === 1 ? "" : "s"}, ${edgeCount}.`,
-          ...(view.lens ? [`Lens: ${lensLabel(view.lens)}.`] : []),
+          ...(view.lens ? [`Lens: ${describeLens(view.lens)}.`] : []),
           "Nodes:",
           ...view.nodes.map(nodeLine),
           ...(view.edges.length ? ["Edges:", ...view.edges.map((e) => `- ${e.from} → ${e.to}: ${e.relationships.map(relationshipLabel).join("; ")}${e.lit ? " (lit)" : ""}`)] : []),
@@ -573,9 +574,6 @@ const ViewSummary = z.object({ id: z.string(), kind: ViewKind, title: z.string()
 
 const nodeLine = (n: ViewNode) =>
   `- ${label(n)}: ${kindName[n.kind]}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}` : ""}`;
-
-const lensLabel = (lens: BundleLens) =>
-  "impact" in lens ? `impact of ${lens.impact}, ${lens.direction}` : "team" in lens ? `Team ${lens.team}` : `paths from ${lens.path.from} to ${lens.path.to} (${lens.path.paths ?? "shortest"})`;
 
 const relationshipLabel = (r: BundleRelationship) => r.description ?? r.id ?? `${r.from} → ${r.to}`;
 

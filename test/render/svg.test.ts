@@ -85,3 +85,48 @@ describe("renderSvg", () => {
     expect(svg).toMatch(/@font-face\{font-family:"Inter";src:url\(data:font\/ttf;base64,[A-Za-z0-9+/=]+\)/);
   });
 });
+
+describe("renderSvg with a Lens", () => {
+  /** The render workspace plus a Saved View with an upstream impact Lens on Cart. */
+  const lensed: Files = {
+    ...workspace,
+    "shop/views.yaml": `views:
+  structural:
+    cart-impact:
+      title: Who needs the cart
+      level: c2
+      include:
+        - { element: cart, upstream: all, downstream: 1 }
+      lens: { impact: cart, direction: upstream }
+`,
+  };
+
+  it("draws a Saved View with its Lens exactly as its golden file", async () => {
+    const svg = await render(lensed, "shop:cart-impact");
+
+    await expect(svg).toMatchFileSnapshot("golden/saved-lens.svg");
+    expect(await render(lensed, "shop:cart-impact")).toBe(svg);
+  });
+
+  it("badges each hit node with its distance and names the Lens in the key", async () => {
+    const svg = await render(lensed, "shop:cart-impact");
+
+    expect(texts(svg)).toEqual(expect.arrayContaining(["0", "1", "2", "Lens: impact of shop:cart, upstream"]));
+  });
+
+  it("dims what the Lens misses and highlights what it hits", async () => {
+    const svg = await render(lensed, "shop:cart-impact");
+
+    // Cart DB and Payments API are not upstream of Cart, nor are the edges to them.
+    expect(svg.match(/<g opacity="0.35"><g>/g)?.length).toBe(2);
+    expect(svg.match(/<g opacity="0.35"><path/g)?.length).toBe(2);
+    expect(svg).toMatch(/marker-end="url\(#arrow-lit\)"/);
+  });
+
+  it("draws a View without a Lens unchanged", async () => {
+    const svg = await render(workspace, "c1");
+
+    expect(svg).not.toContain("arrow-lit");
+    expect(texts(svg).some((t) => t.startsWith("Lens:"))).toBe(false);
+  });
+});
