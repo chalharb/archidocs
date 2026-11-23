@@ -13,6 +13,8 @@ export async function bundleText(files: Files, commit: string): Promise<string> 
 export interface SiteOptions {
   /** Validator headers the host sends: an ETag, a Last-Modified date, or neither. */
   validators?: "etag" | "last-modified" | "none";
+  /** Other files the site serves, by path below the site root, such as `bundles/index.json`. */
+  files?: Record<string, string>;
 }
 
 /**
@@ -20,7 +22,7 @@ export interface SiteOptions {
  * host would: it answers conditional requests with 304 when nothing changed.
  * `publish` swaps in a new Bundle; `requests` records every request's headers.
  */
-export async function serveBundleSite(initial: string, { validators = "etag" }: SiteOptions = {}) {
+export async function serveBundleSite(initial: string, { validators = "etag", files = {} }: SiteOptions = {}) {
   let body = initial;
   let version = 1;
   let up = true;
@@ -33,6 +35,12 @@ export async function serveBundleSite(initial: string, { validators = "etag" }: 
     if (!up) {
       record(503);
       res.writeHead(503).end();
+      return;
+    }
+    const other = req.url?.startsWith("/site/") ? files[req.url.slice("/site/".length)] : undefined;
+    if (other !== undefined) {
+      record(200);
+      res.writeHead(200, { "content-type": "application/json" }).end(other);
       return;
     }
     if (req.url !== "/site/workspace.bundle.json") {

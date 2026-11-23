@@ -2,7 +2,7 @@ import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { nodeFileSystem } from "../core/fs.ts";
 import { write, type SourceRef, type WriteItem, type WriteRequest, type WriteResult } from "../writer/index.ts";
-import { advertise, toResult, type ToolOutcome } from "./server.ts";
+import { advertise, atRefused, takesAt, toResult, type ToolOutcome } from "./server.ts";
 import type { Source } from "./source.ts";
 
 const Project = z.string().min(1).describe("The Project to edit, by id");
@@ -49,6 +49,7 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
       },
       async (raw: unknown): Promise<CallToolResult> => {
         if (readOnly !== undefined || source.kind !== "checkout") return toResult({ ok: false, code: "read_only", message: readOnly ?? "Write tools need a checkout." });
+        if (takesAt(raw)) return toResult({ ok: false, code: "invalid_input", message: atRefused });
         const args = config.input.safeParse(raw ?? {});
         if (!args.success) return toResult({ ok: false, code: "invalid_input", message: z.prettifyError(args.error) });
         const dryRun = (args.data as { dry_run: boolean }).dry_run;
