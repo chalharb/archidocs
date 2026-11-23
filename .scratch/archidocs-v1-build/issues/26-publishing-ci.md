@@ -1,6 +1,6 @@
 # 26: Publishing and CI integrations
 
-Status: ready-for-agent
+Status: done
 Assignee: Claude (ticket-26 session)
 Blocked by: 25
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
@@ -17,6 +17,6 @@ Teams publish the site from CI with a few lines of config, and review PRs visual
 
 ## Acceptance criteria
 
-- [ ] An example workflow runs green against a fixture Workspace repo.
-- [ ] A `--preview` site opens with Compare applied.
-- [ ] Past Bundles are rebuilt from git when the cache is empty.
+- [x] An example workflow runs green against a fixture Workspace repo.
+- [x] A `--preview` site opens with Compare applied.
+- [x] Past Bundles are rebuilt from git when the cache is empty.
