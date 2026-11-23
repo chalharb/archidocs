@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { formatPlace, parsePlace, type Place } from "./place.ts";
 
 const CHANGED = "archidocs:place";
@@ -13,8 +13,15 @@ function subscribe(onChange: () => void) {
 /** The current hash; links, back and forward all change it. */
 export const useHash = () => useSyncExternalStore(subscribe, () => window.location.hash);
 
-/** The place the URL holds. */
-export const usePlace = (): Place => parsePlace(useHash());
+/**
+ * The place the URL holds. The same object until the hash changes, so callbacks
+ * and memos built from it don't change on every render: a new one would rebuild
+ * every canvas node, and React Flow hides edges until it re-measures them.
+ */
+export function usePlace(): Place {
+  const hash = useHash();
+  return useMemo(() => parsePlace(hash), [hash]);
+}
 
 /**
  * Moves to a place. A new View or new open boxes push a history entry, so
