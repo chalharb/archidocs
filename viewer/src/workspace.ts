@@ -1,3 +1,4 @@
+import { dynamicViewsUsing, resolveDynamicView, stepViews, type ResolvedDynamicView, type ResolvedStep } from "../../src/core/dynamic-views.ts";
 import { listViews, resolveView, type ResolvedView, type ViewSummary } from "../../src/core/views.ts";
 import { teamStyles, type TeamStyle } from "../../src/render/teams.ts";
 import type { Bundle, BundleElement, BundleLens } from "../../src/schema/bundle.ts";
@@ -64,6 +65,27 @@ export class Workspace {
   /** Resolves a View with its open boxes and, if given, a Lens marking its nodes; the same resolver MCP's `get_view` uses. */
   resolve(view: string, open: readonly string[], lens: BundleLens | null = null): ResolvedView | undefined {
     return resolveView(this.bundle, view, { expand: open, ...(lens ? { lens } : {}) });
+  }
+
+  /** Resolves a Dynamic View with the core engine's Step resolution; undefined for any other id. */
+  dynamic(view: string): ResolvedDynamicView | undefined {
+    return resolveDynamicView(this.bundle, view);
+  }
+
+  /** A Dynamic View's description as written, if it has one. */
+  description(view: string): string | null {
+    const def = this.bundle.views.find((v) => v.id === view);
+    return def?.description ?? null;
+  }
+
+  /** The Generated Views holding a Step's Relationship, most specific first, as the core engine finds them. */
+  stepViews(step: ResolvedStep): string[] {
+    return stepViews(this.bundle, step);
+  }
+
+  /** The Dynamic Views other than `except` with a Step taking this Step's Relationship. */
+  otherDynamicViews(step: ResolvedStep, except: string): ViewSummary[] {
+    return dynamicViewsUsing(this.bundle, step.relationship).filter((v) => v.id !== except);
   }
 
   name(id: string): string {
@@ -136,18 +158,33 @@ export class Workspace {
 
   /** The Views tree by kind: Landscapes, then Systems with the C3 Views of their Services nested. */
   viewsByKind(): TreeRow[] {
-    return [{ key: "views:landscapes", label: "Landscapes", children: this.landscapeRows() }, ...this.systemViewGroup("Systems", () => true)].filter((g) => g.children.length > 0);
+    return [
+      { key: "views:landscapes", label: "Landscapes", children: this.landscapeRows() },
+      ...this.systemViewGroup("Systems", () => true),
+      { key: "views:dynamic", label: "Dynamic Views", children: this.dynamicRows(() => true) },
+    ].filter((g) => g.children.length > 0);
   }
 
   /** The Views tree by Team: the Landscapes under Workspace, then each Team's C2 and C3 Views. */
   viewsByTeam(): TreeRow[] {
-    const teams = [...this.bundle.teams].sort(byName).flatMap((team) => this.systemViewGroup(team.name, (owner) => owner === team.id, team.id));
+    const teams = [...this.bundle.teams].sort(byName).flatMap((team) => {
+      const [group] = this.systemViewGroup(team.name, (owner) => owner === team.id, team.id);
+      return [{ ...group!, children: [...group!.children, ...this.dynamicRows((owner) => owner === team.id, team.id)] }];
+    });
     return [{ key: "views:workspace", label: "Workspace", children: this.landscapeRows() }, ...teams].filter((g) => g.children.length > 0);
   }
 
   private landscapeRows(): TreeRow[] {
-    // Dynamic Views get their own screen (ticket 20); until then they stay out of the tree.
     return this.views.filter((v) => v.kind !== "c3" && v.kind !== "dynamic" && !v.id.includes("/")).map((v) => ({ key: v.id, label: v.title, view: v.id, children: [] }));
+  }
+
+  /** The Dynamic Views whose Project a kept Team owns, by title. */
+  private dynamicRows(keep: (owner: string) => boolean, team?: string): TreeRow[] {
+    const owner = new Map(this.bundle.projects.map((p) => [p.id, p.owner]));
+    return this.bundle.views
+      .filter((v) => v.kind === "dynamic" && keep(owner.get(v.project) ?? ""))
+      .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
+      .map((v) => ({ key: v.id, label: v.title, view: v.id, glyph: "▶", team: team ? this.teams.get(team) : undefined, children: [] }));
   }
 
   /** Each kept System's C2 View with its Services' C3 Views nested, then C3 Views of Services outside any kept System. */

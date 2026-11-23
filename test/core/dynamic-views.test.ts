@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { listViews, resolveDynamicView } from "../../src/core/index.ts";
+import { dynamicViewsUsing, listViews, resolveDynamicView, stepViews } from "../../src/core/index.ts";
+import { checkoutScenarioWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
 
 /**
@@ -264,5 +265,69 @@ describe("listing Dynamic Views", () => {
     expect(listViews(bundle, { element: "shop:bus" })).toContainEqual(flow);
     expect(listViews(bundle, { element: "shop:mailer" })).toContainEqual(flow);
     expect(listViews(bundle, { element: "shop:web" })).not.toContainEqual(flow);
+  });
+});
+
+describe("where a Step leads", () => {
+  async function fullCheckout(extra: Files = {}) {
+    const { bundle, issues } = await loadWorkspace({ ...checkoutScenarioWorkspace, ...extra });
+    expect(issues).toEqual([]);
+    const view = resolveDynamicView(bundle, "shop:full-checkout")!;
+    return { bundle, step: (n: number) => view.steps.find((s) => s.n === n)! };
+  }
+
+  it("links a Step across Systems to the consumer's and the provider's System Views, then the C2 and C1 Landscapes", async () => {
+    const { bundle, step } = await fullCheckout();
+    expect(stepViews(bundle, step(27))).toEqual(["c2/shop:checkout", "c2/payments:payments", "c2", "c1"]);
+  });
+
+  it("leaves out C1 when both ends are in one System, and a System View an end has none of", async () => {
+    const { bundle, step } = await fullCheckout();
+    expect(stepViews(bundle, step(8))).toEqual(["c2/shop:checkout", "c2"]);
+    expect(stepViews(bundle, step(1))).toEqual(["c2/shop:checkout", "c2", "c1"]);
+  });
+
+  it("links a return Step like the call it answers", async () => {
+    const { bundle, step } = await fullCheckout();
+    expect(stepViews(bundle, step(33))).toEqual(stepViews(bundle, step(27)));
+  });
+
+  it("adds the broker's System View after the subscriber's and the publisher's for an event Step", async () => {
+    const { bundle, step } = await fullCheckout({ "platform/model.yaml": "systems:\n  platform:\n    name: Platform\n    services:\n      event-bus:\n        name: Event Bus\n        type: broker\n" });
+    expect(stepViews(bundle, step(42))).toEqual(["c2/shop:checkout", "c2/fulfilment:fulfilment", "c2/platform:platform", "c2", "c1"]);
+  });
+
+  it("links a Step between two Components of one Service to that Service's C3 View first", async () => {
+    const { bundle } = await loadWorkspace({
+      "workspace.yaml": "teams:\n  core:\n    name: Core\n",
+      "shop/project.yaml": "id: shop\nname: Shop\nowner: core\n",
+      "shop/model.yaml": `systems:
+  checkout:
+    name: Checkout
+    services:
+      cart:
+        name: Cart
+        components:
+          ui: { name: UI, relationships: [{ to: store, description: Saves the cart }] }
+          store: { name: Store }
+views:
+  dynamic:
+    flow:
+      title: Flow
+      steps:
+        - { from: ui, to: store }
+`,
+    });
+    const view = resolveDynamicView(bundle, "shop:flow")!;
+    expect(stepViews(bundle, view.steps[0]!)).toEqual(["c3/shop:cart", "c2/shop:checkout", "c2"]);
+  });
+
+  it("finds every Dynamic View that takes a Relationship", async () => {
+    const { bundle, step } = await fullCheckout();
+    expect(dynamicViewsUsing(bundle, step(27).relationship)).toEqual([
+      { id: "shop:full-checkout", kind: "dynamic", title: "Place order (full)" },
+      { id: "shop:pay", kind: "dynamic", title: "Pay for an order" },
+    ]);
+    expect(dynamicViewsUsing(bundle, step(1).relationship).map((v) => v.id)).toEqual(["shop:full-checkout"]);
   });
 });

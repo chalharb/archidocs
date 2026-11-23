@@ -5,8 +5,8 @@ import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import type { Bundle } from "../schema/bundle.ts";
-import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle, type ResolvedView } from "../core/index.ts";
-import { directions, layoutView, renderSvg, type Direction } from "../render/index.ts";
+import { findWorkspaceRoot, load, nodeFileSystem, resolveDynamicView, resolveView, serializeBundle, type ResolvedDynamicView, type ResolvedView } from "../core/index.ts";
+import { directions, layoutView, renderSequenceSvg, renderSvg, type Direction } from "../render/index.ts";
 import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitHead, gitTopLevel } from "../git.ts";
@@ -125,20 +125,26 @@ async function main(argv: string[]): Promise<number> {
     const workspace = basename((await gitTopLevel(root)) ?? root);
     const fileName = (id: string) => `${id.replace(/[/:]/g, "-")}.${format}`;
     /** Lays out and draws one View; `--direction` wins over a Saved View's own. */
-    const draw = async (view: ResolvedView, out: string) => {
-      const chosen = direction ?? view.direction;
-      const layout = await layoutView(view, chosen === undefined ? {} : { direction: chosen });
-      const svg = renderSvg({ bundle, view, layout, source: { workspace, commit: bundle.commit, date: bundle.builtAt } });
+    const source = { workspace, commit: bundle.commit, date: bundle.builtAt };
+    const write = async (svg: string, out: string) => {
       await writeFile(resolve(out), format === "svg" ? svg : await renderPngInNode(svg));
       process.stdout.write(`Wrote ${out}\n`);
     };
+    /** Lays out and draws one View: a Dynamic View as a sequence chart, any other as a diagram. */
+    const draw = async (view: ResolvedView | ResolvedDynamicView, out: string) => {
+      if (view.kind === "dynamic") return write(renderSequenceSvg({ bundle, view, source }), out);
+      const chosen = direction ?? view.direction;
+      const layout = await layoutView(view, chosen === undefined ? {} : { direction: chosen });
+      await write(renderSvg({ bundle, view, layout, source }), out);
+    };
+    const resolveAny = (id: string) => resolveDynamicView(bundle, id) ?? resolveView(bundle, id);
 
     if (allSaved) {
       await mkdir(resolve(values.out!), { recursive: true });
       for (const saved of bundle.views) {
-        const view = resolveView(bundle, saved.id);
+        const view = resolveAny(saved.id);
         if (!view) {
-          process.stderr.write(`Skipped ${saved.id}: ${saved.kind === "dynamic" ? "Dynamic" : "Deployment"} Views can't be exported yet.\n`);
+          process.stderr.write(`Skipped ${saved.id}: Deployment Views can't be exported yet.\n`);
           continue;
         }
         await draw(view, join(values.out!, fileName(saved.id)));
@@ -146,8 +152,8 @@ async function main(argv: string[]): Promise<number> {
       return OK;
     }
     const saved = bundle.views.find((v) => v.id === viewId);
-    if (saved && (saved.kind === "dynamic" || saved.level === "deployment")) throw new UsageError(`"${viewId}" is a ${saved.kind === "dynamic" ? "Dynamic" : "Deployment"} View, which can't be exported yet.`);
-    const view = resolveView(bundle, viewId!);
+    if (saved?.kind === "structural" && saved.level === "deployment") throw new UsageError(`"${viewId}" is a Deployment View, which can't be exported yet.`);
+    const view = resolveAny(viewId!);
     if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components> and Saved Views (project:view-id).`);
     await draw(view, values.out ?? fileName(viewId!));
     return OK;

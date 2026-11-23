@@ -5,4 +5,6 @@ export const SITES = {
   landscape: "/team/archidocs/",
   /** A generated Workspace whose C2 Landscape passes 100 nodes once its Systems are open. */
   big: "/team/big/",
+  /** The sequence chart scenario: the 46-Step full checkout and a short payment, with event Steps via a broker. */
+  checkout: "/team/checkout/",
 } as const;

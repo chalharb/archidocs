@@ -912,3 +912,437 @@ a {
   stroke: #d08a10;
   stroke-width: 2.4;
 }
+
+/* Dynamic View screen: walkthrough | chart | Step detail */
+.ad-main-dynamic {
+  grid-template-rows: 1fr;
+  min-height: 0;
+}
+
+.ad-dynamic {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  height: 100%;
+  min-height: 0;
+}
+
+.ad-dyn-left,
+.ad-dyn-detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+}
+
+.ad-dyn-left {
+  border-right: 1px solid var(--line);
+}
+
+.ad-dyn-detail {
+  border-left: 1px solid var(--line);
+  overflow: auto;
+}
+
+.ad-dyn-detail h2 {
+  margin: 2px 0 6px;
+  font-size: 17px;
+}
+
+.ad-dyn-main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ad-dyn-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ad-dyn-title h1 {
+  margin: 0;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ad-transport {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ad-transport-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.ad-transport-buttons button {
+  min-width: 36px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font-size: 12px;
+}
+
+.ad-transport-buttons .ad-play {
+  min-width: 52px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.ad-transport-count {
+  margin: 8px 0 6px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ad-progress {
+  position: relative;
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--canvas);
+  overflow: hidden;
+}
+
+.ad-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--tint);
+  transition: width 0.2s var(--ease);
+  pointer-events: none;
+}
+
+.ad-tick {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid var(--panel);
+  background: none;
+}
+
+.ad-tick:hover,
+.ad-tick[aria-current="step"] {
+  background: var(--accent);
+}
+
+.ad-outline {
+  flex: 1;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  overflow: auto;
+}
+
+.ad-outline button {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 14px;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: none;
+  text-align: left;
+}
+
+.ad-outline button:hover {
+  background: var(--canvas);
+}
+
+.ad-outline button[aria-current="step"] {
+  background: var(--tint);
+  border-left-color: var(--accent);
+}
+
+.ad-outline-n {
+  flex: none;
+  width: 22px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ad-outline-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ad-outline-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-outline-ends {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* An arrow-style glyph: a short line with the Step's head and dash. */
+.ad-glyph {
+  display: inline-block;
+  position: relative;
+  width: 22px;
+  height: 0;
+  margin: 0 3px;
+  vertical-align: middle;
+  border-top: 1.5px solid var(--edge);
+}
+
+.ad-glyph.ad-step-return {
+  border-top-style: dashed;
+}
+
+.ad-glyph::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -5.5px;
+  border-left: 7px solid var(--edge);
+  border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent;
+}
+
+.ad-glyph.ad-step-async::after,
+.ad-glyph.ad-step-return::after {
+  width: 7px;
+  height: 7px;
+  top: -4.5px;
+  border: 0;
+  border-top: 1.5px solid var(--edge);
+  border-right: 1.5px solid var(--edge);
+  transform: rotate(45deg);
+}
+
+.ad-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ad-legend-bar {
+  display: inline-block;
+  width: 10px;
+  height: 18px;
+  margin: 0 9px;
+  border: 1px solid var(--faint);
+  background: var(--canvas);
+}
+
+.ad-note {
+  padding: 6px 8px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ad-view-links li {
+  padding: 2px 0;
+}
+
+/* Sequence chart */
+.ad-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.ad-head {
+  fill: var(--ink);
+}
+
+.ad-head-open {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.ad-seq .react-flow__node {
+  pointer-events: none;
+  cursor: default;
+}
+
+.ad-lifeline svg {
+  overflow: visible;
+}
+
+.ad-lifeline-line {
+  stroke: var(--faint);
+  stroke-dasharray: 3 4;
+}
+
+.ad-activation {
+  fill: var(--tint);
+  stroke: var(--faint);
+}
+
+.ad-seq-headers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.ad-seq-header {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 14px;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(15, 20, 30, 0.08);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ad-seq-header.ad-external {
+  border-style: dashed;
+  background: #fafafa;
+}
+
+.ad-seq-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-seq-header .ad-team {
+  position: static;
+  font-weight: 500;
+}
+
+.ad-seq-tools {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+}
+
+.ad-step {
+  cursor: pointer;
+  transition: opacity 0.2s var(--ease);
+}
+
+.ad-step-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 16;
+  pointer-events: stroke;
+}
+
+.ad-step-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.ad-step-line.ad-step-return {
+  stroke-dasharray: 6 4;
+}
+
+.ad-step-badge {
+  fill: var(--ink);
+}
+
+.ad-step-number {
+  fill: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.ad-step-label {
+  fill: var(--ink);
+  font-size: 12px;
+}
+
+.ad-step-sub {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.ad-step-selected .ad-step-line {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.ad-step-selected .ad-step-badge {
+  fill: var(--accent);
+}
+
+.ad-step-selected .ad-step-label {
+  font-weight: 600;
+}
+
+.ad-step-later {
+  opacity: 0.18;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-step,
+  .ad-progress-fill {
+    transition: none;
+  }
+}
+
+/* Numbered-Step graph */
+.ad-graph-node {
+  cursor: default;
+}
+
+.ad-graph-steps {
+  position: absolute;
+  display: flex;
+  gap: 3px;
+  pointer-events: all;
+}
+
+.ad-graph-step {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1.5px solid var(--panel);
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.ad-graph-step.ad-step-return {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1.5px dashed var(--ink);
+}
+
+.ad-graph-step[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}

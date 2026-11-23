@@ -101,7 +101,7 @@ function LensChip({ workspace, lens, onLens }: { workspace: Workspace; lens: Len
   );
 }
 
-function RecentMenu() {
+export function RecentMenu() {
   const [items, setItems] = useState<RecentPlace[] | null>(null);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -135,7 +135,7 @@ function RecentMenu() {
   );
 }
 
-function CopyLink() {
+export function CopyLink() {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;

@@ -4,7 +4,7 @@ import { basename, join } from "node:path";
 import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
 import { archidocs } from "../support/cli.ts";
-import { landscapeWorkspace } from "../support/fixtures.ts";
+import { checkoutScenarioWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { writeWorkspace } from "../support/workspace.ts";
 
 /** The landscape fixture plus Saved Views in an `architecture` Project, one of them a Deployment View. */
@@ -110,6 +110,29 @@ describe("archidocs export", () => {
     expect(stdout).toBe("Wrote docs/views/architecture-purchase.png\nWrote docs/views/architecture-systems.png\n");
     expect(stderr).toBe("Skipped architecture:runtime: Deployment Views can't be exported yet.\n");
     expect((await readdir(join(repoRoot, "docs/views"))).sort()).toEqual(["architecture-purchase.png", "architecture-systems.png"]);
+  });
+
+  it("draws a Dynamic View as a sequence chart, as SVG or PNG", async () => {
+    const { repoRoot } = await committedLandscape(checkoutScenarioWorkspace);
+    const svgRun = await archidocs(repoRoot, "export", "shop:pay");
+    const pngRun = await archidocs(repoRoot, "export", "shop:pay", "--format", "png", "--out", "pay.png");
+
+    expect([svgRun.code, svgRun.stdout]).toEqual([0, "Wrote shop-pay.svg\n"]);
+    const svg = await readFile(join(repoRoot, "shop-pay.svg"), "utf8");
+    expect(texts(svg)[0]).toBe("Pay for an order");
+    expect(texts(svg)).toEqual(expect.arrayContaining(["Checkout API", "Payments API", "Fraud Scorer", "1", "4"]));
+    expect(svg.match(/<path data-step=/g)).toHaveLength(4);
+    expect(pngRun.code).toBe(0);
+    expect(PNG.sync.read(await readFile(join(repoRoot, "pay.png"))).width).toBeGreaterThan(0);
+  });
+
+  it("--all-saved draws Dynamic Views as sequence charts too", async () => {
+    const { repoRoot } = await committedLandscape(checkoutScenarioWorkspace);
+    const { code, stdout, stderr } = await archidocs(repoRoot, "export", "--all-saved", "--out", "views");
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout).toBe("Wrote views/shop-full-checkout.svg\nWrote views/shop-pay.svg\n");
   });
 
   it.each([

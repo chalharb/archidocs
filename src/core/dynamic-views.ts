@@ -176,3 +176,39 @@ function toStep(n: number, s: BundleStep, kind: StepKind, r: BundleRelationship)
     ...(s.note === null ? {} : { note: s.note }),
   };
 }
+
+/**
+ * The Generated Views holding a Step's Relationship, most specific first:
+ * `c3/<service>` when both ends are Components of one Service; the consumer's
+ * `c2/<system>`, then the provider's; for an event Step the broker's
+ * `c2/<system>`; then `c2`; and `c1` when the ends are under different
+ * top-level Elements. The consumer of an event Step is its subscriber.
+ */
+export function stepViews(bundle: Bundle, step: ResolvedStep): string[] {
+  const byId = new Map(bundle.elements.map((e) => [e.id, e]));
+  const ancestry = (id: string): BundleElement[] => {
+    const out: BundleElement[] = [];
+    for (let e = byId.get(id); e !== undefined && !out.includes(e); e = e.parent === null ? undefined : byId.get(e.parent)) out.unshift(e);
+    return out;
+  };
+  const system = (id: string) => ancestry(id).find((e) => e.kind === "system");
+  const { from, to } = step.relationship;
+  const [a, b] = [byId.get(from), byId.get(to)];
+  const views: string[] = [];
+  if (a?.kind === "component" && b?.kind === "component" && a.parent === b.parent && a.parent !== null) views.push(`c3/${a.parent}`);
+  for (const id of [from, to, ...(step.via === undefined ? [] : [step.via])]) {
+    const s = system(id);
+    if (s) views.push(`c2/${s.id}`);
+  }
+  views.push("c2");
+  if (ancestry(from)[0] !== ancestry(to)[0]) views.push("c1");
+  return [...new Set(views)];
+}
+
+/** The Dynamic Views with a Step that takes this Relationship, in Bundle order. */
+export function dynamicViewsUsing(bundle: Bundle, relationship: BundleRelationship): { id: string; kind: "dynamic"; title: string }[] {
+  return bundle.views
+    .filter((v) => v.kind === "dynamic")
+    .filter((v) => resolveDynamic(bundle, v).view.steps.some((s) => s.relationship === relationship))
+    .map((v) => ({ id: v.id, kind: "dynamic", title: v.title }));
+}
