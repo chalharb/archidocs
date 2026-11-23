@@ -1,6 +1,7 @@
 # 04: Relationships and derived edges
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-04-relationships session)
 Blocked by: 03
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -17,7 +18,7 @@ Authors declare dependencies under the consumer Element, and the core engine der
 
 ## Acceptance criteria
 
-- [ ] Component-level Relationships derive the correct Service and System edges.
-- [ ] Several Relationships on one pair stay distinct in the Bundle.
-- [ ] A misspelt `project:id` reports the nearest id in its message.
-- [ ] Every new rule has failing and passing fixtures.
+- [x] Component-level Relationships derive the correct Service and System edges.
+- [x] Several Relationships on one pair stay distinct in the Bundle.
+- [x] A misspelt `project:id` reports the nearest id in its message.
+- [x] Every new rule has failing and passing fixtures.

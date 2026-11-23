@@ -3,7 +3,7 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { elementTreeWorkspace, validWorkspace } from "../support/fixtures.ts";
+import { elementTreeWorkspace, relationshipWorkspace, validWorkspace } from "../support/fixtures.ts";
 import { jsonSchemas, serializeJsonSchema } from "../../src/schema/index.ts";
 
 /** The JSON Schemas shipped for editors, as published in the package. */
@@ -18,7 +18,7 @@ const validator = async (name: string) => {
 const schemaFor = (path: string) => (path === "workspace.yaml" ? "workspace" : path.endsWith("/project.yaml") ? "project" : "model");
 
 describe("shipped JSON Schemas", () => {
-  it.each(Object.entries({ ...validWorkspace, ...elementTreeWorkspace }))("accept the fixture file %s", async (path, text) => {
+  it.each([...Object.entries({ ...validWorkspace, ...elementTreeWorkspace }), ...Object.entries(relationshipWorkspace)])("accept the fixture file %s", async (path, text) => {
     const validate = await validator(schemaFor(path));
     expect(validate(parse(text)), JSON.stringify(validate.errors)).toBe(true);
   });

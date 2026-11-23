@@ -32,6 +32,24 @@ export const BundleElement = z.discriminatedUnion("kind", [
 ]);
 
 /**
+ * One declared Relationship, consumer (`from`) → provider (`to`), all ids
+ * qualified. `id` is the author's optional id, qualified with the consumer's
+ * Project. Derived edges are never stored.
+ */
+export const BundleRelationship = z.object({
+  id: z.string().nullable(),
+  from: z.string(),
+  to: z.string(),
+  description: z.string().nullable(),
+  technology: z.string().nullable(),
+  interaction: z.enum(["sync", "async"]),
+  via: z.string().nullable(),
+  channel: z.string().nullable(),
+  tags: z.array(z.string()),
+  source: Source,
+});
+
+/**
  * The Workspace Bundle. Parsing through this schema also fixes key order,
  * since zod emits object keys in shape order.
  */
@@ -49,10 +67,11 @@ export const Bundle = z.object({
     z.object({ id: z.string(), name: z.string(), owner: z.string(), folder: z.string(), source: Source }),
   ),
   elements: z.array(BundleElement),
-  relationships: z.array(z.never()),
+  relationships: z.array(BundleRelationship),
   targets: z.array(z.never()),
   deployments: z.array(z.never()),
 });
 
 export type Bundle = z.infer<typeof Bundle>;
 export type BundleElement = z.infer<typeof BundleElement>;
+export type BundleRelationship = z.infer<typeof BundleRelationship>;

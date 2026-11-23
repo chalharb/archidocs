@@ -1,8 +1,9 @@
 import { basename, dirname, join, relative, sep } from "node:path";
-import { Bundle, SCHEMA_VERSION, type BundleElement } from "../schema/bundle.ts";
+import { Bundle, SCHEMA_VERSION, type BundleElement, type BundleRelationship } from "../schema/bundle.ts";
 import { ProjectFile, WorkspaceFile, childKindOf, collectionOf, kindOfCollection, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
 import type { FileSystem } from "./fs.ts";
 import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile } from "./model.ts";
+import { qualified, referenceResolver } from "./refs.ts";
 import { rules } from "./rules.ts";
 import { checkSchema } from "./schema-check.ts";
 import { parseYaml } from "./yaml.ts";
@@ -44,7 +45,7 @@ export async function load(options: LoadOptions): Promise<LoadResult> {
       .filter((p) => (strict ? dir.startsWith(p + sep) : dir === p || dir.startsWith(p + sep)))
       .sort((a, b) => b.length - a.length)[0];
 
-  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [] };
+  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [], relationships: [] };
   const projectByDir = new Map<string, Project>();
 
   // Read every file; project.yaml files first so model files can find their Project.
@@ -84,6 +85,7 @@ export async function load(options: LoadOptions): Promise<LoadResult> {
     ws.projects.push(project);
   }
   ws.elements.sort((a, b) => cmp(a.file.path, b.file.path) || a.line - b.line);
+  ws.relationships.sort((a, b) => cmp(a.file.path, b.file.path) || a.line - b.line);
   resolveParents(ws);
 
   const issues = rules
@@ -169,9 +171,20 @@ function readElements(file: SourceFile, ws: LoadedWorkspace, container: Record<s
       file.findings.push(...checkSchema(shallow[kind], checked, file.parsed, path));
       const element: ElementDecl = { kind, id, project: file.project!, file, path, data, nestedIn, ...file.parsed.positionOf(path, { key: true }) };
       ws.elements.push(element);
+      readRelationships(file, ws, element);
       readElements(file, ws, data, path, element);
     }
   }
+}
+
+function readRelationships(file: SourceFile, ws: LoadedWorkspace, from: ElementDecl) {
+  const list = from.data.relationships;
+  if (!Array.isArray(list)) return;
+  list.forEach((value, i) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return;
+    const path = [...from.path, "relationships", i];
+    ws.relationships.push({ from, file, path, data: value as Record<string, unknown>, ...file.parsed.positionOf(path) });
+  });
 }
 
 function withoutForeignCollections(kind: ElementKind, data: Record<string, unknown>): Record<string, unknown> {
@@ -244,6 +257,31 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
       }
     });
 
+  // Declared Relationships whose consumer and provider resolve; an unresolved `via` is left out.
+  const resolve = referenceResolver(ws);
+  const inBundle = (e: ElementDecl) => e.project.id !== undefined && !e.project.duplicateOf;
+  const relationships = ws.relationships.flatMap((r): BundleRelationship[] => {
+    const to = resolve(r.data.to, r.from.project);
+    if (!inBundle(r.from) || !to.ok) return [];
+    const via = resolve(r.data.via, r.from.project);
+    const d = r.data;
+    return [
+      {
+        id: typeof d.id === "string" ? `${r.from.project.id}:${d.id}` : null,
+        from: qualified(r.from),
+        to: qualified(to.element),
+        description: str(d.description),
+        technology: str(d.technology),
+        interaction: d.interaction === "async" ? "async" : "sync",
+        via: via.ok ? qualified(via.element) : null,
+        channel: str(d.channel),
+        tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
+        source: source(r),
+      },
+    ];
+  });
+  const bySource = (a: BundleRelationship, b: BundleRelationship) => cmp(a.source.file, b.source.file) || a.source.line - b.source.line;
+
   const bundle: z.input<typeof Bundle> = {
     schemaVersion: SCHEMA_VERSION,
     commit: options.commit ?? null,
@@ -258,7 +296,7 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
       .map((p) => ({ id: p.id, name: p.name, owner: p.owner ?? "", folder: p.folder, source: { file: p.file.path, line: 1 } }))
       .sort(byId),
     elements: elements.sort(byId),
-    relationships: [],
+    relationships: relationships.sort((a, b) => cmp(a.from, b.from) || cmp(a.to, b.to) || bySource(a, b)),
     targets: [],
     deployments: [],
   };

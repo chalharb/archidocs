@@ -32,12 +32,34 @@ export const ProjectFile = z.strictObject({
   owner: Id,
 });
 
+/** An Element reference: a bare id in its own Project, or `project:id` across Projects. */
+export const ElementRef = z
+  .string()
+  .regex(/^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$/, "must be an Element id, or `project:id` for one in another Project");
+
+/**
+ * A dependency of the Element it is declared under (the consumer) on the
+ * Element `to` names (the provider). An async one may run through a broker
+ * Service (`via`) on a topic or queue (`channel`).
+ */
+export const Relationship = z.strictObject({
+  to: ElementRef,
+  id: Id.optional(),
+  description: z.string().optional(),
+  technology: z.string().optional(),
+  interaction: z.enum(["sync", "async"]).optional(),
+  via: ElementRef.optional(),
+  channel: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
 const elementFields = {
   name: z.string(),
   description: z.string().optional(),
   owner: Id.optional(),
   tags: z.array(z.string()).optional(),
   links: z.array(Link).optional(),
+  relationships: z.array(Relationship).optional(),
 };
 
 /** Names the parent of a top-level Service or Component declared in another file. */
@@ -123,5 +145,6 @@ export const workspaceOnlyKeys = ["teams", "environments"] as const;
 
 export type TeamInput = z.infer<typeof Team>;
 export type EnvironmentInput = z.infer<typeof Environment>;
+export type RelationshipInput = z.infer<typeof Relationship>;
 export type ServiceInput = z.infer<typeof Service>;
 export type ModelFileInput = z.infer<typeof ModelFile>;

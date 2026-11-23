@@ -75,6 +75,16 @@ export interface ElementDecl extends Position {
   parent?: ElementDecl;
 }
 
+/** One entry of an Element's `relationships`, as declared. */
+export interface RelationshipDecl extends Position {
+  /** The consumer: the Element it is declared under. */
+  from: ElementDecl;
+  file: SourceFile;
+  /** Where the entry sits in its file, e.g. `["services", "web", "relationships", 0]`. */
+  path: (string | number)[];
+  data: Record<string, unknown>;
+}
+
 /** Everything Load read from disk, before rules run and the Bundle is built. */
 export interface LoadedWorkspace {
   files: SourceFile[];
@@ -84,4 +94,6 @@ export interface LoadedWorkspace {
   environments: Located<Record<string, unknown>>[];
   /** Sorted by file, then line. */
   elements: ElementDecl[];
+  /** Sorted by file, then line. */
+  relationships: RelationshipDecl[];
 }
