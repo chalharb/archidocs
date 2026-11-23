@@ -1,6 +1,7 @@
 # 14: Viewer skeleton and site build
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-14-viewer)
 Blocked by: 13
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -24,6 +25,6 @@ Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
 ## Acceptance criteria
 
-- [ ] Playwright: opening a copied link restores the same View, open boxes and selection; back and forward work.
-- [ ] Rendered geometry meets the layout rules.
-- [ ] The site works when served under a sub-path.
+- [x] Playwright: opening a copied link restores the same View, open boxes and selection; back and forward work.
+- [x] Rendered geometry meets the layout rules.
+- [x] The site works when served under a sub-path.

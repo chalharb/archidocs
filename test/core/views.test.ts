@@ -77,6 +77,17 @@ describe("the C2 Landscape", () => {
       ],
     });
   });
+
+  it("opens a Service with Components once its System is open, and ignores it while the System is closed", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const open = resolveView(bundle, "c2", { expand: ["shop:checkout", "shop:cart"] });
+    const closed = resolveView(bundle, "c2", { expand: ["shop:cart"] });
+
+    expect(open?.nodes.filter((n) => n.parent === "shop:cart").map((n) => n.id)).toEqual(["shop:checkout-ui"]);
+    expect(open?.nodes.find((n) => n.id === "shop:cart")?.collapsed).toBe(false);
+    expect(open?.edges.map((e) => [e.from, e.to])).toContainEqual(["shop:checkout-ui", "payments:payments"]);
+    expect(shape(closed)).toEqual(shape(resolveView(bundle, "c2")));
+  });
 });
 
 describe("C2 per System", () => {
@@ -108,6 +119,13 @@ describe("C2 per System", () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
     expect(resolveView(bundle, "c2/shop:cart")).toBeUndefined();
     expect(resolveView(bundle, "c2/shop:nope")).toBeUndefined();
+  });
+  it("opens its Services with Components when asked to expand them", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const view = resolveView(bundle, "c2/shop:checkout", { expand: ["shop:cart"] });
+
+    expect(view?.nodes.filter((n) => n.parent === "shop:cart").map((n) => n.id)).toEqual(["shop:checkout-ui"]);
+    expect(view?.edges.map((e) => [e.from, e.to])).toContainEqual(["shop:checkout-ui", "payments:payments"]);
   });
 });
 
