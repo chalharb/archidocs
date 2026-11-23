@@ -7,3 +7,4 @@ export { ruleCatalogue } from "./catalogue.ts";
 export { deriveEdges, type DerivedEdge, type Level } from "./query.ts";
 export { getDeployments, type DeploymentDetail, type TargetStep } from "./deployments.ts";
 export { search, type SearchMatch, type SearchOptions, type MatchRank } from "./search.ts";
+export { listViews, resolveView, type ViewSummary, type ResolveOptions, type ResolvedView, type ViewKind, type ViewNode, type ViewEdge } from "./views.ts";
