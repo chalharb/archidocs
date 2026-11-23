@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { search } from "../../src/core/search.ts";
+import { GLYPH_ICON, Icon } from "./Icon.tsx";
 import { GLYPHS, type Workspace } from "./workspace.ts";
 
 const LIMIT = 30;
@@ -55,12 +56,13 @@ export function Find({ workspace, prompt, onPick, onClose }: FindProps) {
             const team = workspace.teams.get(element.owner);
             return (
               <li key={element.id} role="option" aria-selected="false" tabIndex={-1} onClick={() => onPick(element.id)} onKeyDown={(e) => e.key === "Enter" && onPick(element.id)}>
-                <span className="arc-result-name" data-glyph={GLYPHS[element.kind]}>
+                <span className="arc-result-name">
+                  <Icon name={GLYPH_ICON[GLYPHS[element.kind]]!} className="arc-row-icon" />
                   {element.name}
                 </span>
                 <code className="arc-muted">{element.id}</code>
                 {team && (
-                  <span className="arc-row-team" style={{ borderColor: team.color }}>
+                  <span className="arc-row-team" style={{ "--team": team.color } as CSSProperties}>
                     {team.code}
                   </span>
                 )}

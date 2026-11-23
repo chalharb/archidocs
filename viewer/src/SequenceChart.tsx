@@ -2,6 +2,7 @@ import { Handle, Position, ReactFlow, ReactFlowProvider, useReactFlow, useStore,
 import { memo, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { SEQUENCE, viaLine, type Activation, type SequenceColumn, type SequenceLayout, type SequenceRow } from "../../src/render/sequence.ts";
 import type { Workspace } from "./workspace.ts";
+import { CtrlWheelZoom } from "./wheel.tsx";
 
 /** The zoom never drops below this, so a wide chart pans sideways instead of shrinking out of reading size. */
 export const MIN_ZOOM = 0.85;
@@ -93,7 +94,11 @@ function Chart({ workspace, layout, fitKey, selected, playing, reducedMotion, on
       edgeTypes={edgeTypes}
       minZoom={MIN_ZOOM}
       maxZoom={2}
+      // Figma's pattern, for mouse and trackpad alike: scroll pans 1:1 (Shift turns a mouse wheel sideways),
+      // pinch or ⌘/Ctrl with the wheel zooms, and a left- or middle-button drag on the background pans.
       panOnScroll
+      panOnScrollSpeed={1}
+      panOnDrag={[0, 1]}
       zoomOnDoubleClick={false}
       nodesDraggable={false}
       nodesConnectable={false}
@@ -112,6 +117,7 @@ function Chart({ workspace, layout, fitKey, selected, playing, reducedMotion, on
       </svg>
       <Headers workspace={workspace} layout={layout} />
       <Camera layout={layout} fitKey={fitKey} selected={selected} playing={playing} reducedMotion={reducedMotion} onSettled={onSettled} />
+      <CtrlWheelZoom />
     </ReactFlow>
   );
 }

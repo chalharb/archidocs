@@ -41,18 +41,18 @@ export interface LayoutOptionsInput {
 
 /** Fixed node sizes per kind, so a layout needs no text measuring. Containers are sized by their contents. */
 export const NODE_SIZES: Record<ViewNode["kind"], { width: number; height: number }> = {
-  // As the Variant D prototype sized them (ticket 14).
-  person: { width: 160, height: 58 },
-  system: { width: 190, height: 64 },
-  service: { width: 180, height: 54 },
-  component: { width: 170, height: 50 },
-  target: { width: 200, height: 72 },
-  deployment: { width: 180, height: 50 },
+  // The Variant D prototype's sizes (ticket 14), 40px wider and 12px taller, so names fit and boxes breathe.
+  person: { width: 200, height: 70 },
+  system: { width: 230, height: 76 },
+  service: { width: 220, height: 66 },
+  component: { width: 210, height: 62 },
+  target: { width: 240, height: 84 },
+  deployment: { width: 220, height: 62 },
 };
 
 /** Room at the top of a container for its label. */
-export const CONTAINER_HEADER = 36;
-const CONTAINER_PADDING = `[top=${CONTAINER_HEADER + 8},left=16,bottom=16,right=16]`;
+export const CONTAINER_HEADER = 40;
+const CONTAINER_PADDING = `[top=${CONTAINER_HEADER + 8},left=20,bottom=20,right=20]`;
 
 const ELK_DIRECTION: Record<Direction, string> = { TB: "DOWN", BT: "UP", LR: "RIGHT", RL: "LEFT" };
 /** The border side edges leave a container by, then the side they enter one by. */
@@ -127,8 +127,8 @@ function toElk(graph: ViewGraph, direction: Direction): { root: ElkNode; routes:
     "elk.direction": ELK_DIRECTION[direction],
     "elk.edgeRouting": "ORTHOGONAL",
     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
-    "elk.spacing.nodeNode": "32",
-    "elk.layered.spacing.nodeNodeBetweenLayers": "64",
+    "elk.spacing.nodeNode": "40",
+    "elk.layered.spacing.nodeNodeBetweenLayers": "72",
     "elk.spacing.edgeNode": "20",
     "elk.spacing.edgeEdge": "12",
     "elk.layered.spacing.edgeNodeBetweenLayers": "24",

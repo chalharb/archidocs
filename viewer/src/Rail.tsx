@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { GLYPH_ICON, Icon, type IconName } from "./Icon.tsx";
 import type { TreeRow, Workspace } from "./workspace.ts";
 
 type Panel = "Model" | "Views" | "Teams";
 
-const GLYPHS: Record<Panel, string> = { Model: "☰", Teams: "⚑", Views: "▦" };
+const ICONS: Record<Panel, IconName> = { Model: "model", Teams: "teams", Views: "views" };
 type Grouping = "kind" | "team";
 
 export interface RailProps {
@@ -50,11 +51,15 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
   return (
     <>
       <nav className="arc-rail" aria-label="Rail">
+        {/* A placeholder until the Archidocs mark arrives. */}
         <div className="arc-logo" aria-hidden="true" title="Archidocs">
           A
         </div>
         <button type="button" className="arc-rail-button" title="Find ( / )" aria-label="Find" aria-keyshortcuts="/" aria-pressed={finding} onClick={() => (setPanel(null), onFind())}>
-          <span aria-hidden="true">⌕</span>
+          <Icon name="find" />
+          <span className="arc-rail-label" aria-hidden="true">
+            Find
+          </span>
         </button>
         {(["Model", "Teams", "Views"] as const).map((name) => (
           <button
@@ -69,7 +74,10 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
               setPanel(panel === name ? null : name);
             }}
           >
-            <span aria-hidden="true">{GLYPHS[name]}</span>
+            <Icon name={ICONS[name]} />
+            <span className="arc-rail-label" aria-hidden="true">
+              {name}
+            </span>
           </button>
         ))}
       </nav>
@@ -96,7 +104,7 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
                           onPickTeam(team.id);
                         }}
                       >
-                        <span className="arc-row-team" style={{ borderColor: style?.color }}>
+                        <span className="arc-row-team" style={{ "--team": style?.color } as CSSProperties}>
                           {style?.code}
                         </span>{" "}
                         {team.name}
@@ -147,7 +155,7 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
 function Close({ onClose }: { onClose: () => void }) {
   return (
     <button type="button" className="arc-flyout-close" aria-label="Close" onClick={onClose}>
-      ✕
+      <Icon name="close" />
     </button>
   );
 }
@@ -177,15 +185,15 @@ function Tree({ label, rows, isCurrent, onPick }: { label: string; rows: TreeRow
           <button
             type="button"
             className={pickable ? "arc-row-label" : "arc-row-label arc-group"}
-            data-glyph={row.view === undefined ? row.glyph : undefined}
             aria-current={isCurrent(row) ? "page" : undefined}
             onClick={() => (pickable ? onPick(row) : toggle(row.key))}
           >
+            {row.view === undefined && row.glyph && GLYPH_ICON[row.glyph] && <Icon name={GLYPH_ICON[row.glyph]!} className="arc-row-icon" />}
             {row.label}
           </button>
           {row.children.length > 0 && <span className="arc-count">{row.children.length}</span>}
           {row.team && (
-            <span className="arc-row-team" style={{ borderColor: row.team.color }}>
+            <span className="arc-row-team" style={{ "--team": row.team.color } as CSSProperties}>
               {row.team.code}
             </span>
           )}

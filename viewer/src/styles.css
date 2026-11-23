@@ -1,29 +1,140 @@
+/* Wayfinding Plate: the viewer orients like a station. One dark sign plate says where you are,
+   a single yellow marks "you are here", and the diagram is the map behind it.
+   Flat fields, square corners, 1.5px ink frames, one 4px module, two chrome type sizes (13 and 11). */
+
+/* Overpass, from the Highway Gothic signage lineage (SIL OFL 1.1), self-hosted: the viewer is a static site. */
+@font-face {
+  font-family: "Overpass";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/overpass-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Overpass";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/overpass-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Overpass Mono";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("./fonts/overpass-mono-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Overpass Mono";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("./fonts/overpass-mono-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  /* Neutral engineering-tool tokens, after the Variant D prototype (ticket 14). */
-  --ink: #14181f;
-  --muted: #5b6573;
-  --faint: #98a2b3;
-  --line: #d9dee5;
-  --panel: #ffffff;
-  --canvas: #f6f7f9;
-  --tint: #eef1f4;
-  --accent: #2b59c3;
-  --edge: #7b8594;
-  --nodeline: #5b6573;
-  --up: #b45309;
-  --upbg: #fff4e0;
-  --down: #1d5fbf;
-  --downbg: #e6efff;
-  --origin: #c2261d;
-  --originbg: #fde8e6;
-  --path: #6d3fc0;
-  --pathbg: #f1eafd;
-  --container: rgba(238, 241, 244, 0.55);
-  --radius: 6px;
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Ground and ink */
+  --ground: #f3f4f1;
+  --paper: #ffffff;
+  --ink: #1c2633;
+  --muted: #4f5966;
+  --faint: #616a76;
+  --line: #c4c9c1;
+  --rule: #e2e4df;
+  --tint: #e8eae5;
+  /* The sign plate and the one yellow */
+  --plate: #1c2633;
+  --on-plate: #ffffff;
+  --plate-muted: #c3cbd6;
+  --plate-line: #48566b;
+  --here: #ffc629;
+  --on-here: #1c2633;
+  --herebg: #fff4cc;
+  /* Team code tiles */
+  --code-bg: #1c2633;
+  --code-fg: #ffffff;
+  /* Lenses and history */
+  --up: #a4461a;
+  --upbg: #fbeee6;
+  --down: #1d5fa8;
+  --downbg: #e8f0fa;
+  --path: #5b3aa8;
+  --pathbg: #efeaf9;
+  --added: #1f7a4d;
+  --removed: #b3261e;
+  --changed: #9a6200;
+  --note: #fff4cc;
+  --noteline: #d9a600;
+  /* Older names the rest of the sheet uses */
+  --panel: var(--paper);
+  --canvas: var(--ground);
+  --accent: var(--ink);
+  --on-accent: var(--paper);
+  --edge: #5b6573;
+  /* A stepped-back edge: solid and fainter, still 3:1 against the ground; dashes keep their own meanings. */
+  --edge-faint: #80878f;
+  --nodeline: var(--ink);
+  --origin: var(--ink);
+  --originbg: var(--herebg);
+  --container: rgba(232, 234, 229, 0.6);
+  --radius: 0;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --sans: "Overpass", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Overpass Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 8.5 6 12l7.5-8' fill='none' stroke='%23fff' stroke-width='2.25'/%3E%3C/svg%3E");
+  color-scheme: light;
   color: var(--ink);
-  font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 13px/1.45 var(--sans);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+  accent-color: var(--ink);
+  scrollbar-color: var(--line) transparent;
+}
+
+/* Night shift: the same station after dark. The plate stays a lit slate-navy sign, a step above the ground. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #10151c;
+    --paper: #18202a;
+    --ink: #e6eaef;
+    --muted: #a9b2bd;
+    --faint: #8f99a5;
+    --line: #36414f;
+    --rule: #252e3a;
+    --tint: #232c38;
+    --plate: #1f2a3a;
+    --on-plate: #ffffff;
+    --plate-muted: #c3ccd8;
+    --plate-line: #4a586d;
+    --here: #ffc629;
+    --on-here: #10151c;
+    --herebg: #3a3216;
+    --code-bg: #e6eaef;
+    --code-fg: #10151c;
+    --up: #f0925f;
+    --upbg: #3a2419;
+    --down: #78aef5;
+    --downbg: #172a45;
+    --path: #b79cff;
+    --pathbg: #2a2142;
+    --added: #5cc893;
+    --removed: #ff8a80;
+    --changed: #e3a63a;
+    --note: #3a3216;
+    --noteline: #8a6d00;
+    --edge: #8f99a5;
+    --edge-faint: #646d78;
+    --container: rgba(35, 44, 56, 0.55);
+    --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 8.5 6 12l7.5-8' fill='none' stroke='%2310151c' stroke-width='2.25'/%3E%3C/svg%3E");
+    color-scheme: dark;
+  }
 }
 
 * {
@@ -35,28 +146,57 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background: var(--canvas);
+  background: var(--ground);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
 }
 
 button {
-  font: inherit;
-  color: inherit;
   cursor: pointer;
 }
 
 a {
   color: inherit;
+  text-underline-offset: 3px;
+}
+
+::selection {
+  background: var(--here);
+  color: var(--on-here);
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: 2.5px solid var(--ink);
+  outline-offset: 2px;
 }
 
-/* Shell: rail | location bar over canvas */
+code,
+kbd,
+pre {
+  font-family: var(--mono);
+}
+
+.arc-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+/* Shell: rail | location plate over canvas */
 .arc-app {
   display: grid;
-  grid-template-columns: 48px 1fr;
+  grid-template-columns: 64px 1fr;
   height: 100%;
 }
 
@@ -74,49 +214,67 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 8px 0;
-  background: var(--panel);
-  border-right: 1px solid var(--line);
+  background: var(--paper);
+  border-right: 1.5px solid var(--ink);
   z-index: 30;
 }
 
+/* A placeholder tile until the Archidocs mark arrives. */
 .arc-logo {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  margin-bottom: 6px;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--panel);
+  margin-bottom: 12px;
+  background: var(--plate);
+  color: var(--on-plate);
   font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 
 .arc-rail-button {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 5px;
+  width: 56px;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 0;
+  border: 0;
   background: none;
-  font-size: 16px;
   color: var(--ink);
 }
 
-.arc-rail-button:hover,
+.arc-rail-button .arc-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.arc-rail-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.arc-rail-button:hover {
+  background: var(--tint);
+}
+
 .arc-rail-button[aria-expanded="true"],
 .arc-rail-button[aria-pressed="true"] {
-  background: var(--tint);
-  border-color: var(--line);
+  background: var(--plate);
+  color: var(--on-plate);
 }
 
 .arc-scrim {
   position: fixed;
-  inset: 0 0 0 48px;
-  background: rgba(15, 20, 30, 0.08);
+  inset: 0 0 0 64px;
+  background: rgba(16, 21, 28, 0.12);
   z-index: 20;
 }
 
@@ -124,13 +282,12 @@ a {
   position: fixed;
   top: 0;
   bottom: 0;
-  left: 48px;
-  width: 300px;
+  left: 64px;
+  width: 320px;
   display: flex;
   flex-direction: column;
-  background: var(--panel);
-  border-right: 1px solid var(--line);
-  box-shadow: 8px 0 24px rgba(15, 20, 30, 0.08);
+  background: var(--paper);
+  border-right: 1.5px solid var(--ink);
   z-index: 25;
 }
 
@@ -139,33 +296,52 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 12px;
+  min-height: 52px;
+  padding: 8px 8px 8px 16px;
+  background: var(--plate);
+  color: var(--on-plate);
 }
 
 .arc-flyout-head h2 {
   margin: 0;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.arc-flyout-head :focus-visible {
+  outline-color: var(--here);
 }
 
 .arc-flyout-close {
-  padding: 3px 8px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--panel);
-  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1.5px solid currentColor;
+  background: none;
+  color: inherit;
+}
+
+.arc-flyout-head .arc-flyout-close {
+  border-color: var(--plate-line);
+}
+
+.arc-flyout-close:hover {
+  background: var(--tint);
+  color: var(--ink);
 }
 
 .arc-flyout-by {
-  padding: 0 10px 6px;
+  padding: 12px 16px 8px;
 }
 
 .arc-segmented {
   display: inline-flex;
-  padding: 2px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--canvas);
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
 }
 
 .arc-segmented label,
@@ -184,23 +360,37 @@ a {
 .arc-segmented span,
 .arc-segmented button {
   display: block;
-  padding: 3px 9px;
+  padding: 4px 12px;
   border: 0;
-  border-radius: 5px;
   background: none;
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.arc-segmented label + label span,
+.arc-segmented button + button {
+  border-left: 1.5px solid var(--ink);
 }
 
 .arc-segmented input:checked + span,
 .arc-segmented button[aria-pressed="true"] {
-  background: var(--panel);
-  color: var(--ink);
-  box-shadow: 0 1px 2px rgba(15, 20, 30, 0.12);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .arc-segmented input:focus-visible + span {
-  outline: 2px solid var(--accent);
+  outline: 2.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* On a reversed (ink) option the focus ring turns yellow, so it stays visible against the fill. */
+.arc-segmented input:checked:focus-visible + span,
+.arc-segmented button[aria-pressed="true"]:focus-visible {
+  outline-color: var(--here);
+  outline-offset: -4px;
 }
 
 /* Trees */
@@ -213,44 +403,48 @@ a {
 
 .arc-tree {
   overflow: auto;
-  padding: 6px 0;
+  padding: 4px 0 16px;
 }
 
 .arc-row {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-right: 10px;
-  min-height: 26px;
+  padding-right: 12px;
+  min-height: 32px;
 }
 
 .arc-row:hover {
-  background: var(--canvas);
-}
-
-.arc-row.arc-current {
   background: var(--tint);
 }
 
+.arc-row.arc-current {
+  background: var(--herebg);
+}
+
 .arc-row.arc-current .arc-row-label {
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .arc-disclosure,
 .arc-disclosure-space {
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border: 0;
-  border-radius: 4px;
   background: none;
+  padding: 0;
 }
 
 .arc-disclosure::before {
-  content: "›" / "";
-  display: inline-block;
-  color: var(--muted);
-  transition: transform 120ms var(--ease);
+  content: "";
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: auto;
+  background: var(--muted);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5.5 2.5 11 8l-5.5 5.5' fill='none' stroke='%23000' stroke-width='2.25'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 160ms var(--ease);
 }
 
 .arc-disclosure.arc-open::before {
@@ -260,6 +454,9 @@ a {
 .arc-row-label {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 2px;
   border: 0;
   background: none;
@@ -269,50 +466,52 @@ a {
   text-overflow: ellipsis;
 }
 
-.arc-row-label[data-glyph]::before {
-  content: attr(data-glyph) / "";
-  display: inline-block;
-  width: 18px;
+.arc-row-icon {
   color: var(--muted);
 }
 
 .arc-row-label.arc-group {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 11px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .arc-count {
   font-size: 11px;
-  color: var(--faint);
+  font-weight: 700;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
-.arc-row-team {
+/* A Team's code as a sign tile: the Team colour as the tile's leading band, the code reversed beside it. */
+.arc-row-team,
+.arc-team,
+.arc-owner-code,
+.arc-code-tile {
   flex: none;
-  font: 600 10px ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: 0.03em;
-  padding: 0 4px;
-  border: 1px solid;
-  border-left-width: 5px;
-  border-radius: 3px;
-  color: var(--ink);
+  display: inline-block;
+  padding: 1px 6px 0 5px;
+  border-left: 5px solid var(--team, var(--faint));
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font: 800 11px/16px var(--sans);
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
 /* A View row's tag: C1, C2, C3, Env, Saved or Dyn; Saved and Dynamic Views are dashed. */
 .arc-vtag {
   flex: none;
-  min-width: 26px;
-  margin-right: 2px;
-  padding: 0 3px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  font: 600 9px ui-monospace, "SF Mono", Menlo, monospace;
+  min-width: 36px;
+  margin-right: 4px;
+  padding: 1px 4px 0;
+  border: 1.5px solid var(--ink);
+  font: 800 11px/14px var(--sans);
+  letter-spacing: 0.04em;
   text-align: center;
-  color: var(--muted);
+  color: var(--ink);
 }
 
 .arc-vtag-saved,
@@ -320,16 +519,21 @@ a {
   border-style: dashed;
 }
 
-/* Location bar */
+/* Location plate: the station sign across the top */
 .arc-location {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 10px;
-  padding: 6px 10px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
+  gap: 8px 12px;
+  min-height: 52px;
+  padding: 8px 16px;
+  background: var(--plate);
+  color: var(--on-plate);
   z-index: 10;
+}
+
+.arc-location :focus-visible {
+  outline-color: var(--here);
 }
 
 .arc-history-buttons {
@@ -337,102 +541,102 @@ a {
   gap: 4px;
 }
 
-.arc-step {
-  padding: 1px 8px;
-  font-size: 15px;
-  line-height: 1.2;
+.arc-location .arc-tool.arc-step {
+  width: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
 }
 
 .arc-crumbs {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+  color: var(--plate-muted);
 }
 
+.arc-crumbs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The way on: a yellow sign arrow between scopes. */
 .arc-crumbs li + li::before {
-  content: "›" / "";
-  margin-right: 4px;
-  color: var(--faint);
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: var(--here);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h11M9 4l4 4-4 4' fill='none' stroke='%23000' stroke-width='2.25'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .arc-crumbs a {
-  color: var(--accent);
+  color: inherit;
   text-decoration: none;
-  padding: 2px 2px;
+  padding: 4px 0;
 }
 
 .arc-crumbs a:hover {
+  color: var(--on-plate);
   text-decoration: underline;
 }
 
+/* You are here. */
 .arc-crumbs [aria-current="page"] span {
-  font-weight: 700;
-  padding: 2px 2px;
+  padding: 4px 10px 3px;
+  background: var(--here);
+  color: var(--on-here);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .arc-deployments {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 8px;
 }
 
 .arc-deployments-label {
-  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--plate-muted);
 }
 
 .arc-deployment-link {
-  color: var(--accent);
+  padding: 3px 8px 2px;
+  border: 1.5px solid var(--plate-muted);
+  color: var(--on-plate);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-decoration: none;
 }
 
 .arc-deployment-link:hover {
-  text-decoration: underline;
+  border-color: var(--on-plate);
 }
 
 .arc-deployment-link.arc-current {
-  color: var(--ink);
-  font-weight: 600;
+  background: var(--here);
+  border-color: var(--here);
+  color: var(--on-here);
 }
 
 .arc-deployed {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-}
-
-.arc-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.arc-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 4px 2px 10px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--panel);
-  font-size: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.arc-chip-x::before {
-  content: "✕" / "";
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.arc-chip-all {
-  background: none;
-  color: var(--muted);
+  gap: 8px;
 }
 
 .arc-tools {
@@ -443,41 +647,126 @@ a {
   margin-left: auto;
 }
 
-.arc-deployments {
-  flex-wrap: wrap;
-}
-
 .arc-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
   white-space: nowrap;
-  padding: 3px 8px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--panel);
-  font-size: 13px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--ink);
 }
 
 .arc-tool:hover {
-  background: var(--canvas);
+  background: var(--tint);
+}
+
+.arc-location .arc-tool {
+  border-color: var(--plate-line);
+  background: transparent;
+  color: var(--on-plate);
+}
+
+.arc-location .arc-tool:hover {
+  border-color: var(--plate-muted);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .arc-menu-button::after {
-  content: " ▾" / "";
-  font-size: 10px;
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 select.arc-tool {
-  padding: 3px 4px;
+  padding: 0 8px;
 }
 
-.arc-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+select.arc-tool option {
+  background: var(--paper);
+  color: var(--ink);
+  text-transform: none;
 }
 
-.arc-primary:hover {
-  background: #234a9f;
+.arc-primary,
+.arc-location .arc-primary {
+  background: var(--on-plate);
+  border-color: var(--on-plate);
+  color: var(--plate);
+}
+
+.arc-primary:hover,
+.arc-location .arc-primary:hover {
+  background: var(--plate-muted);
+  border-color: var(--plate-muted);
+  color: var(--plate);
+}
+
+/* The state strip under the plate: open boxes, Compare, the Lens and picks. */
+.arc-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  flex: 1 0 calc(100% + 32px);
+  margin: 0 -16px -8px;
+  padding: 8px 16px;
+  background: var(--paper);
+  color: var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.arc-state :focus-visible {
+  outline-color: var(--ink);
+}
+
+.arc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.arc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 2px 4px 1px 8px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.arc-chip-x {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+}
+
+.arc-chip-x::before {
+  content: "";
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 4px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 3l10 10M13 3 3 13' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.arc-chip-all {
+  border-color: var(--line);
+  color: var(--muted);
+  padding-right: 8px;
 }
 
 .arc-menu-root {
@@ -487,20 +776,23 @@ select.arc-tool {
 .arc-menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);
+  top: calc(100% + 4px);
   min-width: 240px;
-  padding: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(15, 20, 30, 0.12);
+  padding: 4px 0;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
   z-index: 40;
+}
+
+.arc-menu :focus-visible {
+  outline-color: var(--ink);
+  outline-offset: -3px;
 }
 
 .arc-menu a {
   display: block;
-  padding: 6px 10px;
-  border-radius: 5px;
+  padding: 8px 12px;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -511,7 +803,7 @@ select.arc-tool {
 }
 
 .arc-menu-empty {
-  margin: 6px 10px;
+  margin: 8px 12px;
   color: var(--muted);
 }
 
@@ -522,31 +814,45 @@ select.arc-tool {
 }
 
 .arc-flow {
-  background: var(--canvas);
+  background: var(--ground);
+  --xy-background-color: var(--ground);
+  --xy-controls-button-background-color: var(--paper);
+  --xy-controls-button-background-color-hover: var(--tint);
+  --xy-controls-button-color: var(--ink);
+  --xy-controls-button-color-hover: var(--ink);
+  --xy-controls-button-border-color: var(--line);
+  --xy-controls-box-shadow: none;
+  --xy-minimap-background-color: var(--paper);
+  --xy-minimap-mask-background-color: rgba(16, 21, 28, 0.08);
+  --xy-minimap-node-background-color: var(--line);
 }
 
 /* Nodes, ported from the Variant D prototype's `.el` (ticket 14):
-   [+] glyph Name TEAM on one row, the sub-label under it, the Team colour as the box's own left border. */
+   [+] kind Name TEAM on one row, the sub-label under it, the Team colour as the box's own left edge. */
 .arc-box {
   position: relative;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
   width: 100%;
   height: 100%;
-  padding: 5px 8px 4px;
-  background: var(--panel);
+  padding: 8px 12px 8px 12px;
+  background: var(--paper);
+  color: var(--ink);
   border: 1.5px solid var(--nodeline);
   border-left: 6px solid var(--team, var(--nodeline));
-  border-radius: var(--radius);
   /* Visible, so impact badges can sit on the top edge; the name clips itself. */
   overflow: visible;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s var(--ease);
 }
 
 .arc-box-head {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   white-space: nowrap;
   min-width: 0;
 }
@@ -554,31 +860,20 @@ select.arc-tool {
 .arc-name {
   flex: 1;
   min-width: 0;
-  font-weight: 600;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .arc-kind-glyph {
-  flex: none;
-  width: 12px;
-  font-size: 12px;
-  text-align: center;
-  color: var(--muted);
-}
-
-.arc-team {
-  flex: none;
-  padding: 0 3px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  font: 600 9.5px ui-monospace, "SF Mono", Menlo, monospace;
+  width: 14px;
+  height: 14px;
   color: var(--muted);
 }
 
 .arc-sublabel {
-  margin-top: 2px;
-  font-size: 10.5px;
+  margin-top: 0;
+  font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -587,26 +882,31 @@ select.arc-tool {
 
 .arc-toggle {
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--panel);
-  font-weight: 700;
-  line-height: 1;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  line-height: 0;
+}
+
+.arc-toggle .arc-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.25;
 }
 
 .arc-toggle:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .arc-box.arc-person {
-  border-radius: 28px;
-  padding-left: 14px;
+  border-radius: 36px;
+  padding-left: 18px;
+  padding-right: 16px;
 }
 
 /* A collapsed System reads as a group: tinted, with a heavier frame. */
@@ -618,11 +918,11 @@ select.arc-tool {
 
 /* A Service's type changes its shape: a datastore's rounded base, a broker's striped band. */
 .arc-box.arc-t-datastore {
-  border-radius: 6px 6px 14px 14px;
+  border-radius: 0 0 12px 12px;
 }
 
 .arc-box.arc-t-broker {
-  background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--tint) 10px 12px);
+  background-image: repeating-linear-gradient(90deg, transparent 0 8px, var(--rule) 8px 12px);
 }
 
 .arc-box.arc-external {
@@ -630,25 +930,40 @@ select.arc-tool {
   border-left-style: solid;
 }
 
-/* An open box: a dashed frame around what it holds, its sub-label on the right of the head row. */
+/* An open box: a solid frame around what it holds, its head row at the top; only an External one is dashed. */
 .arc-box.arc-container {
+  justify-content: flex-start;
+  padding-top: 10px;
   background: var(--container);
-  border-style: dashed;
+  border-color: var(--line);
   border-width: 1.5px;
   border-left-width: 6px;
+}
+
+.arc-box.arc-container.arc-external {
+  border-color: var(--nodeline);
+  border-style: dashed;
   border-left-style: solid;
 }
 
 .arc-container .arc-box-head {
-  font-size: 12px;
+  font-size: 13px;
+}
+
+/* The name keeps its room; the sub-label takes what is left and truncates first. */
+.arc-container .arc-name {
+  flex: 0 1 auto;
 }
 
 .arc-csub {
-  position: absolute;
-  top: 6px;
-  right: 52px;
-  margin: 0;
-  font-size: 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: right;
 }
 
 /* A Deployment Target is a solid, quiet frame, so the dashed System boxes inside it read as grouping only. */
@@ -657,12 +972,11 @@ select.arc-tool {
   background: transparent;
 }
 
-.arc-box.arc-deployment {
-  border-radius: 4px;
-}
-
+/* Selected: an ink frame inside the yellow you-are-here ring. */
 .arc-box.arc-selected {
-  box-shadow: 0 0 0 3px var(--accent);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 6px var(--here);
 }
 
 .arc-visually-hidden {
@@ -674,23 +988,129 @@ select.arc-tool {
   white-space: nowrap;
 }
 
-/* The canvas hint strip, the overview map and the zoom controls. */
-.react-flow__panel.arc-hintline {
-  margin-top: 8px;
-  padding: 2px 10px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
+/* The map key and the overview map. */
+.react-flow__panel.arc-key-panel {
+  margin: 16px;
+}
+
+.arc-key {
+  width: 264px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+}
+
+.arc-key summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px 5px;
+  background: var(--plate);
+  color: var(--on-plate);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.arc-key summary::-webkit-details-marker {
+  display: none;
+}
+
+.arc-key summary::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 10l5-5 5 5' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.arc-key:not([open]) summary::after {
+  transform: rotate(180deg);
+}
+
+.arc-key summary:focus-visible {
+  outline-color: var(--here);
+  outline-offset: -4px;
+}
+
+.arc-key ul {
+  margin: 0;
+  padding: 8px 12px 4px;
+  list-style: none;
+}
+
+.arc-key li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.arc-key-swatch {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 16px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+}
+
+.arc-key-team {
+  width: auto;
+  border: 0;
+  padding: 1px 5px 0 4px;
+  border-left: 4px solid #c0392b;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font: 800 11px/14px var(--sans);
+  letter-spacing: 0.06em;
+}
+
+.arc-key-external {
+  border-style: dashed;
+}
+
+.arc-key-broker {
+  background-image: repeating-linear-gradient(90deg, transparent 0 4px, var(--line) 4px 7px);
+}
+
+.arc-key-origin {
+  background: var(--herebg);
+  box-shadow: 0 0 0 2.5px var(--here);
+}
+
+.arc-key-up {
+  border-color: var(--up);
+  background: var(--up);
+}
+
+.arc-key-down {
+  border-color: var(--down);
+  background: var(--down);
+  margin-left: 8px;
+}
+
+.arc-key-holds span {
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+}
+
+.arc-key-gestures {
+  margin: 0;
+  padding: 4px 12px 8px;
   font-size: 11px;
   color: var(--muted);
-  white-space: nowrap;
 }
 
 .react-flow__panel.arc-minimap {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1.5px solid var(--ink);
   overflow: hidden;
-  background: var(--panel);
+  background: var(--paper);
 }
 
 .arc-handle.react-flow__handle {
@@ -705,12 +1125,17 @@ select.arc-tool {
 
 .arc-edge {
   stroke: var(--edge);
-  stroke-width: 1.4;
+  stroke-width: 1.5;
   transition: opacity 150ms var(--ease);
 }
 
 .arc-edge.arc-faded {
-  opacity: 0.15;
+  stroke: var(--edge-faint);
+}
+
+.arc-flow .react-flow__edge:has(.arc-faded) .react-flow__arrowhead polyline {
+  stroke: var(--edge-faint);
+  fill: var(--edge-faint);
 }
 
 .arc-flow .react-flow__edge-path,
@@ -753,69 +1178,74 @@ select.arc-tool {
 }
 
 .arc-flow .react-flow__controls {
-  box-shadow: 0 1px 3px rgba(15, 20, 30, 0.12);
-  border-radius: 7px;
-  overflow: hidden;
+  border: 1.5px solid var(--ink);
+  box-shadow: none;
 }
 
 .arc-flow .react-flow__controls-button {
-  background: var(--panel);
+  width: 36px;
+  height: 36px;
   border-bottom: 1px solid var(--line);
-  width: 28px;
-  height: 28px;
+}
+
+.arc-flow .react-flow__controls-button svg {
+  fill: var(--ink);
 }
 
 .arc-error,
 .arc-message {
-  margin: 0;
+  max-width: 560px;
+  margin: 15vh auto 0;
   padding: 24px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
   color: var(--muted);
 }
 
 .arc-message h1 {
+  margin: 0 0 8px;
   font-size: 18px;
+  font-weight: 800;
   color: var(--ink);
 }
 
 .arc-crash {
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 12px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  font: 11px/1.5 var(--mono);
+  background: var(--ground);
+  border: 1.5px solid var(--line);
   padding: 12px;
 }
 
 /* Find */
-.arc-rail-find {
-  border-radius: 50%;
-  border-width: 2px;
-  transform: scale(0.85);
+.arc-find-input {
+  margin: 12px 16px 8px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font: inherit;
 }
 
-.arc-find-input {
-  margin: 0 16px 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  font: inherit;
+.arc-find-input::placeholder {
+  color: var(--faint);
 }
 
 .arc-results,
 .arc-team-list {
   list-style: none;
   margin: 0;
-  padding: 0 8px 16px;
+  padding: 4px 8px 16px;
   overflow: auto;
 }
 
 .arc-results li[role="option"] {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 2px 8px;
-  padding: 6px 8px;
-  border-radius: var(--radius);
+  padding: 8px;
+  border-bottom: 1px solid var(--rule);
   cursor: pointer;
 }
 
@@ -823,33 +1253,46 @@ select.arc-tool {
   background: var(--tint);
 }
 
-.arc-result-name {
-  font-weight: 600;
+.arc-results .arc-row-team {
+  justify-self: end;
 }
 
-.arc-result-name::before,
-.arc-panel-kind::before {
-  content: attr(data-glyph) " ";
-  color: var(--muted);
+.arc-result-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.arc-results code {
+  grid-column: 1;
+  font-size: 11px;
 }
 
 .arc-result-url {
   grid-column: 1 / -1;
-  font-size: 12px;
-  color: var(--accent);
+  font-size: 11px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
   word-break: break-all;
 }
 
 .arc-team-list .arc-row-label {
   width: 100%;
   text-align: left;
-  padding: 6px 8px;
+  padding: 8px;
+}
+
+.arc-team-list .arc-row-label:hover {
+  background: var(--tint);
 }
 
 .arc-muted,
 .arc-empty {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* Element panel */
@@ -860,12 +1303,11 @@ select.arc-tool {
   bottom: 0;
   z-index: 10;
   width: 340px;
-  box-shadow: -8px 0 24px rgba(15, 20, 30, 0.06);
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--panel);
-  border-left: 1px solid var(--line);
+  background: var(--paper);
+  border-left: 1.5px solid var(--ink);
   overflow: hidden;
 }
 
@@ -874,7 +1316,7 @@ select.arc-tool {
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
-  padding: 12px 14px 8px;
+  padding: 16px 16px 12px 20px;
 }
 
 .arc-panel-title {
@@ -882,44 +1324,74 @@ select.arc-tool {
 }
 
 .arc-panel-head h2 {
-  margin: 2px 0 6px;
-  font-size: 18px;
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .arc-panel-kind {
+  margin: 0 0 12px;
   font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
 .arc-panel-id {
-  font: 11px ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--muted);
+  font: 400 11px var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .arc-tabs {
   display: flex;
-  gap: 2px;
-  padding: 0 10px;
-  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1.5px solid var(--ink);
+  overflow-x: auto;
 }
 
 .arc-tabs button {
-  padding: 6px 8px;
+  flex: 1 0 auto;
+  padding: 10px 8px 9px;
   border: 0;
-  border-bottom: 2px solid transparent;
   background: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
-.arc-tabs button[aria-selected="true"] {
+.arc-tabs button:hover {
   color: var(--ink);
-  border-bottom-color: var(--ink);
-  font-weight: 600;
+  background: var(--tint);
+}
+
+.arc-tabs button[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.arc-tabs :focus-visible {
+  outline-offset: -4px;
+  outline-color: var(--ink);
+}
+
+.arc-tabs button[aria-selected="true"]:focus-visible {
+  outline-color: var(--here);
 }
 
 .arc-panel-body {
-  padding: 10px 14px 24px;
+  padding: 12px 20px 24px;
   overflow: auto;
+}
+
+.arc-description {
+  margin: 4px 0 12px;
+  max-width: 65ch;
 }
 
 .arc-technology {
@@ -927,11 +1399,12 @@ select.arc-tool {
 }
 
 .arc-panel-body h3 {
-  margin: 14px 0 6px;
-  font-size: 12px;
+  margin: 20px 0 8px;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
+  letter-spacing: 0.08em;
+  color: var(--ink);
 }
 
 .arc-panel-body ul {
@@ -941,13 +1414,13 @@ select.arc-tool {
 }
 
 .arc-panel-body li {
-  padding: 3px 0;
+  padding: 4px 0;
 }
 
 .arc-facts {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 6px 12px;
+  gap: 8px 12px;
   margin: 8px 0;
 }
 
@@ -963,58 +1436,74 @@ select.arc-tool {
 .arc-action,
 .arc-copy,
 .arc-link {
-  padding: 3px 8px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--panel);
-  font-size: 12px;
-}
-
-/* The owning Team as a chip: its colour as a 5px left edge beside the code and name. */
-.arc-owner {
-  border-left-width: 5px;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.arc-owner-code {
-  font-weight: 600;
-}
-
-.arc-action {
-  display: block;
-  width: 100%;
-  margin: 5px 0 0;
   padding: 4px 8px;
-  text-align: left;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
   font-size: 13px;
+  font-weight: 600;
 }
 
-.arc-deployed .arc-action {
-  display: inline-block;
-  width: auto;
-  margin-right: 6px;
-}
-
-.arc-link {
-  border-color: transparent;
+.arc-copy:hover,
+.arc-link:hover,
+.arc-action:hover {
   background: var(--tint);
 }
 
+/* The owning Team as a sign: its tile, then its name. Clicking it turns on the Team Lens. */
+.arc-owner {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 0;
+}
+
+.arc-owner .arc-owner-code {
+  padding-top: 3px;
+  padding-bottom: 2px;
+}
+
+.arc-owner-name {
+  padding: 3px 10px 2px 8px;
+}
+
+.arc-owner:hover .arc-owner-name {
+  background: var(--tint);
+}
+
+.arc-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.arc-deployed .arc-action {
+  display: inline-flex;
+  width: auto;
+  margin: 0;
+}
+
+.arc-link {
+  border-color: var(--line);
+}
+
 .arc-env li {
-  padding: 6px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
 }
 
 .arc-target {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
 }
 
 .arc-url {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-top: 4px;
   min-width: 0;
 }
@@ -1025,151 +1514,201 @@ select.arc-tool {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
 }
 
 .arc-endpoint {
   font-size: 11px;
+  font-weight: 700;
   padding: 0 6px;
-  border-radius: 4px;
-  background: var(--canvas);
+  background: var(--tint);
 }
 
 .arc-distance-inline {
   display: inline-block;
-  min-width: 18px;
+  min-width: 20px;
   text-align: center;
   font-size: 11px;
-  border-radius: 999px;
-  background: var(--canvas);
+  font-weight: 800;
+  border: 1.5px solid var(--ink);
 }
 
 /* Lens */
 .arc-chip-lens {
-  background: #fff7e6;
-  border-color: #f0c36d;
+  padding-left: 0;
+  border-width: 1.5px;
 }
 
 .arc-lens-kind {
-  font-weight: 600;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .arc-chip-clear {
   border: 0;
-  padding: 0 2px;
+  padding: 0;
   background: none;
 }
 
 .arc-banner {
   position: absolute;
-  top: 56px;
+  top: 64px;
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--ink);
-  color: #fff;
+  padding: 8px 16px 7px;
+  background: var(--plate);
+  color: var(--on-plate);
+  border: 2px solid var(--plate-line);
   font-size: 13px;
+  font-weight: 700;
   z-index: 20;
 }
 
-.arc-box.arc-dim {
-  opacity: 0.28;
+/* With the Element panel open, centre the banner on the canvas beside it, not across the panel. */
+.arc-main:has(.arc-panel) .arc-banner {
+  left: calc(50% - 170px);
 }
 
-.arc-box.arc-container.arc-dim {
-  opacity: 0.55;
+/* Dimmed, never gone: what a Lens leaves out steps back to the ground and a quiet frame, and its text stays readable. */
+.arc-box.arc-dim,
+.arc-box.arc-unchanged {
+  background-color: var(--ground);
+  border-color: var(--line);
+  color: var(--faint);
 }
 
-/* A hit node on a path Lens: purple, as the prototype marks paths. Impact hits take their side's colour instead. */
+.arc-box.arc-dim.arc-container,
+.arc-box.arc-unchanged.arc-container {
+  background: transparent;
+}
+
+.arc-box.arc-dim .arc-sublabel,
+.arc-box.arc-dim .arc-kind-glyph,
+.arc-box.arc-unchanged .arc-sublabel,
+.arc-box.arc-unchanged .arc-kind-glyph {
+  color: var(--faint);
+}
+
+/* On a lit box, secondary text is tinted from the ink, not grey. */
+.arc-box.arc-hit .arc-sublabel,
+.arc-box.arc-hit .arc-kind-glyph {
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+}
+
+/* A hit node on a path Lens. Impact hits take their side's colour instead. */
 .arc-box.arc-hit {
   border-color: var(--path);
-  background: var(--pathbg);
+  background-color: var(--pathbg);
 }
 
 /* A Team Lens rings what the Team owns in the Team's own colour. */
 .arc-box.arc-ringed {
   border-color: var(--nodeline);
   border-left-color: var(--team, var(--nodeline));
-  background: var(--panel);
-  box-shadow: 0 0 0 3px var(--team, var(--accent));
+  background-color: var(--paper);
+  box-shadow: 0 0 0 4px var(--team, var(--ink));
 }
 
+/* Picked for export: a solid frame and a check tile on the corner. */
 .arc-box.arc-picked {
-  outline: 2px dashed var(--accent);
+  outline: 2.5px solid var(--path);
   outline-offset: 3px;
 }
 
-/* An impact badge above the box's top-right corner: the origin, or the side and distance from it. */
+.arc-box.arc-picked::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: -14px;
+  width: 18px;
+  height: 18px;
+  background: var(--path) var(--check) center / 12px no-repeat;
+}
+
+/* An impact badge above the box: the origin, or the side and distance from it. */
 .arc-badge {
   position: absolute;
-  top: -10px;
-  right: 34px;
-  padding: 0 5px;
-  border: 1px solid;
-  border-radius: 8px;
-  background: var(--panel);
-  font: 600 9.5px ui-sans-serif, system-ui, sans-serif;
+  top: -12px;
+  right: 36px;
+  padding: 1px 6px 0;
+  font: 800 11px/16px var(--sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
   z-index: 1;
 }
 
 .arc-badge-upstream {
-  color: var(--up);
-  border-color: var(--up);
+  background: var(--up);
+  color: var(--paper);
 }
 
 .arc-badge-downstream {
-  color: var(--down);
-  border-color: var(--down);
+  background: var(--down);
+  color: var(--paper);
 }
 
 .arc-badge-origin {
-  color: #fff;
-  background: var(--origin);
-  border-color: var(--origin);
+  background: var(--here);
+  color: var(--on-here);
+  outline: 1.5px solid var(--ink);
 }
 
 .arc-badge-distance {
-  color: var(--muted);
-  border-color: var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  outline: 1.5px solid var(--ink);
 }
 
-/* A hit box takes its side's colour: amber upstream, blue downstream, red at the origin. */
+/* A hit box takes its side's colour: rust upstream, blue downstream (with a double frame), yellow at the origin. */
 .arc-box.arc-side-upstream {
   border-color: var(--up);
-  background: var(--upbg);
+  background-color: var(--upbg);
 }
 
 .arc-box.arc-side-downstream {
   border-color: var(--down);
-  background: var(--downbg);
+  background-color: var(--downbg);
   border-style: double;
-  border-width: 3px;
+  border-width: 4px;
   border-left-width: 6px;
   border-left-style: solid;
 }
 
 .arc-box.arc-side-origin {
-  border-color: var(--origin);
-  background: var(--originbg);
-  box-shadow: 0 0 0 3px var(--originbg);
+  border-color: var(--ink);
+  background-color: var(--herebg);
+  box-shadow: 0 0 0 4px var(--here);
 }
 
 .arc-holds {
   position: absolute;
   bottom: 8px;
-  right: 30px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #e0a030;
+  right: 32px;
+  width: 10px;
+  height: 10px;
+  background: var(--ink);
+  outline: 2px solid var(--paper);
 }
 
 .arc-edge.arc-lit {
-  stroke: #d08a10;
-  stroke-width: 2.4;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.arc-flow .react-flow__edge:has(.arc-lit) .react-flow__arrowhead polyline {
+  stroke: var(--ink);
+  fill: var(--ink);
 }
 
 /* Dynamic View screen: walkthrough | chart | Step detail */
@@ -1252,8 +1791,7 @@ select.arc-tool {
   min-width: 36px;
   height: 32px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
+    background: var(--panel);
   font-size: 12px;
 }
 
@@ -1261,7 +1799,7 @@ select.arc-tool {
   min-width: 52px;
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .arc-transport-count {
@@ -1274,8 +1812,7 @@ select.arc-tool {
   position: relative;
   display: flex;
   height: 14px;
-  border-radius: 7px;
-  background: var(--canvas);
+    background: var(--canvas);
   overflow: hidden;
 }
 
@@ -1316,7 +1853,6 @@ select.arc-tool {
   width: 100%;
   padding: 6px 14px;
   border: 0;
-  border-left: 3px solid transparent;
   background: none;
   text-align: left;
 }
@@ -1326,7 +1862,8 @@ select.arc-tool {
 }
 
 .arc-outline button[aria-current="step"] {
-  background: var(--tint);
+  background: var(--herebg);
+  font-weight: 700;
   border-left-color: var(--accent);
 }
 
@@ -1407,8 +1944,8 @@ select.arc-tool {
 }
 
 .arc-note {
-  padding: 6px 8px;
-  border-left: 3px solid var(--line);
+  padding: 8px 12px;
+  border: 1.5px dashed var(--line);
   color: var(--muted);
   font-size: 13px;
 }
@@ -1471,16 +2008,14 @@ select.arc-tool {
   padding: 0 8px 0 14px;
   overflow: hidden;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 1px 3px rgba(15, 20, 30, 0.08);
-  font-size: 13px;
+  border: 1.5px solid var(--ink);
+    font-size: 13px;
   font-weight: 600;
 }
 
 .arc-seq-header.arc-external {
   border-style: dashed;
-  background: #fafafa;
+  background: var(--ground);
 }
 
 .arc-seq-name {
@@ -1530,7 +2065,7 @@ select.arc-tool {
 }
 
 .arc-step-number {
-  fill: #fff;
+  fill: var(--paper);
   font-size: 10px;
   font-weight: 600;
   pointer-events: none;
@@ -1559,8 +2094,18 @@ select.arc-tool {
   font-weight: 600;
 }
 
-.arc-step-later {
-  opacity: 0.18;
+/* Steps still to come step back, but stay readable. */
+.arc-step-later .arc-step-line {
+  stroke: var(--edge-faint);
+}
+
+.arc-step-later .arc-step-badge {
+  fill: var(--edge-faint);
+}
+
+.arc-step-later .arc-step-label,
+.arc-step-later .arc-step-sub {
+  fill: var(--faint);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1587,9 +2132,8 @@ select.arc-tool {
   height: 20px;
   padding: 0 5px;
   border: 1.5px solid var(--panel);
-  border-radius: 999px;
-  background: var(--ink);
-  color: #fff;
+    background: var(--ink);
+  color: var(--on-accent);
   font-size: 10px;
   font-weight: 600;
 }
@@ -1602,7 +2146,7 @@ select.arc-tool {
 
 .arc-graph-step[aria-pressed="true"] {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -1618,10 +2162,8 @@ select.arc-tool {
   display: flex;
   flex-direction: column;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 32px rgba(15, 20, 30, 0.16);
-  z-index: 30;
+  border: 1.5px solid var(--ink);
+    z-index: 30;
 }
 
 .arc-form {
@@ -1643,8 +2185,7 @@ select.arc-tool {
 .arc-form select {
   padding: 6px 8px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  font: inherit;
+    font: inherit;
   color: inherit;
   background: var(--panel);
 }
@@ -1667,8 +2208,7 @@ select.arc-tool {
   max-height: 240px;
   overflow: auto;
   background: var(--tint);
-  border-radius: var(--radius);
-  font-size: 12px;
+    font-size: 12px;
 }
 
 .arc-menu button {
@@ -1676,8 +2216,7 @@ select.arc-tool {
   width: 100%;
   padding: 6px 10px;
   border: 0;
-  border-radius: 5px;
-  background: none;
+    background: none;
   font: inherit;
   color: inherit;
   text-align: left;
@@ -1711,8 +2250,8 @@ select.arc-tool {
   align-items: center;
   margin: 0;
   padding: 6px 16px;
-  background: #fff7e6;
-  border-bottom: 1px solid #f0c36d;
+  background: var(--note);
+  border-bottom: 1px solid var(--noteline);
   font-size: 13px;
 }
 
@@ -1722,19 +2261,16 @@ select.arc-tool {
 }
 
 .arc-box.arc-added {
-  border-color: #2f9e5b;
-  box-shadow: 0 0 0 2px rgba(47, 158, 91, 0.3);
+  border-color: var(--added);
+  box-shadow: 0 0 0 2px var(--added);
 }
 
 .arc-box.arc-removed {
-  border: 1.5px dashed #d64545;
-  background: rgba(214, 69, 69, 0.06);
+  border: 1.5px dashed var(--removed);
+  background: var(--paper);
   opacity: 0.75;
 }
 
-.arc-box.arc-unchanged {
-  opacity: 0.45;
-}
 
 .arc-added-mark {
   position: absolute;
@@ -1743,8 +2279,8 @@ select.arc-tool {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #2f9e5b;
-  color: #fff;
+  background: var(--added);
+  color: var(--on-accent);
   font-weight: 700;
   font-size: 14px;
   line-height: 18px;
@@ -1758,36 +2294,36 @@ select.arc-tool {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #e0a030;
+  background: var(--changed);
   box-shadow: 0 0 0 2px var(--panel);
 }
 
 .arc-edge.arc-added {
-  stroke: #2f9e5b;
+  stroke: var(--added);
   stroke-width: 2;
 }
 
 .arc-edge.arc-removed {
-  stroke: #d64545;
+  stroke: var(--removed);
   stroke-dasharray: 5 4;
 }
 
 .arc-edge.arc-changed {
-  stroke: #d08a10;
+  stroke: var(--changed);
 }
 
 .arc-edge.arc-unchanged {
-  opacity: 0.35;
+  stroke: var(--edge-faint);
 }
 
 .arc-edge-added {
-  fill: #2f9e5b;
+  fill: var(--added);
   font-weight: 700;
   font-size: 16px;
 }
 
 .arc-edge-changed {
-  fill: #e0a030;
+  fill: var(--changed);
 }
 
 .arc-changes {
@@ -1795,7 +2331,7 @@ select.arc-tool {
   flex: none;
   overflow: auto;
   background: var(--panel);
-  border-right: 1px solid var(--line);
+  border-right: 1.5px solid var(--ink);
   padding: 12px 10px;
 }
 
@@ -1818,8 +2354,7 @@ select.arc-tool {
   width: 100%;
   padding: 5px 6px;
   border: 0;
-  border-radius: 5px;
-  background: none;
+    background: none;
   text-align: left;
 }
 
@@ -1836,15 +2371,15 @@ button.arc-change:focus-visible {
 }
 
 .arc-change-added .arc-change-sign {
-  color: #2f9e5b;
+  color: var(--added);
 }
 
 .arc-change-removed .arc-change-sign {
-  color: #d64545;
+  color: var(--removed);
 }
 
 .arc-change-changed .arc-change-sign {
-  color: #d08a10;
+  color: var(--changed);
 }
 
 .arc-change-kind {
@@ -1876,8 +2411,7 @@ button.arc-change:focus-visible {
   display: inline-block;
   margin-right: 4px;
   padding: 0 6px;
-  border-radius: 999px;
-  background: var(--tint);
+    background: var(--tint);
   color: var(--accent);
   font-size: 11px;
   font-weight: 600;
@@ -1898,8 +2432,7 @@ button.arc-change:focus-visible {
 .arc-history-list button {
   padding: 2px 8px;
   border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--panel);
+    background: var(--panel);
   font-size: 12px;
 }
 
@@ -1914,7 +2447,7 @@ button.arc-change:focus-visible {
 
 .arc-fields dd {
   margin: 0 0 4px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--mono);
   word-break: break-word;
 }
 
@@ -1923,12 +2456,11 @@ button.arc-change:focus-visible {
   margin: 15vh auto 0;
   padding: 20px 24px;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
+  border: 1.5px solid var(--ink);
+  }
 
 .arc-unavailable code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--mono);
 }
 
 /* ADRs tab and reader */
@@ -1940,8 +2472,7 @@ button.arc-change:focus-visible {
   width: 100%;
   padding: 6px 8px;
   border: 0;
-  border-radius: 6px;
-  background: none;
+    background: none;
   text-align: left;
   color: inherit;
 }
@@ -1970,23 +2501,22 @@ button.arc-change:focus-visible {
 .arc-adr-status {
   padding: 0 6px;
   border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 11px;
+    font-size: 11px;
   line-height: 18px;
   color: var(--muted);
 }
 
 .arc-adr-status[data-status="accepted"] {
-  color: #1f7a4d;
+  color: var(--added);
 }
 
 .arc-adr-status[data-status="proposed"] {
-  color: #8a5a00;
+  color: var(--changed);
 }
 
 .arc-adr-status[data-status="rejected"],
 .arc-adr-status[data-status="deprecated"] {
-  color: #a33a3a;
+  color: var(--removed);
 }
 
 .arc-reader {
@@ -2000,8 +2530,7 @@ button.arc-change:focus-visible {
   flex-direction: column;
   min-height: 0;
   background: var(--panel);
-  border-left: 1px solid var(--line);
-  box-shadow: -8px 0 24px rgba(15, 20, 30, 0.08);
+  border-left: 1.5px solid var(--ink);
 }
 
 .arc-reader-beside {
@@ -2038,8 +2567,8 @@ button.arc-change:focus-visible {
 .arc-reader-banner {
   margin: 0 0 10px;
   padding: 8px 10px;
-  border-left: 3px solid #8a5a00;
-  background: rgba(138, 90, 0, 0.08);
+  border: 1.5px solid var(--noteline);
+  background: var(--note);
 }
 
 .arc-markdown {
@@ -2054,8 +2583,7 @@ button.arc-change:focus-visible {
 
 .arc-markdown pre {
   padding: 8px 10px;
-  border-radius: 6px;
-  background: rgba(15, 20, 30, 0.05);
+    background: var(--ground);
   overflow: auto;
 }
 
@@ -2073,7 +2601,7 @@ button.arc-change:focus-visible {
 /* Phones: a narrower rail leaves the canvas more room. */
 @media (max-width: 640px) {
   .arc-app {
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 56px minmax(0, 1fr);
   }
 
   .arc-location {
@@ -2122,9 +2650,8 @@ button.arc-change:focus-visible {
   }
 }
 
-/* Phones: no hint strip or overview map; the canvas needs the room. */
+/* Phones: no overview map; the canvas needs the room. */
 @media (max-width: 640px) {
-  .react-flow__panel.arc-hintline,
   .react-flow__panel.arc-minimap {
     display: none;
   }
@@ -2133,4 +2660,120 @@ button.arc-change:focus-visible {
 /* The Element panel overlays the canvas's right edge; keep the zoom controls beside it, not under it. */
 .arc-canvas:has(> .arc-panel) .react-flow__panel.react-flow__controls {
   right: 340px;
+}
+
+/* Phones: the rail narrows, the key starts folded into its title bar, and the plate wraps. */
+@media (max-width: 640px) {
+  .arc-rail-button {
+    width: 52px;
+  }
+
+  .arc-scrim {
+    inset: 0 0 0 56px;
+  }
+
+  .arc-flyout {
+    left: 56px;
+    width: min(320px, calc(100vw - 56px));
+  }
+
+  .arc-key {
+    width: 220px;
+  }
+
+  /* The plate keeps to three rows: where you are, the Deployment tiles, then the tools in one scrolling row. */
+  .arc-location {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .arc-deployments-label {
+    display: none;
+  }
+
+  /* Save as View leads the scrolling row, so it never starts off screen. */
+  .arc-tools .arc-primary {
+    order: -1;
+  }
+
+  .arc-tools {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .arc-state {
+    flex-basis: calc(100% + 24px);
+    margin: 0 -12px -8px;
+    padding: 8px 12px;
+  }
+}
+
+.arc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arc-badge-icon {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.25;
+}
+
+.arc-transport-buttons button {
+  display: inline-grid;
+  place-items: center;
+}
+
+/* The Dynamic View's sign: the kind, a yellow arrow, and the View itself as the you-are-here tile. */
+.arc-location .arc-dyn-title {
+  align-items: center;
+  gap: 8px;
+}
+
+.arc-location .arc-dyn-title .arc-panel-kind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--plate-muted);
+}
+
+.arc-location .arc-dyn-title .arc-panel-kind::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: var(--here);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h11M9 4l4 4-4 4' fill='none' stroke='%23000' stroke-width='2.25'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.arc-location .arc-dyn-title h1 {
+  padding: 4px 10px 3px;
+  background: var(--here);
+  color: var(--on-here);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arc-reader-head .arc-panel-id {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.arc-dyn-detail .arc-panel-body h2 {
+  margin-bottom: 4px;
+}
+
+/* Phones: the tools row scrolls, and fades at its right edge to say so. */
+@media (max-width: 640px) {
+  .arc-tools {
+    padding-right: 32px;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+  }
 }

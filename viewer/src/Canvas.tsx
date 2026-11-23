@@ -14,14 +14,16 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { memo, useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import type { CompareMark } from "../../src/core/compare.ts";
 import type { ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
 import type { BundleElement } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
+import { Icon, type IconName } from "./Icon.tsx";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
+import { CtrlWheelZoom } from "./wheel.tsx";
 
 /** The sub-label under a box's name, as the Variant D prototype writes it: "System · 4 Services", "datastore · Postgres", "External System". */
 function describe(node: ViewNode, element: BundleElement | undefined, technology: string | null, holds: string | undefined, deployedAt: string | undefined): string {
@@ -44,11 +46,15 @@ function deployedAt(workspace: Workspace, viewId: string, node: ViewNode): strin
   return workspace.targets.get(target)?.name;
 }
 
-/** Each kind's glyph, and a Service's type when it isn't a plain app: ⛁ datastore, ≋ broker. */
-const GLYPH: Record<string, string> = { person: "◉", system: "▣", service: "▭", component: "◇", deployment: "⬚", target: "☁", datastore: "⛁", broker: "≋" };
+/** Each kind's pictogram, and a Service's type when it isn't a plain app. */
+const KIND_ICON: Record<string, IconName> = { person: "person", system: "system", service: "service", component: "component", deployment: "deployment", target: "target", datastore: "datastore", broker: "broker" };
 
-/** An impact badge's words: the origin, or the side and distance from it. */
-const SIDE_LABEL: Record<ImpactSide, string> = { origin: "⚠ origin", upstream: "▲ upstream", downstream: "▼ downstream" };
+/** Above this many boxes the overview map earns its corner; below it the whole View already fits on screen. */
+const MINIMAP_MIN_NODES = 40;
+
+/** An impact badge's sign and words: the origin, or the side and distance from it. */
+const SIDE_LABEL: Record<ImpactSide, string> = { origin: "origin", upstream: "upstream", downstream: "downstream" };
+const SIDE_ICON: Record<ImpactSide, IconName> = { origin: "origin", upstream: "up", downstream: "down" };
 
 /** What a collapsed box holds, as the prototype shows it: "4 Services", "1 Component". */
 function countInside(workspace: Workspace, id: string | undefined): string | undefined {
@@ -66,6 +72,12 @@ const DURATION = 300;
 export const PANEL_WIDTH = 340;
 /** Below this zoom, sub-labels and Team codes hide. */
 export const DETAIL_ZOOM = 0.45;
+/** A fit never shrinks the drawing below this; a bigger View opens at its start, readable, and pans for the rest. */
+export const MIN_FIT_ZOOM = 0.6;
+/** The space kept between the drawing and the canvas edges, or the Element panel. */
+const FIT_PAD = 32;
+/** How long a selection waits before panning, so a double-click's second click still lands on the same box. */
+const DOUBLE_CLICK_WAIT = 400;
 
 export interface CanvasProps {
   workspace: Workspace;
@@ -209,6 +221,13 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       minZoom={0.05}
       maxZoom={2}
       zoomOnDoubleClick={false}
+      // Figma's pattern, for mouse and trackpad alike: scroll pans 1:1 (Shift turns a mouse wheel sideways),
+      // pinch or ⌘/Ctrl with the wheel zooms, and a left- or middle-button drag on the background pans.
+      panOnScroll
+      panOnScrollSpeed={1}
+      panOnDrag={[0, 1]}
+      // A selected box stays at its own depth, so a selected container never covers the boxes inside it.
+      elevateNodesOnSelect={false}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
@@ -217,18 +236,105 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       onNodeDoubleClick={(_, node) => onOpenView(node.id)}
       onPaneClick={() => onSelect(null)}
     >
-      <Panel position="top-center" className="arc-hintline">
-        Shift-click to pick for export · double-click to open a box's own View · / to find
+      <Panel position="bottom-left" className="arc-key-panel">
+        <Key lens={lensed !== undefined} />
       </Panel>
-      <MiniMap position="bottom-left" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeColor="#a3acb9" nodeStrokeWidth={0} maskColor="rgba(246, 247, 249, 0.6)" />
+      {view.nodes.length > MINIMAP_MIN_NODES && <MiniMap position="top-right" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeStrokeWidth={0} />}
       <Controls position="bottom-right" showInteractive={false} />
-      <Fitter laidOut={laidOut} fitKey={fitKey} animate={animate} onSettled={onSettled} />
+      <Fitter laidOut={laidOut} fitKey={fitKey} selected={selected} animate={animate} onSettled={onSettled} />
+      <KeepBesidePanel selected={selected} animate={animate} />
+      <CtrlWheelZoom />
     </ReactFlow>
   );
 }
 
-/** Fits the drawing to the screen when a new Layout arrives, then reports it settled once any transition has finished. */
-function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fitKey: string; animate: boolean; onSettled: (laidOut: LaidOut) => void }) {
+/** The map key: what every mark on the canvas means, and the canvas's gestures. It folds away and stays folded. */
+function Key({ lens }: { lens: boolean }) {
+  const [open, setOpen] = useState(() => readKeyOpen());
+  return (
+    <details
+      className="arc-key"
+      open={open}
+      onToggle={(e) => {
+        // The element also fires toggle when it first renders open; only a visitor's own toggle is remembered.
+        const next = (e.currentTarget as HTMLDetailsElement).open;
+        if (next === open) return;
+        setOpen(next);
+        writeKeyOpen(next);
+      }}
+    >
+      <summary>Key</summary>
+      <ul>
+        <li>
+          <span className="arc-key-swatch arc-key-team" aria-hidden="true">
+            <span>COR</span>
+          </span>
+          Left edge and code: owning Team
+        </li>
+        <li>
+          <span className="arc-key-swatch arc-key-external" aria-hidden="true" />
+          Dashed: External
+        </li>
+        <li>
+          <span className="arc-key-swatch arc-key-broker" aria-hidden="true" />
+          Striped: broker
+        </li>
+        {lens && (
+          <>
+            <li>
+              <span className="arc-key-swatch arc-key-origin" aria-hidden="true" />
+              Lens origin
+            </li>
+            <li>
+              <span className="arc-key-swatch arc-key-up" aria-hidden="true" />
+              Upstream
+              <span className="arc-key-swatch arc-key-down" aria-hidden="true" />
+              Downstream
+            </li>
+            <li>
+              <span className="arc-key-swatch arc-key-holds" aria-hidden="true">
+                <span />
+              </span>
+              Something inside is hit
+            </li>
+          </>
+        )}
+      </ul>
+      <p className="arc-key-gestures">Shift-click picks for export · double-click opens a box's own View · / finds</p>
+    </details>
+  );
+}
+
+/** Open by default only where the canvas has room for it beside the drawing; afterwards it stays as the visitor left it. */
+function readKeyOpen(): boolean {
+  const roomy = window.innerWidth >= 1200 && window.innerHeight >= 760;
+  try {
+    const stored = window.localStorage.getItem("archidocs.key");
+    return stored === null ? roomy : stored === "open";
+  } catch {
+    return roomy;
+  }
+}
+
+function writeKeyOpen(open: boolean) {
+  try {
+    window.localStorage.setItem("archidocs.key", open ? "open" : "closed");
+  } catch {
+    // The key simply opens again next time.
+  }
+}
+
+/** The canvas width the Element panel leaves free, or the whole width on a canvas too narrow to spare it. */
+function besidePanel(width: number): number {
+  return width - PANEL_WIDTH >= width / 2 ? width - PANEL_WIDTH : width;
+}
+
+/**
+ * Fits the drawing to the screen when a new Layout arrives, then reports it settled once any transition has finished.
+ * The fit uses the whole canvas unless something is selected (the Element panel then takes the right edge), never
+ * zooms past 1:1, and never below MIN_FIT_ZOOM: a View too big for that opens at its start and pans for the rest.
+ */
+function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: LaidOut; fitKey: string; selected: string | null; animate: boolean; onSettled: (laidOut: LaidOut) => void }) {
   const { setViewport } = useReactFlow();
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
@@ -238,14 +344,15 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
   useEffect(() => {
     if (!sized) return;
     const { layout } = laidOut;
-    const pad = 32;
-    // Leave room for the Element panel, so opening it never hides or moves a node.
-    // On a canvas too narrow to spare it (such as beside the Changes list on a small screen), the panel may cover the drawing.
-    const room = width - PANEL_WIDTH >= width / 2 ? width - PANEL_WIDTH : width;
-    const zoom = Math.max(0.05, Math.min(1, (room - 2 * pad) / Math.max(layout.width, 1), (height - 2 * pad) / Math.max(layout.height, 1)));
+    const room = selected === null ? width : besidePanel(width);
+    const fit = Math.min(1, (room - 2 * FIT_PAD) / Math.max(layout.width, 1), (height - 2 * FIT_PAD) / Math.max(layout.height, 1));
+    const zoom = Math.max(MIN_FIT_ZOOM, fit);
+    // Centred when the whole drawing fits; otherwise from its top-left corner, where a View starts reading.
+    const x = layout.width * zoom <= room - 2 * FIT_PAD ? (room - layout.width * zoom) / 2 : FIT_PAD;
+    const y = layout.height * zoom <= height - 2 * FIT_PAD ? (height - layout.height * zoom) / 2 : FIT_PAD;
     const duration = animate && !first.current ? DURATION : 0;
     first.current = false;
-    void setViewport({ x: (room - layout.width * zoom) / 2, y: (height - layout.height * zoom) / 2, zoom }, { duration });
+    void setViewport({ x, y, zoom }, { duration });
     // React Flow draws an edge only once both its nodes are measured, so wait for every edge too.
     let frame = 0;
     const whenDrawn = () => {
@@ -257,10 +364,36 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
       window.clearTimeout(timer);
       window.cancelAnimationFrame(frame);
     };
-    // A new Layout or fitKey refits; a resize alone (such as the Element panel opening) keeps the drawing where it is,
-    // so width and height are read, not watched.
+    // A new Layout or fitKey refits; a resize or a new selection alone keeps the drawing where it is,
+    // so width, height and selected are read, not watched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laidOut, fitKey, sized]);
+  return null;
+}
+
+/** When a selection opens the Element panel over the selected box, pans just enough to bring the box out beside it. */
+function KeepBesidePanel({ selected, animate }: { selected: string | null; animate: boolean }) {
+  const { getInternalNode, getViewport, setViewport } = useReactFlow();
+  const width = useStore((s) => s.width);
+  useEffect(() => {
+    if (selected === null || width === 0) return;
+    // Wait out a double-click first: panning between its two clicks would move the box from under the second one.
+    const timer = window.setTimeout(() => {
+      const node = getInternalNode(selected);
+      if (!node) return;
+      const { x, y, zoom } = getViewport();
+      const left = node.internals.positionAbsolute.x * zoom + x;
+      const right = left + (node.measured.width ?? node.width ?? 0) * zoom;
+      const edge = besidePanel(width) - FIT_PAD;
+      if (right <= edge) return;
+      // Move left by the overlap, but never push the box's own left edge off the canvas.
+      const shift = Math.min(right - edge, Math.max(0, left - FIT_PAD));
+      if (shift > 0) void setViewport({ x: x - shift, y, zoom }, { duration: animate ? DURATION : 0 });
+    }, DOUBLE_CLICK_WAIT);
+    return () => window.clearTimeout(timer);
+    // Only a new selection pans; the canvas size is read, not watched.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   return null;
 }
 
@@ -278,7 +411,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       }}
       onDoubleClick={stop}
     >
-      {toggle === "expand" ? "+" : "−"}
+      <Icon name={toggle === "expand" ? "plus" : "minus"} />
     </button>
   );
   const classes = [
@@ -313,21 +446,28 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       {/* As the Variant D prototype draws it: [+] glyph Name TEAM on one row, the sub-label under it. */}
       <div className="arc-box-head">
         {toggleButton}
-        <span className="arc-kind-glyph" aria-hidden="true">
-          {GLYPH[type ?? node.kind]}
-        </span>
+        <Icon name={KIND_ICON[type ?? node.kind]!} className="arc-kind-glyph" />
         <span className="arc-name">{node.name}</span>
+        {/* An open box's sub-label sits in its head row, after the name, and gives way to it when space runs out. */}
+        {container && (
+          <span className="arc-sublabel arc-csub" data-testid="sublabel" title={sublabel}>
+            {sublabel}
+          </span>
+        )}
         {team && (
           <span className="arc-team" data-testid="team" title={`Owner: ${team.code}`}>
             {team.code}
           </span>
         )}
       </div>
-      <div className={container ? "arc-sublabel arc-csub" : "arc-sublabel"} data-testid="sublabel">
-        {sublabel}
-      </div>
+      {!container && (
+        <div className="arc-sublabel" data-testid="sublabel">
+          {sublabel}
+        </div>
+      )}
       {mark?.distance !== undefined && !(container && !node.collapsed) && (
         <span className={`arc-badge arc-badge-${mark.side ?? "distance"}`}>
+          {mark.side && <Icon name={SIDE_ICON[mark.side]} className="arc-badge-icon" />}
           {mark.side && mark.side !== "origin" && `${SIDE_LABEL[mark.side]} `}
           {mark.side === "origin" && SIDE_LABEL.origin}
           <span className={mark.side === "origin" ? "arc-visually-hidden" : undefined} data-testid="distance" aria-label={`distance ${mark.distance}`}>

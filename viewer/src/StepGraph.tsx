@@ -5,6 +5,7 @@ import type { ResolvedView, ViewEdge } from "../../src/core/views.ts";
 import { sequenceMessages, sequenceParticipants, type SequenceMessage } from "../../src/render/sequence.ts";
 import { useLayout } from "./layout.ts";
 import type { Workspace } from "./workspace.ts";
+import { CtrlWheelZoom } from "./wheel.tsx";
 
 export interface StepGraphProps {
   workspace: Workspace;
@@ -108,6 +109,11 @@ function Graph({ workspace, view, brokers, fitKey, selected, onSelect, onSettled
       className="arc-flow arc-graph"
       nodes={nodes}
       edges={edges}
+      // Figma's pattern, for mouse and trackpad alike: scroll pans 1:1 (Shift turns a mouse wheel sideways),
+      // pinch or ⌘/Ctrl with the wheel zooms, and a left- or middle-button drag on the background pans.
+      panOnScroll
+      panOnScrollSpeed={1}
+      panOnDrag={[0, 1]}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       minZoom={0.05}
@@ -120,6 +126,7 @@ function Graph({ workspace, view, brokers, fitKey, selected, onSelect, onSettled
     >
       <Controls showInteractive={false} />
       {layout && <GraphFitter width={layout.width} height={layout.height} edges={layout.edges.length} fitKey={fitKey} onSettled={onSettled} />}
+      <CtrlWheelZoom />
     </ReactFlow>
   );
 }

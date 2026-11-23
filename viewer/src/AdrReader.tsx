@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from "react";
 import type { BundleAdr } from "../../src/schema/bundle.ts";
 import { Markdown } from "./markdown.tsx";
 import type { Workspace } from "./workspace.ts";
+import { Icon } from "./Icon.tsx";
 
 const LABELS: Record<BundleAdr["status"], string> = { proposed: "Proposed", accepted: "Accepted", rejected: "Rejected", deprecated: "Deprecated", superseded: "Superseded" };
 
@@ -36,7 +37,7 @@ export function AdrReader({ workspace, id, beside, onClose, onOpenAdr, onFocus, 
   const className = `arc-reader${beside ? " arc-reader-beside" : ""}`;
   const close = (
     <button type="button" className="arc-reader-close" aria-label="Close ADR" onClick={onClose}>
-      ✕
+      <Icon name="close" />
     </button>
   );
   if (!adr) {
@@ -80,8 +81,8 @@ export function AdrReader({ workspace, id, beside, onClose, onOpenAdr, onFocus, 
     <article className={className} aria-label="ADR">
       <header className="arc-reader-head">
         {close}
-        <code className="arc-panel-id">{adr.id}</code>
         <h2>{adr.title}</h2>
+        <code className="arc-panel-id">{adr.id}</code>
       </header>
       <div className="arc-reader-body">
         {adr.supersededBy.length > 0 && (
