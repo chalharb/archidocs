@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
-import { cp, mkdir, writeFile } from "node:fs/promises";
+import { cp, mkdir, realpath, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -10,6 +10,8 @@ import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitHead, gitTopLevel } from "../git.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
+import { authoringGuide } from "../guide/index.ts";
+import { init } from "./init.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 
 /** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
@@ -27,6 +29,8 @@ class UsageError extends Error {}
 const VIEWER_DIR = fileURLToPath(new URL("../../dist/viewer/", import.meta.url));
 
 const usage = `Usage:
+  archidocs init [--skill [--workspace <dir>]]
+  archidocs guide [topic]
   archidocs check [--format text|json|github] [--strict]
   archidocs build [--out <dir>] [--bundle-only]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
@@ -37,6 +41,23 @@ const usage = `Usage:
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
+  if (command === "init") {
+    const { values } = parseArgs({ args: rest, options: { skill: { type: "boolean", default: false }, workspace: { type: "string" } }, strict: true });
+    if (values.workspace !== undefined && !values.skill) throw new UsageError("--workspace only applies with --skill; without it, init uses or creates this repo's Workspace.");
+    const cwd = await realpath(process.cwd());
+    const repoRoot = (await gitTopLevel(cwd)) ?? cwd;
+    const lines = await init({ repoRoot, cwd, skillOnly: values.skill, ...(values.workspace === undefined ? {} : { workspace: values.workspace }) });
+    process.stdout.write(lines.join("\n") + "\n");
+    return OK;
+  }
+  if (command === "guide") {
+    const { positionals } = parseArgs({ args: rest, options: {}, allowPositionals: true, strict: true });
+    if (positionals.length > 1) throw new UsageError(`Give one topic at a time; got ${positionals.join(", ")}.`);
+    const guide = await authoringGuide(positionals[0]);
+    if (!guide.ok) throw new UsageError(guide.message);
+    process.stdout.write(guide.text);
+    return OK;
+  }
   if (command === "check") {
     const { values } = parseArgs({
       args: rest,

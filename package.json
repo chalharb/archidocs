@@ -9,6 +9,7 @@
   },
   "files": [
     "dist",
+    "guide",
     "schemas"
   ],
   "engines": {

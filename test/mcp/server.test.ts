@@ -229,6 +229,7 @@ describe("tool surface", () => {
     expect(tools.map((t) => t.name).sort()).toEqual([
       "find_paths",
       "get_adr",
+      "get_authoring_guide",
       "get_deployments",
       "get_element",
       "get_impact",

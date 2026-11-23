@@ -12,6 +12,7 @@ import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 import { registerWriteTools } from "./writes.ts";
+import { authoringGuide, topics } from "../guide/index.ts";
 
 export interface ServerOptions {
   source: Source;
@@ -655,6 +656,27 @@ export function createServer(options: ServerOptions): McpServer {
           ...issues.map((i) => `- ${i.file}:${i.line} ${i.severity} ${i.rule}: ${i.message}`),
         ].join("\n"),
       );
+    },
+  );
+
+  const GuideInput = z.object({ topic: z.string().min(1).optional().describe(`One topic's reference file: ${topics.map((t) => t.id).join(", ")}`) });
+  server.registerTool(
+    "get_authoring_guide",
+    {
+      title: "Authoring guide",
+      description:
+        "How to edit the Model with the write tools. With no topic: the archidocs-authoring skill (the Model, the edit loop) and its list of topics. With a topic: that flow's reference file; `rules` is the catalogue of every check rule. Load it before writing.",
+      inputSchema: advertise(GuideInput),
+      outputSchema: z.object({ topic: z.string().nullable(), topics: z.array(z.object({ id: z.string(), summary: z.string() })), text: z.string() }),
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    // The guide ships with this version, so it answers whatever the state of the source.
+    async (raw: unknown): Promise<CallToolResult> => {
+      const args = GuideInput.safeParse(raw ?? {});
+      if (!args.success) return toResult(fail("invalid_input", z.prettifyError(args.error)));
+      const guide = await authoringGuide(args.data.topic);
+      if (!guide.ok) return toResult(fail("not_found", guide.message, guide.suggestion ? [guide.suggestion] : undefined));
+      return toResult(ok({ topic: guide.topic, topics: topics.map((t) => ({ ...t })), text: guide.text }, guide.text));
     },
   );
 
