@@ -107,12 +107,13 @@ export interface DeploymentDecl extends Position {
   target?: TargetDecl;
 }
 
-/** One Saved View under `views: structural:` in a Project file. */
+/** One Saved View under `views: structural:` or `views: dynamic:` in a Project file. */
 export interface ViewDecl extends Position {
+  kind: "structural" | "dynamic";
   id: string;
   project: Project;
   file: SourceFile;
-  /** `["views", "structural", id]` in its file. */
+  /** `["views", kind, id]` in its file. */
   path: string[];
   data: Record<string, unknown>;
 }

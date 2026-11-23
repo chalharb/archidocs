@@ -1,4 +1,4 @@
-import type { Bundle, BundleLens, BundleRelationship, BundleSelector, BundleView } from "../schema/bundle.ts";
+import type { Bundle, BundleLens, BundleRelationship, BundleSelector, BundleStructuralView } from "../schema/bundle.ts";
 import { getImpact } from "./impact.ts";
 import { pathsBetween, type Path } from "./paths.ts";
 import { lifter, type Level } from "./query.ts";
@@ -39,7 +39,7 @@ const levelOf: Record<ViewKind, Level> = { c1: "system", c2: "service", c3: "com
  * The Lens marks nodes and lights edges but never changes membership.
  * Returns undefined for a Deployment View, which is not resolved here yet.
  */
-export function resolveSaved(bundle: Bundle, def: BundleView): SavedResolution | undefined {
+export function resolveSaved(bundle: Bundle, def: BundleStructuralView): SavedResolution | undefined {
   if (def.level === "deployment") return undefined;
   const kind = def.level;
   const model = new ModelIndex(bundle);

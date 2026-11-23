@@ -219,8 +219,33 @@ export const shallowView = z.strictObject({
   lens: z.unknown().optional(),
 });
 
+/**
+ * One interaction of a Dynamic View: `from` reaching `to` over a Relationship
+ * between them (or a derived edge), an event `from` a publisher `to` one of its
+ * subscribers, or with `return: true` the reply to a sync Relationship the
+ * other way.
+ */
+export const Step = z.strictObject({
+  from: Ref,
+  to: Ref,
+  relationship: Ref.optional().describe("The id of the Relationship the Step takes, when several connect the pair"),
+  description: z.string().optional(),
+  note: z.string().optional(),
+  return: z.boolean().optional().describe("The reply to a sync Relationship from `to` to `from`"),
+});
+
+/** A Saved Dynamic View: one scenario as an ordered list of Steps, each resolved to an existing Relationship. */
+export const DynamicView = z.strictObject({
+  title: z.string(),
+  description: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  participants: z.array(Ref).optional().describe("Fixes the participants' order; otherwise they are ordered by first appearance"),
+  steps: z.array(Step),
+});
+
 export const Views = z.strictObject({
   structural: z.record(Id, StructuralView).optional(),
+  dynamic: z.record(Id, DynamicView).optional(),
 });
 
 /**
@@ -278,9 +303,10 @@ export const shallow = {
     components: children,
     targets: children,
     deployments: z.array(z.unknown()).optional(),
-    views: z.strictObject({ structural: children }).optional(),
+    views: z.strictObject({ structural: children, dynamic: children }).optional(),
   }),
   view: shallowView,
+  dynamicView: DynamicView,
   target: z.strictObject({ ...targetFields, targets: children }),
   deployment: Deployment,
   person: Person,
@@ -298,5 +324,6 @@ export type RelationshipInput = z.infer<typeof Relationship>;
 export type ServiceInput = z.infer<typeof Service>;
 export type ModelFileInput = z.infer<typeof ModelFile>;
 export type StructuralViewInput = z.infer<typeof StructuralView>;
+export type DynamicViewInput = z.infer<typeof DynamicView>;
 export type SelectorInput = z.infer<typeof Selector>;
 export type LensInput = z.infer<typeof Lens>;

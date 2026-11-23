@@ -146,7 +146,8 @@ export class Workspace {
   }
 
   private landscapeRows(): TreeRow[] {
-    return this.views.filter((v) => v.kind !== "c3" && !v.id.includes("/")).map((v) => ({ key: v.id, label: v.title, view: v.id, children: [] }));
+    // Dynamic Views get their own screen (ticket 20); until then they stay out of the tree.
+    return this.views.filter((v) => v.kind !== "c3" && v.kind !== "dynamic" && !v.id.includes("/")).map((v) => ({ key: v.id, label: v.title, view: v.id, children: [] }));
   }
 
   /** Each kept System's C2 View with its Services' C3 Views nested, then C3 Views of Services outside any kept System. */
