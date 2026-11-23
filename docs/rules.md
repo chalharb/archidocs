@@ -15,19 +15,22 @@
 | [`duplicate-project-id`](#duplicate-project-id) | error | Two Projects share an id. |
 | [`definition-outside-workspace`](#definition-outside-workspace) | error | `teams` or `environments` declared outside `workspace.yaml`. |
 | [`unknown-team`](#unknown-team) | error | An `owner` names no Team. |
-| [`duplicate-id`](#duplicate-id) | error | An Element id is declared twice in a Project, across files too, whatever its kind or nesting. |
+| [`duplicate-id`](#duplicate-id) | error | An Element or Deployment Target id is declared twice in a Project, across files too, whatever its kind or nesting. |
 | [`invalid-nesting`](#invalid-nesting) | error | System > Service > Component is broken, by nesting or `in:`. |
 | [`external-with-components`](#external-with-components) | error | An External System or Service declares Components. |
-| [`unknown-element`](#unknown-element) | error | A reference names no Element: in `to`, `via` or `in`. |
+| [`unknown-element`](#unknown-element) | error | A reference names no Element: in `to`, `via`, `in` or a Deployment's `service`. |
 | [`unknown-project`](#unknown-project) | error | A `project:` prefix names no Project. |
 | [`own-project-prefix`](#own-project-prefix) | error | A Project qualifies its own ids. |
-| [`wrong-kind`](#wrong-kind) | error | An id resolves to a kind the field doesn't accept, such as a `via` naming something other than a Service. |
 | [`duplicate-relationship-id`](#duplicate-relationship-id) | error | A Relationship `id` repeats in a Project. |
 | [`self-relationship`](#self-relationship) | error | An Element has a Relationship to itself. |
 | [`person-as-provider`](#person-as-provider) | error | The provider of a Relationship is a Person. |
 | [`ancestor-descendant-relationship`](#ancestor-descendant-relationship) | error | An Element is linked to its own ancestor or descendant. |
 | [`via-on-sync`](#via-on-sync) | error | `via` or `channel` on a sync Relationship. |
 | [`via-not-broker`](#via-not-broker) | error | `via` names a Service that isn't `type: broker`. |
+| [`duplicate-deployment`](#duplicate-deployment) | error | The same Service, Environment and Target appear twice. |
+| [`unknown-environment`](#unknown-environment) | error | A Deployment names no Environment. |
+| [`unknown-target`](#unknown-target) | error | A Deployment names no Deployment Target. |
+| [`wrong-kind`](#wrong-kind) | error | An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service. |
 
 ## `yaml-syntax`
 
@@ -314,7 +317,7 @@ services:
 
 **Severity:** error
 
-An Element id is declared twice in a Project, across files too, whatever its kind or nesting.
+An Element or Deployment Target id is declared twice in a Project, across files too, whatever its kind or nesting.
 
 **Failing example**
 
@@ -326,7 +329,7 @@ services:
     name: Web v2
 ```
 
-**Fix:** Rename one of the Elements, or remove the second declaration.
+**Fix:** Rename one of the Elements or Targets, or remove the second declaration.
 
 **Fixed**
 
@@ -412,7 +415,7 @@ services:
 
 **Severity:** error
 
-A reference names no Element: in `to`, `via` or `in`.
+A reference names no Element: in `to`, `via`, `in` or a Deployment's `service`.
 
 **Failing example**
 
@@ -504,52 +507,6 @@ services:
       - to: cart
   cart:
     name: Cart
-```
-
-## `wrong-kind`
-
-**Severity:** error
-
-An id resolves to a kind the field doesn't accept, such as a `via` naming something other than a Service.
-
-**Failing example**
-
-`shop/services.yaml`:
-
-```yaml
-services:
-  web:
-    name: Web
-    relationships:
-      - to: cart
-        interaction: async
-        via: checkout
-  cart:
-    name: Cart
-systems:
-  checkout:
-    name: Checkout
-```
-
-**Fix:** Point the field at an Element of the kind it accepts.
-
-**Fixed**
-
-`shop/services.yaml`:
-
-```yaml
-services:
-  web:
-    name: Web
-    relationships:
-      - to: cart
-        interaction: async
-        via: events
-  cart:
-    name: Cart
-  events:
-    name: Events
-    type: broker
 ```
 
 ## `duplicate-relationship-id`
@@ -801,4 +758,175 @@ services:
   events:
     name: Events
     type: broker
+```
+
+## `duplicate-deployment`
+
+**Severity:** error
+
+The same Service, Environment and Target appear twice.
+
+**Failing example**
+
+`shop/more.yaml`:
+
+```yaml
+deployments:
+  - { service: web, environment: prod, target: eks-prod, url: https://www.shop.example.com }
+```
+
+**Fix:** Remove the second Deployment, or merge its `url` and `endpoints` into the first.
+
+**Fixed**
+
+`shop/more.yaml`: removed.
+
+## `unknown-environment`
+
+**Severity:** error
+
+A Deployment names no Environment.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+  checkout:
+    name: Checkout
+    components:
+      cart:
+        name: Cart
+targets:
+  eks-prod:
+    name: EKS prod
+    kind: cluster
+deployments:
+  - { service: web, environment: production, target: eks-prod }
+```
+
+**Fix:** Use the id of an Environment defined in `workspace.yaml`, or define the Environment there.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+  checkout:
+    name: Checkout
+    components:
+      cart:
+        name: Cart
+targets:
+  eks-prod:
+    name: EKS prod
+    kind: cluster
+deployments:
+  - { service: web, environment: prod, target: eks-prod }
+```
+
+## `unknown-target`
+
+**Severity:** error
+
+A Deployment names no Deployment Target.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+  checkout:
+    name: Checkout
+    components:
+      cart:
+        name: Cart
+targets:
+  eks-prod:
+    name: EKS prod
+    kind: cluster
+deployments:
+  - { service: web, environment: prod, target: eks-prd }
+```
+
+**Fix:** Use the id of a Target declared in the Project, or `project:id` for one declared in another Project.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+  checkout:
+    name: Checkout
+    components:
+      cart:
+        name: Cart
+targets:
+  eks-prod:
+    name: EKS prod
+    kind: cluster
+deployments:
+  - { service: web, environment: prod, target: eks-prod }
+```
+
+## `wrong-kind`
+
+**Severity:** error
+
+An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+  checkout:
+    name: Checkout
+    components:
+      cart:
+        name: Cart
+targets:
+  eks-prod:
+    name: EKS prod
+    kind: cluster
+deployments:
+  - { service: cart, environment: prod, target: eks-prod }
+```
+
+**Fix:** Point the field at an id of the kind it accepts: a Deployment's `service` and a Relationship's `via` each name a Service.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+  checkout:
+    name: Checkout
+    components:
+      cart:
+        name: Cart
+targets:
+  eks-prod:
+    name: EKS prod
+    kind: cluster
+deployments:
+  - { service: web, environment: prod, target: eks-prod }
 ```

@@ -55,7 +55,8 @@
               "properties": {
                 "to": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "id": {
                   "type": "string",
@@ -76,7 +77,8 @@
                 },
                 "via": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "channel": {
                   "type": "string"
@@ -153,7 +155,8 @@
               "properties": {
                 "to": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "id": {
                   "type": "string",
@@ -174,7 +177,8 @@
                 },
                 "via": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "channel": {
                   "type": "string"
@@ -247,7 +251,8 @@
                     "properties": {
                       "to": {
                         "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
                       },
                       "id": {
                         "type": "string",
@@ -268,7 +273,8 @@
                       },
                       "via": {
                         "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
                       },
                       "channel": {
                         "type": "string"
@@ -357,7 +363,8 @@
                           "properties": {
                             "to": {
                               "type": "string",
-                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                              "description": "An id in this Project, or `project:id` for one in another Project"
                             },
                             "id": {
                               "type": "string",
@@ -378,7 +385,8 @@
                             },
                             "via": {
                               "type": "string",
-                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                              "description": "An id in this Project, or `project:id` for one in another Project"
                             },
                             "channel": {
                               "type": "string"
@@ -477,7 +485,8 @@
               "properties": {
                 "to": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "id": {
                   "type": "string",
@@ -498,7 +507,8 @@
                 },
                 "via": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "channel": {
                   "type": "string"
@@ -587,7 +597,8 @@
                     "properties": {
                       "to": {
                         "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
                       },
                       "id": {
                         "type": "string",
@@ -608,7 +619,8 @@
                       },
                       "via": {
                         "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
                       },
                       "channel": {
                         "type": "string"
@@ -700,7 +712,8 @@
               "properties": {
                 "to": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "id": {
                   "type": "string",
@@ -721,7 +734,8 @@
                 },
                 "via": {
                   "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
                 },
                 "channel": {
                   "type": "string"
@@ -753,7 +767,131 @@
         ],
         "additionalProperties": false
       }
+    },
+    "targets": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Target"
+      }
+    },
+    "deployments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+            "description": "An id in this Project, or `project:id` for one in another Project"
+          },
+          "environment": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+            "description": "An id in this Project, or `project:id` for one in another Project"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "name",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "service",
+          "environment",
+          "target"
+        ],
+        "additionalProperties": false
+      }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "Target": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "description": "What the Target is, such as region, cluster, namespace or platform"
+        },
+        "description": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "targets": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Target"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  }
 }

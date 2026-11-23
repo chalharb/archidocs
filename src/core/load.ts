@@ -1,9 +1,9 @@
 import { basename, dirname, join, relative, sep } from "node:path";
-import { Bundle, SCHEMA_VERSION, type BundleElement, type BundleRelationship } from "../schema/bundle.ts";
+import { Bundle, SCHEMA_VERSION, type BundleDeployment, type BundleElement, type BundleRelationship, type BundleTarget } from "../schema/bundle.ts";
 import { ProjectFile, WorkspaceFile, childKindOf, collectionOf, kindOfCollection, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
 import type { FileSystem } from "./fs.ts";
-import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile } from "./model.ts";
-import { qualified, referenceResolver } from "./refs.ts";
+import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile, TargetDecl } from "./model.ts";
+import { indexByQualifiedId, qualified, qualify, referenceResolver } from "./refs.ts";
 import { rules } from "./rules.ts";
 import { checkSchema } from "./schema-check.ts";
 import { parseYaml } from "./yaml.ts";
@@ -45,7 +45,7 @@ export async function load(options: LoadOptions): Promise<LoadResult> {
       .filter((p) => (strict ? dir.startsWith(p + sep) : dir === p || dir.startsWith(p + sep)))
       .sort((a, b) => b.length - a.length)[0];
 
-  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [], relationships: [] };
+  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [], relationships: [], targets: [], deployments: [] };
   const projectByDir = new Map<string, Project>();
 
   // Read every file; project.yaml files first so model files can find their Project.
@@ -84,9 +84,14 @@ export async function load(options: LoadOptions): Promise<LoadResult> {
     }
     ws.projects.push(project);
   }
-  ws.elements.sort((a, b) => cmp(a.file.path, b.file.path) || a.line - b.line);
-  ws.relationships.sort((a, b) => cmp(a.file.path, b.file.path) || a.line - b.line);
+  const byPosition = (a: { file: SourceFile; line: number; column: number }, b: { file: SourceFile; line: number; column: number }) =>
+    cmp(a.file.path, b.file.path) || a.line - b.line || a.column - b.column;
+  ws.elements.sort(byPosition);
+  ws.targets.sort(byPosition);
+  ws.deployments.sort(byPosition);
+  ws.relationships.sort(byPosition);
   resolveParents(ws);
+  resolveDeployments(ws);
 
   const issues = rules
     .flatMap((rule) => rule.check(ws).map(({ file, line, column, message }) => ({ file, line, ...(column === undefined ? {} : { column }), rule: rule.id, severity: rule.severity, message })))
@@ -153,6 +158,40 @@ function readModelFile(file: SourceFile, ws: LoadedWorkspace) {
   const data = withoutWorkspaceKeys(file);
   file.findings.push(...checkSchema(shallow.file, data, file.parsed));
   readElements(file, ws, data, [], undefined);
+  readTargets(file, ws, data, [], undefined);
+  readDeployments(file, ws, data);
+}
+
+/** Registers every Deployment Target declared under `container`, recursing into nested `targets`. */
+function readTargets(file: SourceFile, ws: LoadedWorkspace, container: Record<string, unknown>, at: string[], parent: TargetDecl | undefined) {
+  for (const [id, value] of Object.entries(asRecord(container.targets))) {
+    const path = [...at, "targets", id];
+    file.findings.push(...checkSchema(shallow.target, value, file.parsed, path));
+    const target: TargetDecl = { id, project: file.project!, file, path, data: asRecord(value), parent, ...file.parsed.positionOf(path, { key: true }) };
+    ws.targets.push(target);
+    readTargets(file, ws, target.data, path, target);
+  }
+}
+
+function readDeployments(file: SourceFile, ws: LoadedWorkspace, data: Record<string, unknown>) {
+  if (!Array.isArray(data.deployments)) return;
+  data.deployments.forEach((value: unknown, i) => {
+    const path = ["deployments", i];
+    file.findings.push(...checkSchema(shallow.deployment, value, file.parsed, path));
+    ws.deployments.push({ project: file.project!, file, path, data: asRecord(value), ...file.parsed.positionOf(path) });
+  });
+}
+
+/** Resolves each Deployment's `service` and `target`, across Projects too. */
+function resolveDeployments(ws: LoadedWorkspace) {
+  const elements = indexByQualifiedId(ws.elements);
+  const targets = indexByQualifiedId(ws.targets);
+  for (const d of ws.deployments) {
+    const service = qualify(d.data.service, d.project);
+    const target = qualify(d.data.target, d.project);
+    d.service = service === undefined ? undefined : elements.get(service);
+    d.target = target === undefined ? undefined : targets.get(target);
+  }
 }
 
 /**
@@ -257,12 +296,12 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
       }
     });
 
+  const inBundle = (p: Project) => p.id !== undefined && !p.duplicateOf;
   // Declared Relationships whose consumer and provider resolve; an unresolved `via` is left out.
   const resolve = referenceResolver(ws);
-  const inBundle = (e: ElementDecl) => e.project.id !== undefined && !e.project.duplicateOf;
-  const relationships = ws.relationships.flatMap((r): BundleRelationship[] => {
+    const relationships = ws.relationships.flatMap((r): BundleRelationship[] => {
     const to = resolve(r.data.to, r.from.project);
-    if (!inBundle(r.from) || !to.ok) return [];
+    if (!inBundle(r.from.project) || !to.ok) return [];
     const via = resolve(r.data.via, r.from.project);
     const d = r.data;
     return [
@@ -282,6 +321,30 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
   });
   const bySource = (a: BundleRelationship, b: BundleRelationship) => cmp(a.source.file, b.source.file) || a.source.line - b.source.line;
 
+  const ownerOf = (decl: { data: Record<string, unknown>; project: Project }) => str(decl.data.owner) ?? decl.project.owner ?? "";
+
+  const targets: BundleTarget[] = ws.targets.filter((t) => inBundle(t.project)).map((t) => ({
+    id: `${t.project.id}:${t.id}`,
+    parent: t.parent ? `${t.project.id}:${t.parent.id}` : null,
+    name: str(t.data.name) ?? t.id,
+    kind: str(t.data.kind) ?? "",
+    description: str(t.data.description),
+    owner: ownerOf(t),
+    tags: Array.isArray(t.data.tags) ? t.data.tags.map(String) : [],
+    links: links(t.data.links),
+    source: source(t),
+  }));
+
+  const deployments: BundleDeployment[] = ws.deployments.filter((d) => inBundle(d.project)).map((d) => ({
+    service: qualify(d.data.service, d.project) ?? String(d.data.service ?? ""),
+    environment: str(d.data.environment) ?? "",
+    target: qualify(d.data.target, d.project) ?? String(d.data.target ?? ""),
+    url: str(d.data.url),
+    endpoints: Array.isArray(d.data.endpoints) ? d.data.endpoints.map(asRecord).map((e) => ({ name: String(e.name ?? ""), url: String(e.url ?? "") })) : [],
+    owner: d.service ? ownerOf(d.service) : (d.project.owner ?? ""),
+    source: source(d),
+  }));
+
   const bundle: z.input<typeof Bundle> = {
     schemaVersion: SCHEMA_VERSION,
     commit: options.commit ?? null,
@@ -297,8 +360,8 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
       .sort(byId),
     elements: elements.sort(byId),
     relationships: relationships.sort((a, b) => cmp(a.from, b.from) || cmp(a.to, b.to) || bySource(a, b)),
-    targets: [],
-    deployments: [],
+    targets: targets.sort(byId),
+    deployments: deployments.sort((a, b) => cmp(a.service, b.service) || cmp(a.environment, b.environment) || cmp(a.target, b.target) || cmp(a.source.file, b.source.file) || a.source.line - b.source.line),
   };
   // Parsing fixes key order to the schema's.
   return Bundle.parse(bundle);

@@ -108,6 +108,77 @@ owner: storefront-team
 };
 
 /**
+ * A platform Project declares region › cluster Deployment Targets; two
+ * Projects deploy Services onto them in two Environments, one referencing
+ * the Targets across Projects.
+ */
+export const deploymentWorkspace: Files = {
+  "workspace.yaml": `teams:
+  platform-team:
+    name: Platform
+  storefront-team:
+    name: Storefront
+  payments-team:
+    name: Payments
+environments:
+  staging:
+    name: Staging
+  prod:
+    name: Production
+`,
+  "platform/project.yaml": `id: platform
+name: Platform
+owner: platform-team
+`,
+  "platform/targets.yaml": `targets:
+  aws-eu:
+    name: AWS eu-west-1
+    kind: region
+    tags: [aws]
+    targets:
+      eks-staging:
+        name: EKS staging
+        kind: cluster
+      eks-prod:
+        name: EKS prod
+        kind: cluster
+        owner: storefront-team
+`,
+  "shop/project.yaml": `id: shop
+name: Shop
+owner: storefront-team
+`,
+  "shop/model.yaml": `services:
+  web:
+    name: Web
+targets:
+  shop-edge:
+    name: Shop edge
+    kind: cdn
+deployments:
+  - { service: web, environment: staging, target: platform:eks-staging, url: https://staging.shop.example.com }
+  - service: web
+    environment: prod
+    target: platform:eks-prod
+    url: https://shop.example.com
+    endpoints:
+      - { name: health, url: https://shop.example.com/healthz }
+  - { service: web, environment: prod, target: shop-edge }
+`,
+  "payments/project.yaml": `id: payments
+name: Payments
+owner: payments-team
+`,
+  "payments/api.yaml": `services:
+  payments-api:
+    name: Payments API
+    owner: storefront-team
+deployments:
+  - { service: payments-api, environment: prod, target: platform:eks-prod }
+`,
+};
+
+/**
  * Two Projects with Relationships declared at Person, Service and Component
  * level, across Projects, several on one pair, and one async via a broker.
  */

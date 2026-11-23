@@ -1,5 +1,24 @@
-import { ElementRef } from "../schema/workspace.ts";
+import { Ref } from "../schema/workspace.ts";
 import type { ElementDecl, LoadedWorkspace, Project } from "./model.ts";
+
+/** A well-formed reference written in `project`, as a qualified id; undefined when malformed or the Project has no id. */
+export function qualify(ref: unknown, project: Project): string | undefined {
+  if (!Ref.safeParse(ref).success) return undefined;
+  const text = ref as string;
+  if (text.includes(":")) return text;
+  return project.id === undefined ? undefined : `${project.id}:${text}`;
+}
+
+/** Indexes declarations by qualified id, keeping the first of each and skipping Projects without a usable id. */
+export function indexByQualifiedId<T extends { id: string; project: Project }>(decls: readonly T[]): Map<string, T> {
+  const index = new Map<string, T>();
+  for (const d of decls) {
+    if (d.project.id === undefined || d.project.duplicateOf) continue;
+    const key = `${d.project.id}:${d.id}`;
+    if (!index.has(key)) index.set(key, d);
+  }
+  return index;
+}
 
 /** What an Element reference (`id` or `project:id`) written in `from` resolves to. */
 export type Resolved =
@@ -20,7 +39,7 @@ export function referenceResolver(ws: LoadedWorkspace): (ref: unknown, from: Pro
   }
 
   return (ref, from) => {
-    if (!ElementRef.safeParse(ref).success) return { ok: false, reason: "malformed" };
+    if (!Ref.safeParse(ref).success) return { ok: false, reason: "malformed" };
     const [prefix, id] = (ref as string).includes(":") ? (ref as string).split(":") as [string, string] : [undefined, ref as string];
     const project = prefix === undefined ? from : projects.get(prefix);
     if (!project) return { ok: false, reason: "unknown-project", project: prefix!, id };

@@ -32,10 +32,11 @@ export const ProjectFile = z.strictObject({
   owner: Id,
 });
 
-/** An Element reference: a bare id in its own Project, or `project:id` across Projects. */
-export const ElementRef = z
+/** A reference to an Element or Deployment Target: a bare id in its own Project, or `project:id`. */
+export const Ref = z
   .string()
-  .regex(/^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$/, "must be an Element id, or `project:id` for one in another Project");
+  .regex(/^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$/, "must be an id, or `project:id` for one in another Project")
+  .describe("An id in this Project, or `project:id` for one in another Project");
 
 /**
  * A dependency of the Element it is declared under (the consumer) on the
@@ -43,12 +44,12 @@ export const ElementRef = z
  * Service (`via`) on a topic or queue (`channel`).
  */
 export const Relationship = z.strictObject({
-  to: ElementRef,
+  to: Ref,
   id: Id.optional(),
   description: z.string().optional(),
   technology: z.string().optional(),
   interaction: z.enum(["sync", "async"]).optional(),
-  via: ElementRef.optional(),
+  via: Ref.optional(),
   channel: z.string().optional(),
   tags: z.array(z.string()).optional(),
 });
@@ -88,6 +89,49 @@ export const System = z.strictObject({
   services: z.record(Id, Service).optional(),
 });
 
+const targetFields = {
+  name: z.string(),
+  kind: z.string().describe("What the Target is, such as region, cluster, namespace or platform"),
+  description: z.string().optional(),
+  owner: Id.optional(),
+  tags: z.array(z.string()).optional(),
+  links: z.array(Link).optional(),
+};
+
+/** A Deployment Target: where Services run. Targets nest to any depth and are not Elements. */
+export const Target: z.ZodType<TargetInput> = z
+  .strictObject({
+    ...targetFields,
+    get targets() {
+      return z.record(Id, Target).optional();
+    },
+  })
+  .meta({ id: "Target" });
+
+export interface TargetInput {
+  name: string;
+  kind: string;
+  description?: string;
+  owner?: string;
+  tags?: string[];
+  links?: z.infer<typeof Link>[];
+  targets?: Record<string, TargetInput>;
+}
+
+export const Endpoint = z.strictObject({
+  name: z.string(),
+  url: z.url(),
+});
+
+/** One Service running in one Environment on one Deployment Target. */
+export const Deployment = z.strictObject({
+  service: Ref,
+  environment: Id,
+  target: Ref,
+  url: z.url().optional(),
+  endpoints: z.array(Endpoint).optional(),
+});
+
 /**
  * Any other `*.yaml` in a Project: `people`, `systems > services > components`,
  * and top-level `services` and `components` (which attach with `in:`).
@@ -98,6 +142,8 @@ export const ModelFile = z.strictObject({
   systems: z.record(Id, System).optional(),
   services: z.record(Id, Service).optional(),
   components: z.record(Id, Component).optional(),
+  targets: z.record(Id, Target).optional(),
+  deployments: z.array(Deployment).optional(),
 });
 
 export type ElementKind = "person" | "system" | "service" | "component";
@@ -133,7 +179,16 @@ const children = z.record(Id, z.unknown()).optional();
  * its id and nothing is reported twice.
  */
 export const shallow = {
-  file: z.strictObject({ people: children, systems: children, services: children, components: children }),
+  file: z.strictObject({
+    people: children,
+    systems: children,
+    services: children,
+    components: children,
+    targets: children,
+    deployments: z.array(z.unknown()).optional(),
+  }),
+  target: z.strictObject({ ...targetFields, targets: children }),
+  deployment: Deployment,
   person: Person,
   system: System.extend({ services: children }),
   service: Service.extend({ components: children }),

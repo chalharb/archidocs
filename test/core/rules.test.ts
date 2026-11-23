@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { rules } from "../../src/core/index.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
-// The rules tickets 01, 03 and 04 introduce; later tickets add to the registry.
+// The rules tickets 01, 03, 04 and 05 introduce; later tickets add to the registry.
 const ticketRules = [
   "yaml-syntax",
   "unknown-field",
@@ -26,6 +26,9 @@ const ticketRules = [
   "ancestor-descendant-relationship",
   "via-on-sync",
   "via-not-broker",
+  "unknown-environment",
+  "unknown-target",
+  "duplicate-deployment",
 ];
 
 describe("rule registry", () => {
