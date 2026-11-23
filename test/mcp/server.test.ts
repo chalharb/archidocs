@@ -223,7 +223,7 @@ describe("list_environments", () => {
 describe("tool surface", () => {
   it("lists the read tools with input and output schemas", async () => {
     const { client } = await connect(validWorkspace);
-    const tools = (await client.listTools()).tools.filter((t) => t.name !== "check");
+    const tools = (await client.listTools()).tools.filter((t) => t.annotations?.readOnlyHint);
     expect(tools.map((t) => t.name).sort()).toEqual([
       "find_paths",
       "get_deployments",

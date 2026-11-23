@@ -34,6 +34,12 @@ const PROJECT_FILE = "project.yaml";
  * returned; callers must not publish it when `issues` holds an error.
  */
 export async function load(options: LoadOptions): Promise<LoadResult> {
+  const { bundle, issues } = await loadDetailed(options);
+  return { bundle, issues };
+}
+
+/** Load, also returning the declarations as read (with their paths in each file) and the repo root paths are relative to. For the YAML writer. */
+export async function loadDetailed(options: LoadOptions): Promise<LoadResult & { workspace: LoadedWorkspace; repoRoot: string }> {
   const { fs, root } = options;
   const repoRoot = options.repoRoot ?? (await findRepoRoot(fs, root));
   const toRepoPath = (abs: string) => relative(repoRoot, abs).split(sep).join("/");
@@ -98,7 +104,7 @@ export async function load(options: LoadOptions): Promise<LoadResult> {
     .flatMap((rule) => rule.check(ws, bundle).map(({ file, line, column, message }) => ({ file, line, ...(column === undefined ? {} : { column }), rule: rule.id, severity: rule.severity, message })))
     .sort((a, b) => cmp(a.file, b.file) || a.line - b.line || cmp(a.rule, b.rule) || (a.column ?? 0) - (b.column ?? 0) || cmp(a.message, b.message));
 
-  return { bundle, issues };
+  return { bundle, issues, workspace: ws, repoRoot };
 }
 
 /** Walks up from `start` to the folder holding `workspace.yaml`, also looking in each folder's `archidocs/`. */
@@ -300,7 +306,7 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
   const inBundle = (p: Project) => p.id !== undefined && !p.duplicateOf;
   // Declared Relationships whose consumer and provider resolve; an unresolved `via` is left out.
   const resolve = referenceResolver(ws);
-    const relationships = ws.relationships.flatMap((r): BundleRelationship[] => {
+  const relationships = ws.relationships.flatMap((r): BundleRelationship[] => {
     const to = resolve(r.data.to, r.from.project);
     if (!inBundle(r.from.project) || !to.ok) return [];
     const via = resolve(r.data.via, r.from.project);

@@ -1,6 +1,7 @@
 # 09: YAML writer and Element/Relationship writes
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-09 session)
 Blocked by: 04, 06
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -18,7 +19,7 @@ An agent edits the Model through MCP, and the author's YAML comments and formatt
 
 ## Acceptance criteria
 
-- [ ] Fixture file text before and after each write shows comments and key order kept.
-- [ ] A write that would introduce an error leaves the files unchanged and returns issues.
-- [ ] `dry_run` returns the diff and writes nothing.
-- [ ] The `ambiguous` and refused-removal cases return file:line references.
+- [x] Fixture file text before and after each write shows comments and key order kept.
+- [x] A write that would introduce an error leaves the files unchanged and returns issues.
+- [x] `dry_run` returns the diff and writes nothing.
+- [x] The `ambiguous` and refused-removal cases return file:line references.

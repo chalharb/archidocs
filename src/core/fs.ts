@@ -1,4 +1,5 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
 export interface DirEntry {
   name: string;
@@ -16,8 +17,17 @@ export interface FileSystem {
   exists(path: string): Promise<boolean>;
 }
 
-export function nodeFileSystem(): FileSystem {
+/** A FileSystem the YAML writer can also write through. `writeFile` creates missing folders. */
+export interface WritableFileSystem extends FileSystem {
+  writeFile(path: string, text: string): Promise<void>;
+}
+
+export function nodeFileSystem(): WritableFileSystem {
   return {
+    writeFile: async (path, text) => {
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, text);
+    },
     readFile: (path) => readFile(path, "utf8"),
     readDir: async (path) =>
       (await readdir(path, { withFileTypes: true })).map((d) => ({ name: d.name, isDirectory: d.isDirectory() })),
