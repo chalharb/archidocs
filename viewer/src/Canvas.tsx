@@ -14,7 +14,7 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { memo, useEffect, useMemo, useRef, type MouseEvent } from "react";
+import { memo, useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from "react";
 import type { CompareMark } from "../../src/core/compare.ts";
 import type { ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
 import type { BundleElement } from "../../src/schema/bundle.ts";
@@ -24,13 +24,24 @@ import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
 
 /** The sub-label under a box's name, as the Variant D prototype writes it: "System · 4 Services", "datastore · Postgres", "External System". */
-function describe(node: ViewNode, element: BundleElement | undefined, technology: string | null, holds: string | undefined): string {
-  if (node.kind === "system") return node.external ? "External System" : ["System", holds].filter(Boolean).join(" · ");
+function describe(node: ViewNode, element: BundleElement | undefined, technology: string | null, holds: string | undefined, deployedAt: string | undefined): string {
+  const ext = node.external ? "EXT · " : "";
+  if (node.kind === "deployment" && deployedAt) return deployedAt;
+  if (node.kind === "system") return node.external ? `${ext}External System` : ["System", holds].filter(Boolean).join(" · ");
   if (node.kind === "service" || node.kind === "deployment") {
     const type = element?.kind === "service" && element.type !== "app" ? element.type : KIND_LABEL[node.kind];
-    return [`${node.external ? "External " : ""}${type}`, technology].filter(Boolean).join(" · ");
+    return ext + [`${node.external ? "External " : ""}${type}`, technology].filter(Boolean).join(" · ");
   }
   return [KIND_LABEL[node.kind], technology].filter(Boolean).join(" · ");
+}
+
+/** A Deployment's sub-label, as the prototype writes it: its URL's host and path, else the Deployment Target it runs on. */
+function deployedAt(workspace: Workspace, viewId: string, node: ViewNode): string | undefined {
+  const target = node.id.slice(node.id.lastIndexOf("@") + 1);
+  const environment = viewId.startsWith("deployment/") ? viewId.slice("deployment/".length) : undefined;
+  const deployment = workspace.bundle.deployments.find((d) => d.service === node.element && d.target === target && (environment === undefined || d.environment === environment));
+  if (deployment?.url) return deployment.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return workspace.targets.get(target)?.name;
 }
 
 /** Each kind's glyph, and a Service's type when it isn't a plain app: ⛁ datastore, ≋ broker. */
@@ -152,7 +163,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         data: {
           node,
           type: element?.kind === "service" && element.type !== "app" ? element.type : undefined,
-          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id)),
+          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.id, node) : undefined),
           team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
@@ -256,6 +267,20 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
   const { node, type, sublabel, team, container, toggle, onToggle, mark, ring, picked, change } = data;
   const stop = (e: MouseEvent) => e.stopPropagation();
+  const toggleButton = toggle && (
+    <button
+      type="button"
+      className="arc-toggle nodrag nopan"
+      aria-label={`${toggle === "expand" ? "Expand" : "Collapse"} ${node.name}`}
+      onClick={(e) => {
+        stop(e);
+        onToggle(node.id, toggle === "expand");
+      }}
+      onDoubleClick={stop}
+    >
+      {toggle === "expand" ? "+" : "−"}
+    </button>
+  );
   const classes = [
     "arc-box",
     `arc-${node.kind}`,
@@ -273,6 +298,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
   return (
     <div
       className={classes.filter(Boolean).join(" ")}
+      style={team ? ({ "--team": team.color } as CSSProperties) : undefined}
       data-node={node.id}
       data-parent={node.parent ?? ""}
       data-hit={mark ? String(mark.hit) : undefined}
@@ -284,17 +310,21 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     >
       <Handle type="target" position={Position.Left} isConnectable={false} className="arc-handle" />
       <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
-      {team && <span className="arc-stripe" data-testid="stripe" style={{ background: team.color }} />}
-      <div className="arc-text">
-        <div className="arc-box-head">
-          <span className="arc-kind-glyph" aria-hidden="true">
-            {GLYPH[type ?? node.kind]}
+      {/* As the Variant D prototype draws it: [+] glyph Name TEAM on one row, the sub-label under it. */}
+      <div className="arc-box-head">
+        {toggleButton}
+        <span className="arc-kind-glyph" aria-hidden="true">
+          {GLYPH[type ?? node.kind]}
+        </span>
+        <span className="arc-name">{node.name}</span>
+        {team && (
+          <span className="arc-team" data-testid="team" title={`Owner: ${team.code}`}>
+            {team.code}
           </span>
-          <div className="arc-name">{node.name}</div>
-        </div>
-        <div className="arc-sublabel" data-testid="sublabel">
-          {sublabel}
-        </div>
+        )}
+      </div>
+      <div className={container ? "arc-sublabel arc-csub" : "arc-sublabel"} data-testid="sublabel">
+        {sublabel}
       </div>
       {mark?.distance !== undefined && !(container && !node.collapsed) && (
         <span className={`arc-badge arc-badge-${mark.side ?? "distance"}`}>
@@ -312,25 +342,6 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
         </span>
       )}
       {change === "changed" && <span className="arc-changed-mark" data-testid="changed" aria-label="changed" />}
-      {team && (
-        <span className="arc-team" data-testid="team">
-          {team.code}
-        </span>
-      )}
-      {toggle && (
-        <button
-          type="button"
-          className="arc-toggle nodrag nopan"
-          aria-label={`${toggle === "expand" ? "Expand" : "Collapse"} ${node.name}`}
-          onClick={(e) => {
-            stop(e);
-            onToggle(node.id, toggle === "expand");
-          }}
-          onDoubleClick={stop}
-        >
-          {toggle === "expand" ? "+" : "−"}
-        </button>
-      )}
     </div>
   );
 });

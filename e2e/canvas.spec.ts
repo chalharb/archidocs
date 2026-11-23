@@ -141,7 +141,8 @@ test.describe("Teams and zoom", () => {
     const team = (id: string) => node(page, id).getByTestId("team");
     await expect(team("shop:cart")).toHaveText("STO");
     await expect(team("shop:fraud-check")).toHaveText("PAY");
-    const stripe = (id: string) => node(page, id).getByTestId("stripe").evaluate((el) => getComputedStyle(el).backgroundColor);
+    // The Team colour is the box's own left edge, as in the Variant D prototype.
+    const stripe = (id: string) => node(page, id).evaluate((el) => getComputedStyle(el).borderLeftColor);
     expect(await stripe("shop:cart")).toBe(await stripe("shop:cart-db"));
     expect(await stripe("shop:cart")).not.toBe(await stripe("shop:fraud-check"));
   });

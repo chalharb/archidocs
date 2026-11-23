@@ -16,6 +16,8 @@
   --downbg: #e6efff;
   --origin: #c2261d;
   --originbg: #fde8e6;
+  --path: #6d3fc0;
+  --pathbg: #f1eafd;
   --container: rgba(238, 241, 244, 0.55);
   --radius: 6px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -523,16 +525,17 @@ select.arc-tool {
   background: var(--canvas);
 }
 
+/* Nodes, ported from the Variant D prototype's `.el` (ticket 14):
+   [+] glyph Name TEAM on one row, the sub-label under it, the Team colour as the box's own left border. */
 .arc-box {
   position: relative;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px 4px 14px;
+  padding: 5px 8px 4px;
   background: var(--panel);
   border: 1.5px solid var(--nodeline);
+  border-left: 6px solid var(--team, var(--nodeline));
   border-radius: var(--radius);
   /* Visible, so impact badges can sit on the top edge; the name clips itself. */
   overflow: visible;
@@ -540,83 +543,20 @@ select.arc-tool {
   transition: opacity 0.2s;
 }
 
-.arc-box.arc-person {
-  border-radius: 28px;
-  padding-left: 18px;
-}
-
-/* A collapsed System reads as a group: tinted, with a heavier frame. */
-.arc-box.arc-system:not(.arc-container) {
-  background: var(--tint);
-  border-width: 2px;
-}
-
-.arc-box.arc-external {
-  border-style: dashed;
-}
-
-.arc-box.arc-container {
-  align-items: flex-start;
-  background: var(--container);
-  border-style: dashed;
-  overflow: visible;
-}
-
-/* A Deployment Target is a solid, quiet frame, so the dashed System boxes inside it read as grouping only. */
-.arc-box.arc-target.arc-container {
-  border-style: solid;
-  border-color: var(--line);
-  background: transparent;
-}
-
-.arc-box.arc-selected {
-  box-shadow: 0 0 0 3px var(--accent);
-}
-
-/* The Team colour as a 6px left edge, always paired with the Team code. */
-.arc-stripe {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-}
-
-.arc-stripe {
-  border-radius: 4px 0 0 4px;
-}
-
-.arc-person .arc-stripe {
-  border-radius: 26px 0 0 26px;
-}
-
-.arc-t-datastore .arc-stripe {
-  border-radius: 4px 0 0 12px;
-}
-
-.arc-container .arc-stripe {
-  bottom: auto;
-  height: 36px;
-  border-radius: 4px 0 0 0;
-}
-
-.arc-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.arc-name {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .arc-box-head {
   display: flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
   min-width: 0;
+}
+
+.arc-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .arc-kind-glyph {
@@ -627,22 +567,13 @@ select.arc-tool {
   color: var(--muted);
 }
 
-/* A Service's type changes its shape: a datastore's rounded base, a broker's striped band. */
-.arc-box.arc-t-datastore {
-  border-radius: 6px 6px 14px 14px;
-}
-
-.arc-box.arc-t-broker {
-  background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--tint) 10px 12px);
-}
-
-.arc-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.arc-team {
+  flex: none;
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font: 600 9.5px ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--muted);
 }
 
 .arc-sublabel {
@@ -652,22 +583,6 @@ select.arc-tool {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.arc-container .arc-text {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.arc-team {
-  flex: none;
-  align-self: flex-start;
-  padding: 0 3px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  font: 600 9.5px ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--muted);
 }
 
 .arc-toggle {
@@ -687,6 +602,76 @@ select.arc-tool {
 .arc-toggle:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.arc-box.arc-person {
+  border-radius: 28px;
+  padding-left: 14px;
+}
+
+/* A collapsed System reads as a group: tinted, with a heavier frame. */
+.arc-box.arc-system:not(.arc-container) {
+  background: var(--tint);
+  border-width: 2px;
+  border-left-width: 6px;
+}
+
+/* A Service's type changes its shape: a datastore's rounded base, a broker's striped band. */
+.arc-box.arc-t-datastore {
+  border-radius: 6px 6px 14px 14px;
+}
+
+.arc-box.arc-t-broker {
+  background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--tint) 10px 12px);
+}
+
+.arc-box.arc-external {
+  border-style: dashed;
+  border-left-style: solid;
+}
+
+/* An open box: a dashed frame around what it holds, its sub-label on the right of the head row. */
+.arc-box.arc-container {
+  background: var(--container);
+  border-style: dashed;
+  border-width: 1.5px;
+  border-left-width: 6px;
+  border-left-style: solid;
+}
+
+.arc-container .arc-box-head {
+  font-size: 12px;
+}
+
+.arc-csub {
+  position: absolute;
+  top: 6px;
+  right: 52px;
+  margin: 0;
+  font-size: 10px;
+}
+
+/* A Deployment Target is a solid, quiet frame, so the dashed System boxes inside it read as grouping only. */
+.arc-box.arc-target.arc-container {
+  border: 1.5px solid var(--line);
+  background: transparent;
+}
+
+.arc-box.arc-deployment {
+  border-radius: 4px;
+}
+
+.arc-box.arc-selected {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+.arc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* The canvas hint strip, the overview map and the zoom controls. */
@@ -1090,17 +1075,25 @@ select.arc-tool {
 }
 
 .arc-box.arc-dim {
-  opacity: 0.35;
+  opacity: 0.28;
 }
 
+.arc-box.arc-container.arc-dim {
+  opacity: 0.55;
+}
+
+/* A hit node on a path Lens: purple, as the prototype marks paths. Impact hits take their side's colour instead. */
 .arc-box.arc-hit {
-  border-color: #e0a030;
-  box-shadow: 0 0 0 2px rgba(224, 160, 48, 0.35);
+  border-color: var(--path);
+  background: var(--pathbg);
 }
 
+/* A Team Lens rings what the Team owns in the Team's own colour. */
 .arc-box.arc-ringed {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(79, 91, 213, 0.35);
+  border-color: var(--nodeline);
+  border-left-color: var(--team, var(--nodeline));
+  background: var(--panel);
+  box-shadow: 0 0 0 3px var(--team, var(--accent));
 }
 
 .arc-box.arc-picked {
@@ -1154,6 +1147,8 @@ select.arc-tool {
   background: var(--downbg);
   border-style: double;
   border-width: 3px;
+  border-left-width: 6px;
+  border-left-style: solid;
 }
 
 .arc-box.arc-side-origin {

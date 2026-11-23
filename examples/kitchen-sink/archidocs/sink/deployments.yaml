@@ -1,0 +1,29 @@
+targets:
+  cloud:
+    name: Cloud region
+    kind: region
+    targets:
+      cluster:
+        name: Kubernetes cluster
+        kind: cluster
+deployments:
+  - service: web
+    environment: prod
+    target: cluster
+    url: https://shop.sink.example
+  - service: api
+    environment: prod
+    target: cluster
+    url: https://api.sink.example
+  - service: orders-db
+    environment: prod
+    target: cloud
+  - service: events
+    environment: prod
+    target: cloud
+  - service: mailer
+    environment: prod
+    target: cluster
+  - service: search
+    environment: prod
+    target: cloud

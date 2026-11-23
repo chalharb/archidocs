@@ -1,0 +1,85 @@
+people:
+  customer:
+    name: Customer
+    description: A Person.
+    relationships:
+      - to: web
+        description: Uses
+        technology: HTTPS
+
+systems:
+  shop:
+    name: Shop
+    description: An internal System with every Service type.
+    services:
+      web:
+        name: Web
+        description: An app Service.
+        technology: React
+        owner: edge
+        relationships:
+          - to: api
+            description: Calls
+            technology: JSON/HTTPS
+      api:
+        name: API
+        description: An app Service with Components.
+        technology: Node.js
+        components:
+          orders:
+            name: Orders
+            technology: TypeScript module
+            relationships:
+              - to: orders-db
+                description: Stores orders in
+                technology: SQL
+              - to: payment-gateway
+                description: Charges cards through
+                technology: HTTPS
+          catalogue:
+            name: Catalogue
+            technology: TypeScript module
+            relationships:
+              - to: search
+                description: Searches with
+                technology: HTTPS
+      orders-db:
+        name: Orders DB
+        description: A datastore Service.
+        type: datastore
+        technology: PostgreSQL
+        owner: data
+      events:
+        name: Events
+        description: A broker Service.
+        type: broker
+        technology: Kafka
+        owner: data
+      mailer:
+        name: Mailer
+        description: Subscribes to order events.
+        technology: Go
+        relationships:
+          - to: api
+            description: Emails a receipt for each order
+            interaction: async
+            via: events
+            channel: orders.placed
+  payments-provider:
+    name: Payments Provider
+    description: An External System.
+    external: true
+    owner: edge
+
+services:
+  search:
+    name: Search
+    description: A Service outside any System.
+    technology: OpenSearch
+    owner: data
+  payment-gateway:
+    name: Payment Gateway
+    description: An External Service outside any System.
+    external: true
+    technology: Stripe API
+    owner: edge

@@ -1,0 +1,11 @@
+# Kitchen sink: one of every Element type and state the viewer draws.
+teams:
+  core:
+    name: Core
+  edge:
+    name: Edge
+  data:
+    name: Data
+environments:
+  prod:
+    name: Production
