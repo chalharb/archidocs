@@ -65,12 +65,20 @@ test.describe("selection", () => {
 
     const edges = page.locator("path[data-edge-from]");
     await expect(async () => {
-      const opacities = await edges.evaluateAll((paths) =>
-        paths.map((p) => ({ touches: [p.getAttribute("data-edge-from"), p.getAttribute("data-edge-to")].includes("shop:cart"), opacity: Number(getComputedStyle(p).opacity) })),
+      // A faded edge steps back to a fainter stroke; it stays fully drawn, so it never vanishes.
+      const styles = await edges.evaluateAll((paths) =>
+        paths.map((p) => {
+          const style = getComputedStyle(p);
+          return { touches: [p.getAttribute("data-edge-from"), p.getAttribute("data-edge-to")].includes("shop:cart"), stroke: style.stroke, opacity: Number(style.opacity) };
+        }),
       );
-      expect(opacities.filter((e) => e.touches).length).toBeGreaterThan(0);
-      expect(opacities.filter((e) => !e.touches).length).toBeGreaterThan(0);
-      for (const e of opacities) expect(e.opacity < 0.5).toBe(!e.touches);
+      const touching = styles.filter((e) => e.touches);
+      const others = styles.filter((e) => !e.touches);
+      expect(touching.length).toBeGreaterThan(0);
+      expect(others.length).toBeGreaterThan(0);
+      for (const e of styles) expect(e.opacity).toBe(1);
+      for (const e of others) expect(e.stroke).not.toBe(touching[0]!.stroke);
+      expect(new Set(touching.map((e) => e.stroke)).size).toBe(1);
     }).toPass();
 
     await page.locator(".react-flow__pane").click({ position: { x: 5, y: 5 } });

@@ -66,6 +66,17 @@ test.describe("the URL holds the screen", () => {
     expect(hash(page)).toBe("#/view/c2");
   });
 
+  test("the logo goes home to the C2 Landscape, and Back returns", async ({ page }) => {
+    await open(page, "#/view/c2?open=shop:checkout&sel=shop:cart&impact=shop:cart&way=both");
+    const before = hash(page);
+    await page.getByRole("link", { name: "Archidocs home" }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2");
+    await page.goBack();
+    await settled(page);
+    expect(hash(page)).toBe(before);
+  });
+
   test("Recent lists the last places, newest first, and reopens them", async ({ page }) => {
     await open(page, "#/view/c1");
     await open(page, "#/view/c2/shop:checkout");

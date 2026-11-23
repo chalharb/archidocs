@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { GLYPH_ICON, Icon, type IconName } from "./Icon.tsx";
 import type { TreeRow, Workspace } from "./workspace.ts";
 
 type Panel = "Model" | "Views" | "Teams";
 
-const GLYPHS: Record<Panel, string> = { Model: "☰", Teams: "⚑", Views: "▦" };
+const ICONS: Record<Panel, IconName> = { Model: "model", Teams: "teams", Views: "views" };
 type Grouping = "kind" | "team";
 
 export interface RailProps {
   workspace: Workspace;
   view: string;
   selected: string | null;
+  /** Where the logo leads: the C2 Landscape, keeping the Revision and any Compare being looked at. */
+  home: string;
   onPickElement: (id: string) => void;
   onPickView: (id: string) => void;
   onPickTeam: (id: string) => void;
@@ -21,7 +24,7 @@ export interface RailProps {
 }
 
 /** The rail: Find, then Model, Views and Teams open as a flyout over the canvas, and close on a pick or Escape. */
-export function Rail({ workspace, view, selected, onPickElement, onPickView, onPickTeam, finding, onFind, onOpenPanel }: RailProps) {
+export function Rail({ workspace, view, selected, home, onPickElement, onPickView, onPickTeam, finding, onFind, onOpenPanel }: RailProps) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [grouping, setGrouping] = useState<Record<"Model" | "Views", Grouping>>({ Model: "kind", Views: "kind" });
 
@@ -50,11 +53,19 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
   return (
     <>
       <nav className="arc-rail" aria-label="Rail">
-        <div className="arc-logo" aria-hidden="true" title="Archidocs">
-          A
-        </div>
+        {/* The Archidocs mark, "Doorway tile": the tile takes the rail's ink, so it follows light and dark mode. */}
+        {/* It goes home: the C2 Landscape with nothing selected, opened or filtered, as an ordinary link. */}
+        <a className="arc-logo-link" href={home} aria-label="Archidocs home" title="Archidocs home">
+          <svg className="arc-logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <path className="arc-logo-tile" d="M17 4H47A13 13 0 0 1 60 17V47A13 13 0 0 1 47 60H42V38A10 10 0 0 0 22 38V60H17A13 13 0 0 1 4 47V17A13 13 0 0 1 17 4Z" />
+            <path className="arc-logo-key" d="M26.5 12.5H37.5L35.5 21H28.5Z" />
+          </svg>
+        </a>
         <button type="button" className="arc-rail-button" title="Find ( / )" aria-label="Find" aria-keyshortcuts="/" aria-pressed={finding} onClick={() => (setPanel(null), onFind())}>
-          <span aria-hidden="true">⌕</span>
+          <Icon name="find" />
+          <span className="arc-rail-label" aria-hidden="true">
+            Find
+          </span>
         </button>
         {(["Model", "Teams", "Views"] as const).map((name) => (
           <button
@@ -69,7 +80,10 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
               setPanel(panel === name ? null : name);
             }}
           >
-            <span aria-hidden="true">{GLYPHS[name]}</span>
+            <Icon name={ICONS[name]} />
+            <span className="arc-rail-label" aria-hidden="true">
+              {name}
+            </span>
           </button>
         ))}
       </nav>
@@ -96,7 +110,7 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
                           onPickTeam(team.id);
                         }}
                       >
-                        <span className="arc-row-team" style={{ borderColor: style?.color }}>
+                        <span className="arc-row-team" style={{ "--team": style?.color } as CSSProperties}>
                           {style?.code}
                         </span>{" "}
                         {team.name}
@@ -147,7 +161,7 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
 function Close({ onClose }: { onClose: () => void }) {
   return (
     <button type="button" className="arc-flyout-close" aria-label="Close" onClick={onClose}>
-      ✕
+      <Icon name="close" />
     </button>
   );
 }
@@ -177,15 +191,15 @@ function Tree({ label, rows, isCurrent, onPick }: { label: string; rows: TreeRow
           <button
             type="button"
             className={pickable ? "arc-row-label" : "arc-row-label arc-group"}
-            data-glyph={row.view === undefined ? row.glyph : undefined}
             aria-current={isCurrent(row) ? "page" : undefined}
             onClick={() => (pickable ? onPick(row) : toggle(row.key))}
           >
+            {row.view === undefined && row.glyph && GLYPH_ICON[row.glyph] && <Icon name={GLYPH_ICON[row.glyph]!} className="arc-row-icon" />}
             {row.label}
           </button>
           {row.children.length > 0 && <span className="arc-count">{row.children.length}</span>}
           {row.team && (
-            <span className="arc-row-team" style={{ borderColor: row.team.color }}>
+            <span className="arc-row-team" style={{ "--team": row.team.color } as CSSProperties}>
               {row.team.code}
             </span>
           )}

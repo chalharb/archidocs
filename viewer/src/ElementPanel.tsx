@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { listAdrs } from "../../src/core/adrs.ts";
 import { getDeployments } from "../../src/core/deployments.ts";
 import { getImpact, type ImpactRing } from "../../src/core/impact.ts";
@@ -9,6 +9,7 @@ import { RevisionSummary } from "./History.tsx";
 import type { Lens, Place } from "./place.ts";
 import { pointLabel, type Timeline } from "./revisions.ts";
 import type { Workspace } from "./workspace.ts";
+import { Icon } from "./Icon.tsx";
 
 type Tab = "Overview" | "URLs" | "ADRs" | "Links" | "History";
 const TABS: readonly Tab[] = ["Overview", "URLs", "ADRs", "Links", "History"];
@@ -51,17 +52,18 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
     <aside className="arc-panel" aria-label="Element">
       <header className="arc-panel-head">
         <div className="arc-panel-title">
-          <div className="arc-panel-kind">
-            {kindLabel} · <code className="arc-panel-id">{element.id}</code>
-          </div>
           <h2>{element.name}</h2>
-          <button type="button" className="arc-owner" aria-label={`Team lens: ${workspace.name(element.owner)}`} style={{ borderColor: team?.color }} onClick={() => onLens({ team: element.owner })}>
-            {team?.code} · {workspace.name(element.owner)}
+          <p className="arc-panel-kind">
+            {kindLabel} · <code className="arc-panel-id">{element.id}</code>
+          </p>
+          <button type="button" className="arc-owner" aria-label={`Team lens: ${workspace.name(element.owner)}`} style={{ "--team": team?.color } as CSSProperties} onClick={() => onLens({ team: element.owner })}>
+            <span className="arc-owner-code">{team?.code}</span>
+            <span className="arc-owner-name">{workspace.name(element.owner)}</span>
           </button>
         </div>
         {onClose && (
           <button type="button" className="arc-flyout-close" aria-label="Close panel" onClick={onClose}>
-            ✕
+            <Icon name="close" />
           </button>
         )}
       </header>
@@ -85,14 +87,17 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
             )}
             <section className="arc-actions" aria-label="Ask">
               <button type="button" className="arc-action" aria-label="Both ways impact" onClick={() => onLens({ impact: id, direction: "both" })}>
-                ▲▼ Upstream &amp; Downstream
+                <Icon name="impact" />
+                Upstream &amp; downstream
               </button>
-              <button type="button" className="arc-action" onClick={() => onConnect(id)}>
-                ⇄ Connect to… (picks everything between)
+              <button type="button" className="arc-action" title="Lights the paths to the node you pick next, and picks every node on them" onClick={() => onConnect(id)}>
+                <Icon name="connect" />
+                Connect to…
               </button>
               {workspace.ownView(id) !== undefined && (
                 <button type="button" className="arc-action" onClick={() => onOpenView(id)}>
-                  ⤢ Open its View
+                  <Icon name="open" />
+                  Open its View
                 </button>
               )}
             </section>

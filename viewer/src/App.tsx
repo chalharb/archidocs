@@ -249,6 +249,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       workspace={workspace}
       view={place.view}
       selected={place.selected}
+      home={formatPlace({ ...HOME, at: place.at, vs: place.vs })}
       onPickElement={focus}
       onPickView={pickView}
       onPickTeam={(team) => setLens({ team })}
@@ -257,6 +258,10 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       onOpenPanel={() => setFinding(false)}
     />
   );
+
+  // The panel shows the selected node's Element: a Deployment's is its Service.
+  const selectedElement = place.selected === null ? undefined : (view?.nodes.find((n) => n.id === place.selected)?.element ?? place.selected);
+  const panelFor = useOpensAfterDoubleClick(selectedElement !== undefined && workspace.byId.has(selectedElement) ? selectedElement : undefined);
 
   if (dynamic) {
     return (
@@ -274,9 +279,6 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
     );
   }
 
-  // The panel shows the selected node's Element: a Deployment's is its Service.
-  const selectedElement = place.selected === null ? undefined : (view?.nodes.find((n) => n.id === place.selected)?.element ?? place.selected);
-  const panelFor = selectedElement !== undefined && workspace.byId.has(selectedElement) ? selectedElement : undefined;
 
   if (!view) {
     return (
@@ -407,4 +409,29 @@ function Message({ title, children }: { title: string; children?: React.ReactNod
       {children && <p>{children}</p>}
     </div>
   );
+}
+
+/** How long a closed Element panel waits before it opens, so it never lands under the second click of a double-click. */
+const PANEL_OPEN_DELAY = 250;
+
+/**
+ * The Element to show in the panel. A closed panel opens a moment after a selection, because the drawing
+ * now runs under where it opens: shown at once, it would catch a double-click's second click meant for the box.
+ * An open panel follows a new selection immediately, and closes immediately; a selection in the URL shows at once.
+ */
+function useOpensAfterDoubleClick(id: string | undefined): string | undefined {
+  // `ready` is the Element whose panel may show; `previous` is the last selection, to tell a first selection from a change.
+  const [ready, setReady] = useState(id);
+  const [previous, setPrevious] = useState(id);
+  if (id !== previous) {
+    setPrevious(id);
+    // Closing, or moving from one Element to another while the panel is open, takes effect at once.
+    if (id === undefined || previous !== undefined) setReady(id);
+  }
+  useEffect(() => {
+    if (id === undefined || ready === id) return;
+    const timer = window.setTimeout(() => setReady(id), PANEL_OPEN_DELAY);
+    return () => window.clearTimeout(timer);
+  }, [id, ready]);
+  return ready === id ? id : undefined;
 }

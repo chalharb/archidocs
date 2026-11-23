@@ -3,6 +3,8 @@ import type { ExportFormat } from "./export.ts";
 import { directions, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { readRecent, type RecentPlace } from "./recent.ts";
 import type { Workspace } from "./workspace.ts";
+import { Icon } from "./Icon.tsx";
+import { useMediaQuery } from "./motion.ts";
 import { RevisionsMenu } from "./History.tsx";
 import { pointLabel, type Timeline } from "./revisions.ts";
 
@@ -27,15 +29,16 @@ export interface LocationBarProps {
 /** Where am I: breadcrumbs up the scope ladder, chips for open boxes, the Lens and picks, then direction, Recent and Copy link. */
 export function LocationBar({ workspace, place, direction, compare, timeline, onCollapse, onDirection, onLens, onPicks, onTime, onExport, onSaveAsView }: LocationBarProps) {
   const crumbs = workspace.crumbs(place.view);
+  const compact = useMediaQuery(COMPACT_TOOLS);
   const name = (id: string) => workspace.byId.get(id)?.name ?? id;
   return (
     <header className="arc-location">
       <span className="arc-history-buttons">
         <button type="button" className="arc-tool arc-step" aria-label="Back" title="Back" onClick={() => window.history.back()}>
-          ‹
+          <Icon name="back" />
         </button>
         <button type="button" className="arc-tool arc-step" aria-label="Forward" title="Forward" onClick={() => window.history.forward()}>
-          ›
+          <Icon name="forward" />
         </button>
       </span>
       <nav aria-label="Breadcrumbs">
@@ -51,6 +54,27 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
         </ol>
       </nav>
       <DeploymentLinks workspace={workspace} place={place} />
+      <div className="arc-tools">
+        <RevisionsMenu timeline={timeline} onAt={(r) => onTime({ at: timeline.isLatest(r) ? null : pointLabel(r) })} onVs={(r) => onTime({ vs: pointLabel(r) })} />
+        <RecentMenu />
+        <label className="arc-direction-label">
+          <span className="arc-visually-hidden">Layout direction</span>
+          <select className="arc-tool arc-direction" aria-label="Direction" title={`Layout direction: ${DIRECTION_LABEL[direction]}`} value={direction} onChange={(e) => onDirection(e.target.value as Direction)}>
+            {directions.map((d) => (
+              <option key={d} value={d}>
+                {compact ? DIRECTION_SHORT[d] : DIRECTION_LABEL[d]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <CopyLink />
+        <ExportMenu picks={place.picks.length} onExport={onExport} />
+        <button type="button" className="arc-tool arc-primary" onClick={onSaveAsView}>
+          Save as View
+        </button>
+      </div>
+      {(place.open.length > 0 || compare || place.lens || place.picks.length > 0) && (
+        <div className="arc-state">
       {place.open.length > 0 && (
         <section className="arc-chips" role="region" aria-label="Open boxes">
           {place.open.map((id) => (
@@ -83,25 +107,18 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
           </button>
         </section>
       )}
-      <div className="arc-tools">
-        <RevisionsMenu timeline={timeline} onAt={(r) => onTime({ at: timeline.isLatest(r) ? null : pointLabel(r) })} onVs={(r) => onTime({ vs: pointLabel(r) })} />
-        <RecentMenu />
-        <select className="arc-tool arc-direction" aria-label="Direction" title="Direction" value={direction} onChange={(e) => onDirection(e.target.value as Direction)}>
-          {directions.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <CopyLink />
-        <ExportMenu picks={place.picks.length} onExport={onExport} />
-        <button type="button" className="arc-tool arc-primary" onClick={onSaveAsView}>
-          Save as View
-        </button>
-      </div>
+        </div>
+      )}
     </header>
   );
 }
+
+/** Each layout direction in words, so the control reads without a legend. */
+const DIRECTION_LABEL: Record<Direction, string> = { LR: "Left → right", RL: "Right → left", TB: "Top → bottom", BT: "Bottom → top" };
+/** The same, as one arrow, where the plate is short of room. */
+const DIRECTION_SHORT: Record<Direction, string> = { LR: "→", RL: "←", TB: "↓", BT: "↑" };
+/** Below this width the plate's secondary tools drop their words and keep their pictograms. */
+export const COMPACT_TOOLS = "(max-width: 1279px)";
 
 /** Export: the whole View, or the picks once there are any, as SVG or PNG. */
 function ExportMenu({ picks, onExport }: { picks: number; onExport: LocationBarProps["onExport"] }) {
@@ -119,8 +136,9 @@ function ExportMenu({ picks, onExport }: { picks: number; onExport: LocationBarP
   ];
   return (
     <div className="arc-menu-root" ref={root}>
-      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
-        Export
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} title="Export" onClick={() => setOpen(!open)}>
+        <Icon name="export" />
+        <span className="arc-tool-label">Export</span>
       </button>
       {open && (
         <div className="arc-menu" role="menu" aria-label="Export">
@@ -172,11 +190,11 @@ function DeploymentLinks({ workspace, place }: { workspace: Workspace; place: Pl
       </span>
       {links.map((l) =>
         l.view === place.view ? (
-          <a key={l.view} href={formatPlace(viewPlace(l.view))} aria-current="page" className="arc-deployment-link arc-current">
+          <a key={l.view} href={formatPlace(viewPlace(l.view))} aria-current="page" title={`Deployment View: ${l.label}`} className="arc-deployment-link arc-current">
             {l.label}
           </a>
         ) : (
-          <a key={l.view} href={formatPlace(viewPlace(l.view, null, place.lens))} className="arc-deployment-link">
+          <a key={l.view} href={formatPlace(viewPlace(l.view, null, place.lens))} title={`Deployment View: ${l.label}`} className="arc-deployment-link">
             {l.label}
           </a>
         ),
@@ -235,8 +253,9 @@ export function RecentMenu() {
   }, [items]);
   return (
     <div className="arc-menu-root" ref={root}>
-      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={items !== null} onClick={() => setItems(items ? null : readRecent())}>
-        Recent
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={items !== null} title="Recent" onClick={() => setItems(items ? null : readRecent())}>
+        <Icon name="recent" />
+        <span className="arc-tool-label">Recent</span>
       </button>
       {items && (
         <div className="arc-menu" role="menu" aria-label="Recent">
@@ -264,11 +283,13 @@ export function CopyLink() {
       type="button"
       className="arc-tool"
       aria-label="Copy link"
+      title="Copy link"
       onClick={() => {
         void navigator.clipboard.writeText(window.location.href).then(() => setCopied(true));
       }}
     >
-      {copied ? "✓ Copied" : "⧉ Link"}
+      <Icon name={copied ? "check" : "copy"} />
+      <span className="arc-tool-label">{copied ? "Copied" : "Copy link"}</span>
     </button>
   );
 }

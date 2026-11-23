@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { ResolvedDynamicView, ResolvedStep } from "../../src/core/dynamic-views.ts";
 import { layoutSequence, type MessageStyle } from "../../src/render/sequence.ts";
 import { go } from "./history.ts";
@@ -8,6 +8,7 @@ import { SequenceChart } from "./SequenceChart.tsx";
 import { StepGraph } from "./StepGraph.tsx";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
+import { Icon } from "./Icon.tsx";
 
 /** Playback advances one Step this often. */
 export const PLAY_MS = 1400;
@@ -95,16 +96,16 @@ export function DynamicScreen({ workspace, view, place, keys, onOpenStepView, on
         <div className="arc-transport" role="group" aria-label="Transport">
           <div className="arc-transport-buttons">
             <button type="button" aria-label="First Step" onClick={() => selectAt(0)}>
-              ⏮
+              <Icon name="first" />
             </button>
             <button type="button" aria-label="Previous Step" onClick={previous}>
-              ◀
+              <Icon name="previous" />
             </button>
             <button type="button" className="arc-play" aria-label={playing ? "Pause" : "Play"} onClick={play}>
-              {playing ? "❚❚" : "▶"}
+              <Icon name={playing ? "pause" : "play"} />
             </button>
             <button type="button" aria-label="Next Step" onClick={next}>
-              ▶▶
+              <Icon name="next" />
             </button>
           </div>
           <p className="arc-transport-count" aria-live="polite">
@@ -198,8 +199,8 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
   const others = workspace.otherDynamicViews(step, view.id);
   return (
     <div className="arc-panel-body">
-      <span className="arc-panel-kind">{KIND_NAME[step.kind]}</span>
       <h2>Step {step.n}</h2>
+      <p className="arc-panel-kind">{KIND_NAME[step.kind]}</p>
       <p className="arc-description">{step.description}</p>
       <p className="arc-outline-ends">
         {workspace.name(step.from)} <Glyph style={STYLE_OF(step)} /> {workspace.name(step.to)}
@@ -238,7 +239,7 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
           <>
             <dt>Owner</dt>
             <dd>
-              <span className="arc-owner-code" style={{ borderColor: team?.color }}>
+              <span className="arc-owner-code arc-code-tile" style={{ "--team": team?.color } as CSSProperties}>
                 {team?.code}
               </span>{" "}
               {workspace.name(owner)}
@@ -279,8 +280,8 @@ function Summary({ workspace, view }: { workspace: Workspace; view: ResolvedDyna
   const description = workspace.description(view.id);
   return (
     <div className="arc-panel-body">
-      <span className="arc-panel-kind">Dynamic View</span>
       <h2>{view.title}</h2>
+      <p className="arc-panel-kind">Dynamic View</p>
       {description && <p className="arc-description">{description}</p>}
       <p className="arc-muted">
         {view.steps.length} Steps across {view.participants.length} participants. Press Space to play, J and K to step, Esc to clear.
