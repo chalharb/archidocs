@@ -1,6 +1,7 @@
 # 07: Path, impact and ownership tools
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude
 Blocked by: 04, 06
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -19,6 +20,6 @@ The Enterprise Architect, Product Owner and Developer questions can be answered 
 
 ## Acceptance criteria
 
-- [ ] Acceptance tests answer "how are two Services connected?", "what is upstream and downstream of an outage?" and "what does my Team own?" on the fixture.
-- [ ] A path through an async `via` broker is found and counted as an extra hop.
-- [ ] An Element owned by another Team than its parent is listed under its own Owner.
+- [x] Acceptance tests answer "how are two Services connected?", "what is upstream and downstream of an outage?" and "what does my Team own?" on the fixture.
+- [x] A path through an async `via` broker is found and counted as an extra hop.
+- [x] An Element owned by another Team than its parent is listed under its own Owner.

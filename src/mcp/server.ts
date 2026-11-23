@@ -2,9 +2,10 @@ import { McpServer, type CallToolResult, type StandardSchemaWithJSON } from "@mo
 import { z } from "zod";
 import { getDeployments, type DeploymentDetail } from "../core/deployments.ts";
 import { search } from "../core/search.ts";
+import { deriveEdges, findPaths, getImpact, levelOf, listOwned, type ImpactRing } from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
 import { listViews, resolveView, type ViewNode } from "../core/views.ts";
-import { BundleDeployment, BundleElement, BundleRelationship } from "../schema/bundle.ts";
+import { BundleDeployment, BundleElement, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 
 export interface ServerOptions {
@@ -119,7 +120,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get Element",
       description:
-        "One Element by qualified id (project:id): its fields, Owner Team, parent and children, a Service's Deployments with their URLs, and the file and line it is declared at.",
+        "One Element by qualified id (project:id): its fields, Owner Team, parent and children, the Relationships declared on it in and out, the edges derived onto it from its descendants', a Service's Deployments with their URLs, and the file and line it is declared at.",
       input: z.object({ id: QualifiedId }),
       output: z.object({
         element: BundleElement,
@@ -127,6 +128,8 @@ export function createServer(options: ServerOptions): McpServer {
         parent: ElementSummary.nullable(),
         children: z.array(ElementSummary),
         deployments: z.array(DeploymentResult),
+        relationships: z.object({ in: z.array(BundleRelationship), out: z.array(BundleRelationship) }),
+        derived: z.object({ in: z.array(Edge), out: z.array(Edge) }),
         viewerUrl: z.string().optional(),
       }),
     },
@@ -137,12 +140,18 @@ export function createServer(options: ServerOptions): McpServer {
       const children = bundle.elements.filter((e) => e.parent === id);
       const team = bundle.teams.find((t) => t.id === element.owner);
       const deployments = getDeployments(bundle, id).map(deploymentResult);
+      const relationships = { in: bundle.relationships.filter((r) => r.to === id), out: bundle.relationships.filter((r) => r.from === id) };
+      // Edges at the Element's level that carry at least one Relationship declared beneath either end.
+      const derived = deriveEdges(bundle, levelOf(element)).filter((e) => e.relationships.some((r) => r.from !== e.from || r.to !== e.to));
+      const derivedEdges = { in: derived.filter((e) => e.to === id), out: derived.filter((e) => e.from === id) };
       const data = {
         element,
         owner: team ? { id: team.id, name: team.name } : null,
         parent: parent ? summary(parent) : null,
         children: children.map(summary),
         deployments,
+        relationships,
+        derived: derivedEdges,
         ...viewerLink(options.viewerUrl, id),
       };
       const fields: [string, unknown][] = [
@@ -154,6 +163,12 @@ export function createServer(options: ServerOptions): McpServer {
         ["links", element.links.map((l) => `[${l.label}](${l.url})`).join(", ")],
         ["children", children.map(label).join(", ")],
         ["deployments", deployments.map((d) => `${d.environment} on ${d.target}${d.url ? ` (${d.url})` : ""}`).join(", ")],
+        ["uses", relationships.out.map((r) => `${r.to}${r.description ? ` (${r.description})` : ""}`).join(", ")],
+        ["used by", relationships.in.map((r) => `${r.from}${r.description ? ` (${r.description})` : ""}`).join(", ")],
+        [
+          "derived",
+          [...derivedEdges.out.map((e) => `→ ${e.to} (${count(e.relationships.length, "Relationship")})`), ...derivedEdges.in.map((e) => `← ${e.from} (${count(e.relationships.length, "Relationship")})`)].join(", "),
+        ],
       ];
       return ok(
         data,
@@ -368,6 +383,143 @@ export function createServer(options: ServerOptions): McpServer {
   );
 
   tool(
+    "find_paths",
+    {
+      title: "Find paths",
+      description:
+        "How two Elements are connected: the Relationships directly between them both ways, declared or derived from their descendants' (each derived edge lists the declared Relationships beneath it), and the shortest paths each way up to max_hops, each hop with its Relationships. Compared at the levels of the two Elements given. A `via` broker counts as a hop.",
+      input: z.object({
+        from: QualifiedId,
+        to: QualifiedId,
+        max_hops: z.number().int().min(1).max(10).default(4).describe("The longest path to look for, in hops"),
+        limit: Limit,
+      }),
+      output: z.object({
+        from: z.string(),
+        to: z.string(),
+        maxHops: z.number(),
+        direct: z.array(z.object({ from: z.string(), to: z.string(), derived: z.boolean(), relationships: z.array(BundleRelationship) })),
+        total: z.number(),
+        truncated: z.boolean(),
+        paths: z.array(z.object({ hops: z.array(Edge) })),
+      }),
+    },
+    ({ from, to, max_hops, limit }, { bundle }) => {
+      const missing = unknownElement(bundle, from, to);
+      if (missing) return missing;
+      if (from === to) return fail("invalid_input", "`from` and `to` name the same Element.");
+      const result = findPaths(bundle, from, to, { maxHops: max_hops });
+      const { items, total, truncated } = page(result.paths, limit);
+      const head = `${from} and ${to}: ${result.direct.length ? `${count(result.direct.length, "direct edge")}` : "no direct Relationships"}; ${
+        total ? `${count(total, "shortest path")} within ${max_hops} hops` : `no path within ${max_hops} hops`
+      }${truncated ? `; showing the first ${limit}` : ""}.`;
+      return ok(
+        { from, to, maxHops: max_hops, direct: result.direct, total, truncated, paths: items },
+        [
+          head,
+          ...result.direct.map((d) => `- direct ${d.from} → ${d.to}${d.derived ? " (derived)" : ""}: ${d.relationships.map(relationshipLabel).join(", ")}`),
+          ...items.map((p) => `- ${count(p.hops.length, "hop")}: ${[p.hops[0]!.from, ...p.hops.map((h) => h.to)].join(" → ")}`),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
+    "get_impact",
+    {
+      title: "Get impact",
+      description:
+        "Who an outage of an Element affects: the transitive upstream (what depends on it) or downstream (what it depends on) set, grouped by distance, with each Element's Owner and the Relationships that carry the impact from the ring before. Includes the Relationships of the Element's descendants; a `via` broker is a dependency of both its subscriber and its publisher. Logical Model only.",
+      input: z.object({
+        id: QualifiedId,
+        direction: z.enum(["upstream", "downstream", "both"]),
+        max_depth: z.number().int().min(1).optional().describe("The furthest distance to follow; unlimited when left out"),
+        limit: Limit,
+      }),
+      output: z.object({
+        id: z.string(),
+        direction: z.enum(["upstream", "downstream", "both"]),
+        maxDepth: z.number().nullable(),
+        upstream: ImpactSide.optional(),
+        downstream: ImpactSide.optional(),
+      }),
+    },
+    ({ id, direction, max_depth, limit }, { bundle }) => {
+      const missing = unknownElement(bundle, id);
+      if (missing) return missing;
+      const result = getImpact(bundle, id, direction, max_depth === undefined ? {} : { maxDepth: max_depth });
+      const sides = (["upstream", "downstream"] as const).flatMap((side) => (result[side] ? [[side, pageRings(result[side], limit)] as const] : []));
+      const element = bundle.elements.find((e) => e.id === id)!;
+      return ok(
+        { id, direction, maxDepth: result.maxDepth, ...Object.fromEntries(sides) },
+        [
+          `Impact of ${label(element)}: ${sides.map(([side, s]) => `${s.total} ${side}${s.truncated ? ` (showing ${limit})` : ""}`).join(", ")}.`,
+          ...sides.flatMap(([side, s]) => [
+            `${side[0]!.toUpperCase()}${side.slice(1)}:`,
+            ...(s.rings.length ? s.rings.map((r) => `- ${r.distance}: ${r.elements.map((e) => `${e.id} (${e.owner || "no Team"})`).join(", ")}`) : ["- nothing"]),
+          ]),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
+    "list_owned",
+    {
+      title: "List owned",
+      description:
+        "The Elements and Deployment Targets a Team owns, grouped by kind, each with counts of the other Teams upstream (depending on it) and downstream (it depends on). An Element is listed under its own Owner, whoever owns its parent.",
+      input: z.object({
+        team: z.string().min(1).describe("A Team id"),
+        kind: OwnedKindSchema.optional(),
+        limit: Limit,
+      }),
+      output: z.object({
+        team: z.string(),
+        kind: OwnedKindSchema.nullable(),
+        total: z.number(),
+        truncated: z.boolean(),
+        groups: z.array(
+          z.object({
+            kind: OwnedKindSchema,
+            total: z.number(),
+            items: z.array(z.object({ id: z.string(), name: z.string(), parent: z.string().nullable(), upstreamTeams: z.number(), downstreamTeams: z.number() })),
+          }),
+        ),
+      }),
+    },
+    ({ team, kind, limit }, { bundle }) => {
+      const found = bundle.teams.find((t) => t.id === team);
+      if (!found) return notFound("Team", team, bundle.teams.map((t) => t.id));
+      const result = listOwned(bundle, team, kind);
+      let left = limit;
+      const groups = result.groups
+        .map((g) => {
+          const items = g.items.slice(0, Math.max(left, 0));
+          left -= items.length;
+          return { ...g, items };
+        })
+        .filter((g) => g.items.length);
+      const truncated = result.total > limit;
+      const teams = (n: number, way: string) => `${n} ${way} Team${n === 1 ? "" : "s"}`;
+      return ok(
+        { ...result, truncated, groups },
+        [
+          `${label(found)} owns ${count(result.total, "item")}${kind ? ` of kind ${kind}` : ""}${truncated ? `; showing the first ${limit}` : ""}.`,
+          ...groups.flatMap((g) => [
+            `${ownedKindName[g.kind]}:`,
+            ...g.items.map((i) => {
+              const parentElement = bundle.elements.find((e) => e.id === i.parent);
+              const elsewhere = parentElement && parentElement.owner !== team ? `, in ${i.parent}` : "";
+              return `- ${label(i)}${elsewhere}: ${teams(i.upstreamTeams, "upstream")}, ${teams(i.downstreamTeams, "downstream")}`;
+            }),
+          ]),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
     "check",
     {
       title: "Check the Workspace",
@@ -443,6 +595,43 @@ const deploymentResult = (d: DeploymentDetail) => ({
 const summary = (e: BundleElement) => ({ id: e.id, kind: e.kind, name: e.name });
 const label = (e: { id: string; name: string }) => `${e.id} (${e.name})`;
 const kindName = { person: "Person", system: "System", service: "Service", component: "Component" } as const;
+
+const Edge = z.object({ from: z.string(), to: z.string(), relationships: z.array(BundleRelationship) });
+const ImpactSide = z.object({
+  total: z.number(),
+  truncated: z.boolean(),
+  rings: z.array(
+    z.object({
+      distance: z.number(),
+      elements: z.array(ElementSummary.extend({ owner: z.string(), relationships: z.array(BundleRelationship) })),
+    }),
+  ),
+});
+const OwnedKindSchema = z.enum(["person", "system", "service", "component", "target"]);
+const ownedKindName = { person: "Person", system: "System", service: "Service", component: "Component", target: "Deployment Target" } as const;
+
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
+/** The impact rings cut to `limit` Elements in all, nearest first. */
+function pageRings(rings: ImpactRing[], limit: number): { total: number; truncated: boolean; rings: ImpactRing[] } {
+  const total = rings.reduce((n, r) => n + r.elements.length, 0);
+  let left = limit;
+  const kept = rings
+    .map((r) => {
+      const elements = r.elements.slice(0, Math.max(left, 0));
+      left -= elements.length;
+      return { ...r, elements };
+    })
+    .filter((r) => r.elements.length);
+  return { total, truncated: total > limit, rings: kept };
+}
+
+/** `not_found` for the first of `ids` that names no Element, else nothing. */
+function unknownElement(bundle: Bundle, ...ids: string[]): ToolOutcome | undefined {
+  const known = bundle.elements.map((e) => e.id);
+  const missing = ids.find((id) => !known.includes(id));
+  return missing === undefined ? undefined : notFound("Element", missing, known);
+}
 
 /** `{viewerUrl}` for an Element when a viewer base URL is configured, else nothing. */
 function viewerLink(base: string | undefined, id: string): { viewerUrl?: string } {

@@ -258,3 +258,50 @@ owner: payments-team
             name: Charges
 `,
 };
+
+/**
+ * The Relationship Workspace grown into a small landscape: a Service owned by
+ * another Team than its System, a platform Project's Deployment Targets, and
+ * Deployments onto them from two Projects.
+ */
+export const landscapeWorkspace: Files = {
+  ...relationshipWorkspace,
+  "workspace.yaml": `teams:
+  storefront-team:
+    name: Storefront
+  payments-team:
+    name: Payments
+  platform-team:
+    name: Platform
+environments:
+  prod:
+    name: Production
+`,
+  "shop/fraud.yaml": `services:
+  fraud-check:
+    name: Fraud check
+    in: checkout
+    owner: payments-team
+    relationships:
+      - to: payments:payments-api
+        description: Scores a payment
+deployments:
+  - { service: cart, environment: prod, target: platform:eks-prod }
+`,
+  "payments/deployments.yaml": `deployments:
+  - { service: payments-api, environment: prod, target: platform:eks-prod }
+`,
+  "platform/project.yaml": `id: platform
+name: Platform
+owner: platform-team
+`,
+  "platform/targets.yaml": `targets:
+  aws-eu:
+    name: AWS eu-west-1
+    kind: region
+    targets:
+      eks-prod:
+        name: EKS prod
+        kind: cluster
+`,
+};
