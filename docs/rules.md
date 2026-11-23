@@ -33,6 +33,11 @@
 | [`wrong-kind`](#wrong-kind) | error | An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service. |
 | [`oversized-view`](#oversized-view) | warning | A View has more than 150 nodes, too many for a readable diagram. A Generated View is reported at its System or Service, or at `workspace.yaml` for the Landscapes; a Saved View at its id. |
 | [`duplicate-view-id`](#duplicate-view-id) | error | A Saved View id repeats in a Project, across files too. |
+| [`missing-step`](#missing-step) | error | A Dynamic View Step has no Relationship or derived edge between `from` and `to` (nor a `via` subscription of `to` to `from`), or the named `relationship` doesn't connect them. |
+| [`ambiguous-step`](#ambiguous-step) | error | Several Relationships match a Dynamic View Step (several between the pair, or both a call and an event) and no `relationship` names one. |
+| [`return-without-relationship`](#return-without-relationship) | error | A Dynamic View return Step has no Relationship the other way, from its `to` to its `from`. |
+| [`return-on-async`](#return-on-async) | error | A Dynamic View return Step resolves to an async Relationship, which has no reply. |
+| [`ancestor-descendant-participants`](#ancestor-descendant-participants) | error | An Element and its own ancestor are both participants of a Dynamic View. |
 | [`target-outside-environment`](#target-outside-environment) | error | A Saved Deployment View's `targets` entry has no Deployment in the View's `environment`, on it or on any Target inside it. |
 | [`bad-expand`](#bad-expand) | error | A Saved View's `expand` or `collapse` id is not a node of the View once collapsed to its `level`, or has no children. |
 | [`empty-view`](#empty-view) | warning | A Saved View resolves to no nodes. |
@@ -1309,6 +1314,405 @@ views:
     front-v2:
       title: Front again
       level: c2
+```
+
+## `missing-step`
+
+**Severity:** error
+
+A Dynamic View Step has no Relationship or derived edge between `from` and `to` (nor a `via` subscription of `to` to `from`), or the named `relationship` doesn't connect them.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: cart, to: web }
+```
+
+**Fix:** Point the Step at two Elements a Relationship connects, declare the Relationship, or name one that connects them.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: web, to: cart }
+```
+
+## `ambiguous-step`
+
+**Severity:** error
+
+Several Relationships match a Dynamic View Step (several between the pair, or both a call and an event) and no `relationship` names one.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+    relationships:
+      - id: notify
+        to: mailer
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: orders, to: mailer }
+```
+
+**Fix:** Name the Relationship the Step takes with `relationship: <id>`.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+    relationships:
+      - id: notify
+        to: mailer
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: orders, to: mailer, relationship: notify }
+```
+
+## `return-without-relationship`
+
+**Severity:** error
+
+A Dynamic View return Step has no Relationship the other way, from its `to` to its `from`.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: web, to: cart, return: true }
+```
+
+**Fix:** Turn the Step round, or remove `return: true` if it is a call of its own.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: web, to: cart }
+        - { from: cart, to: web, return: true }
+```
+
+## `return-on-async`
+
+**Severity:** error
+
+A Dynamic View return Step resolves to an async Relationship, which has no reply.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: orders, to: mailer, return: true }
+```
+
+**Fix:** Remove the return Step, or model the callback as a Relationship of its own and add a Step for it.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      steps:
+        - { from: orders, to: mailer }
+```
+
+## `ancestor-descendant-participants`
+
+**Severity:** error
+
+An Element and its own ancestor are both participants of a Dynamic View.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      participants: [cart]
+      steps:
+        - { from: web, to: cart-api }
+```
+
+**Fix:** Tell the scenario at one level: use the ancestor throughout, or its descendants throughout.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        interaction: async
+        via: events
+        channel: order-placed
+views:
+  dynamic:
+    purchase:
+      title: Purchase
+      participants: [cart]
+      steps:
+        - { from: web, to: cart }
 ```
 
 ## `target-outside-environment`

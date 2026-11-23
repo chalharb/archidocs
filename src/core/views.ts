@@ -1,4 +1,5 @@
 import type { Bundle, BundleElement, BundleLens, BundleRelationship } from "../schema/bundle.ts";
+import { resolveDynamic, takesPart } from "./dynamic-views.ts";
 import { resolveSaved } from "./saved-views.ts";
 
 /** The most nodes a View may have before `oversized-view` warns. */
@@ -70,7 +71,7 @@ export interface ResolveOptions {
  */
 export function resolveView(bundle: Bundle, id: string, options: ResolveOptions = {}): ResolvedView | undefined {
   const saved = bundle.views.find((v) => v.id === id);
-  if (saved) return resolveSaved(bundle, saved)?.view;
+  if (saved) return saved.kind === "structural" ? resolveSaved(bundle, saved)?.view : undefined;
   const model = new ModelIndex(bundle);
   if (id === "c1") return landscape(model, "c1", "C1 Landscape", []);
   if (id === "c2") return landscape(model, "c2", "C2 Landscape", options.expand ?? []);
@@ -85,8 +86,8 @@ export function resolveView(bundle: Bundle, id: string, options: ResolveOptions 
   return undefined;
 }
 
-/** The kinds a View is listed under: a Saved View's is its `level`. */
-export type ListedKind = ViewKind | "deployment";
+/** The kinds a View is listed under: a Saved structural View's is its `level`. */
+export type ListedKind = ViewKind | "deployment" | "dynamic";
 
 /** A View as listed, without its nodes and edges. */
 export interface ViewSummary {
@@ -98,15 +99,22 @@ export interface ViewSummary {
 /**
  * Every Generated View, in the order `c1`, `c2`, then `c2/<system>` and
  * `c3/<service>` by id, then every Saved View by id. `kind` keeps one kind;
- * `element` keeps the Views that show that Element as a node.
+ * `element` keeps the Views that show that Element as a node, and the
+ * Dynamic Views it takes part in (including as the broker of an event Step).
  */
 export function listViews(bundle: Bundle, filter: { kind?: ListedKind; element?: string } = {}): ViewSummary[] {
   const ids = generatedViewIds(bundle).filter((id) => filter.kind === undefined || id.split("/")[0] === filter.kind);
   const generated: ViewSummary[] = filter.element === undefined ? ids.map((id) => summarise(id, bundle)) : resolveAll(bundle, ids).filter((v) => v.nodes.some((n) => n.id === filter.element));
+  const element = filter.element;
   const saved = bundle.views
-    .filter((v) => filter.kind === undefined || v.level === filter.kind)
-    .filter((v) => filter.element === undefined || resolveSaved(bundle, v)?.view.nodes.some((n) => n.id === filter.element))
-    .map((v) => ({ id: v.id, kind: v.level, title: v.title }));
+    .map((v) => ({ v, kind: v.kind === "dynamic" ? ("dynamic" as const) : v.level }))
+    .filter(({ kind }) => filter.kind === undefined || kind === filter.kind)
+    .filter(({ v }) => {
+      if (element === undefined) return true;
+      if (v.kind === "dynamic") return takesPart(resolveDynamic(bundle, v).view, element);
+      return resolveSaved(bundle, v)?.view.nodes.some((n) => n.id === element);
+    })
+    .map(({ v, kind }) => ({ id: v.id, kind, title: v.title }));
   return [...generated, ...saved].map(({ id, kind, title }) => ({ id, kind, title }));
 }
 

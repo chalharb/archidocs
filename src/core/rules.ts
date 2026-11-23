@@ -5,7 +5,8 @@ import { resolveSaved, type SavedResolution } from "./saved-views.ts";
 import { Id, parentKindOf, type ElementKind } from "../schema/workspace.ts";
 import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, RelationshipDecl, Severity, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
 import { qualified, qualify, referenceResolver, type Resolved } from "./refs.ts";
-import type { BundleView } from "../schema/bundle.ts";
+import type { BundleDynamicView, BundleStructuralView } from "../schema/bundle.ts";
+import { resolveDynamic, type DynamicProblem, type DynamicResolution } from "./dynamic-views.ts";
 import { didYouMean } from "./suggest.ts";
 import type { AdrDecl } from "./model.ts";
 import { AdrFrontmatter } from "../schema/adr.ts";
@@ -123,7 +124,7 @@ const asList = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 /** A value written at `path` (relative to the View) in a Saved View. */
 type ViewValue = { path: (string | number)[]; value: unknown };
 
-/** The Element references a Saved View makes: bare-id and `{element}` and path selectors, `expand`, `collapse` and the Lens. */
+/** The Element references a Saved View makes: bare-id and `{element}` and path selectors, `expand`, `collapse` and the Lens; a Dynamic View's `participants` and Step ends. */
 function viewElementRefs(v: ViewDecl): ViewValue[] {
   const out: ViewValue[] = [];
   for (const key of ["include", "exclude"] as const) {
@@ -132,7 +133,10 @@ function viewElementRefs(v: ViewDecl): ViewValue[] {
       else for (const field of ["element", "from", "to"]) if (field in asRecord(s)) out.push({ path: [key, i, field], value: asRecord(s)[field] });
     });
   }
-  for (const key of ["expand", "collapse"] as const) asList(v.data[key]).forEach((id, i) => out.push({ path: [key, i], value: id }));
+  for (const key of ["expand", "collapse", "participants"] as const) asList(v.data[key]).forEach((id, i) => out.push({ path: [key, i], value: id }));
+  asList(v.data.steps).forEach((step, i) => {
+    for (const end of ["from", "to"]) if (end in asRecord(step)) out.push({ path: ["steps", i, end], value: asRecord(step)[end] });
+  });
   const lens = asRecord(v.data.lens);
   if ("impact" in lens) out.push({ path: ["lens", "impact"], value: lens.impact });
   const path = asRecord(lens.path);
@@ -170,18 +174,45 @@ const elementRefs = (ws: LoadedWorkspace): ElementRef[] => {
 };
 
 /** Each Saved View that made it into the Bundle (the first of a repeated id), with its definition and resolution; Deployment Views aren't resolved. */
-const resolvedSavedViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDecl; def: BundleView; resolution: SavedResolution }[] =>
+const resolvedSavedViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDecl; def: BundleStructuralView; resolution: SavedResolution }[] =>
   ws.views.flatMap((decl) => {
-    const def = bundle.views.find((v) => v.id === `${decl.project.id}:${decl.id}` && v.source.file === decl.file.path && v.source.line === decl.line);
-    const resolution = def && resolveSaved(bundle, def);
-    return def && resolution ? [{ decl, def, resolution }] : [];
+    const def = bundledView(decl, bundle);
+    const resolution = def?.kind === "structural" ? resolveSaved(bundle, def) : undefined;
+    return def?.kind === "structural" && resolution ? [{ decl, def, resolution }] : [];
   });
+
+/** The Bundle definition a View declaration became, if it made it into the Bundle (the first of a repeated id). */
+const bundledView = (decl: ViewDecl, bundle: Bundle) =>
+  bundle.views.find((v) => v.id === `${decl.project.id}:${decl.id}` && v.source.file === decl.file.path && v.source.line === decl.line);
+
+/** Each Dynamic View that made it into the Bundle, with its resolution. */
+const resolvedDynamicViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDecl; def: BundleDynamicView; resolution: DynamicResolution }[] =>
+  ws.views.flatMap((decl) => {
+    const def = bundledView(decl, bundle);
+    return def?.kind === "dynamic" ? [{ decl, def, resolution: resolveDynamic(bundle, def) }] : [];
+  });
+
+/** A rule reporting one kind of Dynamic View problem, at the Step or participant it is about. */
+const dynamicProblems = (rule: DynamicProblem["rule"]) => (ws: LoadedWorkspace, bundle: Bundle) =>
+  resolvedDynamicViews(ws, bundle).flatMap(({ decl, resolution }) =>
+    resolution.problems.filter((p) => p.rule === rule).map((p) => at(decl.file, [...decl.path, ...p.at], p.message)),
+  );
 
 const targetAncestry = (t: TargetDecl): TargetDecl[] => {
   const out = [t];
   for (let p = t.parent; p && !out.includes(p); p = p.parent) out.push(p);
   return out;
 };
+
+/**
+ * A Dynamic View example: web calls cart; orders publishes `order-placed` on
+ * the events broker, which mailer subscribes to. `views: dynamic:` is given
+ * as the YAML under it, and `extra` adds fields to orders.
+ */
+const scenario = (views: string, extra = "") =>
+  withServices(
+    `services:\n  web:\n    name: Web\n    relationships:\n      - to: cart\n  cart:\n    name: Cart\n    components:\n      cart-api:\n        name: Cart API\n  orders:\n    name: Orders\n${extra}${events("broker")}  mailer:\n    name: Mailer\n    relationships:\n      - to: orders\n        interaction: async\n        via: events\n        channel: order-placed\nviews:\n  dynamic:\n${views.replace(/^/gm, "    ")}\n`,
+  );
 
 /** A Saved View example: two Services, one with a Component, and `views: structural:` given as the YAML under it. */
 const viewing = (views: string, extra: Files = {}) =>
@@ -759,6 +790,61 @@ export const rules: RuleDefinition[] = [
         return [at(v.file, v.path, `View id "${v.id}" is already used in Project "${v.project.id}" at ${first.file.path}:${first.line}`, true)];
       });
     },
+  },
+  {
+    id: "missing-step",
+    severity: "error",
+    summary: "A Dynamic View Step has no Relationship or derived edge between `from` and `to` (nor a `via` subscription of `to` to `from`), or the named `relationship` doesn't connect them.",
+    fix: "Point the Step at two Elements a Relationship connects, declare the Relationship, or name one that connects them.",
+    example: {
+      failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: cart, to: web }"),
+      passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: web, to: cart }"),
+    },
+    check: dynamicProblems("missing-step"),
+  },
+  {
+    id: "ambiguous-step",
+    severity: "error",
+    summary: "Several Relationships match a Dynamic View Step (several between the pair, or both a call and an event) and no `relationship` names one.",
+    fix: "Name the Relationship the Step takes with `relationship: <id>`.",
+    example: {
+      failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer }", "    relationships:\n      - id: notify\n        to: mailer\n"),
+      passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer, relationship: notify }", "    relationships:\n      - id: notify\n        to: mailer\n"),
+    },
+    check: dynamicProblems("ambiguous-step"),
+  },
+  {
+    id: "return-without-relationship",
+    severity: "error",
+    summary: "A Dynamic View return Step has no Relationship the other way, from its `to` to its `from`.",
+    fix: "Turn the Step round, or remove `return: true` if it is a call of its own.",
+    example: {
+      failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: web, to: cart, return: true }"),
+      passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: web, to: cart }\n    - { from: cart, to: web, return: true }"),
+    },
+    check: dynamicProblems("return-without-relationship"),
+  },
+  {
+    id: "return-on-async",
+    severity: "error",
+    summary: "A Dynamic View return Step resolves to an async Relationship, which has no reply.",
+    fix: "Remove the return Step, or model the callback as a Relationship of its own and add a Step for it.",
+    example: {
+      failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer, return: true }"),
+      passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer }"),
+    },
+    check: dynamicProblems("return-on-async"),
+  },
+  {
+    id: "ancestor-descendant-participants",
+    severity: "error",
+    summary: "An Element and its own ancestor are both participants of a Dynamic View.",
+    fix: "Tell the scenario at one level: use the ancestor throughout, or its descendants throughout.",
+    example: {
+      failing: scenario("purchase:\n  title: Purchase\n  participants: [cart]\n  steps:\n    - { from: web, to: cart-api }"),
+      passing: scenario("purchase:\n  title: Purchase\n  participants: [cart]\n  steps:\n    - { from: web, to: cart }"),
+    },
+    check: dynamicProblems("ancestor-descendant-participants"),
   },
   {
     id: "target-outside-environment",

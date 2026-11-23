@@ -1,6 +1,6 @@
 import { basename, dirname, join, relative, sep } from "node:path";
-import { Bundle, SCHEMA_VERSION, type BundleDeployment, type BundleElement, type BundleRelationship, type BundleSelector, type BundleTarget, type BundleView } from "../schema/bundle.ts";
-import { ProjectFile, StructuralView, WorkspaceFile, type LensInput, type SelectorInput, childKindOf, collectionOf, kindOfCollection, lensSchemaFor, selectorSchemaFor, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
+import { Bundle, SCHEMA_VERSION, type BundleDeployment, type BundleElement, type BundleRelationship, type BundleSelector, type BundleStructuralView, type BundleTarget, type BundleView } from "../schema/bundle.ts";
+import { DynamicView, ProjectFile, StructuralView, WorkspaceFile, type LensInput, type SelectorInput, childKindOf, collectionOf, kindOfCollection, lensSchemaFor, selectorSchemaFor, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
 import type { FileSystem } from "./fs.ts";
 import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
 import { indexByQualifiedId, qualified, qualify, referenceResolver } from "./refs.ts";
@@ -184,12 +184,12 @@ function readModelFile(file: SourceFile, ws: LoadedWorkspace) {
   readViews(file, ws, data);
 }
 
-/** Registers every Saved View under `views: structural:`, checking each selector and the Lens against the form it is written in. */
+/** Registers every Saved View under `views: structural:` and `views: dynamic:`, checking each selector and the Lens against the form it is written in. */
 function readViews(file: SourceFile, ws: LoadedWorkspace, data: Record<string, unknown>) {
   for (const [id, value] of Object.entries(asRecord(asRecord(data.views).structural))) {
     const path = ["views", "structural", id];
     file.findings.push(...checkSchema(shallow.view, value, file.parsed, path));
-    const view: ViewDecl = { id, project: file.project!, file, path, data: asRecord(value), ...file.parsed.positionOf(path, { key: true }) };
+    const view: ViewDecl = { kind: "structural", id, project: file.project!, file, path, data: asRecord(value), ...file.parsed.positionOf(path, { key: true }) };
     ws.views.push(view);
     for (const key of ["include", "exclude"] as const) {
       const list = view.data[key];
@@ -215,6 +215,11 @@ function readViews(file: SourceFile, ws: LoadedWorkspace, data: Record<string, u
         file.findings.push({ rule: "invalid-value", ...file.parsed.positionOf([...path, key], { key: true }), message: `Invalid value for "${key}": only a \`level: deployment\` View takes \`${key}\`` });
       }
     }
+  }
+  for (const [id, value] of Object.entries(asRecord(asRecord(data.views).dynamic))) {
+    const path = ["views", "dynamic", id];
+    file.findings.push(...checkSchema(shallow.dynamicView, value, file.parsed, path));
+    ws.views.push({ kind: "dynamic", id, project: file.project!, file, path, data: asRecord(value), ...file.parsed.positionOf(path, { key: true }) });
   }
 }
 
@@ -402,13 +407,38 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
   }));
 
   const views = ws.views.filter((v) => inBundle(v.project)).flatMap((v): BundleView[] => {
+    const ref = (r: string) => qualify(r, v.project) ?? r;
+    if (v.kind === "dynamic") {
+      const parsed = DynamicView.safeParse(v.data);
+      if (!parsed.success) return [];
+      const d = parsed.data;
+      return [
+        {
+          id: `${v.project.id}:${v.id}`,
+          project: v.project.id!,
+          kind: "dynamic",
+          title: d.title,
+          description: d.description ?? null,
+          tags: d.tags ?? [],
+          participants: d.participants ? d.participants.map(ref) : null,
+          steps: d.steps.map((s) => ({
+            from: ref(s.from),
+            to: ref(s.to),
+            relationship: s.relationship === undefined ? null : ref(s.relationship),
+            description: s.description ?? null,
+            note: s.note ?? null,
+            return: s.return === true,
+          })),
+          source: source(v),
+        },
+      ];
+    }
     const parsed = StructuralView.safeParse(v.data);
     if (!parsed.success) return [];
     const d = parsed.data;
-    const ref = (r: string) => qualify(r, v.project) ?? r;
     const selector = (s: SelectorInput): BundleSelector =>
       typeof s === "string" ? ref(s) : "element" in s ? { ...s, element: ref(s.element) } : "from" in s ? { ...s, from: ref(s.from), to: ref(s.to) } : s;
-    const lens = (l: LensInput): NonNullable<BundleView["lens"]> =>
+    const lens = (l: LensInput): NonNullable<BundleStructuralView["lens"]> =>
       "impact" in l ? { impact: ref(l.impact), direction: l.direction ?? "both" } : "path" in l ? { path: { ...l.path, from: ref(l.path.from), to: ref(l.path.to) } } : l;
     return [
       {

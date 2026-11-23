@@ -219,8 +219,10 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
     {
       title: "Add or update a Saved View",
       description: [
-        "Adds a Saved structural or Deployment View under `views: structural:` in a Project's YAML, or replaces an existing one's definition; comments on keys left unchanged are kept.",
-        "`definition` has the YAML structure: title, level (c1|c2|c3|deployment), include/exclude selectors (an id; {element, with, upstream, downstream}; {team}; {tag}; {from, to, paths}), expand, collapse, direction, lens, and for a Deployment View environment and targets. Ids are bare in this Project, or project:id.",
+        "Adds a Saved View to a Project's YAML, or replaces an existing one's definition; comments on keys left unchanged are kept.",
+        "`definition` has the YAML structure. A structural or Deployment View (under `views: structural:`): title, level (c1|c2|c3|deployment), include/exclude selectors (an id; {element, with, upstream, downstream}; {team}; {tag}; {from, to, paths}), expand, collapse, direction, lens, and for a Deployment View environment and targets.",
+        "A Dynamic View (under `views: dynamic:`, chosen by `steps`): title, participants? (fixes their order), and steps [{from, to, relationship?, description?, note?, return?}]. Each Step must resolve to one Relationship: a call from → to, an event written publisher → subscriber (resolving to the subscriber's `via` subscription), or with return: true the reply to a sync Relationship to → from; name `relationship` (its id) when several match.",
+        "Ids are bare in this Project, or project:id.",
         "A new View goes into `file` (relative to the Project's folder), else `model.yaml`.",
       ].join(" "),
       input: z.object({

@@ -5,6 +5,7 @@ import { search } from "../core/search.ts";
 import { deriveEdges, findPaths, getImpact, levelOf, listOwned, type ImpactRing } from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
 import { listViews, resolveView, type ViewNode } from "../core/views.ts";
+import { resolveDynamic, resolveDynamicView, takesPart, type ResolvedStep } from "../core/dynamic-views.ts";
 import { describeLens } from "../core/saved-views.ts";
 import { listAdrs, type ListedAdr } from "../core/adrs.ts";
 import { AdrStatus } from "../schema/adr.ts";
@@ -126,7 +127,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get Element",
       description:
-        "One Element by qualified id (project:id): its fields, Owner Team, parent and children, the Relationships declared on it in and out, the edges derived onto it from its descendants', a Service's Deployments with their URLs, the ADRs linking it or its descendants (as list_adrs gives them), and the file and line it is declared at.",
+        "One Element by qualified id (project:id): its fields, Owner Team, parent and children, the Relationships declared on it in and out, the edges derived onto it from its descendants', a Service's Deployments with their URLs, the Dynamic Views it takes part in (as a participant, or as the broker of an event Step), the ADRs linking it or its descendants (as list_adrs gives them), and the file and line it is declared at.",
       input: z.object({ id: QualifiedId }),
       output: z.object({
         element: BundleElement,
@@ -136,6 +137,7 @@ export function createServer(options: ServerOptions): McpServer {
         deployments: z.array(DeploymentResult),
         relationships: z.object({ in: z.array(BundleRelationship), out: z.array(BundleRelationship) }),
         derived: z.object({ in: z.array(Edge), out: z.array(Edge) }),
+        dynamicViews: z.array(z.object({ id: z.string(), title: z.string() })),
         adrs: z.array(AdrSummary),
         viewerUrl: z.string().optional(),
       }),
@@ -151,6 +153,7 @@ export function createServer(options: ServerOptions): McpServer {
       // Edges at the Element's level that carry at least one Relationship declared beneath either end.
       const derived = deriveEdges(bundle, levelOf(element)).filter((e) => e.relationships.some((r) => r.from !== e.from || r.to !== e.to));
       const derivedEdges = { in: derived.filter((e) => e.to === id), out: derived.filter((e) => e.from === id) };
+      const dynamicViews = bundle.views.flatMap((v) => (v.kind === "dynamic" && takesPart(resolveDynamic(bundle, v).view, id) ? [{ id: v.id, title: v.title }] : []));
       const data = {
         element,
         owner: team ? { id: team.id, name: team.name } : null,
@@ -159,6 +162,7 @@ export function createServer(options: ServerOptions): McpServer {
         deployments,
         relationships,
         derived: derivedEdges,
+        dynamicViews,
         adrs: listAdrs(bundle, { element: id }).map(adrSummary),
         ...viewerLink(options.viewerUrl, id),
       };
@@ -178,6 +182,7 @@ export function createServer(options: ServerOptions): McpServer {
           "derived",
           [...derivedEdges.out.map((e) => `→ ${e.to} (${count(e.relationships.length, "Relationship")})`), ...derivedEdges.in.map((e) => `← ${e.from} (${count(e.relationships.length, "Relationship")})`)].join(", "),
         ],
+        ["Dynamic Views", dynamicViews.map((v) => v.id).join(", ")],
       ];
       return ok(
         data,
@@ -339,7 +344,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "List Views",
       description:
-        "The Generated Views: c1 and c2 (the Landscapes), c2/<system> and c3/<service> (Services with Components); then the Saved Views (project:view-id), listed under their level. With `element`, only the Views that show that Element as a node.",
+        "The Generated Views: c1 and c2 (the Landscapes), c2/<system> and c3/<service> (Services with Components); then the Saved Views (project:view-id), structural ones listed under their level and Dynamic Views under `dynamic`. With `element`, only the Views that show that Element as a node, and the Dynamic Views it takes part in (as a participant, or as the broker an event Step runs via).",
       input: z.object({
         kind: ViewKind.optional(),
         element: QualifiedId.optional().describe("Only Views containing this Element (project:id)"),
@@ -359,28 +364,58 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get View",
       description:
-        "One View by id (c1, c2, c2/<system>, c3/<service>, or a Saved View's project:view-id) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it. A Saved View with a Lens also returns the Lens, a `mark` ({hit, distance?}) per node and `lit` per edge; the Lens never changes which nodes the View holds.",
+        "One View by id (c1, c2, c2/<system>, c3/<service>, or a Saved View's project:view-id) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it. A Saved View with a Lens also returns the Lens, a `mark` ({hit, distance?}) per node and `lit` per edge; the Lens never changes which nodes the View holds. A Dynamic View instead returns `participants` in drawing order and `steps` [{n, kind: call|return|event, from, to, relationship, interaction, via?, channel?, description, note?}]: an event is drawn publisher → subscriber while `relationship` is the stored subscriber → publisher subscription; a return replies over the sync `relationship` the other way. Steps that don't resolve are left out (`check` reports them).",
       input: z.object({ id: z.string().min(1).describe("A View id, such as c1, c2/shop:checkout, c3/shop:cart or architecture:purchase") }),
       output: ViewSummary.extend({
         direction: z.enum(["TB", "BT", "LR", "RL"]).optional(),
         lens: BundleLens.optional(),
-        nodes: z.array(
-          z.object({
-            id: z.string(),
-            kind: ElementKind,
-            name: z.string(),
-            parent: z.string().nullable(),
-            collapsed: z.boolean(),
-            external: z.boolean(),
-            mark: z.object({ hit: z.boolean(), distance: z.number().optional() }).optional(),
-          }),
-        ),
-        edges: z.array(z.object({ from: z.string(), to: z.string(), relationships: z.array(BundleRelationship), lit: z.boolean().optional() })),
+        nodes: z
+          .array(
+            z.object({
+              id: z.string(),
+              kind: ElementKind,
+              name: z.string(),
+              parent: z.string().nullable(),
+              collapsed: z.boolean(),
+              external: z.boolean(),
+              mark: z.object({ hit: z.boolean(), distance: z.number().optional() }).optional(),
+            }),
+          )
+          .optional(),
+        edges: z.array(z.object({ from: z.string(), to: z.string(), relationships: z.array(BundleRelationship), lit: z.boolean().optional() })).optional(),
+        participants: z.array(z.string()).optional(),
+        steps: z
+          .array(
+            z.object({
+              n: z.number(),
+              kind: z.enum(["call", "return", "event"]),
+              from: z.string(),
+              to: z.string(),
+              relationship: BundleRelationship,
+              interaction: z.enum(["sync", "async"]),
+              via: z.string().optional(),
+              channel: z.string().optional(),
+              description: z.string(),
+              note: z.string().optional(),
+            }),
+          )
+          .optional(),
       }),
     },
     ({ id }, { bundle }) => {
       const saved = bundle.views.find((v) => v.id === id);
-      if (saved?.level === "deployment") return fail("invalid_input", `Saved View "${id}" is a Deployment View, which can't be resolved yet.`);
+      const dynamic = resolveDynamicView(bundle, id);
+      if (dynamic) {
+        return ok(
+          { ...dynamic },
+          [
+            `${dynamic.title} (${dynamic.id}): ${count(dynamic.participants.length, "participant")}, ${count(dynamic.steps.length, "Step")}.`,
+            `Participants: ${dynamic.participants.join(", ")}`,
+            ...(dynamic.steps.length ? ["Steps:", ...dynamic.steps.map(stepLine)] : []),
+          ].join("\n"),
+        );
+      }
+      if (saved?.kind === "structural" && saved.level === "deployment") return fail("invalid_input", `Saved View "${id}" is a Deployment View, which can't be resolved yet.`);
       const view = resolveView(bundle, id);
       if (!view) return notFound("View", id, listViews(bundle).map((v) => v.id));
       const edgeCount = `${view.edges.length} edge${view.edges.length === 1 ? "" : "s"}`;
@@ -639,11 +674,17 @@ const IssueRecord = z.object({
 const where = (source: Source) => (source.kind === "checkout" ? source.root : source.location);
 
 const ElementKind = z.enum(["person", "system", "service", "component"]);
-const ViewKind = z.enum(["c1", "c2", "c3", "deployment"]);
+const ViewKind = z.enum(["c1", "c2", "c3", "deployment", "dynamic"]);
 const ViewSummary = z.object({ id: z.string(), kind: ViewKind, title: z.string() });
 
 const nodeLine = (n: ViewNode) =>
   `- ${label(n)}: ${kindName[n.kind]}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}` : ""}`;
+
+/** A Step as one line: a return drawn dashed (⇠), an event with its broker and channel. */
+const stepLine = (s: ResolvedStep) => {
+  const how = s.kind === "event" ? ` (event${s.via ? ` via ${s.via}` : ""}${s.channel ? ` · ${s.channel}` : ""})` : s.kind === "return" ? " (return)" : s.interaction === "async" ? " (async)" : "";
+  return `${s.n}. ${s.from} ${s.kind === "return" ? "⇠" : "→"} ${s.to}${how}: ${s.description}${s.note ? ` (${s.note})` : ""}`;
+};
 
 const relationshipLabel = (r: BundleRelationship) => r.description ?? r.id ?? `${r.from} → ${r.to}`;
 

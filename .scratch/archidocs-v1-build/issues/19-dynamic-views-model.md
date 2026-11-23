@@ -1,6 +1,7 @@
 # 19: Dynamic Views: model and MCP
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-19 session)
 Blocked by: 17
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -21,6 +22,6 @@ Authors write scenarios as Dynamic Views, checked against real Relationships, an
 
 ## Acceptance criteria
 
-- [ ] Resolver tests for call, return and event Steps, derived-level Steps, and both kinds of ambiguity.
-- [ ] Each rule has failing and passing fixtures.
-- [ ] A broker appears in `list_views` for a Dynamic View that only routes events through it.
+- [x] Resolver tests for call, return and event Steps, derived-level Steps, and both kinds of ambiguity.
+- [x] Each rule has failing and passing fixtures.
+- [x] A broker appears in `list_views` for a Dynamic View that only routes events through it.

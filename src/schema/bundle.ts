@@ -98,7 +98,7 @@ export const BundleLens = z.union([
  * A Saved structural or Deployment View's definition, every id qualified; not
  * its resolved nodes. `include` is null when absent (every Element).
  */
-export const BundleView = z.object({
+export const BundleStructuralView = z.object({
   id: z.string(),
   project: z.string(),
   kind: z.literal("structural"),
@@ -116,6 +116,32 @@ export const BundleView = z.object({
   targets: z.array(z.string()),
   source: Source,
 });
+
+/** One Step as written, ids qualified; `relationship` is null when the author names none. */
+export const BundleStep = z.object({
+  from: z.string(),
+  to: z.string(),
+  relationship: z.string().nullable(),
+  description: z.string().nullable(),
+  note: z.string().nullable(),
+  return: z.boolean(),
+});
+
+/** A Saved Dynamic View's definition, every id qualified; not its resolved Steps. `participants` is null when absent. */
+export const BundleDynamicView = z.object({
+  id: z.string(),
+  project: z.string(),
+  kind: z.literal("dynamic"),
+  title: z.string(),
+  description: z.string().nullable(),
+  tags: z.array(z.string()),
+  participants: z.array(z.string()).nullable(),
+  steps: z.array(BundleStep),
+  source: Source,
+});
+
+/** A Saved View's definition: structural (including Deployment Views) or dynamic. */
+export const BundleView = z.discriminatedUnion("kind", [BundleStructuralView, BundleDynamicView]);
 
 /**
  * One ADR: qualified id (`project:NNNN`), its title (the first `# ` heading),
@@ -174,5 +200,8 @@ export type BundleTarget = z.infer<typeof BundleTarget>;
 export type BundleDeployment = z.infer<typeof BundleDeployment>;
 export type BundleView = z.infer<typeof BundleView>;
 export type BundleAdr = z.infer<typeof BundleAdr>;
+export type BundleStructuralView = z.infer<typeof BundleStructuralView>;
+export type BundleDynamicView = z.infer<typeof BundleDynamicView>;
+export type BundleStep = z.infer<typeof BundleStep>;
 export type BundleSelector = z.infer<typeof BundleSelector>;
 export type BundleLens = z.infer<typeof BundleLens>;
