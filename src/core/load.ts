@@ -152,7 +152,7 @@ function readModelFile(file: SourceFile, ws: LoadedWorkspace) {
   for (const [id, value] of Object.entries(asRecord(data.services))) {
     const path = ["services", id];
     // Each Element is checked on its own; a bad one still registers its id.
-    if (value !== null && typeof value === "object") file.findings.push(...checkSchema(Service, value, file.parsed, path));
+    file.findings.push(...checkSchema(Service, value, file.parsed, path));
     const element: ElementDecl = { kind: "service", id, project: file.project!, file, path, data: asRecord(value), ...file.parsed.positionOf(path, { key: true }) };
     ws.elements.push(element);
   }
