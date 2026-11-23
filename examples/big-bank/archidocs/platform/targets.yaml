@@ -1,0 +1,25 @@
+targets:
+  aws-eu-west-2:
+    name: AWS eu-west-2 (London)
+    kind: region
+    targets:
+      eks-prod:
+        name: EKS prod
+        kind: cluster
+      eks-staging:
+        name: EKS staging
+        kind: cluster
+      msk-prod:
+        name: MSK prod
+        kind: platform
+  london-dc:
+    name: London data centre
+    kind: region
+    owner: core-banking
+    targets:
+      zos-prod:
+        name: z/OS production LPAR
+        kind: platform
+      zos-test:
+        name: z/OS test LPAR
+        kind: platform

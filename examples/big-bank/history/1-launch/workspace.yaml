@@ -1,0 +1,16 @@
+# Big Bank plc: a fictional bank, after the C4 model's internet banking example.
+teams:
+  digital-banking:
+    name: Digital Banking
+    description: Web, mobile and the internet banking API.
+  core-banking:
+    name: Core Banking
+    description: The mainframe and the systems that sit on it.
+  platform:
+    name: Platform
+    description: Cloud platform, messaging and e-mail.
+environments:
+  staging:
+    name: Staging
+  prod:
+    name: Production
