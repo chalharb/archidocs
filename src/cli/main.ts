@@ -4,7 +4,7 @@ import { cp, mkdir, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle } from "../core/index.ts";
+import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle, type ResolvedView } from "../core/index.ts";
 import { directions, layoutView, renderSvg, type Direction } from "../render/index.ts";
 import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
@@ -30,6 +30,7 @@ const usage = `Usage:
   archidocs check [--format text|json|github] [--strict]
   archidocs build [--out <dir>] [--bundle-only]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
+  archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
   archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
                 [--http [--host <loopback>] [--port <n>] [--allow-writes]]
 `;
@@ -73,12 +74,15 @@ async function main(argv: string[]): Promise<number> {
   if (command === "export") {
     const { values, positionals } = parseArgs({
       args: rest,
-      options: { format: { type: "string", default: "svg" }, out: { type: "string" }, direction: { type: "string" } },
+      options: { format: { type: "string", default: "svg" }, out: { type: "string" }, direction: { type: "string" }, "all-saved": { type: "boolean", default: false } },
       allowPositionals: true,
       strict: true,
     });
+    const allSaved = values["all-saved"];
     const [viewId, ...extra] = positionals;
-    if (viewId === undefined) throw new UsageError("Give the View to export, such as c1 or c2/<system>.");
+    if (allSaved && viewId !== undefined) throw new UsageError("Give a View or --all-saved, not both.");
+    if (allSaved && values.out === undefined) throw new UsageError("--all-saved needs --out <dir> for the pictures.");
+    if (!allSaved && viewId === undefined) throw new UsageError("Give the View to export, such as c1 or c2/<system>, or --all-saved.");
     if (extra.length > 0) throw new UsageError(`Export one View at a time; got ${positionals.join(", ")}.`);
     const format = values.format;
     if (format !== "svg" && format !== "png") throw new UsageError(`Unknown format "${format}"; use svg or png.`);
@@ -91,14 +95,33 @@ async function main(argv: string[]): Promise<number> {
       process.stderr.write("Not exporting: the Workspace has errors.\n");
       return FOUND_ERRORS;
     }
-    const view = resolveView(bundle, viewId);
-    if (!view) throw new UsageError(`Unknown View "${viewId}"; Generated Views are c1, c2, c2/<system> and c3/<service with Components>.`);
-    const layout = await layoutView(view, direction === undefined ? {} : { direction });
     const workspace = basename((await gitTopLevel(root)) ?? root);
-    const svg = renderSvg({ bundle, view, layout, source: { workspace, commit: bundle.commit, date: bundle.builtAt } });
-    const out = values.out ?? `${viewId.replace(/[/:]/g, "-")}.${format}`;
-    await writeFile(resolve(out), format === "svg" ? svg : await renderPngInNode(svg));
-    process.stdout.write(`Wrote ${out}\n`);
+    const fileName = (id: string) => `${id.replace(/[/:]/g, "-")}.${format}`;
+    /** Lays out and draws one View; `--direction` wins over a Saved View's own. */
+    const draw = async (view: ResolvedView, out: string) => {
+      const chosen = direction ?? view.direction;
+      const layout = await layoutView(view, chosen === undefined ? {} : { direction: chosen });
+      const svg = renderSvg({ bundle, view, layout, source: { workspace, commit: bundle.commit, date: bundle.builtAt } });
+      await writeFile(resolve(out), format === "svg" ? svg : await renderPngInNode(svg));
+      process.stdout.write(`Wrote ${out}\n`);
+    };
+
+    if (allSaved) {
+      await mkdir(resolve(values.out!), { recursive: true });
+      for (const saved of bundle.views) {
+        const view = resolveView(bundle, saved.id);
+        if (!view) {
+          process.stderr.write(`Skipped ${saved.id}: Deployment Views can't be exported yet.\n`);
+          continue;
+        }
+        await draw(view, join(values.out!, fileName(saved.id)));
+      }
+      return OK;
+    }
+    if (bundle.views.some((v) => v.id === viewId && v.level === "deployment")) throw new UsageError(`"${viewId}" is a Deployment View, which can't be exported yet.`);
+    const view = resolveView(bundle, viewId!);
+    if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components> and Saved Views (project:view-id).`);
+    await draw(view, values.out ?? fileName(viewId!));
     return OK;
   }
   if (command === "mcp") {

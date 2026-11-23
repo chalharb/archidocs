@@ -50,18 +50,7 @@ export function findPaths(bundle: Bundle, from: string, to: string, options: { m
   if (!a || !b) throw new Error(`Unknown Element "${!a ? from : to}"`);
 
   const inside = within(bundle);
-  const lift = lifter(bundle, finer(levelOf(a), levelOf(b)));
-  // The more specific of the two wins when one is inside the other.
-  const [inner, outer] = inside(to, from) ? [to, from] : [from, to];
-  const place = (id: string) => (inside(id, inner) ? inner : inside(id, outer) ? outer : lift(id));
-
-  const graph = new Graph();
-  for (const r of bundle.relationships) {
-    if (r.via) {
-      graph.add(place(r.from), place(r.via), r);
-      graph.add(place(r.via), place(r.to), r);
-    } else graph.add(place(r.from), place(r.to), r);
-  }
+  const graph = connections(bundle, from, to);
 
   const direct: DirectEdge[] = [];
   for (const [x, y] of [[from, to], [to, from]] as const) {
@@ -76,6 +65,61 @@ export function findPaths(bundle: Bundle, from: string, to: string, options: { m
     (p, q) => p.hops.length - q.hops.length || cmp(ids(p), ids(q)),
   );
   return { from, to, maxHops, direct, paths };
+}
+
+/**
+ * The paths a path selector or Lens takes between two Elements, both ways:
+ * `shortest` gives the shortest paths each way, however long; n gives every
+ * path without a repeated node of at most n hops. Unknown ids give none.
+ */
+export function pathsBetween(bundle: Bundle, from: string, to: string, paths: "shortest" | number): Path[] {
+  const known = new Set(bundle.elements.map((e) => e.id));
+  if (!known.has(from) || !known.has(to) || from === to) return [];
+  const graph = connections(bundle, from, to);
+  const found =
+    paths === "shortest"
+      ? [...shortestPaths(graph, from, to, known.size), ...shortestPaths(graph, to, from, known.size)]
+      : [...allPaths(graph, from, to, paths), ...allPaths(graph, to, from, paths)];
+  return found.sort((p, q) => p.hops.length - q.hops.length || cmp(ids(p), ids(q)));
+}
+
+/**
+ * The graph `findPaths` searches between two Elements: each Relationship's
+ * end inside either Element is lifted to it, every other end to the finer of
+ * their two levels, and a `via` broker is a hop of its own.
+ */
+function connections(bundle: Bundle, from: string, to: string): Graph {
+  const byId = new Map(bundle.elements.map((e) => [e.id, e]));
+  const inside = within(bundle);
+  const lift = lifter(bundle, finer(levelOf(byId.get(from)!), levelOf(byId.get(to)!)));
+  // The more specific of the two wins when one is inside the other.
+  const [inner, outer] = inside(to, from) ? [to, from] : [from, to];
+  const place = (id: string) => (inside(id, inner) ? inner : inside(id, outer) ? outer : lift(id));
+
+  const graph = new Graph();
+  for (const r of bundle.relationships) {
+    if (r.via) {
+      graph.add(place(r.from), place(r.via), r);
+      graph.add(place(r.via), place(r.to), r);
+    } else graph.add(place(r.from), place(r.to), r);
+  }
+  return graph;
+}
+
+/** Every path from `source` to `target` of at most `maxHops` hops that repeats no node. */
+function allPaths(graph: Graph, source: string, target: string, maxHops: number): Path[] {
+  const found: Path[] = [];
+  const walk = (nodes: string[]) => {
+    const at = nodes.at(-1)!;
+    if (at === target) {
+      found.push({ hops: nodes.slice(1).map((n, i) => ({ from: nodes[i]!, to: n, relationships: graph.out.get(nodes[i]!)!.get(n)! })) });
+      return;
+    }
+    if (nodes.length > maxHops) return;
+    for (const [next] of graph.next(at)) if (!nodes.includes(next)) walk([...nodes, next]);
+  };
+  walk([source]);
+  return found;
 }
 
 const ids = (p: Path) => [p.hops[0]?.from, ...p.hops.map((h) => h.to)].join("\0");

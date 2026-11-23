@@ -14,11 +14,11 @@
 | [`file-outside-project`](#file-outside-project) | error | A model file is under no Project. |
 | [`duplicate-project-id`](#duplicate-project-id) | error | Two Projects share an id. |
 | [`definition-outside-workspace`](#definition-outside-workspace) | error | `teams` or `environments` declared outside `workspace.yaml`. |
-| [`unknown-team`](#unknown-team) | error | An `owner` names no Team. |
+| [`unknown-team`](#unknown-team) | error | An `owner`, or a Saved View's `{team}` selector or Team Lens, names no Team. |
 | [`duplicate-id`](#duplicate-id) | error | An Element or Deployment Target id is declared twice in a Project, across files too, whatever its kind or nesting. |
 | [`invalid-nesting`](#invalid-nesting) | error | System > Service > Component is broken, by nesting or `in:`. |
 | [`external-with-components`](#external-with-components) | error | An External System or Service declares Components. |
-| [`unknown-element`](#unknown-element) | error | A reference names no Element: in `to`, `via`, `in` or a Deployment's `service`. |
+| [`unknown-element`](#unknown-element) | error | A reference names no Element: in `to`, `via`, `in`, a Deployment's `service`, or a Saved View's selectors, `expand`, `collapse` or Lens. |
 | [`unknown-project`](#unknown-project) | error | A `project:` prefix names no Project. |
 | [`own-project-prefix`](#own-project-prefix) | error | A Project qualifies its own ids. |
 | [`duplicate-relationship-id`](#duplicate-relationship-id) | error | A Relationship `id` repeats in a Project. |
@@ -28,10 +28,15 @@
 | [`via-on-sync`](#via-on-sync) | error | `via` or `channel` on a sync Relationship. |
 | [`via-not-broker`](#via-not-broker) | error | `via` names a Service that isn't `type: broker`. |
 | [`duplicate-deployment`](#duplicate-deployment) | error | The same Service, Environment and Target appear twice. |
-| [`unknown-environment`](#unknown-environment) | error | A Deployment names no Environment. |
-| [`unknown-target`](#unknown-target) | error | A Deployment names no Deployment Target. |
+| [`unknown-environment`](#unknown-environment) | error | A Deployment, or a Saved Deployment View, names no Environment. |
+| [`unknown-target`](#unknown-target) | error | A Deployment, or a Saved Deployment View's `targets`, names no Deployment Target. |
 | [`wrong-kind`](#wrong-kind) | error | An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service. |
-| [`oversized-view`](#oversized-view) | warning | A Generated View has more than 150 nodes, too many for a readable diagram. It is reported at its System or Service, or at `workspace.yaml` for the Landscapes. |
+| [`oversized-view`](#oversized-view) | warning | A View has more than 150 nodes, too many for a readable diagram. A Generated View is reported at its System or Service, or at `workspace.yaml` for the Landscapes; a Saved View at its id. |
+| [`duplicate-view-id`](#duplicate-view-id) | error | A Saved View id repeats in a Project, across files too. |
+| [`target-outside-environment`](#target-outside-environment) | error | A Saved Deployment View's `targets` entry has no Deployment in the View's `environment`, on it or on any Target inside it. |
+| [`bad-expand`](#bad-expand) | error | A Saved View's `expand` or `collapse` id is not a node of the View once collapsed to its `level`, or has no children. |
+| [`empty-view`](#empty-view) | warning | A Saved View resolves to no nodes. |
+| [`unresolved-path`](#unresolved-path) | warning | A Saved View's path selector, or path Lens, finds no path between its two Elements. |
 
 ## `yaml-syntax`
 
@@ -288,7 +293,7 @@ environments:
 
 **Severity:** error
 
-An `owner` names no Team.
+An `owner`, or a Saved View's `{team}` selector or Team Lens, names no Team.
 
 **Failing example**
 
@@ -416,7 +421,7 @@ services:
 
 **Severity:** error
 
-A reference names no Element: in `to`, `via`, `in` or a Deployment's `service`.
+A reference names no Element: in `to`, `via`, `in`, a Deployment's `service`, or a Saved View's selectors, `expand`, `collapse` or Lens.
 
 **Failing example**
 
@@ -786,7 +791,7 @@ deployments:
 
 **Severity:** error
 
-A Deployment names no Environment.
+A Deployment, or a Saved Deployment View, names no Environment.
 
 **Failing example**
 
@@ -836,7 +841,7 @@ deployments:
 
 **Severity:** error
 
-A Deployment names no Deployment Target.
+A Deployment, or a Saved Deployment View's `targets`, names no Deployment Target.
 
 **Failing example**
 
@@ -936,7 +941,7 @@ deployments:
 
 **Severity:** warning
 
-A Generated View has more than 150 nodes, too many for a readable diagram. It is reported at its System or Service, or at `workspace.yaml` for the Landscapes.
+A View has more than 150 nodes, too many for a readable diagram. A Generated View is reported at its System or Service, or at `workspace.yaml` for the Landscapes; a Saved View at its id.
 
 **Failing example**
 
@@ -1099,7 +1104,7 @@ systems:
       s150: { name: S150 }
 ```
 
-**Fix:** Split the System, or group top-level Services and Systems, so each View stays within the limit.
+**Fix:** Split the System, or group top-level Services and Systems, so each Generated View stays within the limit; narrow a Saved View's selectors or raise its `level`.
 
 **Fixed**
 
@@ -1263,4 +1268,248 @@ systems:
       s148: { name: S148 }
       s149: { name: S149 }
       s150: { name: S150 }
+```
+
+## `duplicate-view-id`
+
+**Severity:** error
+
+A Saved View id repeats in a Project, across files too.
+
+**Failing example**
+
+`shop/more.yaml`:
+
+```yaml
+views:
+  structural:
+    front:
+      title: Front again
+      level: c2
+```
+
+**Fix:** Give one of the Views a different id.
+
+**Fixed**
+
+`shop/more.yaml`:
+
+```yaml
+views:
+  structural:
+    front-v2:
+      title: Front again
+      level: c2
+```
+
+## `target-outside-environment`
+
+**Severity:** error
+
+A Saved Deployment View's `targets` entry has no Deployment in the View's `environment`, on it or on any Target inside it.
+
+**Failing example**
+
+`shop/views.yaml`:
+
+```yaml
+targets:
+  eks-staging:
+    name: EKS staging
+    kind: cluster
+views:
+  structural:
+    runtime:
+      title: Runtime
+      level: deployment
+      environment: prod
+      targets: [eks-staging]
+```
+
+**Fix:** Remove the Target from `targets`, or point the View at the Environment that runs on it.
+
+**Fixed**
+
+`shop/views.yaml`:
+
+```yaml
+targets:
+  eks-staging:
+    name: EKS staging
+    kind: cluster
+views:
+  structural:
+    runtime:
+      title: Runtime
+      level: deployment
+      environment: prod
+      targets: [eks-prod]
+```
+
+## `bad-expand`
+
+**Severity:** error
+
+A Saved View's `expand` or `collapse` id is not a node of the View once collapsed to its `level`, or has no children.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  search:
+    name: Search
+views:
+  structural:
+    front:
+      title: Front
+      level: c2
+      include: [web]
+      expand: [web]
+```
+
+**Fix:** Remove the id, include the Element in the View, or name an Element that has children.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  search:
+    name: Search
+views:
+  structural:
+    front:
+      title: Front
+      level: c2
+      include: [web, cart]
+      expand: [cart]
+```
+
+## `empty-view`
+
+**Severity:** warning
+
+A Saved View resolves to no nodes.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  search:
+    name: Search
+views:
+  structural:
+    front:
+      title: Front
+      level: c2
+      include: [{ tag: storefront }]
+```
+
+**Fix:** Correct the selectors so they name Elements, or remove the View.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    tags: [storefront]
+views:
+  structural:
+    front:
+      title: Front
+      level: c2
+      include: [{ tag: storefront }]
+```
+
+## `unresolved-path`
+
+**Severity:** warning
+
+A Saved View's path selector, or path Lens, finds no path between its two Elements.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  search:
+    name: Search
+views:
+  structural:
+    front:
+      title: Front
+      level: c2
+      include: [{ from: web, to: search }]
+```
+
+**Fix:** Check the Relationships between the two Elements, or raise `paths`; remove the selector if the path is gone for good.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  web:
+    name: Web
+    relationships:
+      - to: cart
+  cart:
+    name: Cart
+    components:
+      cart-api:
+        name: Cart API
+  search:
+    name: Search
+views:
+  structural:
+    front:
+      title: Front
+      level: c2
+      include: [{ from: web, to: cart }]
 ```

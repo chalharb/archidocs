@@ -421,12 +421,14 @@ describe("write tools", () => {
       "remove_element",
       "remove_relationship",
       "remove_target",
+      "remove_view",
       "upsert_deployment",
       "upsert_element",
       "upsert_environment",
       "upsert_relationship",
       "upsert_target",
       "upsert_team",
+      "upsert_view",
     ]);
     const unscoped = ["check", "create_project", "upsert_team", "upsert_environment"];
     for (const t of tools.filter((t) => t.name !== "check")) expect(t.inputSchema.properties, t.name).toMatchObject({ dry_run: { type: "boolean", default: false } });

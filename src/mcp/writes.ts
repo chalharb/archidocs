@@ -215,6 +215,37 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
   );
 
   writeTool(
+    "upsert_view",
+    {
+      title: "Add or update a Saved View",
+      description: [
+        "Adds a Saved structural or Deployment View under `views: structural:` in a Project's YAML, or replaces an existing one's definition; comments on keys left unchanged are kept.",
+        "`definition` has the YAML structure: title, level (c1|c2|c3|deployment), include/exclude selectors (an id; {element, with, upstream, downstream}; {team}; {tag}; {from, to, paths}), expand, collapse, direction, lens, and for a Deployment View environment and targets. Ids are bare in this Project, or project:id.",
+        "A new View goes into `file` (relative to the Project's folder), else `model.yaml`.",
+      ].join(" "),
+      input: z.object({
+        project: Project,
+        id: Ref.describe("The View's id, unique among this Project's Views"),
+        definition: z.record(z.string(), z.unknown()).describe("The View as written in YAML"),
+        file: z.string().optional().describe("For a new View: a .yaml file relative to the Project's folder"),
+        dry_run: DryRun,
+      }),
+    },
+    (a) => ({ op: "upsert-view", project: a.project, id: a.id, definition: a.definition, ...(a.file === undefined ? {} : { file: a.file }) }),
+  );
+
+  writeTool(
+    "remove_view",
+    {
+      title: "Remove a Saved View",
+      description: "Removes a Saved View from its Project's YAML.",
+      input: z.object({ project: Project, id: Ref, dry_run: DryRun }),
+      destructive: true,
+    },
+    (a) => ({ op: "remove-view", project: a.project, id: a.id }),
+  );
+
+  writeTool(
     "create_project",
     {
       title: "Create a Project",
@@ -271,6 +302,8 @@ function describe(item: WriteItem, subject: Record<string, string | null>): stri
       return `Deployment of ${subject.service} to ${subject.environment} on ${subject.target}`;
     case "target":
       return `Deployment Target ${subject.id}`;
+    case "view":
+      return `Saved View ${subject.id}`;
     default:
       return `${item[0]!.toUpperCase()}${item.slice(1)} ${subject.id}`;
   }

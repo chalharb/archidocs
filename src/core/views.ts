@@ -1,4 +1,5 @@
-import type { Bundle, BundleElement, BundleRelationship } from "../schema/bundle.ts";
+import type { Bundle, BundleElement, BundleLens, BundleRelationship } from "../schema/bundle.ts";
+import { resolveSaved } from "./saved-views.ts";
 
 /** The most nodes a View may have before `oversized-view` warns. */
 export const MAX_VIEW_NODES = 150;
@@ -17,13 +18,26 @@ export interface ViewNode {
   collapsed: boolean;
   /** True for an External System or Service. */
   external: boolean;
+  /** Set on every node of a View with a Lens: whether the Lens hits it, and for an impact Lens its nearest distance. */
+  mark?: NodeMark;
 }
+
+/** How a Lens marks a node; a collapsed box is hit when anything inside it is. */
+export interface NodeMark {
+  hit: boolean;
+  distance?: number;
+}
+
+/** A Saved View's drawing direction. */
+export type ViewDirection = "TB" | "BT" | "LR" | "RL";
 
 /** An edge between two nodes, with the declared Relationships beneath it. */
 export interface ViewEdge {
   from: string;
   to: string;
   relationships: BundleRelationship[];
+  /** Set on every edge of a View with a Lens: whether the Lens lights it. */
+  lit?: boolean;
 }
 
 /** A View resolved to nodes and edges, sorted by id and by `from`, then `to`. */
@@ -31,6 +45,10 @@ export interface ResolvedView {
   id: string;
   kind: ViewKind;
   title: string;
+  /** A Saved View's own direction, if it sets one. */
+  direction?: ViewDirection;
+  /** A Saved View's Lens, if it carries one. */
+  lens?: BundleLens;
   nodes: ViewNode[];
   edges: ViewEdge[];
 }
@@ -45,11 +63,14 @@ export interface ResolveOptions {
 }
 
 /**
- * Resolves a Generated View by id: `c1`, `c2`, `c2/<system>` or
- * `c3/<service>` (only for a Service with Components). Returns undefined for
- * an unknown scope.
+ * Resolves a View by id: a Generated View (`c1`, `c2`, `c2/<system>` or
+ * `c3/<service>`, only for a Service with Components) or a Saved structural
+ * View (`project:view-id`). Returns undefined for an unknown id, and for a
+ * Saved Deployment View, which this resolver can't draw yet.
  */
 export function resolveView(bundle: Bundle, id: string, options: ResolveOptions = {}): ResolvedView | undefined {
+  const saved = bundle.views.find((v) => v.id === id);
+  if (saved) return resolveSaved(bundle, saved)?.view;
   const model = new ModelIndex(bundle);
   if (id === "c1") return landscape(model, "c1", "C1 Landscape", []);
   if (id === "c2") return landscape(model, "c2", "C2 Landscape", options.expand ?? []);
@@ -64,18 +85,29 @@ export function resolveView(bundle: Bundle, id: string, options: ResolveOptions 
   return undefined;
 }
 
-/** A Generated View as listed, without its nodes and edges. */
-export type ViewSummary = Pick<ResolvedView, "id" | "kind" | "title">;
+/** The kinds a View is listed under: a Saved View's is its `level`. */
+export type ListedKind = ViewKind | "deployment";
+
+/** A View as listed, without its nodes and edges. */
+export interface ViewSummary {
+  id: string;
+  kind: ListedKind;
+  title: string;
+}
 
 /**
  * Every Generated View, in the order `c1`, `c2`, then `c2/<system>` and
- * `c3/<service>` by id. `kind` keeps one kind; `element` keeps the Views
- * that show that Element as a node.
+ * `c3/<service>` by id, then every Saved View by id. `kind` keeps one kind;
+ * `element` keeps the Views that show that Element as a node.
  */
-export function listViews(bundle: Bundle, filter: { kind?: ViewKind; element?: string } = {}): ViewSummary[] {
+export function listViews(bundle: Bundle, filter: { kind?: ListedKind; element?: string } = {}): ViewSummary[] {
   const ids = generatedViewIds(bundle).filter((id) => filter.kind === undefined || id.split("/")[0] === filter.kind);
-  const views = filter.element === undefined ? ids.map((id) => summarise(id, bundle)) : resolveAll(bundle, ids).filter((v) => v.nodes.some((n) => n.id === filter.element));
-  return views.map(({ id, kind, title }) => ({ id, kind, title }));
+  const generated: ViewSummary[] = filter.element === undefined ? ids.map((id) => summarise(id, bundle)) : resolveAll(bundle, ids).filter((v) => v.nodes.some((n) => n.id === filter.element));
+  const saved = bundle.views
+    .filter((v) => filter.kind === undefined || v.level === filter.kind)
+    .filter((v) => filter.element === undefined || resolveSaved(bundle, v)?.view.nodes.some((n) => n.id === filter.element))
+    .map((v) => ({ id: v.id, kind: v.level, title: v.title }));
+  return [...generated, ...saved].map(({ id, kind, title }) => ({ id, kind, title }));
 }
 
 /** Every Generated View, resolved, in `listViews` order. */
@@ -93,7 +125,7 @@ function generatedViewIds(bundle: Bundle): string[] {
 }
 
 /** A Generated View's id, kind and title without resolving it; `id` must be one `generatedViewIds` gave. */
-function summarise(id: string, bundle: Bundle): ViewSummary {
+function summarise(id: string, bundle: Bundle): ViewSummary & { kind: ViewKind } {
   if (id === "c1") return { id, kind: "c1", title: "C1 Landscape" };
   if (id === "c2") return { id, kind: "c2", title: "C2 Landscape" };
   const [kind, elementId] = [id.slice(0, 2) as ViewKind, id.slice(3)];
@@ -149,7 +181,7 @@ function focused(model: ModelIndex, head: Pick<ResolvedView, "id" | "kind" | "ti
  * landing on one pair form one edge. An edge is kept when `keep` accepts the
  * declared Relationship and its ends are two different nodes.
  */
-function build(
+export function build(
   model: ModelIndex,
   head: Pick<ResolvedView, "id" | "kind" | "title">,
   shown: Set<string>,
@@ -183,7 +215,7 @@ function build(
 }
 
 /** Lookups over a Bundle's Elements. */
-class ModelIndex {
+export class ModelIndex {
   readonly elements: BundleElement[];
   readonly relationships: BundleRelationship[];
   readonly byId: Map<string, BundleElement>;

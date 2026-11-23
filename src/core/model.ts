@@ -107,6 +107,16 @@ export interface DeploymentDecl extends Position {
   target?: TargetDecl;
 }
 
+/** One Saved View under `views: structural:` in a Project file. */
+export interface ViewDecl extends Position {
+  id: string;
+  project: Project;
+  file: SourceFile;
+  /** `["views", "structural", id]` in its file. */
+  path: string[];
+  data: Record<string, unknown>;
+}
+
 /** Everything Load read from disk, before rules run and the Bundle is built. */
 export interface LoadedWorkspace {
   files: SourceFile[];
@@ -122,4 +132,6 @@ export interface LoadedWorkspace {
   targets: TargetDecl[];
   /** Sorted by file, then line. */
   deployments: DeploymentDecl[];
+  /** Sorted by file, then line. */
+  views: ViewDecl[];
 }
