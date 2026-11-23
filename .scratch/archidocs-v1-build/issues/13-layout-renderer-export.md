@@ -1,6 +1,7 @@
 # 13: Layout, renderer and export
 
 Status: ready-for-agent
+Assignee: Claude (ticket-13 session)
 Blocked by: 12
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
