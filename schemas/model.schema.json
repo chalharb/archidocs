@@ -1234,6 +1234,82 @@
             ],
             "additionalProperties": false
           }
+        },
+        "dynamic": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "participants": {
+                "description": "Fixes the participants' order; otherwise they are ordered by first appearance",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                }
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string",
+                      "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                      "description": "An id in this Project, or `project:id` for one in another Project"
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                      "description": "An id in this Project, or `project:id` for one in another Project"
+                    },
+                    "relationship": {
+                      "description": "The id of the Relationship the Step takes, when several connect the pair",
+                      "type": "string",
+                      "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "return": {
+                      "description": "The reply to a sync Relationship from `to` to `from`",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "title",
+              "steps"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

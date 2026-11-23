@@ -75,6 +75,7 @@ describe("get_element", () => {
       deployments: [],
       relationships: { in: [], out: [] },
       derived: { in: [], out: [] },
+      dynamicViews: [],
     });
     expect(text(result)).toBe(
       [

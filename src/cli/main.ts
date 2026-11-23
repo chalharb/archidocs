@@ -111,14 +111,15 @@ async function main(argv: string[]): Promise<number> {
       for (const saved of bundle.views) {
         const view = resolveView(bundle, saved.id);
         if (!view) {
-          process.stderr.write(`Skipped ${saved.id}: Deployment Views can't be exported yet.\n`);
+          process.stderr.write(`Skipped ${saved.id}: ${saved.kind === "dynamic" ? "Dynamic" : "Deployment"} Views can't be exported yet.\n`);
           continue;
         }
         await draw(view, join(values.out!, fileName(saved.id)));
       }
       return OK;
     }
-    if (bundle.views.some((v) => v.id === viewId && v.level === "deployment")) throw new UsageError(`"${viewId}" is a Deployment View, which can't be exported yet.`);
+    const saved = bundle.views.find((v) => v.id === viewId);
+    if (saved && (saved.kind === "dynamic" || saved.level === "deployment")) throw new UsageError(`"${viewId}" is a ${saved.kind === "dynamic" ? "Dynamic" : "Deployment"} View, which can't be exported yet.`);
     const view = resolveView(bundle, viewId!);
     if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components> and Saved Views (project:view-id).`);
     await draw(view, values.out ?? fileName(viewId!));
