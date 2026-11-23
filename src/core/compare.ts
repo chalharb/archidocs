@@ -5,10 +5,7 @@ import { ModelIndex, resolveView, type ResolveOptions, type ResolvedView } from 
 /** How Compare marks a node or edge of a View between two Bundles. */
 export type CompareMark = "added" | "removed" | "changed" | "unchanged";
 
-const withoutSource = (item: object) => {
-  const { source: _source, ...rest } = item as { source?: unknown };
-  return JSON.stringify(rest);
-};
+const withoutSource = (item: object) => JSON.stringify({ ...item, source: undefined });
 
 /** Items of both sides, each once: the later side's where both have it. */
 function union<T>(before: T[], after: T[], key: (item: T) => string): T[] {

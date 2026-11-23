@@ -1,6 +1,6 @@
 # 25: History in the viewer and site retention
 
-Status: ready-for-agent
+Status: done
 Assignee: Claude (ticket-25 session)
 Blocked by: 15, 23
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
@@ -22,6 +22,6 @@ The published site carries history, and people explore it in the viewer.
 
 ## Acceptance criteria
 
-- [ ] CLI tests cover retention with tags and `bundle: false` entries.
-- [ ] Playwright covers Compare marks, a removed System's C2 opening, and the History tab opening Compare.
-- [ ] `at` on a dropped Revision shows `history_unavailable` guidance.
+- [x] CLI tests cover retention with tags and `bundle: false` entries.
+- [x] Playwright covers Compare marks, a removed System's C2 opening, and the History tab opening Compare.
+- [x] `at` on a dropped Revision shows `history_unavailable` guidance.
