@@ -24,8 +24,9 @@ export interface SavedScreen {
   call: { tool: "upsert_view"; arguments: { project: string; id: string; definition: SavedViewDefinition } };
 }
 
-const kindLevel: Record<string, ViewKind> = { person: "c1", system: "c1", service: "c2", component: "c3" };
-const levelDepth: Record<ViewKind, number> = { c1: 1, c2: 2, c3: 3 };
+type Level = Exclude<ViewKind, "deployment">;
+const kindLevel: Record<string, Level> = { person: "c1", system: "c1", service: "c2", component: "c3" };
+const levelDepth: Record<Level, number> = { c1: 1, c2: 2, c3: 3 };
 
 /**
  * Save as View: turns the screen into a Saved View definition that the core
@@ -35,6 +36,7 @@ const levelDepth: Record<ViewKind, number> = { c1: 1, c2: 2, c3: 3 };
  * `upstream`/`downstream: all`, a Team Lens `{team}`, Connect to… a path
  * selector) and is kept as `lens:`. Nodes the Lens selector would add beyond
  * the screen are excluded. A Saved View with no picks keeps its own selectors.
+ * A Deployment View is saved whole, over its Environment, its Lens as `lens:`.
  */
 export function saveAsView(bundle: Bundle, screen: Screen, target: { project: string; id: string; title: string }): SavedScreen {
   const view = resolveView(bundle, screen.view, { expand: screen.open });
@@ -44,7 +46,10 @@ export function saveAsView(bundle: Bundle, screen: Screen, target: { project: st
   const lens = screen.lens ? { lens: writtenLens(screen.lens) } : {};
 
   let body: Record<string, unknown>;
-  if (own && screen.picks.length === 0) {
+  if (view.kind === "deployment" && screen.picks.length > 0) throw new Error("Save as View keeps a whole Deployment View; clear the picks first.");
+  if (view.kind === "deployment" && !own) {
+    body = { level: "deployment", environment: screen.view.slice("deployment/".length) };
+  } else if (own && screen.picks.length === 0) {
     body = {
       level: own.level,
       ...(own.include === null ? {} : { include: own.include }),
@@ -61,8 +66,8 @@ export function saveAsView(bundle: Bundle, screen: Screen, target: { project: st
       .sort((a, b) => depthOf(a) - depthOf(b));
     const byExpand = new Set(expand.flatMap((id) => model.children(id).map((c) => c.id)));
     const ids = [...kept].filter((id) => !byExpand.has(id)).sort();
-    const deepest = ids.reduce((d, id) => Math.max(d, levelDepth[kindLevel[model.byId.get(id)!.kind]!]), levelDepth[view.kind]);
-    const level = (Object.keys(levelDepth) as ViewKind[]).find((l) => levelDepth[l] === deepest)!;
+    const deepest = ids.reduce((d, id) => Math.max(d, levelDepth[kindLevel[model.byId.get(id)!.kind]!]), levelDepth[view.kind as Level]);
+    const level = (Object.keys(levelDepth) as Level[]).find((l) => levelDepth[l] === deepest)!;
 
     const plain = { level, include: ids, ...nonEmpty({ expand }) };
     const selector = screen.lens ? lensSelector(screen.lens) : undefined;
@@ -110,7 +115,7 @@ function writtenLens(lens: BundleLens): Record<string, unknown> {
 }
 
 /** The node ids the core engine resolves a definition to. */
-function nodesOf(bundle: Bundle, def: { level: ViewKind; include: BundleSelector[]; exclude?: BundleSelector[]; expand?: string[] }): Set<string> {
+function nodesOf(bundle: Bundle, def: { level: Level; include: BundleSelector[]; exclude?: BundleSelector[]; expand?: string[] }): Set<string> {
   const resolved = resolveSaved(bundle, {
     id: "screen:saved",
     project: "screen",

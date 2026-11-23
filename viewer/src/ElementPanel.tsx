@@ -21,13 +21,15 @@ export interface ElementPanelProps {
   onFocus: (id: string) => void;
   onOpenView: (id: string) => void;
   onOpenAdr: (id: string) => void;
+  /** Opens an Environment's Deployment View with these nodes marked. */
+  onDeployed: (view: string, nodes: string[]) => void;
   timeline: Timeline;
   comparison: Comparison | undefined;
   onTime: (time: Pick<Place, "at" | "vs">) => void;
 }
 
 /** Everything about the selected Element: Overview with the persona actions, URLs per Environment, its ADRs, Links and its History. */
-export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onOpenAdr, timeline, comparison, onTime }: ElementPanelProps) {
+export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onOpenAdr, onDeployed, timeline, comparison, onTime }: ElementPanelProps) {
   const [tab, setTab] = useState<Tab>("Overview");
   const element = workspace.byId.get(id);
   if (!element) return null;
@@ -87,6 +89,7 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
                 </button>
               )}
             </section>
+            {element.kind === "service" && <WhereDeployed workspace={workspace} id={id} onDeployed={onDeployed} />}
           </>
         )}
         {tab === "URLs" && <Urls workspace={workspace} id={id} />}
@@ -95,6 +98,27 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
         {tab === "History" && <History workspace={workspace} id={id} timeline={timeline} onTime={onTime} />}
       </div>
     </aside>
+  );
+}
+
+/** "Where is it deployed?": one button per Environment the Service runs in, opening its Deployment View with the Service's Deployments marked. */
+function WhereDeployed({ workspace, id, onDeployed }: { workspace: Workspace; id: string; onDeployed: (view: string, nodes: string[]) => void }) {
+  const places = useMemo(() => workspace.deployedIn(id), [workspace, id]);
+  return (
+    <section className="ad-actions" role="region" aria-label="Where is it deployed?">
+      <h3>Where is it deployed?</h3>
+      {places.length === 0 ? (
+        <p className="ad-empty">Not deployed in any Environment.</p>
+      ) : (
+        <div className="ad-deployed">
+          {places.map((p) => (
+            <button key={p.environment} type="button" className="ad-action" onClick={() => onDeployed(p.view, p.nodes)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

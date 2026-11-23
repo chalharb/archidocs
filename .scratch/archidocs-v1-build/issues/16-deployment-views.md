@@ -1,6 +1,7 @@
 # 16: Deployment Views end to end
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket 16 session)
 Blocked by: 05, 13, 15
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -15,6 +16,6 @@ Each Environment has a Deployment View in MCP, export and the viewer.
 
 ## Acceptance criteria
 
-- [ ] Resolver tests cover the nearest-provider rule, the fallback when no Target is shared, and External providers.
-- [ ] A golden SVG for a Deployment View.
-- [ ] Playwright acceptance test for the Solutions Architect question.
+- [x] Resolver tests cover the nearest-provider rule, the fallback when no Target is shared, and External providers.
+- [x] A golden SVG for a Deployment View.
+- [x] Playwright acceptance test for the Solutions Architect question.

@@ -165,5 +165,21 @@ test.describe("Save as View", () => {
     expect(parse(yaml).views.structural["web-to-payments"].include).toContainEqual({ from: "web", to: "payments:payments", paths: "shortest" });
     expect(await resolvedIds({ "shop/saved.yaml": yaml }, "shop:web-to-payments")).toEqual(screenPicks);
   });
+
+  test("a Deployment View saves whole over its Environment, and with picks says to clear them", async ({ page }) => {
+    await open(page, "#/view/deployment/prod");
+    const { yaml, call } = await savedYamlAndCall(page, "prod", "Prod");
+    expect(parse(yaml).views.structural.prod).toEqual({ title: "Prod", level: "deployment", environment: "prod" });
+    const screen = (await nodeIds(page)).sort();
+    expect(await resolvedIds({ "shop/saved.yaml": yaml }, "shop:prod")).toEqual(screen);
+    expect(await upsertedIds(call, "shop:prod")).toEqual(screen);
+    await page.keyboard.press("Escape");
+
+    await open(page, "#/view/deployment/prod?picks=shop:cart@platform:eks-prod");
+    await page.getByRole("button", { name: "Save as View" }).click();
+    const dialog = page.getByRole("dialog", { name: "Save as View" });
+    await expect(dialog.getByRole("alert")).toHaveText("Save as View keeps a whole Deployment View; clear the picks first.");
+    await expect(dialog.getByLabel("YAML", { exact: true })).toHaveCount(0);
+  });
 });
 

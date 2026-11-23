@@ -310,6 +310,43 @@ a {
   padding: 2px 4px;
 }
 
+.ad-deployments {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.ad-deployments-label {
+  color: var(--faint);
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+.ad-deployment-link {
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.ad-deployment-link:hover {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.ad-deployment-link.ad-current {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.ad-deployed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .ad-chips {
   display: flex;
   flex-wrap: wrap;
@@ -444,6 +481,13 @@ a {
   box-shadow: none;
   border-style: dashed;
   overflow: visible;
+}
+
+/* A Deployment Target is a solid frame, so the dashed System boxes inside it read as grouping only. */
+.ad-box.ad-target.ad-container {
+  border-style: solid;
+  border-color: var(--faint);
+  background: transparent;
 }
 
 .ad-box.ad-selected {

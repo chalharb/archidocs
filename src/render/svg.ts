@@ -48,6 +48,7 @@ const DIM = 0.35;
  */
 export function renderSvg({ bundle, view, layout, source }: RenderInput): string {
   const elements = new Map(bundle.elements.map((e) => [e.id, e]));
+  const targets = new Map(bundle.targets.map((t) => [t.id, t]));
   const teams = teamStyles(bundle);
   const boxes = new Map(layout.nodes.map((n) => [n.id, n]));
   const containers = new Set(view.nodes.map((n) => n.parent).filter((p) => p !== null));
@@ -62,9 +63,10 @@ export function renderSvg({ bundle, view, layout, source }: RenderInput): string
   const byDepth = view.nodes.map((n) => ({ n, d: depth(n) })).sort((a, b) => a.d - b.d).map(({ n }) => n);
   const drawn = (n: ViewNode) => {
     const box = boxes.get(n.id)!;
-    const element = elements.get(n.id);
-    const team = element ? teams.get(element.owner) : undefined;
-    const drawing = containers.has(n.id) ? drawContainer(n, box, team) : drawNode(n, box, element, team);
+    const element = elements.get(n.element ?? n.id);
+    const target = n.kind === "target" ? targets.get(n.id) : undefined;
+    const team = teams.get(element?.owner ?? target?.owner ?? "");
+    const drawing = containers.has(n.id) ? drawContainer(n, box, team, target?.kind) : drawNode(n, box, element, team);
     return n.mark && !n.mark.hit ? `<g opacity="${DIM}">${drawing}</g>` : drawing;
   };
 
@@ -126,7 +128,7 @@ function drawNode(n: ViewNode, box: LaidOutNode, element: BundleElement | undefi
   ].join("");
 }
 
-function drawContainer(n: ViewNode, box: LaidOutNode, team: TeamStyle | undefined): string {
+function drawContainer(n: ViewNode, box: LaidOutNode, team: TeamStyle | undefined, targetKind?: string): string {
   const { x, y, width: w, height: h } = box;
   const dash = n.external ? ` stroke-dasharray="6 4"` : "";
   const code = team?.code ?? "";
@@ -135,7 +137,7 @@ function drawContainer(n: ViewNode, box: LaidOutNode, team: TeamStyle | undefine
     `<g>`,
     `<rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(w)}" height="${fmt(h)}" rx="10" fill="${COLOR.container}" ${outline(n)}${dash}/>`,
     ...(team ? [`<rect x="${fmt(x + 1)}" y="${fmt(y + 1)}" width="5" height="${fmt(h - 2)}" fill="${team.color}"/>`] : []),
-    text(x + 16, y + 24, cut(`${n.name} · ${kindName(n)}`, 13, w - 26 - codeWidth), { size: 13, fill: COLOR.ink }),
+    text(x + 16, y + 24, cut(`${n.name} · ${targetKind ?? kindName(n)}`, 13, w - 26 - codeWidth), { size: 13, fill: COLOR.ink }),
     ...(code ? [text(x + w - 10, y + 22, code, { size: 10, fill: COLOR.muted, anchor: "end" })] : []),
     ...distanceBadge(n, box),
     `</g>`,
@@ -180,11 +182,11 @@ function drawKey(lens: string | undefined): { parts: string[]; width: number } {
   return { parts, width: x - 24 };
 }
 
-const kindName = (n: ViewNode) => ({ person: "Person", system: "System", service: "Service", component: "Component" })[n.kind];
+const kindName = (n: ViewNode) => ({ person: "Person", system: "System", service: "Service", component: "Component", target: "Deployment Target", deployment: "Deployment" })[n.kind];
 
 /** The line under a node's name: External, its kind (or Service type), and its technology. */
 function subLabel(n: ViewNode, element: BundleElement | undefined): string {
-  const type = element?.kind === "service" && element.type !== "app" ? { datastore: "Datastore", broker: "Broker" }[element.type] : kindName(n);
+  const type = n.kind !== "deployment" && element?.kind === "service" && element.type !== "app" ? { datastore: "Datastore", broker: "Broker" }[element.type] : kindName(n);
   const technology = element && "technology" in element ? element.technology : null;
   return [`${n.external ? "External " : ""}${type}`, ...(technology ? [technology] : [])].join(" · ");
 }

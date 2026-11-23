@@ -38,9 +38,12 @@ describe("list_views", () => {
     const { call } = await setup();
 
     expect((await call("list_views", { kind: "deployment" })).structuredContent).toEqual({
-      total: 1,
+      total: 2,
       truncated: false,
-      views: [{ id: "architecture:runtime", kind: "deployment", title: "Runtime" }],
+      views: [
+        { id: "deployment/prod", kind: "deployment", title: "Production (Deployment)" },
+        { id: "architecture:runtime", kind: "deployment", title: "Runtime" },
+      ],
     });
     expect((await call("list_views", { element: "shop:web" })).structuredContent).toMatchObject({ views: expect.arrayContaining([{ id: "architecture:purchase", kind: "c2", title: "Purchase" }]) });
   });
@@ -69,12 +72,29 @@ describe("get_view", () => {
     expect(text(result)).toContain("- shop:web (Web): Service, hit at distance 1");
   });
 
-  it("says a Saved Deployment View can't be resolved yet", async () => {
-    const { call } = await setup();
+  it("resolves a Saved Deployment View over its Environment: Targets, System boxes and Deployments", async () => {
+    const { call, text } = await setup();
     const result = await call("get_view", { id: "architecture:runtime" });
 
-    expect(result.isError).toBe(true);
-    expect(result.structuredContent).toMatchObject({ code: "invalid_input" });
+    expect(result.isError).toBeFalsy();
+    const view = result.structuredContent as { nodes: { id: string; kind: string; parent: string | null; element?: string }[]; edges: { from: string; to: string }[] };
+    expect(result.structuredContent).toMatchObject({ id: "architecture:runtime", kind: "deployment", title: "Runtime", direction: "TB" });
+    expect(view.nodes.map((n) => [n.id, n.kind, n.parent])).toEqual([
+      ["payments:payments-api@platform:eks-prod", "deployment", "payments:payments@platform:eks-prod"],
+      ["payments:payments@platform:eks-prod", "system", "platform:eks-prod"],
+      ["platform:aws-eu", "target", null],
+      ["platform:eks-prod", "target", "platform:aws-eu"],
+      ["shop:cart-db", "service", null],
+      ["shop:cart@platform:eks-prod", "deployment", "shop:checkout@platform:eks-prod"],
+      ["shop:checkout@platform:eks-prod", "system", "platform:eks-prod"],
+      ["shop:fraud-check", "service", null],
+      ["shop:order-history", "service", null],
+      ["shop:web", "service", null],
+    ]);
+    expect(view.nodes[0]).toMatchObject({ element: "payments:payments-api" });
+    expect(view.edges.map((e) => `${e.from} > ${e.to}`)).toContain("shop:cart@platform:eks-prod > payments:payments-api@platform:eks-prod");
+    expect(text(result)).toContain("- shop:cart@platform:eks-prod (Cart): Deployment of shop:cart in shop:checkout@platform:eks-prod");
+    expect(text(result)).toContain("- platform:eks-prod (EKS prod): Deployment Target in platform:aws-eu");
   });
 });
 

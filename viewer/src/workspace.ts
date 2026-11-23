@@ -2,7 +2,7 @@ import { dynamicViewsUsing, resolveDynamicView, stepViews, type ResolvedDynamicV
 import { saveAsView, type SavedScreen, type Screen } from "../../src/core/save-as-view.ts";
 import { listViews, pickedView, resolveView, type ResolvedView, type ViewSummary } from "../../src/core/views.ts";
 import { teamStyles, type TeamStyle } from "../../src/render/teams.ts";
-import type { Bundle, BundleElement, BundleLens } from "../../src/schema/bundle.ts";
+import type { Bundle, BundleElement, BundleLens, BundleTarget } from "../../src/schema/bundle.ts";
 
 export interface Crumb {
   label: string;
@@ -30,6 +30,7 @@ export const GLYPHS: Record<BundleElement["kind"], string> = { person: "☺", sy
 export class Workspace {
   readonly bundle: Bundle;
   readonly byId: Map<string, BundleElement>;
+  readonly targets: Map<string, BundleTarget>;
   readonly teams: Map<string, TeamStyle>;
   readonly views: ViewSummary[];
   private readonly childrenOf = new Map<string | null, BundleElement[]>();
@@ -42,6 +43,7 @@ export class Workspace {
     this.bundle = bundle;
     this.workspaceName = workspaceName;
     this.byId = new Map(bundle.elements.map((e) => [e.id, e]));
+    this.targets = new Map(bundle.targets.map((t) => [t.id, t]));
     this.teams = teamStyles(bundle);
     this.views = listViews(bundle);
     this.viewIds = new Set(this.views.map((v) => v.id));
@@ -141,12 +143,28 @@ export class Workspace {
     return system === undefined ? undefined : `c2/${system}`;
   }
 
-  /** The scope ladder up to a View: C1 › C2 Landscape › System › Service. */
+  /** Each Environment's Deployment View, in `listViews` order. */
+  deploymentViews(): { view: string; environment: string; label: string }[] {
+    return this.views
+      .filter((v) => v.id.startsWith("deployment/"))
+      .map((v) => ({ view: v.id, environment: v.id.slice("deployment/".length), label: this.name(v.id.slice("deployment/".length)) }));
+  }
+
+  /** The Environments a Service has Deployments in, in the Bundle's order, each with its Deployment View and the nodes there that draw them. */
+  deployedIn(service: string): { environment: string; label: string; view: string; nodes: string[] }[] {
+    return this.bundle.environments
+      .map((env) => ({ environment: env.id, label: env.name, view: `deployment/${env.id}` }))
+      .map((e) => ({ ...e, nodes: this.resolve(e.view, [])?.nodes.filter((n) => n.kind === "deployment" && n.element === service).map((n) => n.id) ?? [] }))
+      .filter((e) => e.nodes.length > 0);
+  }
+
+  /** The scope ladder up to a View: C1 › C2 Landscape › System › Service; a Deployment View hangs off C1. */
   crumbs(view: string): Crumb[] {
     const saved = this.bundle.views.find((v) => v.id === view);
     if (saved) return [{ label: "Saved" }, { label: this.bundle.projects.find((p) => p.id === saved.project)?.name ?? saved.project }, { label: saved.title, view }];
     const ladder: Crumb[] = [{ label: "C1", view: "c1" }];
     if (view === "c1") return ladder;
+    if (view.startsWith("deployment/")) return [...ladder, { label: this.title(view) ?? view, view }];
     ladder.push({ label: "C2 Landscape", view: "c2" });
     const focus = view.includes("/") ? this.byId.get(view.slice(3)) : undefined;
     if (!focus) return ladder;
@@ -195,6 +213,7 @@ export class Workspace {
     return [
       { key: "views:landscapes", label: "Landscapes", children: this.landscapeRows() },
       ...this.systemViewGroup("Systems", () => true),
+      { key: "views:deployment", label: "Deployment", children: this.deploymentRows() },
       { key: "views:dynamic", label: "Dynamic Views", children: this.dynamicRows(() => true) },
       { key: "views:saved", label: "Saved Views", children: this.savedByProject() },
     ].filter((g) => g.children.length > 0);
@@ -206,7 +225,7 @@ export class Workspace {
       const [group] = this.systemViewGroup(team.name, (owner) => owner === team.id, team.id);
       return [{ ...group!, children: [...group!.children, ...this.dynamicRows((owner) => owner === team.id, team.id), ...this.savedRows((owner) => owner === team.id, team.id)] }];
     });
-    return [{ key: "views:workspace", label: "Workspace", children: this.landscapeRows() }, ...teams].filter((g) => g.children.length > 0);
+    return [{ key: "views:workspace", label: "Workspace", children: [...this.landscapeRows(), ...this.deploymentRows()] }, ...teams].filter((g) => g.children.length > 0);
   }
 
   private landscapeRows(): TreeRow[] {
@@ -229,6 +248,11 @@ export class Workspace {
       .filter((v) => this.resolve(v.id, []) !== undefined)
       .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
       .map((v) => ({ key: v.id, label: v.title, view: v.id, glyph: "◇", team: team ? this.teams.get(team) : undefined, children: [] }));
+  }
+
+  /** One row per Environment's Deployment View, which no Team owns. */
+  private deploymentRows(): TreeRow[] {
+    return this.views.filter((v) => v.kind === "deployment" && v.id.startsWith("deployment/")).map((v) => ({ key: v.id, label: v.title, view: v.id, glyph: "⛁", children: [] }));
   }
 
   /** The Dynamic Views whose Project a kept Team owns, by title. */

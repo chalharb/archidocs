@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { resolveView, saveAsView, type Screen } from "../../src/core/index.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
-import { landscapeWorkspace } from "../support/fixtures.ts";
+import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 
 const screen = (s: Partial<Screen> & Pick<Screen, "view">): Screen => ({ open: [], lens: null, picks: [], direction: null, ...s });
 const ids = (view: ReturnType<typeof resolveView>) => view?.nodes.map((n) => n.id) ?? [];
@@ -98,5 +98,27 @@ describe("Save as View", () => {
     const { definition, view, bundle } = await saved(screen({ view: "shop:mine", lens: null }), files);
     expect(definition).not.toHaveProperty("lens");
     expect(ids(view)).toEqual(ids(resolveView(bundle as Bundle, "shop:mine")));
+  });
+
+  it("saves an Environment's Deployment View as level: deployment over that Environment", async () => {
+    const { definition, view, screenView } = await saved(screen({ view: "deployment/prod" }), deploymentViewWorkspace);
+    expect(definition).toEqual({ title: "Saved", level: "deployment", environment: "prod" });
+    expect(ids(view)).toEqual(ids(screenView));
+  });
+
+  it("keeps the Lens on a Deployment View as lens:, marking the same nodes", async () => {
+    const lens = { impact: "shop:cart", direction: "upstream" as const };
+    const { definition, view, screenView } = await saved(screen({ view: "deployment/prod", lens }), deploymentViewWorkspace);
+    expect(definition.lens).toEqual({ impact: "cart", direction: "upstream" });
+    expect(ids(view)).toEqual(ids(screenView));
+    const hits = (v: typeof view) => v?.nodes.filter((n) => n.mark?.hit).map((n) => n.id);
+    expect(hits(view)).toEqual(hits(screenView));
+  });
+
+  it("refuses picks on a Deployment View, which a Saved View can't keep node by node", async () => {
+    const { bundle } = await loadWorkspace(deploymentViewWorkspace);
+    expect(() => saveAsView(bundle, screen({ view: "deployment/prod", picks: ["shop:web@platform:ns-shop"] }), { project: "shop", id: "saved", title: "Saved" })).toThrow(
+      "Save as View keeps a whole Deployment View; clear the picks first.",
+    );
   });
 });

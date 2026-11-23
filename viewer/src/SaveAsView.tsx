@@ -27,7 +27,15 @@ export function SaveAsView({ workspace, screen, title: initialTitle, onClose }: 
   const [project, setProject] = useState(own ?? projects[0]?.id ?? "");
   const [title, setTitle] = useState(initialTitle);
   const [id, setId] = useState(slug(initialTitle));
-  const saved = useMemo(() => (project ? workspace.saveAsView(screen, { project, id: id || "view", title: title || "View" }) : undefined), [workspace, screen, project, id, title]);
+  // The core engine refuses a screen it can't save (picks on a Deployment View); the dialog says why.
+  const saved = useMemo(() => {
+    if (!project) return undefined;
+    try {
+      return workspace.saveAsView(screen, { project, id: id || "view", title: title || "View" });
+    } catch (e) {
+      return { problem: e instanceof Error ? e.message : String(e) };
+    }
+  }, [workspace, screen, project, id, title]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -65,7 +73,12 @@ export function SaveAsView({ workspace, screen, title: initialTitle, onClose }: 
             <input value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
         </div>
-        {saved && (
+        {saved && "problem" in saved && (
+          <p className="ad-snippet" role="alert">
+            {saved.problem}
+          </p>
+        )}
+        {saved && !("problem" in saved) && (
           <>
             <Snippet label="YAML" hint={`Add to a file in ${workspace.name(project)}`} text={saved.yaml} />
             <Snippet label="upsert_view call" hint="Or ask an agent to make this MCP call" text={JSON.stringify(saved.call, null, 2)} />
