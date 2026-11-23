@@ -1,19 +1,27 @@
 import type { CompareMark } from "./compare.ts";
 import type { Bundle, BundleElement, BundleLens, BundleRelationship } from "../schema/bundle.ts";
+import { resolveDeployment } from "./deployment-views.ts";
 import { resolveDynamic, takesPart } from "./dynamic-views.ts";
 import { applyLens, resolveSaved } from "./saved-views.ts";
 
 /** The most nodes a View may have before `oversized-view` warns. */
 export const MAX_VIEW_NODES = 150;
 
-/** The kinds of Generated structural View. */
-export type ViewKind = "c1" | "c2" | "c3";
+/** The kinds of Generated structural View, and the Deployment View. */
+export type ViewKind = "c1" | "c2" | "c3" | "deployment";
 
-/** One node of a resolved View: an Element, drawn as a box or as a container. */
+/**
+ * One node of a resolved View: an Element, drawn as a box or as a container.
+ * A Deployment View also has Deployment Targets (`target`), Deployments
+ * (`deployment`, id `<service>@<target>`) and the System boxes inside each
+ * Target (`system`, id `<system>@<target>`).
+ */
 export interface ViewNode {
   id: string;
-  kind: BundleElement["kind"];
+  kind: BundleElement["kind"] | "target" | "deployment";
   name: string;
+  /** The Element a Deployment or a Target's System box draws, when the node's id is not that Element's. */
+  element?: string;
   /** The nearest ancestor that is itself a node of this View, else null. */
   parent: string | null;
   /** True when the Element has children in the Model that this View hides inside it. */
@@ -75,10 +83,10 @@ export interface ResolveOptions {
 }
 
 /**
- * Resolves a View by id: a Generated View (`c1`, `c2`, `c2/<system>` or
- * `c3/<service>`, only for a Service with Components) or a Saved structural
- * View (`project:view-id`). Returns undefined for an unknown id, and for a
- * Saved Deployment View, which this resolver can't draw yet.
+ * Resolves a View by id: a Generated View (`c1`, `c2`, `c2/<system>`,
+ * `c3/<service>`, only for a Service with Components, or `deployment/<env>`)
+ * or a Saved structural or Deployment View (`project:view-id`). Returns
+ * undefined for an unknown id.
  */
 export function resolveView(bundle: Bundle, id: string, options: ResolveOptions = {}): ResolvedView | undefined {
   const view = resolveUnlensed(bundle, id, options);
@@ -88,13 +96,17 @@ export function resolveView(bundle: Bundle, id: string, options: ResolveOptions 
 
 function resolveUnlensed(bundle: Bundle, id: string, options: ResolveOptions): ResolvedView | undefined {
   const saved = bundle.views.find((v) => v.id === id);
-  if (saved) return saved.kind === "structural" ? resolveSaved(bundle, saved)?.view : undefined;
+  if (saved) return saved.kind === "structural" ? resolveSaved(bundle, saved).view : undefined;
   const model = new ModelIndex(bundle);
   if (id === "c1") return landscape(model, "c1", "C1 Landscape", []);
   if (id === "c2") return landscape(model, "c2", "C2 Landscape", options.expand ?? []);
   const slash = id.indexOf("/");
   if (slash < 0) return undefined;
   const scope = id.slice(0, slash);
+  if (scope === "deployment") {
+    const env = bundle.environments.find((e) => e.id === id.slice(slash + 1));
+    return env ? resolveDeployment(bundle, { id, title: `${env.name} (Deployment)` }, env.id) : undefined;
+  }
   const focus = model.byId.get(id.slice(slash + 1));
   if (!focus) return undefined;
   const expand = options.expand ?? [];
@@ -104,7 +116,7 @@ function resolveUnlensed(bundle: Bundle, id: string, options: ResolveOptions): R
 }
 
 /** The kinds a View is listed under: a Saved structural View's is its `level`. */
-export type ListedKind = ViewKind | "deployment" | "dynamic";
+export type ListedKind = ViewKind | "dynamic";
 
 /** A View as listed, without its nodes and edges. */
 export interface ViewSummary {
@@ -115,13 +127,14 @@ export interface ViewSummary {
 
 /**
  * Every Generated View, in the order `c1`, `c2`, then `c2/<system>` and
- * `c3/<service>` by id, then every Saved View by id. `kind` keeps one kind;
- * `element` keeps the Views that show that Element as a node, and the
+ * `c3/<service>` by id, then `deployment/<env>` by Environment id, then every
+ * Saved View by id. `kind` keeps one kind; `element` keeps the Views that
+ * show that Element as a node or a Deployment, and the
  * Dynamic Views it takes part in (including as the broker of an event Step).
  */
 export function listViews(bundle: Bundle, filter: { kind?: ListedKind; element?: string } = {}): ViewSummary[] {
   const ids = generatedViewIds(bundle).filter((id) => filter.kind === undefined || id.split("/")[0] === filter.kind);
-  const generated: ViewSummary[] = filter.element === undefined ? ids.map((id) => summarise(id, bundle)) : resolveAll(bundle, ids).filter((v) => v.nodes.some((n) => n.id === filter.element));
+  const generated: ViewSummary[] = filter.element === undefined ? ids.map((id) => summarise(id, bundle)) : resolveAll(bundle, ids).filter((v) => shows(v, filter.element!));
   const element = filter.element;
   const saved = bundle.views
     .map((v) => ({ v, kind: v.kind === "dynamic" ? ("dynamic" as const) : v.level }))
@@ -129,11 +142,14 @@ export function listViews(bundle: Bundle, filter: { kind?: ListedKind; element?:
     .filter(({ v }) => {
       if (element === undefined) return true;
       if (v.kind === "dynamic") return takesPart(resolveDynamic(bundle, v).view, element);
-      return resolveSaved(bundle, v)?.view.nodes.some((n) => n.id === element);
+      return shows(resolveSaved(bundle, v).view, element);
     })
     .map(({ v, kind }) => ({ id: v.id, kind, title: v.title }));
   return [...generated, ...saved].map(({ id, kind, title }) => ({ id, kind, title }));
 }
+
+/** Whether a View draws an Element, as a node of its own or as a Deployment of it. */
+const shows = (view: ResolvedView, element: string) => view.nodes.some((n) => n.id === element || (n.kind === "deployment" && n.element === element));
 
 /** Every Generated View, resolved, in `listViews` order. */
 export function generatedViews(bundle: Bundle): ResolvedView[] {
@@ -146,13 +162,15 @@ const resolveAll = (bundle: Bundle, ids: string[]) => ids.map((id) => resolveVie
 function generatedViewIds(bundle: Bundle): string[] {
   const parents = new Set(bundle.elements.map((e) => e.parent));
   const ids = (prefix: string, keep: (e: BundleElement) => boolean) => [...new Set(bundle.elements.filter(keep).map((e) => `${prefix}/${e.id}`))].sort();
-  return ["c1", "c2", ...ids("c2", (e) => e.kind === "system"), ...ids("c3", (e) => e.kind === "service" && parents.has(e.id))];
+  const deployment = bundle.environments.map((e) => `deployment/${e.id}`).sort();
+  return ["c1", "c2", ...ids("c2", (e) => e.kind === "system"), ...ids("c3", (e) => e.kind === "service" && parents.has(e.id)), ...deployment];
 }
 
 /** A Generated View's id, kind and title without resolving it; `id` must be one `generatedViewIds` gave. */
 function summarise(id: string, bundle: Bundle): ViewSummary & { kind: ViewKind } {
   if (id === "c1") return { id, kind: "c1", title: "C1 Landscape" };
   if (id === "c2") return { id, kind: "c2", title: "C2 Landscape" };
+  if (id.startsWith("deployment/")) return { id, kind: "deployment", title: `${bundle.environments.find((e) => `deployment/${e.id}` === id)!.name} (Deployment)` };
   const [kind, elementId] = [id.slice(0, 2) as ViewKind, id.slice(3)];
   return { id, kind, title: `${bundle.elements.find((e) => e.id === elementId)!.name} (${kind.toUpperCase()})` };
 }

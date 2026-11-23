@@ -38,6 +38,7 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
           })}
         </ol>
       </nav>
+      <DeploymentLinks workspace={workspace} place={place} />
       {place.open.length > 0 && (
         <section className="ad-chips" role="region" aria-label="Open boxes">
           {place.open.map((id) => (
@@ -83,6 +84,30 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
         <CopyLink />
       </div>
     </header>
+  );
+}
+
+/** One link per Environment to its Deployment View, the current one marked. */
+function DeploymentLinks({ workspace, place }: { workspace: Workspace; place: Place }) {
+  const links = workspace.deploymentViews();
+  if (links.length === 0) return null;
+  return (
+    <nav className="ad-deployments" aria-label="Deployment Views">
+      <span className="ad-deployments-label" aria-hidden="true">
+        Deployment
+      </span>
+      {links.map((l) =>
+        l.view === place.view ? (
+          <a key={l.view} href={formatPlace(viewPlace(l.view))} aria-current="page" className="ad-deployment-link ad-current">
+            {l.label}
+          </a>
+        ) : (
+          <a key={l.view} href={formatPlace(viewPlace(l.view, null, place.lens))} className="ad-deployment-link">
+            {l.label}
+          </a>
+        ),
+      )}
+    </nav>
   );
 }
 
