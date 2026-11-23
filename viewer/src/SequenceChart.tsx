@@ -147,25 +147,31 @@ function Camera({ layout, fitKey, selected, playing, reducedMotion, onSettled }:
     const xs = rows.flatMap((r) => [r.x1, r.x2]);
     const x = (Math.min(...xs) + Math.max(...xs)) / 2;
     const view = getViewport();
-    const duration = reducedMotion ? 0 : CAMERA_MS;
+    const motion = cameraMotion(reducedMotion);
     const onScreen = (px: number, py: number) => px * view.zoom + view.x >= 0 && px * view.zoom + view.x <= width && py * view.zoom + view.y >= HEADER_BOX * view.zoom && py * view.zoom + view.y <= height;
     // Playing centres each Step; paused, the chart only scrolls the Step into view.
-    if (playing) void setViewport({ x: width / 2 - x * view.zoom, y: height / 2 - y * view.zoom, zoom: view.zoom }, { duration });
+    if (playing) void setViewport({ x: width / 2 - x * view.zoom, y: height / 2 - y * view.zoom, zoom: view.zoom }, motion);
     else if (!xs.every((px) => onScreen(px, y))) {
       const fitsAcross = Math.max(...xs) - Math.min(...xs) <= width / view.zoom;
       // A Step wider than the screen is shown from its left end.
-      void setViewport({ x: fitsAcross ? width / 2 - x * view.zoom : 3 * MARGIN - Math.min(...xs) * view.zoom, y: height / 2 - y * view.zoom, zoom: view.zoom }, { duration });
+      void setViewport({ x: fitsAcross ? width / 2 - x * view.zoom : 3 * MARGIN - Math.min(...xs) * view.zoom, y: height / 2 - y * view.zoom, zoom: view.zoom }, motion);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, playing, fitKey, sized]);
   return (
     <div className="ad-seq-tools">
-      <button type="button" className="ad-action" onClick={() => void setViewport(fitViewport(layout, width, height), { duration: reducedMotion ? 0 : CAMERA_MS })}>
+      <button type="button" className="ad-action" onClick={() => void setViewport(fitViewport(layout, width, height), cameraMotion(reducedMotion))}>
         Fit whole chart
       </button>
     </div>
   );
 }
+
+/**
+ * How the camera moves: straight, never along d3's default smooth path,
+ * which zooms out mid-flight and would dip below MIN_ZOOM.
+ */
+const cameraMotion = (reducedMotion: boolean) => ({ duration: reducedMotion ? 0 : CAMERA_MS, interpolate: "linear" as const });
 
 /** The whole chart when it fits at MIN_ZOOM or more, else MIN_ZOOM from the top left; centred across when narrower than the screen. */
 function fitViewport(layout: SequenceLayout, width: number, height: number) {

@@ -199,8 +199,21 @@ test.describe("Dynamic View screen", () => {
     const zoom = await page.locator(".react-flow__viewport").evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
     expect(zoom).toBeGreaterThanOrEqual(0.85);
 
+    // Sample the zoom on every frame while Fit animates: the camera must not dip below the floor mid-flight either.
+    const sampling = page.locator(".react-flow__viewport").evaluate(
+      (el) =>
+        new Promise<number>((resolve) => {
+          let least = Infinity;
+          const start = performance.now();
+          const frame = () => {
+            least = Math.min(least, new DOMMatrix(getComputedStyle(el).transform).a);
+            if (performance.now() - start < 600) requestAnimationFrame(frame);
+            else resolve(least);
+          };
+          frame();
+        }),
+    );
     await page.getByRole("button", { name: "Fit whole chart" }).click();
-    const fitted = await page.locator(".react-flow__viewport").evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
-    expect(fitted).toBeGreaterThanOrEqual(0.85);
+    expect(await sampling).toBeGreaterThanOrEqual(0.85);
   });
 });
