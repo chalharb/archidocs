@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import { mkdir, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { findWorkspaceRoot, load, nodeFileSystem, serializeBundle } from "../core/index.ts";
+import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle } from "../core/index.ts";
+import { directions, layoutView, renderSvg, type Direction } from "../render/index.ts";
+import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
-import { gitHead } from "../git.ts";
+import { gitHead, gitTopLevel } from "../git.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 
@@ -18,6 +20,7 @@ class UsageError extends Error {}
 const usage = `Usage:
   archidocs check [--format text|json|github] [--strict]
   archidocs build --bundle-only [--out <dir>]
+  archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
   archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
                 [--http [--host <loopback>] [--port <n>] [--allow-writes]]
 `;
@@ -53,6 +56,37 @@ async function main(argv: string[]): Promise<number> {
     await mkdir(out, { recursive: true });
     await writeFile(join(out, "workspace.bundle.json"), serializeBundle(bundle));
     process.stdout.write(`Wrote ${join(values.out, "workspace.bundle.json")}\n`);
+    return OK;
+  }
+  if (command === "export") {
+    const { values, positionals } = parseArgs({
+      args: rest,
+      options: { format: { type: "string", default: "svg" }, out: { type: "string" }, direction: { type: "string" } },
+      allowPositionals: true,
+      strict: true,
+    });
+    const [viewId, ...extra] = positionals;
+    if (viewId === undefined) throw new UsageError("Give the View to export, such as c1 or c2/<system>.");
+    if (extra.length > 0) throw new UsageError(`Export one View at a time; got ${positionals.join(", ")}.`);
+    const format = values.format;
+    if (format !== "svg" && format !== "png") throw new UsageError(`Unknown format "${format}"; use svg or png.`);
+    const direction = values.direction as Direction | undefined;
+    if (direction !== undefined && !directions.includes(direction)) throw new UsageError(`Unknown direction "${direction}"; use ${directions.join(", ")}.`);
+    const root = await workspaceRoot(process.cwd());
+    const { bundle, issues } = await loadFromCwd();
+    if (issues.some((i) => i.severity === "error")) {
+      process.stdout.write(formatText(issues, { color: useColor() }));
+      process.stderr.write("Not exporting: the Workspace has errors.\n");
+      return FOUND_ERRORS;
+    }
+    const view = resolveView(bundle, viewId);
+    if (!view) throw new UsageError(`Unknown View "${viewId}"; Generated Views are c1, c2, c2/<system> and c3/<service with Components>.`);
+    const layout = await layoutView(view, direction === undefined ? {} : { direction });
+    const workspace = basename((await gitTopLevel(root)) ?? root);
+    const svg = renderSvg({ bundle, view, layout, source: { workspace, commit: bundle.commit, date: bundle.builtAt } });
+    const out = values.out ?? `${viewId.replace(/[/:]/g, "-")}.${format}`;
+    await writeFile(resolve(out), format === "svg" ? svg : await renderPngInNode(svg));
+    process.stdout.write(`Wrote ${out}\n`);
     return OK;
   }
   if (command === "mcp") {

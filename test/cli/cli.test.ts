@@ -1,28 +1,10 @@
-import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { validWorkspace } from "../support/fixtures.ts";
+import { archidocs } from "../support/cli.ts";
 import { writeWorkspace } from "../support/workspace.ts";
-
-const cli = fileURLToPath(new URL("../../src/cli/main.ts", import.meta.url));
-
-async function archidocs(cwd: string, ...rest: [Record<string, string>, ...string[]] | string[]) {
-  const [env, args] = typeof rest[0] === "object" ? [rest[0], rest.slice(1) as string[]] : [{}, rest as string[]];
-  try {
-    const { stdout, stderr } = await promisify(execFile)(process.execPath, [cli, ...args], {
-      cwd,
-      env: { ...process.env, NO_COLOR: undefined, FORCE_COLOR: undefined, ...env },
-    });
-    return { code: 0, stdout, stderr };
-  } catch (e) {
-    const err = e as { code: number; stdout: string; stderr: string };
-    return { code: err.code, stdout: err.stdout, stderr: err.stderr };
-  }
-}
 
 // Two errors in two files; every format test runs against this one fixture.
 const broken = {

@@ -1,6 +1,7 @@
 # 13: Layout, renderer and export
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-13 session)
 Blocked by: 12
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -15,7 +16,7 @@ Any Generated structural View can be drawn as SVG or PNG from the CLI, with the 
 
 ## Acceptance criteria
 
-- [ ] Golden SVG tests for C1, C2 and C3 fixtures are byte-identical across runs and on two OS runners.
-- [ ] Layout checks pass: no overlaps, no edges through nodes, only right-angled segments.
-- [ ] Adding one Service to a fixture moves no node inside an untouched System.
-- [ ] PNG output decodes and has the expected dimensions.
+- [x] Golden SVG tests for C1, C2 and C3 fixtures are byte-identical across runs and on two OS runners.
+- [x] Layout checks pass: no overlaps, no edges through nodes, only right-angled segments.
+- [x] Adding one Service to a fixture moves no node inside an untouched System.
+- [x] PNG output decodes and has the expected dimensions.
