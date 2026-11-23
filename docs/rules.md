@@ -31,6 +31,7 @@
 | [`unknown-environment`](#unknown-environment) | error | A Deployment names no Environment. |
 | [`unknown-target`](#unknown-target) | error | A Deployment names no Deployment Target. |
 | [`wrong-kind`](#wrong-kind) | error | An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service. |
+| [`oversized-view`](#oversized-view) | warning | A Generated View has more than 150 nodes, too many for a readable diagram. It is reported at its System or Service, or at `workspace.yaml` for the Landscapes. |
 
 ## `yaml-syntax`
 
@@ -929,4 +930,337 @@ targets:
     kind: cluster
 deployments:
   - { service: web, environment: prod, target: eks-prod }
+```
+
+## `oversized-view`
+
+**Severity:** warning
+
+A Generated View has more than 150 nodes, too many for a readable diagram. It is reported at its System or Service, or at `workspace.yaml` for the Landscapes.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+systems:
+  big:
+    name: Big
+    services:
+      s1: { name: S1 }
+      s2: { name: S2 }
+      s3: { name: S3 }
+      s4: { name: S4 }
+      s5: { name: S5 }
+      s6: { name: S6 }
+      s7: { name: S7 }
+      s8: { name: S8 }
+      s9: { name: S9 }
+      s10: { name: S10 }
+      s11: { name: S11 }
+      s12: { name: S12 }
+      s13: { name: S13 }
+      s14: { name: S14 }
+      s15: { name: S15 }
+      s16: { name: S16 }
+      s17: { name: S17 }
+      s18: { name: S18 }
+      s19: { name: S19 }
+      s20: { name: S20 }
+      s21: { name: S21 }
+      s22: { name: S22 }
+      s23: { name: S23 }
+      s24: { name: S24 }
+      s25: { name: S25 }
+      s26: { name: S26 }
+      s27: { name: S27 }
+      s28: { name: S28 }
+      s29: { name: S29 }
+      s30: { name: S30 }
+      s31: { name: S31 }
+      s32: { name: S32 }
+      s33: { name: S33 }
+      s34: { name: S34 }
+      s35: { name: S35 }
+      s36: { name: S36 }
+      s37: { name: S37 }
+      s38: { name: S38 }
+      s39: { name: S39 }
+      s40: { name: S40 }
+      s41: { name: S41 }
+      s42: { name: S42 }
+      s43: { name: S43 }
+      s44: { name: S44 }
+      s45: { name: S45 }
+      s46: { name: S46 }
+      s47: { name: S47 }
+      s48: { name: S48 }
+      s49: { name: S49 }
+      s50: { name: S50 }
+      s51: { name: S51 }
+      s52: { name: S52 }
+      s53: { name: S53 }
+      s54: { name: S54 }
+      s55: { name: S55 }
+      s56: { name: S56 }
+      s57: { name: S57 }
+      s58: { name: S58 }
+      s59: { name: S59 }
+      s60: { name: S60 }
+      s61: { name: S61 }
+      s62: { name: S62 }
+      s63: { name: S63 }
+      s64: { name: S64 }
+      s65: { name: S65 }
+      s66: { name: S66 }
+      s67: { name: S67 }
+      s68: { name: S68 }
+      s69: { name: S69 }
+      s70: { name: S70 }
+      s71: { name: S71 }
+      s72: { name: S72 }
+      s73: { name: S73 }
+      s74: { name: S74 }
+      s75: { name: S75 }
+      s76: { name: S76 }
+      s77: { name: S77 }
+      s78: { name: S78 }
+      s79: { name: S79 }
+      s80: { name: S80 }
+      s81: { name: S81 }
+      s82: { name: S82 }
+      s83: { name: S83 }
+      s84: { name: S84 }
+      s85: { name: S85 }
+      s86: { name: S86 }
+      s87: { name: S87 }
+      s88: { name: S88 }
+      s89: { name: S89 }
+      s90: { name: S90 }
+      s91: { name: S91 }
+      s92: { name: S92 }
+      s93: { name: S93 }
+      s94: { name: S94 }
+      s95: { name: S95 }
+      s96: { name: S96 }
+      s97: { name: S97 }
+      s98: { name: S98 }
+      s99: { name: S99 }
+      s100: { name: S100 }
+      s101: { name: S101 }
+      s102: { name: S102 }
+      s103: { name: S103 }
+      s104: { name: S104 }
+      s105: { name: S105 }
+      s106: { name: S106 }
+      s107: { name: S107 }
+      s108: { name: S108 }
+      s109: { name: S109 }
+      s110: { name: S110 }
+      s111: { name: S111 }
+      s112: { name: S112 }
+      s113: { name: S113 }
+      s114: { name: S114 }
+      s115: { name: S115 }
+      s116: { name: S116 }
+      s117: { name: S117 }
+      s118: { name: S118 }
+      s119: { name: S119 }
+      s120: { name: S120 }
+      s121: { name: S121 }
+      s122: { name: S122 }
+      s123: { name: S123 }
+      s124: { name: S124 }
+      s125: { name: S125 }
+      s126: { name: S126 }
+      s127: { name: S127 }
+      s128: { name: S128 }
+      s129: { name: S129 }
+      s130: { name: S130 }
+      s131: { name: S131 }
+      s132: { name: S132 }
+      s133: { name: S133 }
+      s134: { name: S134 }
+      s135: { name: S135 }
+      s136: { name: S136 }
+      s137: { name: S137 }
+      s138: { name: S138 }
+      s139: { name: S139 }
+      s140: { name: S140 }
+      s141: { name: S141 }
+      s142: { name: S142 }
+      s143: { name: S143 }
+      s144: { name: S144 }
+      s145: { name: S145 }
+      s146: { name: S146 }
+      s147: { name: S147 }
+      s148: { name: S148 }
+      s149: { name: S149 }
+      s150: { name: S150 }
+```
+
+**Fix:** Split the System, or group top-level Services and Systems, so each View stays within the limit.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+systems:
+  big:
+    name: Big
+    services:
+      s1: { name: S1 }
+      s2: { name: S2 }
+      s3: { name: S3 }
+      s4: { name: S4 }
+      s5: { name: S5 }
+      s6: { name: S6 }
+      s7: { name: S7 }
+      s8: { name: S8 }
+      s9: { name: S9 }
+      s10: { name: S10 }
+      s11: { name: S11 }
+      s12: { name: S12 }
+      s13: { name: S13 }
+      s14: { name: S14 }
+      s15: { name: S15 }
+      s16: { name: S16 }
+      s17: { name: S17 }
+      s18: { name: S18 }
+      s19: { name: S19 }
+      s20: { name: S20 }
+      s21: { name: S21 }
+      s22: { name: S22 }
+      s23: { name: S23 }
+      s24: { name: S24 }
+      s25: { name: S25 }
+      s26: { name: S26 }
+      s27: { name: S27 }
+      s28: { name: S28 }
+      s29: { name: S29 }
+      s30: { name: S30 }
+      s31: { name: S31 }
+      s32: { name: S32 }
+      s33: { name: S33 }
+      s34: { name: S34 }
+      s35: { name: S35 }
+      s36: { name: S36 }
+      s37: { name: S37 }
+      s38: { name: S38 }
+      s39: { name: S39 }
+      s40: { name: S40 }
+      s41: { name: S41 }
+      s42: { name: S42 }
+      s43: { name: S43 }
+      s44: { name: S44 }
+      s45: { name: S45 }
+      s46: { name: S46 }
+      s47: { name: S47 }
+      s48: { name: S48 }
+      s49: { name: S49 }
+      s50: { name: S50 }
+      s51: { name: S51 }
+      s52: { name: S52 }
+      s53: { name: S53 }
+      s54: { name: S54 }
+      s55: { name: S55 }
+      s56: { name: S56 }
+      s57: { name: S57 }
+      s58: { name: S58 }
+      s59: { name: S59 }
+      s60: { name: S60 }
+      s61: { name: S61 }
+      s62: { name: S62 }
+      s63: { name: S63 }
+      s64: { name: S64 }
+      s65: { name: S65 }
+      s66: { name: S66 }
+      s67: { name: S67 }
+      s68: { name: S68 }
+      s69: { name: S69 }
+      s70: { name: S70 }
+      s71: { name: S71 }
+      s72: { name: S72 }
+      s73: { name: S73 }
+      s74: { name: S74 }
+      s75: { name: S75 }
+  more:
+    name: More
+    services:
+      s76: { name: S76 }
+      s77: { name: S77 }
+      s78: { name: S78 }
+      s79: { name: S79 }
+      s80: { name: S80 }
+      s81: { name: S81 }
+      s82: { name: S82 }
+      s83: { name: S83 }
+      s84: { name: S84 }
+      s85: { name: S85 }
+      s86: { name: S86 }
+      s87: { name: S87 }
+      s88: { name: S88 }
+      s89: { name: S89 }
+      s90: { name: S90 }
+      s91: { name: S91 }
+      s92: { name: S92 }
+      s93: { name: S93 }
+      s94: { name: S94 }
+      s95: { name: S95 }
+      s96: { name: S96 }
+      s97: { name: S97 }
+      s98: { name: S98 }
+      s99: { name: S99 }
+      s100: { name: S100 }
+      s101: { name: S101 }
+      s102: { name: S102 }
+      s103: { name: S103 }
+      s104: { name: S104 }
+      s105: { name: S105 }
+      s106: { name: S106 }
+      s107: { name: S107 }
+      s108: { name: S108 }
+      s109: { name: S109 }
+      s110: { name: S110 }
+      s111: { name: S111 }
+      s112: { name: S112 }
+      s113: { name: S113 }
+      s114: { name: S114 }
+      s115: { name: S115 }
+      s116: { name: S116 }
+      s117: { name: S117 }
+      s118: { name: S118 }
+      s119: { name: S119 }
+      s120: { name: S120 }
+      s121: { name: S121 }
+      s122: { name: S122 }
+      s123: { name: S123 }
+      s124: { name: S124 }
+      s125: { name: S125 }
+      s126: { name: S126 }
+      s127: { name: S127 }
+      s128: { name: S128 }
+      s129: { name: S129 }
+      s130: { name: S130 }
+      s131: { name: S131 }
+      s132: { name: S132 }
+      s133: { name: S133 }
+      s134: { name: S134 }
+      s135: { name: S135 }
+      s136: { name: S136 }
+      s137: { name: S137 }
+      s138: { name: S138 }
+      s139: { name: S139 }
+      s140: { name: S140 }
+      s141: { name: S141 }
+      s142: { name: S142 }
+      s143: { name: S143 }
+      s144: { name: S144 }
+      s145: { name: S145 }
+      s146: { name: S146 }
+      s147: { name: S147 }
+      s148: { name: S148 }
+      s149: { name: S149 }
+      s150: { name: S150 }
 ```

@@ -3,7 +3,8 @@ import { z } from "zod";
 import { getDeployments, type DeploymentDetail } from "../core/deployments.ts";
 import { search } from "../core/search.ts";
 import { suggest } from "../core/suggest.ts";
-import { BundleDeployment, BundleElement } from "../schema/bundle.ts";
+import { listViews, resolveView, type ViewNode } from "../core/views.ts";
+import { BundleDeployment, BundleElement, BundleRelationship } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 
 export interface ServerOptions {
@@ -310,6 +311,63 @@ export function createServer(options: ServerOptions): McpServer {
   );
 
   tool(
+    "list_views",
+    {
+      title: "List Views",
+      description:
+        "The Generated Views: c1 and c2 (the Landscapes), c2/<system> and c3/<service> (Services with Components). With `element`, only the Views that show that Element as a node.",
+      input: z.object({
+        kind: ViewKind.optional(),
+        element: QualifiedId.optional().describe("Only Views containing this Element (project:id)"),
+        limit: Limit,
+      }),
+      output: z.object({ total: z.number(), truncated: z.boolean(), views: z.array(ViewSummary) }),
+    },
+    ({ kind, element, limit }, { bundle }) => {
+      if (element !== undefined && !bundle.elements.some((e) => e.id === element)) return notFound("Element", element, bundle.elements.map((e) => e.id));
+      const { items, total, truncated } = page(listViews(bundle, { kind, element }), limit);
+      return ok({ total, truncated, views: items }, [listHead(total, "View", truncated, limit), ...items.map((v) => `- ${v.id}: ${v.title}`)].join("\n"));
+    },
+  );
+
+  tool(
+    "get_view",
+    {
+      title: "Get View",
+      description:
+        "One View by id (c1, c2, c2/<system> or c3/<service>) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it.",
+      input: z.object({ id: z.string().min(1).describe("A View id, such as c1, c2/shop:checkout or c3/shop:cart") }),
+      output: ViewSummary.extend({
+        nodes: z.array(
+          z.object({
+            id: z.string(),
+            kind: ElementKind,
+            name: z.string(),
+            parent: z.string().nullable(),
+            collapsed: z.boolean(),
+            external: z.boolean(),
+          }),
+        ),
+        edges: z.array(z.object({ from: z.string(), to: z.string(), relationships: z.array(BundleRelationship) })),
+      }),
+    },
+    ({ id }, { bundle }) => {
+      const view = resolveView(bundle, id);
+      if (!view) return notFound("View", id, listViews(bundle).map((v) => v.id));
+      const edgeCount = `${view.edges.length} edge${view.edges.length === 1 ? "" : "s"}`;
+      return ok(
+        { ...view },
+        [
+          `${view.title} (${view.id}): ${view.nodes.length} node${view.nodes.length === 1 ? "" : "s"}, ${edgeCount}.`,
+          "Nodes:",
+          ...view.nodes.map(nodeLine),
+          ...(view.edges.length ? ["Edges:", ...view.edges.map((e) => `- ${e.from} → ${e.to}: ${e.relationships.map(relationshipLabel).join("; ")}`)] : []),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
     "check",
     {
       title: "Check the Workspace",
@@ -346,6 +404,15 @@ const IssueRecord = z.object({
 });
 
 const where = (source: Source) => (source.kind === "checkout" ? source.root : source.location);
+
+const ElementKind = z.enum(["person", "system", "service", "component"]);
+const ViewKind = z.enum(["c1", "c2", "c3"]);
+const ViewSummary = z.object({ id: z.string(), kind: ViewKind, title: z.string() });
+
+const nodeLine = (n: ViewNode) =>
+  `- ${label(n)}: ${kindName[n.kind]}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}`;
+
+const relationshipLabel = (r: BundleRelationship) => r.description ?? r.id ?? `${r.from} → ${r.to}`;
 
 const Limit = z.number().int().min(1).default(50).describe("The most items to return; `truncated` says whether there were more");
 
