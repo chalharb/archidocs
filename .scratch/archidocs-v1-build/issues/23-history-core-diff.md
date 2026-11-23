@@ -1,6 +1,7 @@
 # 23: History core and archidocs diff
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (session heuristic-lichterman)
 Blocked by: 05, 17, 21
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -23,6 +24,6 @@ Anyone with a checkout can compare the Model at two points in time.
 
 ## Acceptance criteria
 
-- [ ] CLI tests against a temp git repo with scripted commits cover each item kind's Changes, an Owner change through the Project's default, and an unmatched Relationship becoming removed plus added.
-- [ ] A second `history build` builds nothing.
-- [ ] Commits touching only files outside the Workspace root are not Revisions.
+- [x] CLI tests against a temp git repo with scripted commits cover each item kind's Changes, an Owner change through the Project's default, and an unmatched Relationship becoming removed plus added.
+- [x] A second `history build` builds nothing.
+- [x] Commits touching only files outside the Workspace root are not Revisions.

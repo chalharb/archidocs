@@ -4,6 +4,7 @@ import { cp, mkdir, realpath, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import type { Bundle } from "../schema/bundle.ts";
 import { findWorkspaceRoot, load, nodeFileSystem, resolveDynamicView, resolveView, serializeBundle, type ResolvedDynamicView, type ResolvedView } from "../core/index.ts";
 import { directions, layoutView, renderSequenceSvg, renderSvg, type Direction } from "../render/index.ts";
 import { renderPngInNode } from "../render/node.ts";
@@ -13,6 +14,9 @@ import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } f
 import { authoringGuide } from "../guide/index.ts";
 import { init } from "./init.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
+import { diff } from "../core/index.ts";
+import { bundleAt, buildHistory, history, resolvePoint, type History } from "../history/index.ts";
+import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
 
 /** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
 const OK = 0;
@@ -35,6 +39,8 @@ const usage = `Usage:
   archidocs build [--out <dir>] [--bundle-only]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
   archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
+  archidocs diff <from> [<to>] [--format text|json|markdown]
+  archidocs history build [--since <ref|date>]
   archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
                 [--http [--host <loopback>] [--port <n>] [--allow-writes]]
 `;
@@ -152,6 +158,36 @@ async function main(argv: string[]): Promise<number> {
     await draw(view, values.out ?? fileName(viewId!));
     return OK;
   }
+  if (command === "diff") {
+    const { values, positionals } = parseArgs({ args: rest, options: { format: { type: "string", default: "text" } }, allowPositionals: true, strict: true });
+    const format = values.format as DiffFormat;
+    if (!diffFormats.includes(format)) throw new UsageError(`Unknown format "${values.format}"; use ${diffFormats.join(", ")}.`);
+    const [fromPoint, toPoint, ...extra] = positionals;
+    if (fromPoint === undefined) throw new UsageError("Give the point to diff from: a ref or a date.");
+    if (extra.length > 0) throw new UsageError(`Give at most two points; got ${positionals.join(", ")}.`);
+    const h = await historyFromCwd();
+    /** A point's Bundle; with no point, the working tree's. */
+    const side = async (point: string | undefined): Promise<[DiffSide, Bundle]> => {
+      if (point === undefined) return [{ point: "working tree", commit: null }, (await loadFromCwd()).bundle];
+      const commit = await resolvePoint(h.repoRoot, point);
+      if (!commit) throw new UsageError(`Unknown ref or date "${point}"; a date resolves to the last default-branch commit at or before it.`);
+      return [{ point, commit }, (await bundleAt(h, commit)).bundle];
+    };
+    const [from, before] = await side(fromPoint);
+    const [to, after] = await side(toPoint);
+    process.stdout.write(formatDiff(diff(before, after), from, to, format));
+    return OK;
+  }
+  if (command === "history") {
+    const [sub, ...args] = rest;
+    if (sub !== "build") throw new UsageError(sub ? `Unknown history command "${sub}".` : "Give a history command: build.");
+    const { values } = parseArgs({ args, options: { since: { type: "string" } }, strict: true });
+    const h = await historyFromCwd();
+    const { revisions, built } = await buildHistory(h, values.since === undefined ? {} : { since: values.since });
+    const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+    process.stdout.write(`Built ${plural(built, "Revision")}; ${revisions - built} of ${revisions} already built.\n`);
+    return OK;
+  }
   if (command === "mcp") {
     const { values } = parseArgs({
       args: rest,
@@ -203,6 +239,14 @@ async function workspaceRoot(start: string): Promise<string> {
   const root = await findWorkspaceRoot(nodeFileSystem(), start);
   if (!root) throw new UsageError("No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.");
   return root;
+}
+
+/** The history of the Workspace found from the current folder; it must be in a git repo. */
+async function historyFromCwd(): Promise<History> {
+  const root = await workspaceRoot(process.cwd());
+  const repoRoot = await gitTopLevel(root);
+  if (!repoRoot) throw new UsageError("History needs the Workspace in a git repository.");
+  return history(repoRoot, await realpath(root));
 }
 
 async function loadFromCwd() {

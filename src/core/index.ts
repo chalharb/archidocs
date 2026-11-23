@@ -14,3 +14,4 @@ export { getImpact, type ImpactResult, type ImpactRing, type ImpactedElement, ty
 export { listOwned, type OwnedResult, type OwnedGroup, type OwnedItem, type OwnedKind } from "./ownership.ts";
 export { listAdrs, adrsFor, type ListAdrsOptions, type ListedAdr } from "./adrs.ts";
 export { resolveDynamic, resolveDynamicView, takesPart, stepViews, dynamicViewsUsing, type DynamicResolution, type DynamicProblem, type ResolvedDynamicView, type ResolvedStep, type StepKind } from "./dynamic-views.ts";
+export { diff, countChanges, changedIds, changeKinds, type Change, type ChangeKind, type ChangeType, type ChangeItem, type ChangeCounts } from "./diff.ts";
