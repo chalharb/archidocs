@@ -16,11 +16,28 @@ import {
 } from "@xyflow/react";
 import { memo, useEffect, useMemo, useRef, type MouseEvent } from "react";
 import type { CompareMark } from "../../src/core/compare.ts";
-import type { NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
+import type { ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
+import type { BundleElement } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
+
+/** The sub-label under a box's name, as the Variant D prototype writes it: "System · 4 Services", "datastore · Postgres", "External System". */
+function describe(node: ViewNode, element: BundleElement | undefined, technology: string | null, holds: string | undefined): string {
+  if (node.kind === "system") return node.external ? "External System" : ["System", holds].filter(Boolean).join(" · ");
+  if (node.kind === "service" || node.kind === "deployment") {
+    const type = element?.kind === "service" && element.type !== "app" ? element.type : KIND_LABEL[node.kind];
+    return [`${node.external ? "External " : ""}${type}`, technology].filter(Boolean).join(" · ");
+  }
+  return [KIND_LABEL[node.kind], technology].filter(Boolean).join(" · ");
+}
+
+/** Each kind's glyph, and a Service's type when it isn't a plain app: ⛁ datastore, ≋ broker. */
+const GLYPH: Record<string, string> = { person: "◉", system: "▣", service: "▭", component: "◇", deployment: "⬚", target: "☁", datastore: "⛁", broker: "≋" };
+
+/** An impact badge's words: the origin, or the side and distance from it. */
+const SIDE_LABEL: Record<ImpactSide, string> = { origin: "⚠ origin", upstream: "▲ upstream", downstream: "▼ downstream" };
 
 /** What a collapsed box holds, as the prototype shows it: "4 Services", "1 Component". */
 function countInside(workspace: Workspace, id: string | undefined): string | undefined {
@@ -63,6 +80,8 @@ export interface CanvasProps {
 
 interface BoxData extends Record<string, unknown> {
   node: ViewNode;
+  /** A Service's (or its Deployment's) type, when not a plain app: drawn as its own shape and glyph. */
+  type: "datastore" | "broker" | undefined;
   sublabel: string;
   team: TeamStyle | undefined;
   container: boolean;
@@ -132,7 +151,8 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         connectable: false,
         data: {
           node,
-          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : [node.external ? `External ${KIND_LABEL[node.kind].toLowerCase()}` : KIND_LABEL[node.kind], technology, containers.has(box.id) ? undefined : inside(element?.id)].filter(Boolean).join(" · "),
+          type: element?.kind === "service" && element.type !== "app" ? element.type : undefined,
+          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id)),
           team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
@@ -234,16 +254,18 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
-  const { node, sublabel, team, container, toggle, onToggle, mark, ring, picked, change } = data;
+  const { node, type, sublabel, team, container, toggle, onToggle, mark, ring, picked, change } = data;
   const stop = (e: MouseEvent) => e.stopPropagation();
   const classes = [
     "arc-box",
     `arc-${node.kind}`,
+    type ? `arc-t-${type}` : "",
     container ? "arc-container" : "",
     node.external ? "arc-external" : "",
     selected ? "arc-selected" : "",
     mark ? (mark.hit ? "arc-hit" : "arc-dim") : "",
     mark?.hit && ring ? "arc-ringed" : "",
+    mark?.hit && mark.side && !(container && !node.collapsed) ? `arc-side-${mark.side}` : "",
     mark?.hit && node.collapsed ? "arc-holds-hit" : "",
     picked ? "arc-picked" : "",
     change ? `arc-${change}` : "",
@@ -264,14 +286,23 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
       {team && <span className="arc-stripe" data-testid="stripe" style={{ background: team.color }} />}
       <div className="arc-text">
-        <div className="arc-name">{node.name}</div>
+        <div className="arc-box-head">
+          <span className="arc-kind-glyph" aria-hidden="true">
+            {GLYPH[type ?? node.kind]}
+          </span>
+          <div className="arc-name">{node.name}</div>
+        </div>
         <div className="arc-sublabel" data-testid="sublabel">
           {sublabel}
         </div>
       </div>
-      {mark?.distance !== undefined && (
-        <span className="arc-distance" data-testid="distance" aria-label={`distance ${mark.distance}`}>
-          {mark.distance}
+      {mark?.distance !== undefined && !(container && !node.collapsed) && (
+        <span className={`arc-badge arc-badge-${mark.side ?? "distance"}`}>
+          {mark.side && mark.side !== "origin" && `${SIDE_LABEL[mark.side]} `}
+          {mark.side === "origin" && SIDE_LABEL.origin}
+          <span className={mark.side === "origin" ? "arc-visually-hidden" : undefined} data-testid="distance" aria-label={`distance ${mark.distance}`}>
+            {mark.distance}
+          </span>
         </span>
       )}
       {mark?.hit && node.collapsed && <span className="arc-holds" aria-hidden="true" />}

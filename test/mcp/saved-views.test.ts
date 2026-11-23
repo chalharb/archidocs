@@ -59,9 +59,9 @@ describe("get_view", () => {
     expect(result.structuredContent).toMatchObject({ id: "architecture:purchase", kind: "c2", title: "Purchase", direction: "TB", lens: { impact: "shop:cart", direction: "upstream" } });
     expect(view.nodes.map((n) => [n.id, n.mark])).toEqual([
       ["payments:payments-api", { hit: false }],
-      ["shop:cart", { hit: true, distance: 0 }],
-      ["shop:shopper", { hit: true, distance: 2 }],
-      ["shop:web", { hit: true, distance: 1 }],
+      ["shop:cart", { hit: true, distance: 0, side: "origin" }],
+      ["shop:shopper", { hit: true, distance: 2, side: "upstream" }],
+      ["shop:web", { hit: true, distance: 1, side: "upstream" }],
     ]);
     expect(view.edges.map((e) => [e.from, e.to, e.lit])).toEqual([
       ["shop:cart", "payments:payments-api", false],

@@ -234,6 +234,17 @@ describe("a Lens over a Generated View", () => {
   const marks = (view: ReturnType<typeof resolveView>) => Object.fromEntries(view!.nodes.map((n) => [n.id, n.mark]));
   const lit = (view: ReturnType<typeof resolveView>) => view!.edges.filter((e) => e.lit).map((e) => [e.from, e.to]);
 
+  it("says which side of the origin each node an impact Lens hits is on", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const view = resolveView(bundle, "c2", { expand: ["shop:checkout"], lens: { impact: "shop:cart", direction: "both" } });
+
+    expect(marks(view)).toMatchObject({
+      "shop:cart": { hit: true, distance: 0, side: "origin" },
+      "shop:web": { hit: true, distance: 1, side: "upstream" },
+      "shop:cart-db": { hit: true, distance: 1, side: "downstream" },
+    });
+  });
+
   it("marks the open boxes it is given with impact distances, lighting only edges one hop closer to the origin", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
     const view = resolveView(bundle, "c2", { expand: ["shop:checkout"], lens: { impact: "shop:cart", direction: "upstream" } });

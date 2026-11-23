@@ -10,6 +10,12 @@
   --accent: #2b59c3;
   --edge: #7b8594;
   --nodeline: #5b6573;
+  --up: #b45309;
+  --upbg: #fff4e0;
+  --down: #1d5fbf;
+  --downbg: #e6efff;
+  --origin: #c2261d;
+  --originbg: #fde8e6;
   --container: rgba(238, 241, 244, 0.55);
   --radius: 6px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -528,7 +534,8 @@ select.arc-tool {
   background: var(--panel);
   border: 1.5px solid var(--nodeline);
   border-radius: var(--radius);
-  overflow: hidden;
+  /* Visible, so impact badges can sit on the top edge; the name clips itself. */
+  overflow: visible;
   cursor: pointer;
   transition: opacity 0.2s;
 }
@@ -575,6 +582,24 @@ select.arc-tool {
   width: 6px;
 }
 
+.arc-stripe {
+  border-radius: 4px 0 0 4px;
+}
+
+.arc-person .arc-stripe {
+  border-radius: 26px 0 0 26px;
+}
+
+.arc-t-datastore .arc-stripe {
+  border-radius: 4px 0 0 12px;
+}
+
+.arc-container .arc-stripe {
+  bottom: auto;
+  height: 36px;
+  border-radius: 4px 0 0 0;
+}
+
 .arc-text {
   flex: 1;
   min-width: 0;
@@ -587,31 +612,37 @@ select.arc-tool {
   text-overflow: ellipsis;
 }
 
-/* Each kind's glyph before its name: ◉ Person, ▣ System, ▭ Service, ◇ Component. */
-.arc-name::before {
-  display: inline-block;
-  width: 14px;
-  margin-right: 3px;
-  color: var(--muted);
+.arc-box-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.arc-kind-glyph {
+  flex: none;
+  width: 12px;
   font-size: 12px;
-  font-weight: 400;
   text-align: center;
+  color: var(--muted);
 }
 
-.arc-person .arc-name::before {
-  content: "◉" / "";
+/* A Service's type changes its shape: a datastore's rounded base, a broker's striped band. */
+.arc-box.arc-t-datastore {
+  border-radius: 6px 6px 14px 14px;
 }
 
-.arc-system .arc-name::before {
-  content: "▣" / "";
+.arc-box.arc-t-broker {
+  background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--tint) 10px 12px);
 }
 
-.arc-service .arc-name::before {
-  content: "▭" / "";
-}
-
-.arc-component .arc-name::before {
-  content: "◇" / "";
+.arc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .arc-sublabel {
@@ -1077,18 +1108,58 @@ select.arc-tool {
   outline-offset: 3px;
 }
 
-.arc-distance {
+/* An impact badge above the box's top-right corner: the origin, or the side and distance from it. */
+.arc-badge {
   position: absolute;
-  bottom: 4px;
-  right: 6px;
-  min-width: 18px;
+  top: -10px;
+  right: 34px;
   padding: 0 5px;
-  border-radius: 999px;
-  background: #e0a030;
+  border: 1px solid;
+  border-radius: 8px;
+  background: var(--panel);
+  font: 600 9.5px ui-sans-serif, system-ui, sans-serif;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.arc-badge-upstream {
+  color: var(--up);
+  border-color: var(--up);
+}
+
+.arc-badge-downstream {
+  color: var(--down);
+  border-color: var(--down);
+}
+
+.arc-badge-origin {
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
+  background: var(--origin);
+  border-color: var(--origin);
+}
+
+.arc-badge-distance {
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+/* A hit box takes its side's colour: amber upstream, blue downstream, red at the origin. */
+.arc-box.arc-side-upstream {
+  border-color: var(--up);
+  background: var(--upbg);
+}
+
+.arc-box.arc-side-downstream {
+  border-color: var(--down);
+  background: var(--downbg);
+  border-style: double;
+  border-width: 3px;
+}
+
+.arc-box.arc-side-origin {
+  border-color: var(--origin);
+  background: var(--originbg);
+  box-shadow: 0 0 0 3px var(--originbg);
 }
 
 .arc-holds {
