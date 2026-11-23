@@ -378,6 +378,10 @@ export const decisionsWorkspace: Files = {
       title: Cart flow
       level: c2
       include: [shopper, web, cart, cart-db]
+    cart-internals:
+      title: Cart internals
+      level: c3
+      include: [{ element: cart, downstream: 1 }]
 `,
   "shop/adr/0001-keep-carts-in-postgres.md": `---
 status: accepted

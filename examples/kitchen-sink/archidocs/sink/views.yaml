@@ -1,0 +1,13 @@
+views:
+  structural:
+    everything:
+      title: Everything
+      description: Every Element, with Shop and API open.
+      level: c3
+      include:
+        - element: shop
+          with: descendants
+        - customer
+        - search
+        - payment-gateway
+        - payments-provider

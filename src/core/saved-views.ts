@@ -3,7 +3,7 @@ import { resolveDeployment } from "./deployment-views.ts";
 import { getImpact } from "./impact.ts";
 import { pathsBetween, type Path } from "./paths.ts";
 import { lifter, type Level } from "./query.ts";
-import { build, ModelIndex, type ResolvedView, type ViewKind } from "./views.ts";
+import { build, ModelIndex, type ImpactSide, type NodeMark, type ResolvedView, type ViewKind } from "./views.ts";
 
 /** An `expand` or `collapse` entry that can't apply: its id is not a node of the View, or it has no children. */
 export interface BadExpand {
@@ -169,16 +169,23 @@ export function applyLens(bundle: Bundle, model: ModelIndex, view: ResolvedView,
   view.lens = lens;
   /** Element ids the Lens reaches, with their distance when it has one. */
   const reached = new Map<string, number | undefined>();
+  /** For an impact Lens, which side of the origin each reached Element is on, at its nearest distance. */
+  const sides = new Map<string, ImpactSide>();
   const carried = new Set<BundleRelationship>();
   let unresolved: { from: string; to: string } | undefined;
 
   if ("impact" in lens) {
     if (model.byId.has(lens.impact)) {
       reached.set(lens.impact, 0);
+      sides.set(lens.impact, "origin");
       const impact = getImpact(bundle, lens.impact, lens.direction);
-      for (const ring of [...(impact.upstream ?? []), ...(impact.downstream ?? [])]) {
+      const rings = [...(impact.upstream ?? []).map((ring) => ["upstream", ring] as const), ...(impact.downstream ?? []).map((ring) => ["downstream", ring] as const)];
+      for (const [side, ring] of rings) {
         for (const e of ring.elements) {
-          reached.set(e.id, Math.min(reached.get(e.id) ?? Infinity, ring.distance));
+          if (ring.distance < (reached.get(e.id) ?? Infinity)) {
+            reached.set(e.id, ring.distance);
+            sides.set(e.id, side);
+          }
           for (const r of e.relationships) carried.add(r);
         }
       }
@@ -197,17 +204,20 @@ export function applyLens(bundle: Bundle, model: ModelIndex, view: ResolvedView,
   // A node stands for its own id, or for the Element it draws: a Deployment View draws one Service as several Deployments.
   const standing = new Map<string, string[]>();
   for (const n of view.nodes) standing.set(n.element ?? n.id, [...(standing.get(n.element ?? n.id) ?? []), n.id]);
-  const marks = new Map(view.nodes.map((n) => [n.id, { hit: false } as { hit: boolean; distance?: number }]));
-  const mark = (node: string, d: number | undefined) => {
+  const marks = new Map(view.nodes.map((n) => [n.id, { hit: false } as NodeMark]));
+  const mark = (node: string, d: number | undefined, side: ImpactSide | undefined) => {
     const m = marks.get(node);
     if (!m) return;
     m.hit = true;
-    if (d !== undefined) m.distance = Math.min(m.distance ?? Infinity, d);
+    if (d !== undefined && d < (m.distance ?? Infinity)) {
+      m.distance = d;
+      if (side !== undefined) m.side = side;
+    }
   };
   for (const [id, d] of reached) {
     const holder = model.ancestry(id).find((a) => standing.has(a));
-    for (const n of holder === undefined ? [] : standing.get(holder)!) mark(n, d);
-    if (!("team" in lens)) for (const n of view.nodes) if ((n.element ?? n.id) !== id && model.ancestry(n.element ?? n.id).includes(id)) mark(n.id, d);
+    for (const n of holder === undefined ? [] : standing.get(holder)!) mark(n, d, sides.get(id));
+    if (!("team" in lens)) for (const n of view.nodes) if ((n.element ?? n.id) !== id && model.ancestry(n.element ?? n.id).includes(id)) mark(n.id, d, sides.get(id));
   }
   for (const n of view.nodes) n.mark = marks.get(n.id)!;
 

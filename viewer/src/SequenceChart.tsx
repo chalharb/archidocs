@@ -86,7 +86,7 @@ function Chart({ workspace, layout, fitKey, selected, playing, reducedMotion, on
 
   return (
     <ReactFlow
-      className="ad-flow ad-seq"
+      className="arc-flow arc-seq"
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -100,13 +100,13 @@ function Chart({ workspace, layout, fitKey, selected, playing, reducedMotion, on
       elementsSelectable={false}
       proOptions={{ hideAttribution: true }}
     >
-      <svg className="ad-defs" aria-hidden="true">
+      <svg className="arc-defs" aria-hidden="true">
         <defs>
-          <marker id="ad-head-filled" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" className="ad-head" />
+          <marker id="arc-head-filled" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" className="arc-head" />
           </marker>
-          <marker id="ad-head-open" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10" className="ad-head-open" />
+          <marker id="arc-head-open" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10" className="arc-head-open" />
           </marker>
         </defs>
       </svg>
@@ -159,8 +159,8 @@ function Camera({ layout, fitKey, selected, playing, reducedMotion, onSettled }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, playing, fitKey, sized]);
   return (
-    <div className="ad-seq-tools">
-      <button type="button" className="ad-action" onClick={() => void setViewport(fitViewport(layout, width, height), cameraMotion(reducedMotion))}>
+    <div className="arc-seq-tools">
+      <button type="button" className="arc-action" onClick={() => void setViewport(fitViewport(layout, width, height), cameraMotion(reducedMotion))}>
         Fit whole chart
       </button>
     </div>
@@ -185,7 +185,7 @@ function Headers({ workspace, layout }: { workspace: Workspace; layout: Sequence
   const [x, y, zoom] = useStore((s) => s.transform);
   const style: CSSProperties = { transform: `translate(${x}px, ${Math.max(y, 0)}px) scale(${zoom})` };
   return (
-    <div className="ad-seq-headers" style={style}>
+    <div className="arc-seq-headers" style={style}>
       {layout.columns.map((c) => {
         const element = workspace.byId.get(c.id);
         const team = element ? workspace.teams.get(element.owner) : undefined;
@@ -193,14 +193,14 @@ function Headers({ workspace, layout }: { workspace: Workspace; layout: Sequence
         return (
           <div
             key={c.id}
-            className={external ? "ad-seq-header ad-external" : "ad-seq-header"}
+            className={external ? "arc-seq-header arc-external" : "arc-seq-header"}
             data-header={c.id}
             title={workspace.name(c.id)}
             style={{ left: c.x - c.width / 2, width: c.width, height: HEADER_BOX }}
           >
-            {team && <span className="ad-stripe" style={{ background: team.color }} />}
-            <span className="ad-seq-name">{workspace.name(c.id)}</span>
-            {team && <span className="ad-team">{team.code}</span>}
+            {team && <span className="arc-stripe" style={{ background: team.color }} />}
+            <span className="arc-seq-name">{workspace.name(c.id)}</span>
+            {team && <span className="arc-team">{team.code}</span>}
           </div>
         );
       })}
@@ -213,13 +213,13 @@ const Lifeline = memo(function Lifeline({ data }: NodeProps<Node<LifelineData>>)
   const { column, height, activations } = data;
   const mid = column.width / 2;
   return (
-    <div className="ad-lifeline" data-participant={column.id} style={{ width: column.width, height }}>
-      <Handle type="target" position={Position.Top} isConnectable={false} className="ad-handle" />
-      <Handle type="source" position={Position.Top} isConnectable={false} className="ad-handle" />
+    <div className="arc-lifeline" data-participant={column.id} style={{ width: column.width, height }}>
+      <Handle type="target" position={Position.Top} isConnectable={false} className="arc-handle" />
+      <Handle type="source" position={Position.Top} isConnectable={false} className="arc-handle" />
       <svg width={column.width} height={height}>
-        <line x1={mid} y1={HEADER_BOX} x2={mid} y2={height - 10} className="ad-lifeline-line" />
+        <line x1={mid} y1={HEADER_BOX} x2={mid} y2={height - 10} className="arc-lifeline-line" />
         {activations.map((a) => (
-          <rect key={`${a.top}:${a.depth}`} className="ad-activation" x={mid - SEQUENCE.bar / 2 + (a.depth * SEQUENCE.bar) / 2} y={a.top - 6} width={SEQUENCE.bar} height={a.bottom - a.top + 12} />
+          <rect key={`${a.top}:${a.depth}`} className="arc-activation" x={mid - SEQUENCE.bar / 2 + (a.depth * SEQUENCE.bar) / 2} y={a.top - 6} width={SEQUENCE.bar} height={a.bottom - a.top + 12} />
         ))}
       </svg>
     </div>
@@ -235,21 +235,21 @@ function Message({ data }: EdgeProps<Edge<MessageData>>) {
   const anchor = way > 0 ? "start" : "end";
   const d = `M${row.x1} ${row.y} L${row.x2} ${row.y}`;
   const under = [via, row.note].filter((s): s is string => s !== undefined);
-  const classes = ["ad-step", selected ? "ad-step-selected" : "", later ? "ad-step-later" : ""].filter(Boolean).join(" ");
+  const classes = ["arc-step", selected ? "arc-step-selected" : "", later ? "arc-step-later" : ""].filter(Boolean).join(" ");
   return (
     <g className={classes} data-step-edge={row.key} data-step={row.n} data-selected={selected ? "true" : "false"} data-later={later ? "true" : undefined} onClick={() => onSelect(row.n)}>
       <title>{`Step ${row.key}: ${row.label}`}</title>
-      <path className="ad-step-hit" d={d} />
-      <path className={`ad-step-line ad-step-${row.style}`} d={d} markerEnd={`url(#ad-head-${row.style === "sync" ? "filled" : "open"})`} />
-      <circle className="ad-step-badge" cx={badge} cy={row.y} r={9} />
-      <text className="ad-step-number" x={badge} y={row.y + 3.5} textAnchor="middle">
+      <path className="arc-step-hit" d={d} />
+      <path className={`arc-step-line arc-step-${row.style}`} d={d} markerEnd={`url(#arc-head-${row.style === "sync" ? "filled" : "open"})`} />
+      <circle className="arc-step-badge" cx={badge} cy={row.y} r={9} />
+      <text className="arc-step-number" x={badge} y={row.y + 3.5} textAnchor="middle">
         {row.key}
       </text>
-      <text className="ad-step-label" x={labelX} y={row.y - 7} textAnchor={anchor}>
+      <text className="arc-step-label" x={labelX} y={row.y - 7} textAnchor={anchor}>
         {row.label}
       </text>
       {under.map((s, i) => (
-        <text key={i} className="ad-step-sub" x={labelX} y={row.y + 16 + i * SEQUENCE.lineHeight} textAnchor={anchor}>
+        <text key={i} className="arc-step-sub" x={labelX} y={row.y + 16 + i * SEQUENCE.lineHeight} textAnchor={anchor}>
           {s}
         </text>
       ))}

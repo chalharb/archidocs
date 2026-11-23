@@ -24,7 +24,7 @@ export interface TreeRow {
 
 const byName = (a: { id: string; name: string }, b: { id: string; name: string }) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
 
-export const GLYPHS: Record<BundleElement["kind"], string> = { person: "☺", system: "▣", service: "▢", component: "▫" };
+export const GLYPHS: Record<BundleElement["kind"], string> = { person: "◉", system: "▣", service: "▭", component: "◇" };
 
 /** Lookups over a loaded Bundle that the screens share. */
 export class Workspace {
@@ -267,10 +267,12 @@ export class Workspace {
   /** Each kept System's C2 View with its Services' C3 Views nested, then C3 Views of Services outside any kept System. */
   private systemViewGroup(label: string, keep: (owner: string) => boolean, team?: string): TreeRow[] {
     const row = (v: ViewSummary): TreeRow => ({ key: v.id, label: v.title, view: v.id, team: team ? this.teams.get(team) : undefined, children: [] });
-    const c3 = this.views.filter((v) => v.kind === "c3" && keep(this.byId.get(v.id.slice(3))!.owner));
+    // Only Generated Views (`c2/<system>`, `c3/<service>`); a Saved View drawn at c2 or c3 is listed under Saved Views.
+    const owner = (v: ViewSummary) => this.byId.get(v.id.slice(3))?.owner ?? "";
+    const c3 = this.views.filter((v) => v.kind === "c3" && v.id.startsWith("c3/") && keep(owner(v)));
     const nested = new Set<string>();
     const systems = this.views
-      .filter((v) => v.kind === "c2" && v.id.includes("/") && keep(this.byId.get(v.id.slice(3))!.owner))
+      .filter((v) => v.kind === "c2" && v.id.startsWith("c2/") && keep(owner(v)))
       .map((v) => {
         const children = c3.filter((s) => this.ancestors(s.id.slice(3)).includes(v.id.slice(3)));
         for (const c of children) nested.add(c.id);

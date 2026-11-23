@@ -102,10 +102,10 @@ function Graph({ workspace, view, brokers, fitKey, selected, onSelect, onSettled
       }));
   }, [layout, pairs, selected, onSelect]);
 
-  if (error) return <p className="ad-error">Layout failed: {error}</p>;
+  if (error) return <p className="arc-error">Layout failed: {error}</p>;
   return (
     <ReactFlow
-      className="ad-flow ad-graph"
+      className="arc-flow arc-graph"
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -147,11 +147,11 @@ function GraphFitter({ width, height, edges, fitKey, onSettled }: { width: numbe
 
 const Participant = memo(function Participant({ id, data }: NodeProps<Node<GraphNodeData>>) {
   return (
-    <div className="ad-box ad-graph-node" data-graph-node={id}>
-      <Handle type="target" position={Position.Left} isConnectable={false} className="ad-handle" />
-      <Handle type="source" position={Position.Right} isConnectable={false} className="ad-handle" />
-      <div className="ad-text">
-        <div className="ad-name">{data.name}</div>
+    <div className="arc-box arc-graph-node" data-graph-node={id}>
+      <Handle type="target" position={Position.Left} isConnectable={false} className="arc-handle" />
+      <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
+      <div className="arc-text">
+        <div className="arc-name">{data.name}</div>
       </div>
     </div>
   );
@@ -166,14 +166,14 @@ function Steps({ data, markerEnd }: EdgeProps<Edge<GraphEdgeData>>) {
   const lit = pair.messages.some((m) => m.n === selected);
   return (
     <>
-      <path className={lit ? "ad-edge ad-lit" : "ad-edge"} d={d} fill="none" markerEnd={markerEnd} data-edge-from={pair.from} data-edge-to={pair.to} />
+      <path className={lit ? "arc-edge arc-lit" : "arc-edge"} d={d} fill="none" markerEnd={markerEnd} data-edge-from={pair.from} data-edge-to={pair.to} />
       <EdgeLabelRenderer>
-        <div className="ad-graph-steps nodrag nopan" style={{ transform: `translate(-50%, -50%) translate(${(a.x + b.x) / 2}px, ${(a.y + b.y) / 2}px)` }}>
+        <div className="arc-graph-steps nodrag nopan" style={{ transform: `translate(-50%, -50%) translate(${(a.x + b.x) / 2}px, ${(a.y + b.y) / 2}px)` }}>
           {pair.messages.map((m) => (
             <button
               key={m.key}
               type="button"
-              className={`ad-graph-step ad-step-${m.style}`}
+              className={`arc-graph-step arc-step-${m.style}`}
               data-graph-step={m.key}
               aria-pressed={m.n === selected}
               title={m.label}

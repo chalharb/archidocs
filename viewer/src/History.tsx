@@ -74,7 +74,7 @@ export function Unavailable({ problem, place }: { problem: TimeProblem; place: P
   const back = formatPlace({ ...place, at: null, vs: null, selected: null });
   if (problem.kind === "unknown") {
     return (
-      <div className="ad-unavailable" role="alert">
+      <div className="arc-unavailable" role="alert">
         <h1>No Revision “{problem.point}”</h1>
         <p>This site's history has no tag, commit or date called {problem.point}.</p>
         <a href={back}>Back to latest</a>
@@ -84,7 +84,7 @@ export function Unavailable({ problem, place }: { problem: TimeProblem; place: P
   const { revision } = problem;
   const sha = revision.sha.slice(0, 7);
   return (
-    <div className="ad-unavailable" role="alert">
+    <div className="arc-unavailable" role="alert">
       <h1>
         <code>history_unavailable</code>
       </h1>
@@ -102,7 +102,7 @@ export function Unavailable({ problem, place }: { problem: TimeProblem; place: P
 /** The banner over a past Revision, with a way back to the latest. */
 export function AtBanner({ revision, place }: { revision: Revision; place: Place }) {
   return (
-    <p className="ad-at" role="status" aria-label="Past Revision">
+    <p className="arc-at" role="status" aria-label="Past Revision">
       <span>
         Viewing <strong>{pointLabel(revision)}</strong> · {revision.subject} · {shortDate(revision)}
       </span>
@@ -145,9 +145,9 @@ export function changeTarget(change: Change): { element: string } | { view: stri
 /** The Changes list beside the canvas while Comparing; clicking a Change focuses it. */
 export function ChangesList({ changes, label, onElement, onView }: { changes: Change[]; label: string; onElement: (id: string) => void; onView: (id: string) => void }) {
   return (
-    <aside className="ad-changes" aria-label="Changes">
+    <aside className="arc-changes" aria-label="Changes">
       <h2>Changes</h2>
-      <p className="ad-revision-meta">
+      <p className="arc-revision-meta">
         {label}: {changes.length === 0 ? "nothing changed" : `${changes.length} Change${changes.length === 1 ? "" : "s"}`}
       </p>
       <ul>
@@ -155,20 +155,20 @@ export function ChangesList({ changes, label, onElement, onView }: { changes: Ch
           const target = changeTarget(c);
           const body = (
             <>
-              <span className="ad-change-sign" aria-hidden="true">
+              <span className="arc-change-sign" aria-hidden="true">
                 {SIGNS[c.type]}
               </span>
               <span>
                 {changeName(c)}
                 <br />
-                <span className="ad-change-kind">
+                <span className="arc-change-kind">
                   {KIND_NAMES[c.kind]} {c.type}
                   {c.fields.length > 0 ? `: ${c.fields.join(", ")}` : ""}
                 </span>
               </span>
             </>
           );
-          const className = `ad-change ad-change-${c.type}`;
+          const className = `arc-change arc-change-${c.type}`;
           return (
             <li key={`${c.kind} ${c.id} ${c.type}`}>
               {target ? (
@@ -191,15 +191,15 @@ export function RevisionSummary({ revision }: { revision: Revision }) {
   return (
     <span>
       {revision.tags.map((t) => (
-        <span key={t} className="ad-tag">
+        <span key={t} className="arc-tag">
           {t}
         </span>
       ))}
       <code>{revision.sha.slice(0, 7)}</code> {revision.subject}
       <br />
-      <span className="ad-revision-meta">
+      <span className="arc-revision-meta">
         {shortDate(revision)} · {revision.author} · +{revision.counts.added} −{revision.counts.removed} ~{revision.counts.changed}
-        {!revision.bundle && <span className="ad-dropped"> · not kept</span>}
+        {!revision.bundle && <span className="arc-dropped"> · not kept</span>}
       </span>
     </span>
   );
@@ -223,17 +223,17 @@ export function RevisionsMenu({ timeline, onAt, onVs }: { timeline: Timeline; on
   }, [open]);
   if (timeline.revisions.length === 0) return null;
   return (
-    <div className="ad-menu-root" ref={root}>
-      <button type="button" className="ad-tool" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+    <div className="arc-menu-root" ref={root}>
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         Revisions
       </button>
       {open && (
-        <div className="ad-menu ad-timeline" role="menu" aria-label="Revisions">
+        <div className="arc-menu arc-timeline" role="menu" aria-label="Revisions">
           <ol>
             {timeline.revisions.map((r) => (
               <li key={r.sha}>
                 <RevisionSummary revision={r} />
-                <span className="ad-revision-actions">
+                <span className="arc-revision-actions">
                   <button type="button" disabled={!r.bundle} aria-label={`Open ${pointLabel(r)}`} onClick={() => (setOpen(false), onAt(r))}>
                     Open
                   </button>
