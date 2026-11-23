@@ -47,7 +47,7 @@ The diagrams are generated from the validated Model at a commit, never drawn by 
 ## Brand Commitments
 
 - Name: **Archidocs**.
-- Logo: the user has a logo in mind that has not been supplied yet. Do not invent a replacement brand mark; keep a slot for it.
+- Logo: the "Doorway tile" mark the user chose (option C): a rounded tile with an arched doorway opening through its base and an indigo (`#5146E5`) keystone above the arch. Files and usage are in `assets/brand/`.
 
 ## Evidence on Hand
 

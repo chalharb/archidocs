@@ -51,10 +51,12 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView, onP
   return (
     <>
       <nav className="arc-rail" aria-label="Rail">
-        {/* A placeholder until the Archidocs mark arrives. */}
-        <div className="arc-logo" aria-hidden="true" title="Archidocs">
-          A
-        </div>
+        {/* The Archidocs mark, "Doorway tile": the tile takes the rail's ink, so it follows light and dark mode. */}
+        <svg className="arc-logo" viewBox="0 0 64 64" role="img" aria-label="Archidocs">
+          <title>Archidocs</title>
+          <path className="arc-logo-tile" d="M17 4H47A13 13 0 0 1 60 17V47A13 13 0 0 1 47 60H42V38A10 10 0 0 0 22 38V60H17A13 13 0 0 1 4 47V17A13 13 0 0 1 17 4Z" />
+          <path className="arc-logo-key" d="M26.5 12.5H37.5L35.5 21H28.5Z" />
+        </svg>
         <button type="button" className="arc-rail-button" title="Find ( / )" aria-label="Find" aria-keyshortcuts="/" aria-pressed={finding} onClick={() => (setPanel(null), onFind())}>
           <Icon name="find" />
           <span className="arc-rail-label" aria-hidden="true">

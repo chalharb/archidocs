@@ -221,18 +221,19 @@ pre {
   z-index: 30;
 }
 
-/* A placeholder tile until the Archidocs mark arrives. */
+/* The Archidocs mark: the tile in ink, the keystone in the brand indigo. */
 .arc-logo {
   width: 40px;
   height: 40px;
-  display: grid;
-  place-items: center;
   margin-bottom: 12px;
-  background: var(--plate);
-  color: var(--on-plate);
-  font-weight: 800;
-  font-size: 13px;
-  letter-spacing: 0.04em;
+}
+
+.arc-logo-tile {
+  fill: var(--ink);
+}
+
+.arc-logo-key {
+  fill: #5146e5;
 }
 
 .arc-rail-button {

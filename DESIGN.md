@@ -264,7 +264,7 @@ A framed strip of uppercase options divided by 1.5px ink rules; the chosen optio
 The station sign. Back and forward as square 32px tools, then the breadcrumb at 13px semibold in plate-muted with a yellow arrow before each step, ending in the yellow you-are-here tile (uppercase, 800). Deployments follow as outlined uppercase tiles, the current one filled yellow. Recent, direction, Copy link, Export and the white primary sit at the right and wrap when space runs out.
 
 ### Rail and flyouts
-Paper rail with an ink rule on its right edge, a placeholder logo tile at the top (a slate square holding a letter until the Archidocs mark is supplied), and icon-over-label buttons that reverse to the plate when their flyout is open. Flyouts have a plate-coloured head with an uppercase title and a framed square close button; tree rows are 32px, hover tint, current row in here-wash with an 800 label.
+Paper rail with an ink rule on its right edge, the Archidocs mark at the top (the "Doorway tile": its tile drawn in ink so it follows light and dark mode, its keystone in brand indigo `#5146E5`; see `assets/brand/`), and icon-over-label buttons that reverse to the plate when their flyout is open. Flyouts have a plate-coloured head with an uppercase title and a framed square close button; tree rows are 32px, hover tint, current row in here-wash with an 800 label.
 
 ### Team code tile
 The reversed plate tile: ink fill, paper text, 11px 800 tracked code, with the Team colour as a 5px leading band. It appears on every node, in trees, in the Element panel owner line and in the Key.
@@ -300,7 +300,7 @@ A framed chip whose leading cell is a reversed ink tile naming the lens kind (IM
 - **Don't** round chrome corners; radius belongs to the Person, datastore node shapes only.
 - **Don't** show a Team by colour alone.
 - **Don't** introduce a third chrome type size or a second sans family.
-- **Don't** fill the logo slot with an invented mark; it stays a placeholder until the real one is supplied.
+- **Don't** recolour or redraw the Archidocs mark; use the files in `assets/brand/`. Brand indigo belongs to the keystone only, never to chrome.
 - **Don't** fade dimmed elements below legibility.
 - **Don't** dash an edge to step it back; dashes are reserved for External, open boxes, removed Relationships and sequence-chart Returns and lifelines.
 - **Don't** use a yellow focus outline on a light field.

@@ -666,7 +666,7 @@
       "**Don't** round chrome corners; radius belongs to the Person, datastore node shapes only.",
       "**Don't** show a Team by colour alone.",
       "**Don't** introduce a third chrome type size or a second sans family.",
-      "**Don't** fill the logo slot with an invented mark; it stays a placeholder until the real one is supplied.",
+      "**Don't** recolour or redraw the Archidocs mark; use the files in `assets/brand/`. Brand indigo belongs to the keystone only, never to chrome.",
       "**Don't** fade dimmed elements below legibility.",
       "**Don't** dash an edge to step it back; dashes are reserved for External, open boxes, removed Relationships and sequence-chart Returns and lifelines.",
       "**Don't** use a yellow focus outline on a light field."
