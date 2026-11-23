@@ -252,20 +252,22 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       onPickElement={focus}
       onPickView={pickView}
       onPickTeam={(team) => setLens({ team })}
+      finding={finding}
       onFind={() => setFinding(true)}
+      onOpenPanel={() => setFinding(false)}
     />
   );
 
   if (dynamic) {
     return (
-      <div className="ad-app">
+      <div className="arc-app">
         {rail}
         {finding && <Find workspace={workspace} onClose={() => setFinding(false)} onPick={(id) => {
               setFinding(false);
               focus(id);
             }}
           />}
-        <main className="ad-main ad-main-dynamic">
+        <main className="arc-main arc-main-dynamic">
           <DynamicScreen workspace={plain} view={dynamic} place={place} keys={!finding} onOpenStepView={openStepView} onOpenView={(v) => go(viewPlace(v, null, null, place))} />
         </main>
       </div>
@@ -285,7 +287,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   }
 
   return (
-    <div className="ad-app">
+    <div className="arc-app">
       {rail}
       {finding && (
         <Find
@@ -299,7 +301,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
           }}
         />
       )}
-      <main className={at ? "ad-main ad-has-time" : "ad-main"}>
+      <main className={at ? "arc-main arc-has-time" : "arc-main"}>
         <LocationBar
           workspace={workspace}
           place={place}
@@ -324,14 +326,14 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
         )}
         {at && <AtBanner revision={at} place={place} />}
         {connectFrom !== null && (
-          <p className="ad-banner" role="status">
+          <p className="arc-banner" role="status">
             Pick the node to connect {workspace.name(connectFrom)} to: click it, or press / to find it. Escape cancels.
           </p>
         )}
-        <div className="ad-stage">
+        <div className="arc-stage">
         {comparison && <ChangesList changes={comparison.changes} label={comparison.label} onElement={focus} onView={(v) => go(viewPlace(v, null, place.lens, place))} />}
-        <div className="ad-canvas" data-canvas data-state={ready ? "ready" : "busy"}>
-          {error && <p className="ad-error">Layout failed: {error}</p>}
+        <div className="arc-canvas" data-canvas data-state={ready ? "ready" : "busy"}>
+          {error && <p className="arc-error">Layout failed: {error}</p>}
           {laidOut && (
             <Canvas
               workspace={workspace}
@@ -399,7 +401,7 @@ function opening(workspace: Workspace, place: Place, id: string): string[] | und
 
 function Message({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <div className="ad-message">
+    <div className="arc-message">
       <h1>{title}</h1>
       {children && <p>{children}</p>}
     </div>

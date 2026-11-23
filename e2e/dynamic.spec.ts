@@ -54,14 +54,14 @@ test.describe("Dynamic View screen", () => {
     await openDynamic(page, FULL);
     const style = (key: string) =>
       arrow(page, key).evaluate((g) => {
-        const line = g.querySelector("path.ad-step-line")!;
+        const line = g.querySelector("path.arc-step-line")!;
         return { dash: getComputedStyle(line).strokeDasharray, head: line.getAttribute("marker-end") };
       });
 
-    expect(await style("2")).toEqual({ dash: "none", head: "url(#ad-head-filled)" });
-    expect(await style("46")).toEqual({ dash: "none", head: "url(#ad-head-open)" });
+    expect(await style("2")).toEqual({ dash: "none", head: "url(#arc-head-filled)" });
+    expect(await style("46")).toEqual({ dash: "none", head: "url(#arc-head-open)" });
     expect((await style("4")).dash).not.toBe("none");
-    expect((await style("4")).head).toBe("url(#ad-head-open)");
+    expect((await style("4")).head).toBe("url(#arc-head-open)");
     await expect(arrow(page, "37")).toContainText("via Event Bus · payment-events");
   });
 
@@ -70,7 +70,7 @@ test.describe("Dynamic View screen", () => {
 
     await outlineRow(page, 5).click();
     await expectSelected(page, 5);
-    await arrow(page, "7").locator(".ad-step-hit").dispatchEvent("click");
+    await arrow(page, "7").locator(".arc-step-hit").dispatchEvent("click");
     await expectSelected(page, 7);
     await tick(page, 12).click();
     await expectSelected(page, 12);
@@ -141,7 +141,7 @@ test.describe("Dynamic View screen", () => {
     for (const key of ["37a", "37b", "42a", "42b"]) await expect(arrow(page, key)).toHaveCount(1);
     await expect(page.getByRole("list", { name: "Steps" }).getByRole("listitem")).toHaveCount(46);
 
-    await arrow(page, "37b").locator(".ad-step-hit").dispatchEvent("click");
+    await arrow(page, "37b").locator(".arc-step-hit").dispatchEvent("click");
     expect(hash(page)).toContain("step=37");
     await expect(arrow(page, "37a")).toHaveAttribute("data-selected", "true");
     await expect(arrow(page, "37b")).toHaveAttribute("data-selected", "true");
@@ -184,7 +184,7 @@ test.describe("Dynamic View screen", () => {
 
   test("keeps the headers pinned while scrolling and never zooms below 85%", async ({ page }) => {
     await openDynamic(page, FULL);
-    const chart = page.locator(".ad-seq");
+    const chart = page.locator(".arc-seq");
     const header = page.locator('[data-header="shop:checkout-api"]');
     const top = (await chart.boundingBox())!.y;
 

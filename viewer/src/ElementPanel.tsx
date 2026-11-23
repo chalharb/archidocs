@@ -37,27 +37,27 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
   const technology = "technology" in element ? element.technology : null;
 
   return (
-    <aside className="ad-panel" aria-label="Element">
-      <header className="ad-panel-head">
-        <span className="ad-panel-kind" data-glyph={GLYPHS[element.kind]}>
+    <aside className="arc-panel" aria-label="Element">
+      <header className="arc-panel-head">
+        <span className="arc-panel-kind" data-glyph={GLYPHS[element.kind]}>
           {element.kind === "system" || element.kind === "service" ? (element.external ? `External ${element.kind}` : element.kind) : element.kind}
         </span>
         <h2>{element.name}</h2>
-        <code className="ad-panel-id">{element.id}</code>
+        <code className="arc-panel-id">{element.id}</code>
       </header>
-      <div className="ad-tabs" role="tablist" aria-label="Element">
+      <div className="arc-tabs" role="tablist" aria-label="Element">
         {TABS.map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
             {t}
           </button>
         ))}
       </div>
-      <div className="ad-panel-body" role="tabpanel" aria-label={tab}>
+      <div className="arc-panel-body" role="tabpanel" aria-label={tab}>
         {tab === "Overview" && (
           <>
             {comparison && <Compared comparison={comparison} id={id} />}
-            {element.description && <p className="ad-description">{element.description}</p>}
-            <dl className="ad-facts">
+            {element.description && <p className="arc-description">{element.description}</p>}
+            <dl className="arc-facts">
               {technology && (
                 <>
                   <dt>Technology</dt>
@@ -66,25 +66,25 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
               )}
               <dt>Owner</dt>
               <dd>
-                <button type="button" className="ad-owner" aria-label={`Team lens: ${workspace.name(element.owner)}`} style={{ borderColor: team?.color }} onClick={() => onLens({ team: element.owner })}>
-                  <span className="ad-owner-code">{team?.code}</span> {workspace.name(element.owner)}
+                <button type="button" className="arc-owner" aria-label={`Team lens: ${workspace.name(element.owner)}`} style={{ borderColor: team?.color }} onClick={() => onLens({ team: element.owner })}>
+                  <span className="arc-owner-code">{team?.code}</span> {workspace.name(element.owner)}
                 </button>
               </dd>
             </dl>
-            <section className="ad-actions" aria-label="Ask">
+            <section className="arc-actions" aria-label="Ask">
               <h3>Impact</h3>
-              <div className="ad-segmented" role="group" aria-label="Impact">
+              <div className="arc-segmented" role="group" aria-label="Impact">
                 {(["upstream", "both", "downstream"] as const satisfies readonly ImpactWay[]).map((way) => (
                   <button key={way} type="button" aria-label={`${way === "both" ? "Both ways" : way[0]!.toUpperCase() + way.slice(1)} impact`} onClick={() => onLens({ impact: id, direction: way })}>
                     {way === "both" ? "Both" : way === "upstream" ? "Upstream" : "Downstream"}
                   </button>
                 ))}
               </div>
-              <button type="button" className="ad-action" onClick={() => onConnect(id)}>
+              <button type="button" className="arc-action" onClick={() => onConnect(id)}>
                 Connect to…
               </button>
               {workspace.ownView(id) !== undefined && (
-                <button type="button" className="ad-action" onClick={() => onOpenView(id)}>
+                <button type="button" className="arc-action" onClick={() => onOpenView(id)}>
                   Open its View
                 </button>
               )}
@@ -105,14 +105,14 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
 function WhereDeployed({ workspace, id, onDeployed }: { workspace: Workspace; id: string; onDeployed: (view: string, nodes: string[]) => void }) {
   const places = useMemo(() => workspace.deployedIn(id), [workspace, id]);
   return (
-    <section className="ad-actions" role="region" aria-label="Where is it deployed?">
+    <section className="arc-actions" role="region" aria-label="Where is it deployed?">
       <h3>Where is it deployed?</h3>
       {places.length === 0 ? (
-        <p className="ad-empty">Not deployed in any Environment.</p>
+        <p className="arc-empty">Not deployed in any Environment.</p>
       ) : (
-        <div className="ad-deployed">
+        <div className="arc-deployed">
           {places.map((p) => (
-            <button key={p.environment} type="button" className="ad-action" onClick={() => onDeployed(p.view, p.nodes)}>
+            <button key={p.environment} type="button" className="arc-action" onClick={() => onDeployed(p.view, p.nodes)}>
               {p.label}
             </button>
           ))}
@@ -125,20 +125,20 @@ function WhereDeployed({ workspace, id, onDeployed }: { workspace: Workspace; id
 /** Each Environment's Deployments, with the Deployment Target chain, the URL and named endpoints, each with a copy button. */
 function Urls({ workspace, id }: { workspace: Workspace; id: string }) {
   const deployments = useMemo(() => getDeployments(workspace.bundle, id), [workspace, id]);
-  if (deployments.length === 0) return <p className="ad-empty">No Deployments.</p>;
+  if (deployments.length === 0) return <p className="arc-empty">No Deployments.</p>;
   const environments = workspace.bundle.environments.filter((env) => deployments.some((d) => d.environment === env.id));
   return (
     <>
       {environments.map((env) => (
-        <section key={env.id} className="ad-env" role="region" aria-label={env.name}>
+        <section key={env.id} className="arc-env" role="region" aria-label={env.name}>
           <h3>{env.name}</h3>
           <ul>
             {deployments
               .filter((d) => d.environment === env.id)
               .map((d) => (
                 <li key={d.target}>
-                  <div className="ad-target">{d.targetPath.map((t) => t.name).join(" › ") || d.target}</div>
-                  {d.url ? <UrlRow url={d.url} /> : <p className="ad-empty">No URL</p>}
+                  <div className="arc-target">{d.targetPath.map((t) => t.name).join(" › ") || d.target}</div>
+                  {d.url ? <UrlRow url={d.url} /> : <p className="arc-empty">No URL</p>}
                   {d.endpoints.map((e) => (
                     <UrlRow key={e.name} name={e.name} url={e.url} />
                   ))}
@@ -159,12 +159,12 @@ function UrlRow({ name, url }: { name?: string; url: string }) {
     return () => window.clearTimeout(timer);
   }, [copied]);
   return (
-    <div className="ad-url">
-      {name && <span className="ad-endpoint">{name}</span>}
+    <div className="arc-url">
+      {name && <span className="arc-endpoint">{name}</span>}
       <a href={url} target="_blank" rel="noreferrer">
         {url}
       </a>
-      <button type="button" className="ad-copy" aria-label={`Copy ${url}`} onClick={() => void navigator.clipboard.writeText(url).then(() => setCopied(true))}>
+      <button type="button" className="arc-copy" aria-label={`Copy ${url}`} onClick={() => void navigator.clipboard.writeText(url).then(() => setCopied(true))}>
         {copied ? "Copied" : "Copy"}
       </button>
     </div>
@@ -174,16 +174,16 @@ function UrlRow({ name, url }: { name?: string; url: string }) {
 /** The ADRs linking the Element or its descendants, as `list_adrs(element)` gives them: newest first, superseded ones marked. */
 function Adrs({ workspace, id, onOpen }: { workspace: Workspace; id: string; onOpen: (adr: string) => void }) {
   const adrs = useMemo(() => listAdrs(workspace.bundle, { element: id }), [workspace, id]);
-  if (adrs.length === 0) return <p className="ad-empty">No ADRs link this Element or anything inside it.</p>;
+  if (adrs.length === 0) return <p className="arc-empty">No ADRs link this Element or anything inside it.</p>;
   return (
-    <ul className="ad-adr-list">
+    <ul className="arc-adr-list">
       {adrs.map((a) => (
         <li key={a.id} data-superseded={a.effectiveStatus === "superseded" ? "true" : undefined}>
-          <button type="button" className="ad-adr-row" onClick={() => onOpen(a.id)}>
-            <code className="ad-adr-id">{a.id}</code>
-            <span className="ad-adr-title">{a.title}</span>
+          <button type="button" className="arc-adr-row" onClick={() => onOpen(a.id)}>
+            <code className="arc-adr-id">{a.id}</code>
+            <span className="arc-adr-title">{a.title}</span>
             <AdrStatusBadge status={a.effectiveStatus} />
-            <time className="ad-muted" dateTime={a.date}>
+            <time className="arc-muted" dateTime={a.date}>
               {a.date}
             </time>
           </button>
@@ -198,7 +198,7 @@ function Links({ workspace, id, onFocus }: { workspace: Workspace; id: string; o
   const impact = useMemo(() => getImpact(workspace.bundle, id, "both"), [workspace, id]);
   const own = workspace.bundle.relationships.filter((r) => r.from === id || r.to === id);
   const link = (target: string) => (
-    <button type="button" className="ad-link" onClick={() => onFocus(target)}>
+    <button type="button" className="arc-link" onClick={() => onFocus(target)}>
       {workspace.name(target)}
     </button>
   );
@@ -206,19 +206,19 @@ function Links({ workspace, id, onFocus }: { workspace: Workspace; id: string; o
     <li key={i}>
       {r.from === id ? "→ " : "← "}
       {link(r.from === id ? r.to : r.from)}
-      {r.description && <span className="ad-muted"> {r.description}</span>}
-      {r.technology && <span className="ad-muted"> · {r.technology}</span>}
+      {r.description && <span className="arc-muted"> {r.description}</span>}
+      {r.technology && <span className="arc-muted"> · {r.technology}</span>}
     </li>
   );
   const rings = (label: string, list: ImpactRing[] | undefined) => (
     <section role="region" aria-label={label}>
       <h3>{label}</h3>
-      {!list?.length && <p className="ad-empty">Nothing</p>}
+      {!list?.length && <p className="arc-empty">Nothing</p>}
       <ul>
         {list?.flatMap((ring) =>
           ring.elements.map((e) => (
             <li key={e.id}>
-              <span className="ad-distance-inline">{ring.distance}</span> {link(e.id)}
+              <span className="arc-distance-inline">{ring.distance}</span> {link(e.id)}
             </li>
           )),
         )}
@@ -229,7 +229,7 @@ function Links({ workspace, id, onFocus }: { workspace: Workspace; id: string; o
     <>
       <section role="region" aria-label="Relationships">
         <h3>Relationships</h3>
-        {own.length === 0 && <p className="ad-empty">None declared here</p>}
+        {own.length === 0 && <p className="arc-empty">None declared here</p>}
         <ul>{own.map(rel)}</ul>
       </section>
       {rings("Downstream", impact.downstream)}
@@ -244,10 +244,10 @@ function Compared({ comparison, id }: { comparison: Comparison; id: string }) {
   if (!change) return null;
   const show = (value: unknown) => (value === undefined ? "—" : JSON.stringify(value));
   return (
-    <section className="ad-compared" role="region" aria-label="Changed in this comparison">
+    <section className="arc-compared" role="region" aria-label="Changed in this comparison">
       <h3>{change.type === "changed" ? `Changed, ${comparison.label}` : `${change.type === "added" ? "Added" : "Removed"}, ${comparison.label}`}</h3>
       {change.type === "changed" && (
-        <dl className="ad-fields">
+        <dl className="arc-fields">
           {change.fields.map((field) => (
             <div key={field}>
               <dt>{field}</dt>
@@ -277,10 +277,10 @@ function History({ workspace, id, timeline, onTime }: { workspace: Workspace; id
     add(id);
     return timeline.touching(ids);
   }, [workspace, id, timeline]);
-  if (timeline.revisions.length === 0) return <p className="ad-empty">This site has no history.</p>;
-  if (revisions.length === 0) return <p className="ad-empty">No Revision changed it.</p>;
+  if (timeline.revisions.length === 0) return <p className="arc-empty">This site has no history.</p>;
+  if (revisions.length === 0) return <p className="arc-empty">No Revision changed it.</p>;
   return (
-    <ul className="ad-history-list">
+    <ul className="arc-history-list">
       {revisions.map((r) => {
         const previous = timeline.previous(r);
         const at = timeline.isLatest(r) ? null : pointLabel(r);

@@ -45,15 +45,15 @@ export function SaveAsView({ workspace, screen, title: initialTitle, onClose }: 
 
   return (
     <>
-      <div className="ad-scrim" onClick={onClose} />
-      <section className="ad-dialog" role="dialog" aria-label="Save as View">
-        <header className="ad-flyout-head">
+      <div className="arc-scrim" onClick={onClose} />
+      <section className="arc-dialog" role="dialog" aria-label="Save as View">
+        <header className="arc-flyout-head">
           <h2>Save as View</h2>
-          <button type="button" className="ad-chip-clear" aria-label="Close" onClick={onClose}>
-            <span className="ad-chip-x" aria-hidden="true" />
+          <button type="button" className="arc-chip-clear" aria-label="Close" onClick={onClose}>
+            <span className="arc-chip-x" aria-hidden="true" />
           </button>
         </header>
-        <div className="ad-form">
+        <div className="arc-form">
           <label>
             Project
             <select value={project} onChange={(e) => setProject(e.target.value)}>
@@ -74,7 +74,7 @@ export function SaveAsView({ workspace, screen, title: initialTitle, onClose }: 
           </label>
         </div>
         {saved && "problem" in saved && (
-          <p className="ad-snippet" role="alert">
+          <p className="arc-snippet" role="alert">
             {saved.problem}
           </p>
         )}
@@ -92,12 +92,12 @@ export function SaveAsView({ workspace, screen, title: initialTitle, onClose }: 
 function Snippet({ label, hint, text }: { label: string; hint: string; text: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="ad-snippet">
-      <div className="ad-snippet-head">
+    <div className="arc-snippet">
+      <div className="arc-snippet-head">
         <span>
-          <strong>{label}</strong> <span className="ad-muted">{hint}</span>
+          <strong>{label}</strong> <span className="arc-muted">{hint}</span>
         </span>
-        <button type="button" className="ad-tool" aria-label={`Copy ${label}`} onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true))}>
+        <button type="button" className="arc-tool" aria-label={`Copy ${label}`} onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true))}>
           {copied ? "Copied" : "Copy"}
         </button>
       </div>

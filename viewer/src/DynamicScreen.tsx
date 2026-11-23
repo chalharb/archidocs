@@ -85,46 +85,46 @@ export function DynamicScreen({ workspace, view, place, keys, onOpenStepView, on
 
   // The outline keeps the selected Step in view.
   useEffect(() => {
-    if (step) document.querySelector(`.ad-outline [data-step="${step.n}"]`)?.scrollIntoView({ block: "nearest" });
+    if (step) document.querySelector(`.arc-outline [data-step="${step.n}"]`)?.scrollIntoView({ block: "nearest" });
   }, [step]);
 
   const ready = settled === fitKey;
   return (
-    <div className="ad-dynamic">
-      <aside className="ad-dyn-left" aria-label="Walkthrough">
-        <div className="ad-transport" role="group" aria-label="Transport">
-          <div className="ad-transport-buttons">
+    <div className="arc-dynamic">
+      <aside className="arc-dyn-left" aria-label="Walkthrough">
+        <div className="arc-transport" role="group" aria-label="Transport">
+          <div className="arc-transport-buttons">
             <button type="button" aria-label="First Step" onClick={() => selectAt(0)}>
               ⏮
             </button>
             <button type="button" aria-label="Previous Step" onClick={previous}>
               ◀
             </button>
-            <button type="button" className="ad-play" aria-label={playing ? "Pause" : "Play"} onClick={play}>
+            <button type="button" className="arc-play" aria-label={playing ? "Pause" : "Play"} onClick={play}>
               {playing ? "❚❚" : "▶"}
             </button>
             <button type="button" aria-label="Next Step" onClick={next}>
               ▶▶
             </button>
           </div>
-          <p className="ad-transport-count" aria-live="polite">
+          <p className="arc-transport-count" aria-live="polite">
             {step ? `Step ${step.n} of ${steps.length}` : `${steps.length} Steps`}
           </p>
-          <div className="ad-progress" role="group" aria-label="Progress">
-            <span className="ad-progress-fill" style={{ width: `${steps.length === 0 ? 0 : ((index + 1) / steps.length) * 100}%` }} />
+          <div className="arc-progress" role="group" aria-label="Progress">
+            <span className="arc-progress-fill" style={{ width: `${steps.length === 0 ? 0 : ((index + 1) / steps.length) * 100}%` }} />
             {steps.map((s) => (
-              <button key={s.n} type="button" className="ad-tick" aria-label={`Go to Step ${s.n}`} aria-current={s.n === step?.n ? "step" : undefined} onClick={() => select(s.n)} />
+              <button key={s.n} type="button" className="arc-tick" aria-label={`Go to Step ${s.n}`} aria-current={s.n === step?.n ? "step" : undefined} onClick={() => select(s.n)} />
             ))}
           </div>
         </div>
-        <ol className="ad-outline" aria-label="Steps">
+        <ol className="arc-outline" aria-label="Steps">
           {steps.map((s) => (
             <li key={s.n}>
               <button type="button" data-step={s.n} aria-current={s.n === step?.n ? "step" : undefined} onClick={() => select(s.n)}>
-                <span className="ad-outline-n">{s.n}</span>
-                <span className="ad-outline-text">
-                  <span className="ad-outline-label">{s.description}</span>
-                  <span className="ad-outline-ends">
+                <span className="arc-outline-n">{s.n}</span>
+                <span className="arc-outline-text">
+                  <span className="arc-outline-label">{s.description}</span>
+                  <span className="arc-outline-ends">
                     {workspace.name(s.from)} <Glyph style={STYLE_OF(s)} /> {workspace.name(s.to)}
                   </span>
                 </span>
@@ -133,18 +133,18 @@ export function DynamicScreen({ workspace, view, place, keys, onOpenStepView, on
           ))}
         </ol>
       </aside>
-      <section className="ad-dyn-main" aria-label="Chart">
-        <header className="ad-location">
-          <div className="ad-dyn-title">
-            <span className="ad-panel-kind">Dynamic View</span>
+      <section className="arc-dyn-main" aria-label="Chart">
+        <header className="arc-location">
+          <div className="arc-dyn-title">
+            <span className="arc-panel-kind">Dynamic View</span>
             <h1>{view.title}</h1>
           </div>
-          <div className="ad-tools">
-            <label className="ad-check">
+          <div className="arc-tools">
+            <label className="arc-check">
               <input type="checkbox" checked={place.brokers} onChange={(e) => go({ ...place, brokers: e.target.checked }, { replace: true })} />
               Show brokers
             </label>
-            <div className="ad-segmented" role="group" aria-label="Chart">
+            <div className="arc-segmented" role="group" aria-label="Chart">
               {(["Sequence", "Graph"] as const).map((mode) => (
                 <button key={mode} type="button" aria-pressed={(mode === "Graph") === place.graph} onClick={() => go({ ...place, graph: mode === "Graph" }, { replace: true })}>
                   {mode}
@@ -155,7 +155,7 @@ export function DynamicScreen({ workspace, view, place, keys, onOpenStepView, on
             <CopyLink />
           </div>
         </header>
-        <div className="ad-canvas" data-canvas data-state={ready ? "ready" : "busy"}>
+        <div className="arc-canvas" data-canvas data-state={ready ? "ready" : "busy"}>
           {place.graph ? (
             <StepGraph key={fitKey} workspace={workspace} view={view} brokers={place.brokers} fitKey={fitKey} selected={step?.n ?? null} onSelect={select} onSettled={setSettled} />
           ) : (
@@ -173,7 +173,7 @@ export function DynamicScreen({ workspace, view, place, keys, onOpenStepView, on
           )}
         </div>
       </section>
-      <aside className="ad-dyn-detail" aria-label="Step detail">
+      <aside className="arc-dyn-detail" aria-label="Step detail">
         {step ? (
           <StepDetail workspace={workspace} view={view} step={step} onOpenStepView={onOpenStepView} onOpenView={onOpenView} />
         ) : (
@@ -185,7 +185,7 @@ export function DynamicScreen({ workspace, view, place, keys, onOpenStepView, on
 }
 
 function Glyph({ style }: { style: MessageStyle }) {
-  return <span className={`ad-glyph ad-step-${style}`} aria-label={STYLE_NAME[style]} role="img" />;
+  return <span className={`arc-glyph arc-step-${style}`} aria-label={STYLE_NAME[style]} role="img" />;
 }
 
 const KIND_NAME: Record<ResolvedStep["kind"], string> = { call: "Call", return: "Return", event: "Event" };
@@ -197,16 +197,16 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
   const team = owner ? workspace.teams.get(owner) : undefined;
   const others = workspace.otherDynamicViews(step, view.id);
   return (
-    <div className="ad-panel-body">
-      <span className="ad-panel-kind">{KIND_NAME[step.kind]}</span>
+    <div className="arc-panel-body">
+      <span className="arc-panel-kind">{KIND_NAME[step.kind]}</span>
       <h2>Step {step.n}</h2>
-      <p className="ad-description">{step.description}</p>
-      <p className="ad-outline-ends">
+      <p className="arc-description">{step.description}</p>
+      <p className="arc-outline-ends">
         {workspace.name(step.from)} <Glyph style={STYLE_OF(step)} /> {workspace.name(step.to)}
       </p>
-      {step.note && <p className="ad-note">{step.note}</p>}
+      {step.note && <p className="arc-note">{step.note}</p>}
       <h3>Relationship</h3>
-      <dl className="ad-facts">
+      <dl className="arc-facts">
         <dt>Id</dt>
         <dd>
           <code>{r.id ?? `${r.from} → ${r.to}`}</code>
@@ -238,7 +238,7 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
           <>
             <dt>Owner</dt>
             <dd>
-              <span className="ad-owner-code" style={{ borderColor: team?.color }}>
+              <span className="arc-owner-code" style={{ borderColor: team?.color }}>
                 {team?.code}
               </span>{" "}
               {workspace.name(owner)}
@@ -246,11 +246,11 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
           </>
         )}
       </dl>
-      <h3 id="ad-open-in">Open in</h3>
-      <ul className="ad-view-links" aria-labelledby="ad-open-in">
+      <h3 id="arc-open-in">Open in</h3>
+      <ul className="arc-view-links" aria-labelledby="arc-open-in">
         {workspace.stepViews(step).map((v) => (
           <li key={v}>
-            <button type="button" className="ad-link" onClick={() => onOpenStepView(v, step)}>
+            <button type="button" className="arc-link" onClick={() => onOpenStepView(v, step)}>
               {workspace.title(v) ?? v}
             </button>
           </li>
@@ -258,11 +258,11 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
       </ul>
       {others.length > 0 && (
         <>
-          <h3 id="ad-also-in">Also in</h3>
-          <ul className="ad-view-links" aria-labelledby="ad-also-in">
+          <h3 id="arc-also-in">Also in</h3>
+          <ul className="arc-view-links" aria-labelledby="arc-also-in">
             {others.map((v) => (
               <li key={v.id}>
-                <button type="button" className="ad-link" onClick={() => onOpenView(v.id)}>
+                <button type="button" className="arc-link" onClick={() => onOpenView(v.id)}>
                   {v.title}
                 </button>
               </li>
@@ -278,28 +278,28 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
 function Summary({ workspace, view }: { workspace: Workspace; view: ResolvedDynamicView }) {
   const description = workspace.description(view.id);
   return (
-    <div className="ad-panel-body">
-      <span className="ad-panel-kind">Dynamic View</span>
+    <div className="arc-panel-body">
+      <span className="arc-panel-kind">Dynamic View</span>
       <h2>{view.title}</h2>
-      {description && <p className="ad-description">{description}</p>}
-      <p className="ad-muted">
+      {description && <p className="arc-description">{description}</p>}
+      <p className="arc-muted">
         {view.steps.length} Steps across {view.participants.length} participants. Press Space to play, J and K to step, Esc to clear.
       </p>
-      <h3 id="ad-participants">Participants</h3>
-      <ul aria-labelledby="ad-participants">
+      <h3 id="arc-participants">Participants</h3>
+      <ul aria-labelledby="arc-participants">
         {view.participants.map((p) => (
           <li key={p}>{workspace.name(p)}</li>
         ))}
       </ul>
-      <h3 id="ad-legend">Legend</h3>
-      <ul className="ad-legend" aria-labelledby="ad-legend">
+      <h3 id="arc-legend">Legend</h3>
+      <ul className="arc-legend" aria-labelledby="arc-legend">
         {(["sync", "async", "return"] as const).map((s) => (
           <li key={s}>
             <Glyph style={s} /> {STYLE_NAME[s]}
           </li>
         ))}
         <li>
-          <span className="ad-legend-bar" aria-hidden="true" /> Busy with a sync call
+          <span className="arc-legend-bar" aria-hidden="true" /> Busy with a sync call
         </li>
       </ul>
     </div>

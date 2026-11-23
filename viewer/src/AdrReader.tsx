@@ -8,7 +8,7 @@ const LABELS: Record<BundleAdr["status"], string> = { proposed: "Proposed", acce
 /** An ADR status as a labelled badge, coloured by status but never by colour alone. */
 export function AdrStatusBadge({ status }: { status: BundleAdr["status"] }) {
   return (
-    <span className="ad-adr-status" data-status={status}>
+    <span className="arc-adr-status" data-status={status}>
       {LABELS[status]}
     </span>
   );
@@ -33,32 +33,32 @@ export interface AdrReaderProps {
 export function AdrReader({ workspace, id, beside, onClose, onOpenAdr, onFocus, onOpenView }: AdrReaderProps) {
   const adrs = useMemo(() => new Map(workspace.bundle.adrs.map((a) => [a.id, a])), [workspace]);
   const adr = adrs.get(id);
-  const className = `ad-reader${beside ? " ad-reader-beside" : ""}`;
+  const className = `arc-reader${beside ? " arc-reader-beside" : ""}`;
   const close = (
-    <button type="button" className="ad-reader-close" aria-label="Close ADR" onClick={onClose}>
+    <button type="button" className="arc-reader-close" aria-label="Close ADR" onClick={onClose}>
       ✕
     </button>
   );
   if (!adr) {
     return (
       <article className={className} aria-label="ADR">
-        <header className="ad-reader-head">
+        <header className="arc-reader-head">
           {close}
-          <p className="ad-empty">No ADR {id} in this Workspace.</p>
+          <p className="arc-empty">No ADR {id} in this Workspace.</p>
         </header>
       </article>
     );
   }
 
   const adrLink = (other: string) => (
-    <button key={other} type="button" className="ad-link" onClick={() => onOpenAdr(other)}>
+    <button key={other} type="button" className="arc-link" onClick={() => onOpenAdr(other)}>
       <code>{other}</code> {adrs.get(other)?.title ?? ""}
     </button>
   );
   const elementLink = (ref: string) => {
     if (workspace.byId.has(ref))
       return (
-        <button key={ref} type="button" className="ad-link" onClick={() => onFocus(ref)}>
+        <button key={ref} type="button" className="arc-link" onClick={() => onFocus(ref)}>
           {workspace.name(ref)}
         </button>
       );
@@ -70,7 +70,7 @@ export function AdrReader({ workspace, id, beside, onClose, onOpenAdr, onFocus, 
     );
   };
   const viewLink = (view: string) => (
-    <button key={view} type="button" className="ad-link" onClick={() => onOpenView(view)}>
+    <button key={view} type="button" className="arc-link" onClick={() => onOpenView(view)}>
       {workspace.title(view) ?? view}
     </button>
   );
@@ -78,22 +78,22 @@ export function AdrReader({ workspace, id, beside, onClose, onOpenAdr, onFocus, 
 
   return (
     <article className={className} aria-label="ADR">
-      <header className="ad-reader-head">
+      <header className="arc-reader-head">
         {close}
-        <code className="ad-panel-id">{adr.id}</code>
+        <code className="arc-panel-id">{adr.id}</code>
         <h2>{adr.title}</h2>
       </header>
-      <div className="ad-reader-body">
+      <div className="arc-reader-body">
         {adr.supersededBy.length > 0 && (
-          <p className="ad-reader-banner" role="status">
+          <p className="arc-reader-banner" role="status">
             Superseded by {join(adr.supersededBy.map(adrLink), " ")}
           </p>
         )}
-        <dl className="ad-facts">
+        <dl className="arc-facts">
           <dt>Status</dt>
           <dd>
             <AdrStatusBadge status={adr.effectiveStatus} />
-            {superseded && <span className="ad-muted"> (written as {LABELS[adr.status]})</span>}
+            {superseded && <span className="arc-muted"> (written as {LABELS[adr.status]})</span>}
           </dd>
           <dt>Date</dt>
           <dd>
@@ -108,10 +108,10 @@ export function AdrReader({ workspace, id, beside, onClose, onOpenAdr, onFocus, 
           {fact("Supersedes", adr.supersedes.map(adrLink), " ")}
           {fact("Superseded by", adr.supersededBy.map(adrLink), " ")}
         </dl>
-        <section className="ad-markdown" role="region" aria-label="Decision">
+        <section className="arc-markdown" role="region" aria-label="Decision">
           <Markdown source={withoutTitle(adr.body, adr.title)} shift={1} />
         </section>
-        <p className="ad-muted ad-reader-source">{adr.source.file}</p>
+        <p className="arc-muted arc-reader-source">{adr.source.file}</p>
       </div>
     </article>
   );

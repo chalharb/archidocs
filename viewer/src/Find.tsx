@@ -31,48 +31,48 @@ export function Find({ workspace, prompt, onPick, onClose }: FindProps) {
 
   return (
     <>
-      <div className="ad-scrim" onClick={onClose} />
-      <section className="ad-flyout ad-find" role="dialog" aria-label="Find">
-        <header className="ad-flyout-head">
+      <div className="arc-scrim" onClick={onClose} />
+      <section className="arc-flyout arc-find" role="dialog" aria-label="Find">
+        <header className="arc-flyout-head">
           <h2>Find</h2>
-          {prompt && <p className="ad-muted">{prompt}</p>}
+          {prompt && <p className="arc-muted">{prompt}</p>}
         </header>
         <input
           ref={input}
           type="search"
-          className="ad-find-input"
+          className="arc-find-input"
           placeholder="Name, id, Team, technology or URL"
           aria-label="Find"
-          aria-controls="ad-find-results"
+          aria-controls="arc-find-results"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && results[0]) onPick(results[0].element.id);
           }}
         />
-        <ul className="ad-results" id="ad-find-results" role="listbox" aria-label="Results">
+        <ul className="arc-results" id="arc-find-results" role="listbox" aria-label="Results">
           {results.map(({ element, deployment }) => {
             const team = workspace.teams.get(element.owner);
             return (
               <li key={element.id} role="option" aria-selected="false" tabIndex={-1} onClick={() => onPick(element.id)} onKeyDown={(e) => e.key === "Enter" && onPick(element.id)}>
-                <span className="ad-result-name" data-glyph={GLYPHS[element.kind]}>
+                <span className="arc-result-name" data-glyph={GLYPHS[element.kind]}>
                   {element.name}
                 </span>
-                <code className="ad-muted">{element.id}</code>
+                <code className="arc-muted">{element.id}</code>
                 {team && (
-                  <span className="ad-row-team" style={{ borderColor: team.color }}>
+                  <span className="arc-row-team" style={{ borderColor: team.color }}>
                     {team.code}
                   </span>
                 )}
                 {deployment && (
-                  <span className="ad-result-url">
+                  <span className="arc-result-url">
                     {workspace.name(deployment.environment)} · {deployment.url}
                   </span>
                 )}
               </li>
             );
           })}
-          {query.trim() && results.length === 0 && <li className="ad-empty">No matches</li>}
+          {query.trim() && results.length === 0 && <li className="arc-empty">No matches</li>}
         </ul>
       </section>
     </>
