@@ -1,5 +1,0 @@
-deployments:
-  - service: email-system
-    environment: prod
-    target: eks-prod
-    url: https://mail.bigbank.example

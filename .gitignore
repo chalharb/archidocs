@@ -4,4 +4,3 @@ dist/
 coverage/
 test-results/
 playwright-report/
-examples/big-bank/site/
