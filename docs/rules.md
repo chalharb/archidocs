@@ -15,7 +15,10 @@
 | [`duplicate-project-id`](#duplicate-project-id) | error | Two Projects share an id. |
 | [`definition-outside-workspace`](#definition-outside-workspace) | error | `teams` or `environments` declared outside `workspace.yaml`. |
 | [`unknown-team`](#unknown-team) | error | An `owner` names no Team. |
-| [`duplicate-id`](#duplicate-id) | error | An Element id is declared twice in a Project, across files too. |
+| [`duplicate-id`](#duplicate-id) | error | An Element id is declared twice in a Project, across files too, whatever its kind or nesting. |
+| [`invalid-nesting`](#invalid-nesting) | error | System > Service > Component is broken, by nesting or `in:`. |
+| [`external-with-components`](#external-with-components) | error | An External System or Service declares Components. |
+| [`unknown-element`](#unknown-element) | error | A reference names no Element. |
 
 ## `yaml-syntax`
 
@@ -302,7 +305,7 @@ services:
 
 **Severity:** error
 
-An Element id is declared twice in a Project, across files too.
+An Element id is declared twice in a Project, across files too, whatever its kind or nesting.
 
 **Failing example**
 
@@ -324,4 +327,104 @@ services:
 services:
   web-v2:
     name: Web v2
+```
+
+## `invalid-nesting`
+
+**Severity:** error
+
+System > Service > Component is broken, by nesting or `in:`.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+systems:
+  checkout:
+    name: Checkout
+    components:
+      cart-api:
+        name: Cart API
+```
+
+**Fix:** Move the Element under a parent of the right kind (a Service under a System, a Component under a Service), or point `in:` at one.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+systems:
+  checkout:
+    name: Checkout
+    services:
+      cart:
+        name: Cart
+        components:
+          cart-api:
+            name: Cart API
+```
+
+## `external-with-components`
+
+**Severity:** error
+
+An External System or Service declares Components.
+
+**Failing example**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  stripe:
+    name: Stripe
+    external: true
+    components:
+      stripe-sdk:
+        name: Stripe SDK
+```
+
+**Fix:** Remove the Components, or drop `external` if the organisation runs the Element itself.
+
+**Fixed**
+
+`shop/services.yaml`:
+
+```yaml
+services:
+  stripe:
+    name: Stripe
+    external: true
+```
+
+## `unknown-element`
+
+**Severity:** error
+
+A reference names no Element.
+
+**Failing example**
+
+`shop/cart.yaml`:
+
+```yaml
+services:
+  cart:
+    name: Cart
+    in: chekout
+```
+
+**Fix:** Use the id of an Element declared in the Project, or declare it.
+
+**Fixed**
+
+`shop/cart.yaml`:
+
+```yaml
+services:
+  cart:
+    name: Cart
+    in: checkout
 ```

@@ -1,3 +1,4 @@
+import type { ElementKind } from "../schema/workspace.ts";
 import type { SchemaFinding } from "./schema-check.ts";
 import type { ParsedYaml, Position } from "./yaml.ts";
 
@@ -61,13 +62,17 @@ export interface Located<T> extends Position {
 }
 
 export interface ElementDecl extends Position {
-  kind: "service";
+  kind: ElementKind;
   id: string;
   project: Project;
   file: SourceFile;
-  /** Where the declaration sits in its file, e.g. `["services", "web"]`. */
+  /** Where the declaration sits in its file, e.g. `["systems", "shop", "services", "web"]`. */
   path: string[];
   data: Record<string, unknown>;
+  /** The Element it is nested under in its file, if any. */
+  nestedIn?: ElementDecl;
+  /** Its parent: the Element it is nested under, or the one its `in:` names. Set once every file is read. */
+  parent?: ElementDecl;
 }
 
 /** Everything Load read from disk, before rules run and the Bundle is built. */

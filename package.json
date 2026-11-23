@@ -8,7 +8,8 @@
     "archidocs": "dist/cli/main.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "schemas"
   ],
   "engines": {
     "node": ">=22.18"
@@ -19,7 +20,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "rules:catalogue": "node scripts/rule-catalogue.ts"
+    "rules:catalogue": "node scripts/rule-catalogue.ts",
+    "schemas": "node scripts/generate-schemas.ts"
   },
   "dependencies": {
     "yaml": "^2.9.1",
@@ -29,6 +31,8 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "5.1.1",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "eslint": "^10.15.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.73.0",

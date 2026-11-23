@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { rules } from "../../src/core/index.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
-// The rules ticket 01 introduces; later tickets add to the registry.
+// The rules tickets 01 and 03 introduce; later tickets add to the registry.
 const ticketRules = [
   "yaml-syntax",
   "unknown-field",
@@ -14,10 +14,13 @@ const ticketRules = [
   "definition-outside-workspace",
   "unknown-team",
   "duplicate-id",
+  "invalid-nesting",
+  "external-with-components",
+  "unknown-element",
 ];
 
 describe("rule registry", () => {
-  it("defines each of the walking skeleton's rules once", () => {
+  it("defines each rule once", () => {
     const ids = rules.map((r) => r.id);
     expect(ids).toEqual(expect.arrayContaining(ticketRules));
     expect(new Set(ids).size).toBe(ids.length);
