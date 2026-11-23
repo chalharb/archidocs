@@ -1,3 +1,4 @@
+import type { CompareMark } from "./compare.ts";
 import type { Bundle, BundleElement, BundleLens, BundleRelationship } from "../schema/bundle.ts";
 import { resolveDeployment } from "./deployment-views.ts";
 import { resolveDynamic, takesPart } from "./dynamic-views.ts";
@@ -29,6 +30,8 @@ export interface ViewNode {
   external: boolean;
   /** Set on every node of a View with a Lens: whether the Lens hits it, and for an impact Lens its nearest distance. */
   mark?: NodeMark;
+  /** Set on every node of a View drawn for Compare (`compareView`). */
+  change?: CompareMark;
 }
 
 /** How a Lens marks a node; a collapsed box is hit when anything inside it is. */
@@ -47,6 +50,8 @@ export interface ViewEdge {
   relationships: BundleRelationship[];
   /** Set on every edge of a View with a Lens: whether the Lens lights it. */
   lit?: boolean;
+  /** Set on every edge of a View drawn for Compare (`compareView`). */
+  change?: CompareMark;
 }
 
 /** A View resolved to nodes and edges, sorted by id and by `from`, then `to`. */

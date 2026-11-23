@@ -733,3 +733,34 @@ deployments:
   - { service: payments-api, environment: prod, target: platform:eks-us }
 `,
 };
+
+/**
+ * Two points in a Workspace's history for Compare. The earlier one has a
+ * Legacy System whose Old cart calls Payments; the later one removes it,
+ * adds a Wishlist Service that uses Cart, and renames Web.
+ */
+export const historyBefore: Files = {
+  ...viewerWorkspace,
+  "shop/legacy.yaml": `systems:
+  legacy:
+    name: Legacy shop
+    services:
+      old-cart:
+        name: Old cart
+        relationships:
+          - to: payments:payments-api
+            description: Takes payments
+`,
+};
+
+export const historyAfter: Files = {
+  ...viewerWorkspace,
+  "shop/web.yaml": viewerWorkspace["shop/web.yaml"]!.replace("name: Web", "name: Web shop"),
+  "shop/wishlist.yaml": `services:
+  wishlist:
+    name: Wishlist
+    relationships:
+      - to: cart
+        description: Moves items to the cart
+`,
+};

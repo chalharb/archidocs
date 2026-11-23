@@ -3,12 +3,15 @@ import { listAdrs } from "../../src/core/adrs.ts";
 import { getDeployments } from "../../src/core/deployments.ts";
 import { getImpact, type ImpactRing } from "../../src/core/impact.ts";
 import type { BundleRelationship } from "../../src/schema/bundle.ts";
-import type { ImpactWay, Lens } from "./place.ts";
+import type { Comparison } from "./App.tsx";
 import { AdrStatusBadge } from "./AdrReader.tsx";
+import { RevisionSummary } from "./History.tsx";
+import type { ImpactWay, Lens, Place } from "./place.ts";
+import { pointLabel, type Timeline } from "./revisions.ts";
 import { GLYPHS, type Workspace } from "./workspace.ts";
 
-type Tab = "Overview" | "URLs" | "ADRs" | "Links";
-const TABS: readonly Tab[] = ["Overview", "URLs", "ADRs", "Links"];
+type Tab = "Overview" | "URLs" | "ADRs" | "Links" | "History";
+const TABS: readonly Tab[] = ["Overview", "URLs", "ADRs", "Links", "History"];
 
 export interface ElementPanelProps {
   workspace: Workspace;
@@ -20,10 +23,13 @@ export interface ElementPanelProps {
   onOpenAdr: (id: string) => void;
   /** Opens an Environment's Deployment View with these nodes marked. */
   onDeployed: (view: string, nodes: string[]) => void;
+  timeline: Timeline;
+  comparison: Comparison | undefined;
+  onTime: (time: Pick<Place, "at" | "vs">) => void;
 }
 
-/** Everything about the selected Element: Overview with the persona actions, URLs per Environment, its ADRs, and Links. */
-export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onOpenAdr, onDeployed }: ElementPanelProps) {
+/** Everything about the selected Element: Overview with the persona actions, URLs per Environment, its ADRs, Links and its History. */
+export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onOpenAdr, onDeployed, timeline, comparison, onTime }: ElementPanelProps) {
   const [tab, setTab] = useState<Tab>("Overview");
   const element = workspace.byId.get(id);
   if (!element) return null;
@@ -49,6 +55,7 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
       <div className="ad-panel-body" role="tabpanel" aria-label={tab}>
         {tab === "Overview" && (
           <>
+            {comparison && <Compared comparison={comparison} id={id} />}
             {element.description && <p className="ad-description">{element.description}</p>}
             <dl className="ad-facts">
               {technology && (
@@ -88,6 +95,7 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
         {tab === "URLs" && <Urls workspace={workspace} id={id} />}
         {tab === "ADRs" && <Adrs workspace={workspace} id={id} onOpen={onOpenAdr} />}
         {tab === "Links" && <Links workspace={workspace} id={id} onFocus={onFocus} />}
+        {tab === "History" && <History workspace={workspace} id={id} timeline={timeline} onTime={onTime} />}
       </div>
     </aside>
   );
@@ -227,5 +235,70 @@ function Links({ workspace, id, onFocus }: { workspace: Workspace; id: string; o
       {rings("Downstream", impact.downstream)}
       {rings("Upstream", impact.upstream)}
     </>
+  );
+}
+
+/** How the selected Element changed in the comparison on screen: its fields before and after, or that it was added or removed. */
+function Compared({ comparison, id }: { comparison: Comparison; id: string }) {
+  const change = comparison.changes.find((c) => c.kind === "element" && c.id === id);
+  if (!change) return null;
+  const show = (value: unknown) => (value === undefined ? "—" : JSON.stringify(value));
+  return (
+    <section className="ad-compared" role="region" aria-label="Changed in this comparison">
+      <h3>{change.type === "changed" ? `Changed, ${comparison.label}` : `${change.type === "added" ? "Added" : "Removed"}, ${comparison.label}`}</h3>
+      {change.type === "changed" && (
+        <dl className="ad-fields">
+          {change.fields.map((field) => (
+            <div key={field}>
+              <dt>{field}</dt>
+              <dd>
+                {show(change.before?.[field])} → {show(change.after?.[field])}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </section>
+  );
+}
+
+/**
+ * The Revisions that changed the Element or anything inside it, newest first,
+ * from the site's Revision index. Each opens Compare between it and the
+ * Revision before.
+ */
+function History({ workspace, id, timeline, onTime }: { workspace: Workspace; id: string; timeline: Timeline; onTime: (time: Pick<Place, "at" | "vs">) => void }) {
+  const revisions = useMemo(() => {
+    const ids = new Set<string>();
+    const add = (e: string) => {
+      ids.add(e);
+      for (const child of workspace.children(e)) add(child.id);
+    };
+    add(id);
+    return timeline.touching(ids);
+  }, [workspace, id, timeline]);
+  if (timeline.revisions.length === 0) return <p className="ad-empty">This site has no history.</p>;
+  if (revisions.length === 0) return <p className="ad-empty">No Revision changed it.</p>;
+  return (
+    <ul className="ad-history-list">
+      {revisions.map((r) => {
+        const previous = timeline.previous(r);
+        const at = timeline.isLatest(r) ? null : pointLabel(r);
+        return (
+          <li key={r.sha}>
+            <RevisionSummary revision={r} />
+            {previous ? (
+              <button type="button" aria-label={`Compare ${pointLabel(previous)} → ${pointLabel(r)}`} onClick={() => onTime({ at, vs: pointLabel(previous) })}>
+                Compare
+              </button>
+            ) : (
+              <button type="button" aria-label={`Open ${pointLabel(r)}`} onClick={() => onTime({ at, vs: null })}>
+                Open
+              </button>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

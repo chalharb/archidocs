@@ -27,12 +27,16 @@ export interface Place {
   graph: boolean;
   /** A Dynamic View's event Steps drawn as publish and deliver legs through their broker. */
   brokers: boolean;
+  /** A past Revision the whole viewer shows (a tag, sha or date); null for the latest. */
+  at: string | null;
+  /** A Revision to Compare against: Compare shows what changed from it to `at` (or the latest). */
+  vs: string | null;
   /** The ADR open in the reader, by its qualified id. */
   adr: string | null;
 }
 
 /** Where an empty or unreadable hash lands: the C2 Landscape, every System collapsed. */
-export const HOME: Place = { view: "c2", open: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, adr: null };
+export const HOME: Place = { view: "c2", open: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
 
 /** A View's direction until the viewer turns it: `TB` for Deployment Views, else `LR`. */
 export const defaultDirection = (view: string): Direction => (view.startsWith("deployment/") ? "TB" : "LR");
@@ -42,6 +46,7 @@ export const defaultDirection = (view: string): Direction => (view.startsWith("d
  * A Lens is `impact=<id>&way=upstream|downstream|both`, `team=<id>` or
  * `from=<id>&to=<id>&paths=shortest|4`; picks are `picks=a,b`. A Dynamic
  * View adds `step=<n>`, `mode=graph` and `brokers=1`; an open ADR is `adr=<id>`.
+ * `at=<point>` shows a past Revision and `vs=<point>` Compares against one.
  */
 export function parsePlace(hash: string): Place {
   const match = /^#\/view\/([^?]*)(?:\?(.*))?$/.exec(hash);
@@ -59,6 +64,8 @@ export function parsePlace(hash: string): Place {
     step: positive(params.get("step")),
     graph: params.get("mode") === "graph",
     brokers: params.get("brokers") === "1",
+    at: params.get("at") || null,
+    vs: params.get("vs") || null,
     adr: params.get("adr") || null,
   };
 }
@@ -102,11 +109,30 @@ export function formatPlace(place: Place): string {
   if (place.step !== null) query.push(`step=${place.step}`);
   if (place.graph) query.push("mode=graph");
   if (place.brokers) query.push("brokers=1");
+  if (place.at !== null) query.push(`at=${encode(place.at)}`);
+  if (place.vs !== null) query.push(`vs=${encode(place.vs)}`);
   if (place.adr !== null) query.push(`adr=${encode(place.adr)}`);
   return `#/view/${encode(place.view)}${query.length > 0 ? `?${query.join("&")}` : ""}`;
 }
 
 const encode = (s: string) => encodeURIComponent(s).replace(/%3A/gi, ":").replace(/%2F/gi, "/").replace(/%40/gi, "@");
 
-/** Opens a View afresh: nothing open, nothing selected or picked, its default direction; a Lens carries over when given. */
-export const viewPlace = (view: string, selected: string | null = null, lens: Lens | null = null): Place => ({ view, open: [], selected, direction: null, lens, picks: [], step: null, graph: false, brokers: false, adr: null });
+/**
+ * Opens a View afresh: nothing open, nothing selected or picked, its default
+ * direction; a Lens carries over when given, and `at` and `vs` from the
+ * place it is opened from, so moving around stays at the same Revisions.
+ */
+export const viewPlace = (view: string, selected: string | null = null, lens: Lens | null = null, from?: Pick<Place, "at" | "vs">): Place => ({
+  view,
+  open: [],
+  selected,
+  direction: null,
+  lens,
+  picks: [],
+  step: null,
+  graph: false,
+  brokers: false,
+  at: from?.at ?? null,
+  vs: from?.vs ?? null,
+  adr: null,
+});
