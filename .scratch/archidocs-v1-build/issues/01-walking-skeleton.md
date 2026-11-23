@@ -1,6 +1,6 @@
 # 01: Walking skeleton: check and Bundle
 
-Status: ready-for-agent
+Status: done
 Assignee: Claude (session nervous-sinoussi-18c52b)
 Blocked by: None (can start immediately)
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
