@@ -1,0 +1,5 @@
+services:
+  email-system:
+    name: E-mail System
+    description: Sends e-mails to customers.
+    technology: Microsoft Exchange

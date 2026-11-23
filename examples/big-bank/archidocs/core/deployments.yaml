@@ -1,0 +1,16 @@
+deployments:
+  - service: mainframe
+    environment: prod
+    target: platform:zos-prod
+    url: https://mainframe.bigbank.example
+  - service: mainframe
+    environment: staging
+    target: platform:zos-test
+    url: https://mainframe.staging.bigbank.example
+  - service: ledger-db
+    environment: prod
+    target: platform:zos-prod
+  - service: atm-switch
+    environment: prod
+    target: platform:zos-prod
+    url: https://atm.bigbank.example
