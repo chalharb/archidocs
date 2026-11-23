@@ -12,10 +12,13 @@ export interface SearchMatch {
 
 export interface SearchOptions {
   kind?: BundleElement["kind"];
+  /** Also match each Element's technology, or its Owner's id or name; the viewer's Find asks for both. */
+  fields?: readonly ("team" | "technology")[];
 }
 
 /**
- * Finds Elements whose qualified id, bare id or name contains `query`, and
+ * Finds Elements whose qualified id, bare id or name (and, when asked, technology
+ * or Owner, ranked as a substring) contains `query`, and
  * Services one of whose Deployment URLs (`url` or an endpoint) matches it,
  * all case-insensitively. A URL matches as a whole, without its scheme, by
  * its host, or as the start of a longer URL below it; a trailing slash is
@@ -30,10 +33,16 @@ export function search(bundle: Bundle, query: string, options: SearchOptions = {
     urls.set(d.service, list);
   }
 
+  const teamNames = new Map(bundle.teams.map((t) => [t.id, t.name]));
+  const extra = (e: BundleElement): string[] => [
+    ...(options.fields?.includes("team") ? [e.owner, teamNames.get(e.owner) ?? ""] : []),
+    ...(options.fields?.includes("technology") && "technology" in e && e.technology ? [e.technology] : []),
+  ];
+
   const matches: SearchMatch[] = [];
   for (const element of bundle.elements) {
     if (options.kind && element.kind !== options.kind) continue;
-    const byName = nameRank(q, element);
+    const byName = nameRank(q, element) ?? (rankAgainst(q, extra(element).map((f) => f.toLowerCase())) === undefined ? undefined : 2);
     let best: SearchMatch | undefined = byName === undefined ? undefined : { element, rank: byName };
     for (const deployment of urls.get(element.id) ?? []) {
       const rank = urlRank(q, deployment.url);

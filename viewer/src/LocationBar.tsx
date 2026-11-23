@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { directions, formatPlace, type Direction, type Place } from "./place.ts";
+import { directions, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { readRecent, type RecentPlace } from "./recent.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -9,10 +9,12 @@ export interface LocationBarProps {
   direction: Direction;
   onCollapse: (ids: string[]) => void;
   onDirection: (direction: Direction) => void;
+  onLens: (lens: Lens | null) => void;
+  onPicks: (picks: string[]) => void;
 }
 
-/** Where am I: breadcrumbs up the scope ladder, chips for open boxes, then direction, Recent and Copy link. */
-export function LocationBar({ workspace, place, direction, onCollapse, onDirection }: LocationBarProps) {
+/** Where am I: breadcrumbs up the scope ladder, chips for open boxes, the Lens and picks, then direction, Recent and Copy link. */
+export function LocationBar({ workspace, place, direction, onCollapse, onDirection, onLens, onPicks }: LocationBarProps) {
   const crumbs = workspace.crumbs(place.view);
   const name = (id: string) => workspace.byId.get(id)?.name ?? id;
   return (
@@ -23,7 +25,7 @@ export function LocationBar({ workspace, place, direction, onCollapse, onDirecti
             const last = i === crumbs.length - 1;
             return (
               <li key={c.view} aria-current={last ? "page" : undefined}>
-                {last ? <span>{c.label}</span> : <a href={formatPlace({ view: c.view, open: [], selected: null, direction: null })}>{c.label}</a>}
+                {last ? <span>{c.label}</span> : <a href={formatPlace(viewPlace(c.view, null, place.lens))}>{c.label}</a>}
               </li>
             );
           })}
@@ -42,6 +44,15 @@ export function LocationBar({ workspace, place, direction, onCollapse, onDirecti
           </button>
         </section>
       )}
+      {place.lens && <LensChip workspace={workspace} lens={place.lens} onLens={onLens} />}
+      {place.picks.length > 0 && (
+        <section className="ad-chips" role="region" aria-label="Picks">
+          <button type="button" className="ad-chip ad-chip-picks" aria-label={`Clear ${place.picks.length} picked`} onClick={() => onPicks([])}>
+            {place.picks.length} picked
+            <span className="ad-chip-x" aria-hidden="true" />
+          </button>
+        </section>
+      )}
       <div className="ad-tools">
         <div className="ad-segmented ad-direction" role="group" aria-label="Direction">
           {directions.map((d) => (
@@ -54,6 +65,39 @@ export function LocationBar({ workspace, place, direction, onCollapse, onDirecti
         <CopyLink />
       </div>
     </header>
+  );
+}
+
+/** The active Lens in words, with its own switches (impact direction, or Shortest / All ≤ 4 hops) and ✕ to clear it. */
+function LensChip({ workspace, lens, onLens }: { workspace: Workspace; lens: Lens; onLens: (lens: Lens | null) => void }) {
+  return (
+    <section className="ad-chips ad-lens" role="region" aria-label="Lens">
+      <span className="ad-chip ad-chip-lens">
+        <span className="ad-lens-kind">{"impact" in lens ? "Impact" : "team" in lens ? "Team" : "Connect"}</span>
+        {workspace.describeLens(lens)}
+        <button type="button" className="ad-chip-clear" aria-label="Clear lens" onClick={() => onLens(null)}>
+          <span className="ad-chip-x" aria-hidden="true" />
+        </button>
+      </span>
+      {"impact" in lens && (
+        <div className="ad-segmented" role="group" aria-label="Impact direction">
+          {(["upstream", "both", "downstream"] as const).map((way) => (
+            <button key={way} type="button" aria-pressed={lens.direction === way} onClick={() => onLens({ ...lens, direction: way })}>
+              {way === "both" ? "Both" : way === "upstream" ? "Upstream" : "Downstream"}
+            </button>
+          ))}
+        </div>
+      )}
+      {"path" in lens && (
+        <div className="ad-segmented" role="group" aria-label="Paths">
+          {(["shortest", 4] as const).map((paths) => (
+            <button key={paths} type="button" aria-pressed={(lens.path.paths ?? "shortest") === paths} onClick={() => onLens({ path: { ...lens.path, paths } })}>
+              {paths === "shortest" ? "Shortest" : "All ≤ 4 hops"}
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

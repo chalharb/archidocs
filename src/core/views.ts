@@ -1,5 +1,5 @@
 import type { Bundle, BundleElement, BundleLens, BundleRelationship } from "../schema/bundle.ts";
-import { resolveSaved } from "./saved-views.ts";
+import { applyLens, resolveSaved } from "./saved-views.ts";
 
 /** The most nodes a View may have before `oversized-view` warns. */
 export const MAX_VIEW_NODES = 150;
@@ -60,6 +60,12 @@ export interface ResolveOptions {
    * stays shut inside a closed System. C1 opens nothing.
    */
   expand?: readonly string[];
+  /**
+   * A Lens over the View, as the viewer holds it: marks nodes and lights
+   * edges without changing which nodes the View holds. It replaces a Saved
+   * View's own Lens.
+   */
+  lens?: BundleLens;
 }
 
 /**
@@ -69,6 +75,12 @@ export interface ResolveOptions {
  * Saved Deployment View, which this resolver can't draw yet.
  */
 export function resolveView(bundle: Bundle, id: string, options: ResolveOptions = {}): ResolvedView | undefined {
+  const view = resolveUnlensed(bundle, id, options);
+  if (view && options.lens) applyLens(bundle, new ModelIndex(bundle), view, options.lens);
+  return view;
+}
+
+function resolveUnlensed(bundle: Bundle, id: string, options: ResolveOptions): ResolvedView | undefined {
   const saved = bundle.views.find((v) => v.id === id);
   if (saved) return resolveSaved(bundle, saved)?.view;
   const model = new ModelIndex(bundle);

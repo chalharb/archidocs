@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TreeRow, Workspace } from "./workspace.ts";
 
-type Panel = "Model" | "Views";
+type Panel = "Model" | "Views" | "Teams";
 type Grouping = "kind" | "team";
 
 export interface RailProps {
@@ -10,12 +10,14 @@ export interface RailProps {
   selected: string | null;
   onPickElement: (id: string) => void;
   onPickView: (id: string) => void;
+  onPickTeam: (id: string) => void;
+  onFind: () => void;
 }
 
-/** The rail: Model and Views open as a flyout over the canvas, and close on a pick or Escape. */
-export function Rail({ workspace, view, selected, onPickElement, onPickView }: RailProps) {
+/** The rail: Find, then Model, Views and Teams open as a flyout over the canvas, and close on a pick or Escape. */
+export function Rail({ workspace, view, selected, onPickElement, onPickView, onPickTeam, onFind }: RailProps) {
   const [panel, setPanel] = useState<Panel | null>(null);
-  const [grouping, setGrouping] = useState<Record<Panel, Grouping>>({ Model: "kind", Views: "kind" });
+  const [grouping, setGrouping] = useState<Record<"Model" | "Views", Grouping>>({ Model: "kind", Views: "kind" });
 
   useEffect(() => {
     if (!panel) return;
@@ -35,14 +37,52 @@ export function Rail({ workspace, view, selected, onPickElement, onPickView }: R
   return (
     <>
       <nav className="ad-rail" aria-label="Rail">
-        {(["Model", "Views"] as const).map((name) => (
+        <button type="button" className="ad-rail-button" aria-keyshortcuts="/" onClick={() => (setPanel(null), onFind())}>
+          <span className="ad-rail-icon ad-rail-find" aria-hidden="true" />
+          Find
+        </button>
+        {(["Model", "Views", "Teams"] as const).map((name) => (
           <button key={name} type="button" className="ad-rail-button" aria-expanded={panel === name} onClick={() => setPanel(panel === name ? null : name)}>
             <span className={`ad-rail-icon ad-rail-${name.toLowerCase()}`} aria-hidden="true" />
             {name}
           </button>
         ))}
       </nav>
-      {panel && (
+      {panel === "Teams" && (
+        <>
+          <div className="ad-scrim" onClick={() => setPanel(null)} />
+          <section className="ad-flyout" role="dialog" aria-label="Teams">
+            <header className="ad-flyout-head">
+              <h2>Teams</h2>
+            </header>
+            <ul className="ad-team-list">
+              {[...workspace.bundle.teams]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((team) => {
+                  const style = workspace.teams.get(team.id);
+                  return (
+                    <li key={team.id}>
+                      <button
+                        type="button"
+                        className="ad-row-label"
+                        onClick={() => {
+                          setPanel(null);
+                          onPickTeam(team.id);
+                        }}
+                      >
+                        <span className="ad-row-team" style={{ borderColor: style?.color }}>
+                          {style?.code}
+                        </span>{" "}
+                        {team.name}
+                      </button>
+                    </li>
+                  );
+                })}
+            </ul>
+          </section>
+        </>
+      )}
+      {panel && panel !== "Teams" && (
         <>
           <div className="ad-scrim" onClick={() => setPanel(null)} />
           <section className="ad-flyout" role="dialog" aria-label={panel}>

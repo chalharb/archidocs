@@ -124,7 +124,7 @@ const nodesOn = (paths: Path[]) => new Set(paths.flatMap((p) => p.hops.flatMap((
  * closer to its origin; a path Lens, an edge carrying a hop of a path; a
  * Team Lens, an edge between two hit nodes.
  */
-function applyLens(bundle: Bundle, model: ModelIndex, view: ResolvedView, lens: BundleLens): { unresolved?: { from: string; to: string } } {
+export function applyLens(bundle: Bundle, model: ModelIndex, view: ResolvedView, lens: BundleLens): { unresolved?: { from: string; to: string } } {
   view.lens = lens;
   /** Element ids the Lens reaches, with their distance when it has one. */
   const reached = new Map<string, number | undefined>();
