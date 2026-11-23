@@ -26,10 +26,22 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; error?: string } {
   useEffect(() => {
     const latest = fetch("./workspace.bundle.json").then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`workspace.bundle.json: HTTP ${r.status}`))));
     Promise.all([latest, loadTimeline()])
-      .then(([bundle, timeline]) => setState({ latest: bundle, timeline }))
+      .then(([bundle, timeline]) => {
+        openPreview(timeline);
+        setState({ latest: bundle, timeline });
+      })
       .catch((e: unknown) => setState({ error: e instanceof Error ? e.message : String(e) }));
   }, []);
   return state;
+}
+
+/**
+ * A PR preview site opened at its root (no View in the URL) starts with
+ * Compare "base → PR" on the C2 Landscape; a link to a place opens as is.
+ */
+function openPreview(timeline: Timeline) {
+  const base = timeline.previewBase();
+  if (base && !/^#\/view\//.test(window.location.hash)) go({ ...HOME, vs: pointLabel(base) }, { replace: true });
 }
 
 export function App() {
@@ -58,8 +70,8 @@ function AtTime({ latest, timeline }: { latest: Bundle; timeline: Timeline }) {
   const comparison = useMemo<Comparison | undefined>(() => {
     if (!times?.before) return undefined;
     const { before, current: after, vs, at: atRevision } = times;
-    return { before, after, changes: diff(before, after), label: `${pointLabel(vs!)} → ${atRevision ? pointLabel(atRevision) : "latest"}` };
-  }, [times]);
+    return { before, after, changes: diff(before, after), label: timeline.compareLabel(vs!, atRevision) };
+  }, [times, timeline]);
   const workspace = useMemo(() => (comparison ? new Workspace(unionBundle(comparison.before, comparison.after)) : plain), [comparison, plain]);
   if (state?.kind === "problem") return <Unavailable problem={state.problem} place={place} />;
   if (!workspace || !plain) return <Message title="Loading the Revision…" />;

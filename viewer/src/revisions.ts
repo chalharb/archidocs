@@ -13,12 +13,34 @@ export interface Revision {
   bundle: boolean;
 }
 
+/** How `build --preview` marks its index: the base branch, and the shas of its latest Revision and of the PR head. */
+export interface PreviewMark {
+  base: string;
+  baseSha: string;
+  headSha: string;
+}
+
 /** The site's Revisions, newest first; empty when the site has no history. */
 export class Timeline {
   readonly revisions: readonly Revision[];
+  /** Set on a PR preview site, which opens with Compare "base → PR". */
+  readonly preview: PreviewMark | undefined;
 
-  constructor(revisions: readonly Revision[]) {
+  constructor(revisions: readonly Revision[], preview?: PreviewMark) {
     this.revisions = revisions;
+    this.preview = preview;
+  }
+
+  /** On a preview site, the base's Revision, which Compare starts from. */
+  previewBase(): Revision | undefined {
+    return this.preview && this.revisions.find((r) => r.sha === this.preview!.baseSha);
+  }
+
+  /** How Compare names its sides: "main → PR" on a preview's own two sides, else "v1 → latest". */
+  compareLabel(vs: Revision, at: Revision | undefined): string {
+    const head = at === undefined || at.sha === this.preview?.headSha;
+    if (this.preview && vs.sha === this.preview.baseSha && head) return `${this.preview.base} → PR`;
+    return `${pointLabel(vs)} → ${at ? pointLabel(at) : "latest"}`;
   }
 
   /**
@@ -59,8 +81,8 @@ export async function loadTimeline(): Promise<Timeline> {
   try {
     const r = await fetch("./bundles/index.json");
     if (!r.ok) return new Timeline([]);
-    const index = (await r.json()) as { revisions?: Revision[] };
-    return new Timeline(Array.isArray(index.revisions) ? index.revisions : []);
+    const index = (await r.json()) as { revisions?: Revision[]; preview?: PreviewMark };
+    return new Timeline(Array.isArray(index.revisions) ? index.revisions : [], typeof index.preview?.baseSha === "string" ? index.preview : undefined);
   } catch {
     return new Timeline([]);
   }

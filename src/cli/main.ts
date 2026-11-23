@@ -15,7 +15,7 @@ import { authoringGuide } from "../guide/index.ts";
 import { init } from "./init.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 import { diff } from "../core/index.ts";
-import { bundleAt, buildHistory, DEFAULT_KEEP, history, publishHistory, resolvePoint, type History } from "../history/index.ts";
+import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, history, previewSides, publishHistory, publishPreview, resolvePoint, type History, type PreviewSides } from "../history/index.ts";
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
 
@@ -38,6 +38,7 @@ const usage = `Usage:
   archidocs guide [topic]
   archidocs check [--format text|json|github] [--strict]
   archidocs build [--out <dir>] [--bundle-only] [--keep <n|all>]
+  archidocs build --preview [--base <branch>] [--out <dir>]
   archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
   archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
   archidocs diff <from> [<to>] [--format text|json|markdown]
@@ -80,9 +81,18 @@ async function main(argv: string[]): Promise<number> {
   if (command === "build") {
     const { values } = parseArgs({
       args: rest,
-      options: { "bundle-only": { type: "boolean" }, out: { type: "string", default: "dist" }, keep: { type: "string" } },
+      options: {
+        "bundle-only": { type: "boolean" },
+        out: { type: "string", default: "dist" },
+        keep: { type: "string" },
+        preview: { type: "boolean", default: false },
+        base: { type: "string" },
+      },
       strict: true,
     });
+    if (values.preview && values.keep !== undefined) throw new UsageError("--keep doesn't apply to --preview, whose site holds just the base and the PR head.");
+    if (values.preview && values["bundle-only"]) throw new UsageError("--bundle-only doesn't apply to --preview, which writes a site.");
+    if (values.base !== undefined && !values.preview) throw new UsageError("--base only applies with --preview.");
     const keep = values.keep === undefined ? DEFAULT_KEEP : values.keep === "all" ? "all" : Number(values.keep);
     if (keep !== "all" && !(Number.isInteger(keep) && keep >= 0)) throw new UsageError(`--keep "${values.keep}" is not a count or all.`);
     if (values["bundle-only"] && values.keep !== undefined) throw new UsageError("--keep only applies to a site; --bundle-only writes no past Bundles.");
@@ -92,6 +102,12 @@ async function main(argv: string[]): Promise<number> {
       process.stderr.write(`Not writing the ${values["bundle-only"] ? "Bundle" : "site"}: the Workspace has errors.\n`);
       return FOUND_ERRORS;
     }
+    // A preview finds both sides before writing anything, so a missing base writes no site.
+    let preview: { h: History; sides: PreviewSides } | undefined;
+    if (values.preview) {
+      const h = await historyFromCwd();
+      preview = { h, sides: await previewSides(h, values.base ?? (await defaultBaseBranch(h.repoRoot))) };
+    }
     const out = resolve(values.out);
     if (!values["bundle-only"]) {
       if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
@@ -99,6 +115,11 @@ async function main(argv: string[]): Promise<number> {
     }
     await mkdir(out, { recursive: true });
     await writeFile(join(out, "workspace.bundle.json"), serializeBundle(bundle));
+    if (preview) {
+      const { base, baseSha, headSha } = await publishPreview(preview.h, out, preview.sides, bundle);
+      process.stdout.write(`Wrote the preview site to ${values.out}: Compare origin/${base} (${baseSha.slice(0, 7)}) → PR (${headSha.slice(0, 7)})\n`);
+      return OK;
+    }
     if (!values["bundle-only"]) await writeSiteHistory(out, keep);
     process.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, "workspace.bundle.json")}\n` : `Wrote the site to ${values.out}\n`);
     return OK;

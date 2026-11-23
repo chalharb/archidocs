@@ -1,6 +1,7 @@
 # 26: Publishing and CI integrations
 
 Status: ready-for-agent
+Assignee: Claude (ticket-26 session)
 Blocked by: 25
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 

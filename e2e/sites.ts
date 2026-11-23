@@ -10,4 +10,6 @@ export const SITES = {
   checkout: "/team/checkout/",
   /** A git history: the first model (dropped by `--keep 1`), Legacy added (tag v1), then Wishlist added, Web renamed and Legacy removed. */
   history: "/team/history/",
+  /** A PR preview (`build --preview`): main has the Legacy shop (historyBefore); the PR adds Wishlist, renames Web and retires Legacy. */
+  preview: "/team/preview/",
 } as const;
