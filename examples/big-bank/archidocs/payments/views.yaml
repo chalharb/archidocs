@@ -1,0 +1,27 @@
+views:
+  dynamic:
+    make-a-payment:
+      title: Customer makes a payment
+      steps:
+        - from: digital:customer
+          to: digital:spa
+          description: Pays a bill
+        - from: digital:spa
+          to: digital:payments-controller
+          description: POST /api/payments
+        - from: digital:payments-controller
+          to: payments-service
+          description: Submits the payment
+        - from: payments-service
+          to: fraud-detection
+          description: payments.initiated
+        - from: payments-service
+          to: core:mainframe
+          description: Posts to the ledger
+        - from: payments-service
+          to: digital:notifications
+          description: payments.completed
+        - from: payments-service
+          to: digital:payments-controller
+          return: true
+          description: Payment accepted

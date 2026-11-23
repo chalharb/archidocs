@@ -1,0 +1,42 @@
+systems:
+  payments:
+    name: Payments
+    description: Moves money between accounts and banks.
+    services:
+      payments-service:
+        name: Payments Service
+        description: Validates, posts and settles customer payments.
+        technology: Java, Spring Boot
+        relationships:
+          - to: payments-db
+            description: Stores payment state in
+            technology: JDBC
+          - to: core:mainframe
+            description: Posts payments to the ledger in
+            technology: XML/HTTPS
+          - to: card-gateway
+            description: Settles card payments through
+            technology: ISO 8583
+      payments-db:
+        name: Payments DB
+        type: datastore
+        technology: PostgreSQL (Amazon RDS)
+      fraud-detection:
+        name: Fraud Detection
+        description: Scores each payment for fraud and holds suspicious ones.
+        technology: Python
+        relationships:
+          - to: payments-service
+            description: Scores each initiated payment
+            interaction: async
+            via: platform:kafka
+            channel: payments.initiated
+  card-network:
+    name: Card Network
+    description: The card scheme the bank settles card payments with.
+    external: true
+    services:
+      card-gateway:
+        name: Card Scheme Gateway
+        external: true
+        technology: ISO 8583 over TCP

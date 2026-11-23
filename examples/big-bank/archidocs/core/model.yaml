@@ -1,0 +1,52 @@
+people:
+  customer-service-staff:
+    name: Customer Service Staff
+    description: Staff in the call centre who help customers.
+    relationships:
+      - to: mainframe
+        description: Looks up customer accounts in
+        technology: 3270 terminal
+  back-office-staff:
+    name: Back Office Staff
+    description: Administration and support staff.
+    relationships:
+      - to: mainframe
+        description: Maintains customer and account records in
+        technology: 3270 terminal
+
+systems:
+  mainframe-banking:
+    name: Mainframe Banking System
+    description: Stores core banking information about customers, accounts and transactions.
+    services:
+      mainframe:
+        name: Mainframe
+        description: The system of record for customers, accounts and the ledger.
+        technology: IBM z/OS, COBOL, CICS
+        tags: [legacy]
+      ledger-db:
+        name: Ledger DB
+        type: datastore
+        technology: IBM Db2
+  atm:
+    name: ATM Network
+    description: Lets customers withdraw cash.
+    services:
+      atm-switch:
+        name: ATM Switch
+        description: Routes ATM transactions to the mainframe.
+        technology: Java
+        relationships:
+          - to: mainframe
+            description: Authorises withdrawals with
+            technology: ISO 8583
+
+services:
+  mainframe-db-link:
+    name: Ledger Replicator
+    description: Copies ledger changes to the reporting store each night.
+    technology: IBM InfoSphere CDC
+    relationships:
+      - to: ledger-db
+        description: Reads ledger changes from
+        technology: CDC

@@ -1,0 +1,85 @@
+people:
+  customer:
+    name: Personal Banking Customer
+    description: A customer of the bank, with personal bank accounts.
+    relationships:
+      - to: web-app
+        description: Visits bigbank.example/ib using
+        technology: HTTPS
+      - to: spa
+        description: Views account balances and makes payments using
+      - to: mobile-app
+        description: Views account balances and makes payments using
+
+systems:
+  internet-banking:
+    name: Internet Banking System
+    description: Lets customers view their accounts and make payments.
+    services:
+      web-app:
+        name: Web Application
+        description: Delivers the static content and the single-page app.
+        technology: Java, Spring MVC
+      spa:
+        name: Single-Page Application
+        description: Internet banking in the customer's browser.
+        technology: TypeScript, Angular
+        relationships:
+          - to: sign-in-controller
+            description: Signs customers in through
+            technology: JSON/HTTPS
+          - to: accounts-summary-controller
+            description: Reads balances and transactions from
+            technology: JSON/HTTPS
+      mobile-app:
+        name: Mobile App
+        description: Internet banking on iOS and Android.
+        technology: Kotlin, Swift
+        relationships:
+          - to: sign-in-controller
+            description: Signs customers in through
+            technology: JSON/HTTPS
+          - to: accounts-summary-controller
+            description: Reads balances and transactions from
+            technology: JSON/HTTPS
+      api:
+        name: API Application
+        description: Internet banking over a JSON/HTTPS API.
+        technology: Java, Spring Boot
+        components:
+          sign-in-controller:
+            name: Sign In Controller
+            technology: Spring MVC REST controller
+            relationships:
+              - to: security-component
+                description: Validates sessions with
+          accounts-summary-controller:
+            name: Accounts Summary Controller
+            technology: Spring MVC REST controller
+            relationships:
+              - to: mainframe-facade
+                description: Reads account summaries through
+          security-component:
+            name: Security Component
+            description: Session handling and token validation.
+            technology: Spring Security
+            relationships:
+              - to: identity:auth-service
+                description: Validates tokens with
+                technology: OpenID Connect
+              - to: database
+                description: Stores sessions in
+                technology: JDBC
+          mainframe-facade:
+            name: Mainframe Banking System Facade
+            description: The one place that knows the mainframe's contract.
+            technology: Spring Bean
+            relationships:
+              - to: core:mainframe
+                description: Reads accounts and transactions from
+                technology: XML/HTTPS
+      database:
+        name: Database
+        description: Sessions and customer preferences.
+        type: datastore
+        technology: Oracle Database
