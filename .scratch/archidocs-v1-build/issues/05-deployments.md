@@ -1,6 +1,7 @@
 # 05: Deployment Targets and Deployments
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-05 session)
 Blocked by: 03
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -15,6 +16,6 @@ Authors record where Services run, and their URLs per Environment.
 
 ## Acceptance criteria
 
-- [ ] A fixture with region › cluster Targets shared across Projects and Deployments in two Environments builds correctly.
-- [ ] A duplicate triple is an error at the later location.
-- [ ] Every new rule has failing and passing fixtures.
+- [x] A fixture with region › cluster Targets shared across Projects and Deployments in two Environments builds correctly.
+- [x] A duplicate triple is an error at the later location.
+- [x] Every new rule has failing and passing fixtures.

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { rules } from "../../src/core/index.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
-// The rules tickets 01 and 03 introduce; later tickets add to the registry.
+// The rules tickets 01, 03 and 05 introduce; later tickets add to the registry.
 const ticketRules = [
   "yaml-syntax",
   "unknown-field",
@@ -17,6 +17,10 @@ const ticketRules = [
   "invalid-nesting",
   "external-with-components",
   "unknown-element",
+  "unknown-environment",
+  "unknown-target",
+  "wrong-kind",
+  "duplicate-deployment",
 ];
 
 describe("rule registry", () => {

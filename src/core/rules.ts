@@ -1,6 +1,7 @@
 import type { Files } from "./files.ts";
 import { Id, parentKindOf, type ElementKind } from "../schema/workspace.ts";
-import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Severity, SourceFile } from "./model.ts";
+import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, Severity, SourceFile } from "./model.ts";
+import { qualify } from "./refs.ts";
 import { didYouMean } from "./suggest.ts";
 
 /**
@@ -28,12 +29,16 @@ const withServices = (yaml: string, extra: Files = {}): Files => ({
   ...extra,
 });
 
+/** A Service, a Target it can run on, and `deployments` (a YAML list) in one Project file. */
+const withDeployments = (deployments: string, extra: Files = {}): Files =>
+  withServices(`services:\n  web:\n    name: Web\n  checkout:\n    name: Checkout\n    components:\n      cart:\n        name: Cart\ntargets:\n  eks-prod:\n    name: EKS prod\n    kind: cluster\ndeployments:\n${deployments}`, extra);
+
 const findings = (rule: Finding["rule"]) => (ws: LoadedWorkspace) =>
   ws.files.flatMap((file) =>
     file.findings.filter((f) => f.rule === rule).map((f) => ({ file: file.path, line: f.line, column: f.column, message: f.message })),
   );
 
-const at = (file: SourceFile, path: string[], message: string, key = false): IssueDraft => {
+const at = (file: SourceFile, path: readonly (string | number)[], message: string, key = false): IssueDraft => {
   const pos = file.parsed.positionOf(path, { key });
   return { file: file.path, line: pos.line, column: pos.column, message };
 };
@@ -47,6 +52,17 @@ const belongs: Record<ElementKind, string> = {
   system: "Systems don't nest; declare it at the top level, under `systems`",
   service: "a Service goes inside a System, or at the top level",
   component: "a Component goes inside a Service",
+};
+
+/** The qualified ids of declarations in Projects that have a usable id. */
+const qualifiedIds = (decls: readonly { id: string; project: Project }[]) =>
+  new Set(decls.filter((d) => d.project.id !== undefined && !d.project.duplicateOf).map((d) => `${d.project.id}:${d.id}`));
+
+/** "Unknown <what> "id" in Project "p"", suggesting the nearest id declared in that Project. */
+const unknownIn = (what: string, qualified: string, decls: readonly { id: string; project: Project }[]) => {
+  const [project, id] = qualified.split(":") as [string, string];
+  const ids = decls.filter((d) => d.project.id === project && !d.project.duplicateOf).map((d) => d.id);
+  return `Unknown ${what} "${id}" in Project "${project}"${didYouMean(id, ids)}`;
 };
 
 /** The `in:` an Element names, if it is a usable id. */
@@ -177,7 +193,7 @@ export const rules: RuleDefinition[] = [
       for (const p of ws.projects) {
         if (unknown(p.owner)) issues.push(at(p.file, ["owner"], message(p.owner)));
       }
-      for (const e of ws.elements) {
+      for (const e of [...ws.elements, ...ws.targets]) {
         const owner = e.data.owner;
         if (unknown(owner)) issues.push(at(e.file, [...e.path, "owner"], message(owner)));
       }
@@ -187,8 +203,8 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-id",
     severity: "error",
-    summary: "An Element id is declared twice in a Project, across files too, whatever its kind or nesting.",
-    fix: "Rename one of the Elements, or remove the second declaration.",
+    summary: "An Element or Deployment Target id is declared twice in a Project, across files too, whatever its kind or nesting.",
+    fix: "Rename one of the Elements or Targets, or remove the second declaration.",
     example: {
       failing: withServices("services:\n  web:\n    name: Web\n", { "shop/more.yaml": "services:\n  web:\n    name: Web v2\n" }),
       passing: withServices("services:\n  web:\n    name: Web\n", { "shop/more.yaml": "services:\n  web-v2:\n    name: Web v2\n" }),
@@ -196,7 +212,9 @@ export const rules: RuleDefinition[] = [
     check: (ws) => {
       const seen = new Map<string, { file: string; line: number }>();
       const issues: IssueDraft[] = [];
-      for (const e of ws.elements) {
+      // Elements and Targets share one namespace; the first in file order keeps the id.
+      const decls = [...ws.elements, ...ws.targets].sort((a, b) => (a.file.path < b.file.path ? -1 : a.file.path > b.file.path ? 1 : a.line - b.line));
+      for (const e of decls) {
         if (e.project.duplicateOf || e.project.id === undefined) continue;
         const key = `${e.project.id}:${e.id}`;
         const first = seen.get(key);
@@ -270,12 +288,103 @@ export const rules: RuleDefinition[] = [
       failing: withServices("systems:\n  checkout:\n    name: Checkout\n", { "shop/cart.yaml": "services:\n  cart:\n    name: Cart\n    in: chekout\n" }),
       passing: withServices("systems:\n  checkout:\n    name: Checkout\n", { "shop/cart.yaml": "services:\n  cart:\n    name: Cart\n    in: checkout\n" }),
     },
-    check: (ws) =>
-      ws.elements.flatMap((e) => {
+    check: (ws) => [
+      ...ws.elements.flatMap((e) => {
         const ref = inRef(e);
         if (ref === undefined || e.nestedIn || e.parent) return [];
         const ids = ws.elements.filter((o) => o.project === e.project).map((o) => o.id);
         return [at(e.file, [...e.path, "in"], `Unknown Element "${ref}" in Project "${e.project.id ?? e.project.folder}"${didYouMean(ref, ids)}`)];
       }),
+      ...ws.deployments.flatMap((d) => {
+        const ref = qualify(d.data.service, d.project);
+        if (ref === undefined || d.service || qualifiedIds(ws.targets).has(ref)) return [];
+        return [at(d.file, [...d.path, "service"], unknownIn("Element", ref, ws.elements))];
+      }),
+    ],
+  },
+  {
+    id: "duplicate-deployment",
+    severity: "error",
+    summary: "The same Service, Environment and Target appear twice.",
+    fix: "Remove the second Deployment, or merge its `url` and `endpoints` into the first.",
+    example: {
+      failing: withDeployments(
+        "  - { service: web, environment: prod, target: eks-prod, url: https://shop.example.com }\n",
+        { "shop/more.yaml": "deployments:\n  - { service: web, environment: prod, target: eks-prod, url: https://www.shop.example.com }\n" },
+      ),
+      passing: withDeployments("  - { service: web, environment: prod, target: eks-prod, url: https://shop.example.com }\n"),
+    },
+    check: (ws) => {
+      const seen = new Map<string, { file: string; line: number }>();
+      const issues: IssueDraft[] = [];
+      for (const d of ws.deployments) {
+        const service = qualify(d.data.service, d.project);
+        const target = qualify(d.data.target, d.project);
+        const environment = d.data.environment;
+        if (service === undefined || target === undefined || typeof environment !== "string" || d.project.duplicateOf) continue;
+        const key = `${service}\0${environment}\0${target}`;
+        const first = seen.get(key);
+        if (first) {
+          issues.push({ file: d.file.path, line: d.line, column: d.column, message: `Service "${service}" is already deployed to "${target}" in Environment "${environment}" at ${first.file}:${first.line}` });
+        } else {
+          seen.set(key, { file: d.file.path, line: d.line });
+        }
+      }
+      return issues;
+    },
+  },
+  {
+    id: "unknown-environment",
+    severity: "error",
+    summary: "A Deployment names no Environment.",
+    fix: "Use the id of an Environment defined in `workspace.yaml`, or define the Environment there.",
+    example: {
+      failing: withDeployments("  - { service: web, environment: production, target: eks-prod }\n"),
+      passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n"),
+    },
+    check: (ws) => {
+      const environments = new Set(ws.environments.map((e) => e.id));
+      return ws.deployments.flatMap((d) => {
+        const env = d.data.environment;
+        // A malformed id is already an `invalid-value`.
+        if (!Id.safeParse(env).success || environments.has(env as string)) return [];
+        return [at(d.file, [...d.path, "environment"], `Unknown Environment "${env as string}"${didYouMean(env as string, environments)}`)];
+      });
+    },
+  },
+  {
+    id: "unknown-target",
+    severity: "error",
+    summary: "A Deployment names no Deployment Target.",
+    fix: "Use the id of a Target declared in the Project, or `project:id` for one declared in another Project.",
+    example: {
+      failing: withDeployments("  - { service: web, environment: prod, target: eks-prd }\n"),
+      passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n"),
+    },
+    check: (ws) =>
+      ws.deployments.flatMap((d) => {
+        const ref = qualify(d.data.target, d.project);
+        if (ref === undefined || d.target) return [];
+        return [at(d.file, [...d.path, "target"], unknownIn("Deployment Target", ref, ws.targets))];
+      }),
+  },
+  {
+    id: "wrong-kind",
+    severity: "error",
+    summary: "An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System.",
+    fix: "Point the field at an id of the kind it accepts: a Deployment's `service` names a Service.",
+    example: {
+      failing: withDeployments("  - { service: cart, environment: prod, target: eks-prod }\n"),
+      passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n"),
+    },
+    check: (ws) => {
+      const targets = qualifiedIds(ws.targets);
+      return ws.deployments.flatMap((d) => {
+        const ref = qualify(d.data.service, d.project);
+        if (ref === undefined) return [];
+        const kind = d.service ? (d.service.kind === "service" ? undefined : kindName[d.service.kind]) : targets.has(ref) ? "Deployment Target" : undefined;
+        return kind ? [at(d.file, [...d.path, "service"], `A Deployment's \`service\` must name a Service, but "${ref}" is a ${kind}`)] : [];
+      });
+    },
   },
 ];

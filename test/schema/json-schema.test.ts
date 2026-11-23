@@ -3,7 +3,7 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { elementTreeWorkspace, validWorkspace } from "../support/fixtures.ts";
+import { deploymentWorkspace, elementTreeWorkspace, validWorkspace } from "../support/fixtures.ts";
 import { jsonSchemas, serializeJsonSchema } from "../../src/schema/index.ts";
 
 /** The JSON Schemas shipped for editors, as published in the package. */
@@ -18,7 +18,7 @@ const validator = async (name: string) => {
 const schemaFor = (path: string) => (path === "workspace.yaml" ? "workspace" : path.endsWith("/project.yaml") ? "project" : "model");
 
 describe("shipped JSON Schemas", () => {
-  it.each(Object.entries({ ...validWorkspace, ...elementTreeWorkspace }))("accept the fixture file %s", async (path, text) => {
+  it.each([...Object.entries(validWorkspace), ...Object.entries(elementTreeWorkspace), ...Object.entries(deploymentWorkspace)])("accept the fixture file %s", async (path, text) => {
     const validate = await validator(schemaFor(path));
     expect(validate(parse(text)), JSON.stringify(validate.errors)).toBe(true);
   });
@@ -30,6 +30,13 @@ describe("shipped JSON Schemas", () => {
     expect(validate.errors).toContainEqual(
       expect.objectContaining({ instancePath: "/systems/checkout/services/cart", keyword: "additionalProperties", params: { additionalProperty: "techology" } }),
     );
+  });
+
+  it("reject an unknown key on a nested Deployment Target and a malformed Deployment url", async () => {
+    const validate = await validator("model");
+    expect(validate(parse("targets:\n  dc:\n    name: DC\n    kind: datacenter\n    targets:\n      rack:\n        name: Rack\n        knd: rack\n"))).toBe(false);
+    expect(validate.errors).toContainEqual(expect.objectContaining({ keyword: "additionalProperties", params: { additionalProperty: "knd" } }));
+    expect(validate(parse("deployments:\n  - { service: web, environment: prod, target: eks, url: not-a-url }\n"))).toBe(false);
   });
 
   it("reject an unknown key in project.yaml and workspace.yaml", async () => {
