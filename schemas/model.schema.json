@@ -829,6 +829,414 @@
         ],
         "additionalProperties": false
       }
+    },
+    "views": {
+      "type": "object",
+      "properties": {
+        "structural": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "c1",
+                  "c2",
+                  "c3",
+                  "deployment"
+                ]
+              },
+              "expand": {
+                "description": "Elements opened one level deeper than `level`",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                }
+              },
+              "collapse": {
+                "description": "Elements closed, hiding everything inside them",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                }
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "TB",
+                  "BT",
+                  "LR",
+                  "RL"
+                ]
+              },
+              "environment": {
+                "description": "For `level: deployment`: the Environment shown",
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]*$"
+              },
+              "targets": {
+                "description": "For `level: deployment`: only these Deployment Target subtrees",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                  "description": "An id in this Project, or `project:id` for one in another Project"
+                }
+              },
+              "include": {
+                "description": "Selectors to show; every Element when absent",
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                      "description": "An id in this Project, or `project:id` for one in another Project"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "element": {
+                          "type": "string",
+                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                          "description": "An id in this Project, or `project:id` for one in another Project"
+                        },
+                        "with": {
+                          "type": "string",
+                          "enum": [
+                            "children",
+                            "descendants"
+                          ]
+                        },
+                        "upstream": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "string",
+                              "const": "all"
+                            }
+                          ],
+                          "description": "A number of hops, or `all`"
+                        },
+                        "downstream": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "string",
+                              "const": "all"
+                            }
+                          ],
+                          "description": "A number of hops, or `all`"
+                        }
+                      },
+                      "required": [
+                        "element"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "team": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9-]*$"
+                        }
+                      },
+                      "required": [
+                        "team"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "tag": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tag"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                          "description": "An id in this Project, or `project:id` for one in another Project"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                          "description": "An id in this Project, or `project:id` for one in another Project"
+                        },
+                        "paths": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "shortest"
+                            },
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            }
+                          ],
+                          "description": "`shortest` (the default), or n for every path of at most n hops"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                      "description": "An id in this Project, or `project:id` for one in another Project"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "element": {
+                          "type": "string",
+                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                          "description": "An id in this Project, or `project:id` for one in another Project"
+                        },
+                        "with": {
+                          "type": "string",
+                          "enum": [
+                            "children",
+                            "descendants"
+                          ]
+                        },
+                        "upstream": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "string",
+                              "const": "all"
+                            }
+                          ],
+                          "description": "A number of hops, or `all`"
+                        },
+                        "downstream": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "string",
+                              "const": "all"
+                            }
+                          ],
+                          "description": "A number of hops, or `all`"
+                        }
+                      },
+                      "required": [
+                        "element"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "team": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9-]*$"
+                        }
+                      },
+                      "required": [
+                        "team"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "tag": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "tag"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                          "description": "An id in this Project, or `project:id` for one in another Project"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                          "description": "An id in this Project, or `project:id` for one in another Project"
+                        },
+                        "paths": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "shortest"
+                            },
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            }
+                          ],
+                          "description": "`shortest` (the default), or n for every path of at most n hops"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "lens": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "impact": {
+                        "type": "string",
+                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                        "description": "An id in this Project, or `project:id` for one in another Project"
+                      },
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "upstream",
+                          "downstream",
+                          "both"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "impact"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "team": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]*$"
+                      }
+                    },
+                    "required": [
+                      "team"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "object",
+                        "properties": {
+                          "from": {
+                            "type": "string",
+                            "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                            "description": "An id in this Project, or `project:id` for one in another Project"
+                          },
+                          "to": {
+                            "type": "string",
+                            "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+                            "description": "An id in this Project, or `project:id` for one in another Project"
+                          },
+                          "paths": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "shortest"
+                              },
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              }
+                            ],
+                            "description": "`shortest` (the default), or n for every path of at most n hops"
+                          }
+                        },
+                        "required": [
+                          "from",
+                          "to"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "path"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "level"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,

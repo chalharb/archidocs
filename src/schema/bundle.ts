@@ -73,6 +73,49 @@ export const BundleRelationship = z.object({
   source: Source,
 });
 
+const BundleRef = z.string();
+const Hops = z.union([z.number(), z.literal("all")]);
+const Paths = z.union([z.literal("shortest"), z.number()]);
+const PathSelector = z.object({ from: BundleRef, to: BundleRef, paths: Paths.optional() });
+
+/** A selector with its Element ids qualified; a bare id is the Element itself. */
+export const BundleSelector = z.union([
+  BundleRef,
+  z.object({ element: BundleRef, with: z.enum(["children", "descendants"]).optional(), upstream: Hops.optional(), downstream: Hops.optional() }),
+  z.object({ team: z.string() }),
+  z.object({ tag: z.string() }),
+  PathSelector,
+]);
+
+export const BundleLens = z.union([
+  z.object({ impact: BundleRef, direction: z.enum(["upstream", "downstream", "both"]) }),
+  z.object({ team: z.string() }),
+  z.object({ path: PathSelector }),
+]);
+
+/**
+ * A Saved structural or Deployment View's definition, every id qualified; not
+ * its resolved nodes. `include` is null when absent (every Element).
+ */
+export const BundleView = z.object({
+  id: z.string(),
+  project: z.string(),
+  kind: z.literal("structural"),
+  title: z.string(),
+  description: z.string().nullable(),
+  tags: z.array(z.string()),
+  level: z.enum(["c1", "c2", "c3", "deployment"]),
+  include: z.array(BundleSelector).nullable(),
+  exclude: z.array(BundleSelector),
+  expand: z.array(z.string()),
+  collapse: z.array(z.string()),
+  direction: z.enum(["TB", "BT", "LR", "RL"]).nullable(),
+  lens: BundleLens.nullable(),
+  environment: z.string().nullable(),
+  targets: z.array(z.string()),
+  source: Source,
+});
+
 /**
  * The Workspace Bundle. Parsing through this schema also fixes key order,
  * since zod emits object keys in shape order.
@@ -94,6 +137,7 @@ export const Bundle = z.object({
   relationships: z.array(BundleRelationship),
   targets: z.array(BundleTarget),
   deployments: z.array(BundleDeployment),
+  views: z.array(BundleView),
 });
 
 export type Bundle = z.infer<typeof Bundle>;
@@ -101,3 +145,6 @@ export type BundleElement = z.infer<typeof BundleElement>;
 export type BundleRelationship = z.infer<typeof BundleRelationship>;
 export type BundleTarget = z.infer<typeof BundleTarget>;
 export type BundleDeployment = z.infer<typeof BundleDeployment>;
+export type BundleView = z.infer<typeof BundleView>;
+export type BundleSelector = z.infer<typeof BundleSelector>;
+export type BundleLens = z.infer<typeof BundleLens>;

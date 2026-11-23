@@ -1,8 +1,8 @@
 import { basename, dirname, join, relative, sep } from "node:path";
-import { Bundle, SCHEMA_VERSION, type BundleDeployment, type BundleElement, type BundleRelationship, type BundleTarget } from "../schema/bundle.ts";
-import { ProjectFile, WorkspaceFile, childKindOf, collectionOf, kindOfCollection, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
+import { Bundle, SCHEMA_VERSION, type BundleDeployment, type BundleElement, type BundleRelationship, type BundleSelector, type BundleTarget, type BundleView } from "../schema/bundle.ts";
+import { ProjectFile, StructuralView, WorkspaceFile, type LensInput, type SelectorInput, childKindOf, collectionOf, kindOfCollection, lensSchemaFor, selectorSchemaFor, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
 import type { FileSystem } from "./fs.ts";
-import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile, TargetDecl } from "./model.ts";
+import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
 import { indexByQualifiedId, qualified, qualify, referenceResolver } from "./refs.ts";
 import { rules } from "./rules.ts";
 import { checkSchema } from "./schema-check.ts";
@@ -51,7 +51,7 @@ export async function loadDetailed(options: LoadOptions): Promise<LoadResult & {
       .filter((p) => (strict ? dir.startsWith(p + sep) : dir === p || dir.startsWith(p + sep)))
       .sort((a, b) => b.length - a.length)[0];
 
-  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [], relationships: [], targets: [], deployments: [] };
+  const ws: LoadedWorkspace = { files: [], projects: [], teams: [], environments: [], elements: [], relationships: [], targets: [], deployments: [], views: [] };
   const projectByDir = new Map<string, Project>();
 
   // Read every file; project.yaml files first so model files can find their Project.
@@ -96,6 +96,7 @@ export async function loadDetailed(options: LoadOptions): Promise<LoadResult & {
   ws.targets.sort(byPosition);
   ws.deployments.sort(byPosition);
   ws.relationships.sort(byPosition);
+  ws.views.sort(byPosition);
   resolveParents(ws);
   resolveDeployments(ws);
 
@@ -167,6 +168,41 @@ function readModelFile(file: SourceFile, ws: LoadedWorkspace) {
   readElements(file, ws, data, [], undefined);
   readTargets(file, ws, data, [], undefined);
   readDeployments(file, ws, data);
+  readViews(file, ws, data);
+}
+
+/** Registers every Saved View under `views: structural:`, checking each selector and the Lens against the form it is written in. */
+function readViews(file: SourceFile, ws: LoadedWorkspace, data: Record<string, unknown>) {
+  for (const [id, value] of Object.entries(asRecord(asRecord(data.views).structural))) {
+    const path = ["views", "structural", id];
+    file.findings.push(...checkSchema(shallow.view, value, file.parsed, path));
+    const view: ViewDecl = { id, project: file.project!, file, path, data: asRecord(value), ...file.parsed.positionOf(path, { key: true }) };
+    ws.views.push(view);
+    for (const key of ["include", "exclude"] as const) {
+      const list = view.data[key];
+      if (!Array.isArray(list)) continue;
+      list.forEach((selector: unknown, i) => {
+        const at = [...path, key, i];
+        const schema = selectorSchemaFor(selector);
+        if (schema) file.findings.push(...checkSchema(schema, selector, file.parsed, at));
+        else file.findings.push({ rule: "invalid-value", ...file.parsed.positionOf(at), message: `Invalid value for "${key}.${i}": a selector is an id, or a map with \`element\`, \`team\`, \`tag\` or \`from\` and \`to\`` });
+      });
+    }
+    if (view.data.lens !== undefined) {
+      const schema = lensSchemaFor(view.data.lens);
+      if (schema) file.findings.push(...checkSchema(schema, view.data.lens, file.parsed, [...path, "lens"]));
+      else file.findings.push({ rule: "invalid-value", ...file.parsed.positionOf([...path, "lens"]), message: 'Invalid value for "lens": a Lens is a map with `impact`, `team` or `path`' });
+    }
+    const deployment = view.data.level === "deployment";
+    if (deployment && view.data.environment === undefined) {
+      file.findings.push({ rule: "missing-field", ...file.parsed.positionOf(path, { key: true }), message: 'Missing required field "environment": a Deployment View names its Environment' });
+    }
+    for (const key of ["environment", "targets"] as const) {
+      if (!deployment && view.data[key] !== undefined) {
+        file.findings.push({ rule: "invalid-value", ...file.parsed.positionOf([...path, key], { key: true }), message: `Invalid value for "${key}": only a \`level: deployment\` View takes \`${key}\`` });
+      }
+    }
+  }
 }
 
 /** Registers every Deployment Target declared under `container`, recursing into nested `targets`. */
@@ -352,6 +388,40 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
     source: source(d),
   }));
 
+  const views = ws.views.filter((v) => inBundle(v.project)).flatMap((v): BundleView[] => {
+    const parsed = StructuralView.safeParse(v.data);
+    if (!parsed.success) return [];
+    const d = parsed.data;
+    const ref = (r: string) => qualify(r, v.project) ?? r;
+    const selector = (s: SelectorInput): BundleSelector =>
+      typeof s === "string" ? ref(s) : "element" in s ? { ...s, element: ref(s.element) } : "from" in s ? { ...s, from: ref(s.from), to: ref(s.to) } : s;
+    const lens = (l: LensInput): NonNullable<BundleView["lens"]> =>
+      "impact" in l ? { impact: ref(l.impact), direction: l.direction ?? "both" } : "path" in l ? { path: { ...l.path, from: ref(l.path.from), to: ref(l.path.to) } } : l;
+    return [
+      {
+        id: `${v.project.id}:${v.id}`,
+        project: v.project.id!,
+        kind: "structural",
+        title: d.title,
+        description: d.description ?? null,
+        tags: d.tags ?? [],
+        level: d.level,
+        include: d.include ? d.include.map(selector) : null,
+        exclude: (d.exclude ?? []).map(selector),
+        expand: (d.expand ?? []).map(ref),
+        collapse: (d.collapse ?? []).map(ref),
+        direction: d.direction ?? null,
+        lens: d.lens ? lens(d.lens) : null,
+        environment: d.environment ?? null,
+        targets: (d.targets ?? []).map(ref),
+        source: source(v),
+      },
+    ];
+  });
+  // The first declaration of an id keeps it; `duplicate-view-id` reports the others.
+  const viewIds = new Set<string>();
+  const uniqueViews = views.filter((v) => !viewIds.has(v.id) && viewIds.add(v.id));
+
   const bundle: z.input<typeof Bundle> = {
     schemaVersion: SCHEMA_VERSION,
     commit: options.commit ?? null,
@@ -369,6 +439,7 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
     relationships: relationships.sort((a, b) => cmp(a.from, b.from) || cmp(a.to, b.to) || bySource(a, b)),
     targets: targets.sort(byId),
     deployments: deployments.sort((a, b) => cmp(a.service, b.service) || cmp(a.environment, b.environment) || cmp(a.target, b.target) || cmp(a.source.file, b.source.file) || a.source.line - b.source.line),
+    views: uniqueViews.sort(byId),
   };
   // Parsing fixes key order to the schema's.
   return Bundle.parse(bundle);

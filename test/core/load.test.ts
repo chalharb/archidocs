@@ -36,7 +36,7 @@ describe("Bundle stability", () => {
     const json = JSON.parse(serializeBundle(bundle));
 
     expect(Object.keys(json)).toEqual([
-      "schemaVersion", "commit", "builtAt", "teams", "environments", "projects", "elements", "relationships", "targets", "deployments",
+      "schemaVersion", "commit", "builtAt", "teams", "environments", "projects", "elements", "relationships", "targets", "deployments", "views",
     ]);
     expect(Object.keys(json.elements[0])).toEqual([
       "id", "kind", "parent", "name", "description", "owner", "tags", "links", "type", "technology", "external", "source",

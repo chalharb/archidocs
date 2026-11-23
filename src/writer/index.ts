@@ -11,6 +11,7 @@ import { YamlFile } from "./document.ts";
 import { byPlace, fail, findProject, local, modelFile, projectFile, type Edit, type Failure, type Planned, type SourceRef, type WriteItem } from "./edit.ts";
 import { overlayFileSystem } from "./overlay.ts";
 import { createProject, upsertDefinition, type DefinitionRequest, type ProjectRequest } from "./workspace.ts";
+import { removeView, upsertView, type ViewRequest } from "./views.ts";
 
 export type { SourceRef, WriteErrorCode, WriteItem } from "./edit.ts";
 
@@ -31,7 +32,8 @@ export type WriteRequest =
   | TargetRequest
   | DeploymentRequest
   | DefinitionRequest
-  | ProjectRequest;
+  | ProjectRequest
+  | ViewRequest;
 
 export type WriteResult =
   | {
@@ -40,7 +42,7 @@ export type WriteResult =
       item: WriteItem;
       /**
        * What was written, all qualified: `{id}` for an Element, Target, Team,
-       * Environment or Project; `{from, to, id}` for a Relationship;
+       * Environment, Project or View; `{from, to, id}` for a Relationship;
        * `{service, environment, target}` for a Deployment.
        */
       subject: Record<string, string | null>;
@@ -123,6 +125,10 @@ async function plan(edit: Edit, request: WriteRequest): Promise<Planned> {
       return upsertDefinition(edit, request);
     case "create-project":
       return createProject(edit, request);
+    case "upsert-view":
+      return upsertView(edit, request);
+    case "remove-view":
+      return removeView(edit, request);
   }
   const project = findProject(edit, request.project);
   if ("ok" in project) return project;
