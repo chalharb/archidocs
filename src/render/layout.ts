@@ -1,4 +1,5 @@
-import ElkConstructor, { type ELK, type ElkExtendedEdge, type ElkNode, type LayoutOptions } from "elkjs/lib/elk.bundled.js";
+import ElkBundled from "elkjs/lib/elk.bundled.js";
+import type { ELK, ElkExtendedEdge, ElkNode, LayoutOptions } from "elkjs/lib/elk-api.js";
 import type { ResolvedView, ViewNode } from "../core/views.ts";
 
 /** Which way a View's edges flow: top to bottom, bottom to top, left to right or right to left. */
@@ -59,6 +60,8 @@ const PORT_SIDES: Record<Direction, [string, string]> = {
   RL: ["WEST", "EAST"],
 };
 
+// elk.bundled.js is CommonJS whose module.exports is the ELK class; its typings describe an ES module instead.
+const ElkConstructor = ElkBundled as unknown as new () => ELK;
 let sharedElk: ELK | undefined;
 
 /**
@@ -82,8 +85,10 @@ export async function layoutView(view: ResolvedView, options: LayoutOptionsInput
 class ViewGraph {
   readonly byId: Map<string, ViewNode>;
   readonly childrenOf = new Map<string | null, ViewNode[]>();
+  readonly view: ResolvedView;
 
-  constructor(readonly view: ResolvedView) {
+  constructor(view: ResolvedView) {
+    this.view = view;
     this.byId = new Map(view.nodes.map((n) => [n.id, n]));
     for (const n of view.nodes) {
       const list = this.childrenOf.get(n.parent) ?? [];

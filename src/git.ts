@@ -11,3 +11,13 @@ export async function gitHead(cwd: string): Promise<{ commit: string | null; bui
     return { commit: null, builtAt: null };
   }
 }
+
+/** The top folder of the git checkout holding `cwd`, or null outside git. */
+export async function gitTopLevel(cwd: string): Promise<string | null> {
+  try {
+    const { stdout } = await promisify(execFile)("git", ["rev-parse", "--show-toplevel"], { cwd });
+    return stdout.trim() || null;
+  } catch {
+    return null;
+  }
+}

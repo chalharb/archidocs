@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { resolveView } from "../../src/core/index.ts";
 import { layoutView, renderSvg, type RenderSource } from "../../src/render/index.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
-import { loadWorkspace } from "../support/workspace.ts";
+import { loadWorkspace, type Files } from "../support/workspace.ts";
 
 /** The landscape fixture plus an External System, so every part of the key is drawn. */
-const workspace = {
+const workspace: Files = {
   ...landscapeWorkspace,
   "payments/psp.yaml": `systems:
   psp:
@@ -17,7 +17,7 @@ const workspace = {
 
 const source: RenderSource = { workspace: "acme-architecture", commit: "0123456789abcdef0123456789abcdef01234567", date: "2026-11-22T10:30:00+01:00" };
 
-async function render(files: typeof landscapeWorkspace, viewId: string) {
+async function render(files: Files, viewId: string) {
   const { bundle } = await loadWorkspace(files);
   const view = resolveView(bundle, viewId)!;
   return renderSvg({ bundle, view, layout: await layoutView(view), source });

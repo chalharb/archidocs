@@ -42,12 +42,8 @@ for (let s = 0; s < segments; s++) {
   const [start, end] = [view.getUint16(starts + s * 2), view.getUint16(ends + s * 2)];
   const [delta, rangeOffset] = [view.getInt16(deltas + s * 2), view.getUint16(rangeOffsets + s * 2)];
   for (let c = start; c <= end && c !== 0xffff; c++) {
-    let glyph = 0;
-    if (rangeOffset === 0) glyph = (c + delta) & 0xffff;
-    else {
-      const raw = view.getUint16(rangeOffsets + s * 2 + rangeOffset + (c - start) * 2);
-      glyph = raw === 0 ? 0 : (raw + delta) & 0xffff;
-    }
+    const raw = rangeOffset === 0 ? c : view.getUint16(rangeOffsets + s * 2 + rangeOffset + (c - start) * 2);
+    const glyph = raw === 0 && rangeOffset !== 0 ? 0 : (raw + delta) & 0xffff;
     if (glyph !== 0) widths[c] = advance(glyph);
   }
 }
