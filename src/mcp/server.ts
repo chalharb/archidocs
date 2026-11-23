@@ -3,6 +3,7 @@ import { z } from "zod";
 import { suggest } from "../core/suggest.ts";
 import { BundleElement } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
+import { registerWriteTools } from "./writes.ts";
 
 export interface ServerOptions {
   source: Source;
@@ -13,7 +14,9 @@ export interface ServerOptions {
 /** The typed error codes a tool result can carry in `structuredContent.code`. */
 export type ErrorCode = "not_found" | "ambiguous" | "invalid_input" | "validation_failed" | "read_only" | "source_unavailable";
 
-type ToolOutcome = { ok: true; data: Record<string, unknown>; text: string } | { ok: false; code: ErrorCode; message: string; suggestions?: string[] };
+export type ToolOutcome =
+  | { ok: true; data: Record<string, unknown>; text: string }
+  | { ok: false; code: ErrorCode; message: string; suggestions?: string[]; details?: Record<string, unknown>; detailText?: string };
 
 const ok = (data: Record<string, unknown>, text: string): ToolOutcome => ({ ok: true, data, text });
 const fail = (code: ErrorCode, message: string, suggestions?: string[]): ToolOutcome => ({ ok: false, code, message, ...(suggestions ? { suggestions } : {}) });
@@ -220,6 +223,7 @@ export function createServer(options: ServerOptions): McpServer {
     },
   );
 
+  registerWriteTools(server, source);
   return server;
 }
 
@@ -268,11 +272,12 @@ function notFound(what: string, id: string, known: string[]): ToolOutcome {
   return fail("not_found", `No ${what} "${id}".`, suggestions.length ? suggestions : undefined);
 }
 
-function toResult(outcome: ToolOutcome): CallToolResult {
+export function toResult(outcome: ToolOutcome): CallToolResult {
   if (outcome.ok) return { content: [{ type: "text", text: outcome.text }], structuredContent: outcome.data };
-  const error = { code: outcome.code, message: outcome.message, ...(outcome.suggestions ? { suggestions: outcome.suggestions } : {}) };
-  const hint = error.suggestions?.length ? `\nDid you mean: ${error.suggestions.join(", ")}?` : "";
-  return { content: [{ type: "text", text: `${error.code}: ${error.message}${hint}` }], structuredContent: error, isError: true };
+  const error = { code: outcome.code, message: outcome.message, ...(outcome.suggestions ? { suggestions: outcome.suggestions } : {}), ...outcome.details };
+  const hint = outcome.suggestions?.length ? `\nDid you mean: ${outcome.suggestions.join(", ")}?` : "";
+  const detail = outcome.detailText ? `\n${outcome.detailText}` : "";
+  return { content: [{ type: "text", text: `${error.code}: ${error.message}${hint}${detail}` }], structuredContent: error, isError: true };
 }
 
 /**
@@ -280,7 +285,7 @@ function toResult(outcome: ToolOutcome): CallToolResult {
  * handler, which parses it itself. The SDK would otherwise turn bad arguments
  * into a plain-text error; this way they become a typed `invalid_input`.
  */
-function advertise(schema: z.ZodObject): StandardSchemaWithJSON {
+export function advertise(schema: z.ZodObject): StandardSchemaWithJSON {
   return {
     "~standard": {
       version: 1,

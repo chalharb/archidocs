@@ -25,17 +25,17 @@ export interface Source {
 }
 
 /**
- * A local checkout: the Bundle is built in memory and rebuilt when a file
+ * A local checkout: write tools are on unless `writesAllowed` is false. The Bundle is built in memory and rebuilt when a file
  * under the Workspace root changes or HEAD moves. Change is detected per
  * call from every model file's mtime and size, so an edit is seen by the very
  * next call with no watcher to start or stop.
  */
-export function checkoutSource({ root }: { root: string }): Source {
+export function checkoutSource({ root, writesAllowed = true }: { root: string; writesAllowed?: boolean }): Source {
   let cached: { key: string; snapshot: Snapshot } | undefined;
   return {
     kind: "checkout",
     root,
-    writesAllowed: false,
+    writesAllowed,
     async snapshot() {
       const [files, head] = await Promise.all([fingerprint(root), gitHead(root)]);
       const key = `${head.commit}\n${head.builtAt}\n${files}`;
