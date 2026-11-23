@@ -1,9 +1,11 @@
 import type { Bundle } from "../schema/bundle.ts";
 import type { Files } from "./files.ts";
 import { generatedViews, MAX_VIEW_NODES } from "./views.ts";
+import { resolveSaved, type SavedResolution } from "./saved-views.ts";
 import { Id, parentKindOf, type ElementKind } from "../schema/workspace.ts";
-import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, RelationshipDecl, Severity, SourceFile } from "./model.ts";
-import { qualified, qualify, referenceResolver } from "./refs.ts";
+import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, RelationshipDecl, Severity, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
+import { qualified, qualify, referenceResolver, type Resolved } from "./refs.ts";
+import type { BundleView } from "../schema/bundle.ts";
 import { didYouMean } from "./suggest.ts";
 
 /**
@@ -110,6 +112,79 @@ const ancestors = (e: ElementDecl): ElementDecl[] => {
 };
 
 const isSync = (r: RelationshipDecl) => r.data.interaction !== "async";
+
+const asRecord = (v: unknown): Record<string, unknown> => (v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+const asList = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+
+/** A value written at `path` (relative to the View) in a Saved View. */
+type ViewValue = { path: (string | number)[]; value: unknown };
+
+/** The Element references a Saved View makes: bare-id and `{element}` and path selectors, `expand`, `collapse` and the Lens. */
+function viewElementRefs(v: ViewDecl): ViewValue[] {
+  const out: ViewValue[] = [];
+  for (const key of ["include", "exclude"] as const) {
+    asList(v.data[key]).forEach((s, i) => {
+      if (typeof s === "string") out.push({ path: [key, i], value: s });
+      else for (const field of ["element", "from", "to"]) if (field in asRecord(s)) out.push({ path: [key, i, field], value: asRecord(s)[field] });
+    });
+  }
+  for (const key of ["expand", "collapse"] as const) asList(v.data[key]).forEach((id, i) => out.push({ path: [key, i], value: id }));
+  const lens = asRecord(v.data.lens);
+  if ("impact" in lens) out.push({ path: ["lens", "impact"], value: lens.impact });
+  const path = asRecord(lens.path);
+  for (const field of ["from", "to"]) if (field in path) out.push({ path: ["lens", "path", field], value: path[field] });
+  return out;
+}
+
+/** The Team references a Saved View makes: `{team}` selectors and a Team Lens. */
+function viewTeamRefs(v: ViewDecl): ViewValue[] {
+  const out: ViewValue[] = [];
+  for (const key of ["include", "exclude"] as const) asList(v.data[key]).forEach((s, i) => "team" in asRecord(s) && out.push({ path: [key, i, "team"], value: asRecord(s).team }));
+  if ("team" in asRecord(v.data.lens)) out.push({ path: ["lens", "team"], value: asRecord(v.data.lens).team });
+  return out;
+}
+
+/** An Element reference, from a Relationship or a Saved View, with what it resolves to. */
+interface ElementRef {
+  file: SourceFile;
+  path: (string | number)[];
+  /** The Project it is written in. */
+  project: Project;
+  ref: string;
+  resolved: Resolved;
+}
+
+/** Every Element reference made by a Relationship (`to`, `via`) or a Saved View. */
+const elementRefs = (ws: LoadedWorkspace): ElementRef[] => {
+  const resolve = referenceResolver(ws);
+  return [
+    ...resolvedRefs(ws).map(({ r, field, ref, resolved }) => ({ file: r.file, path: [...r.path, field], project: r.from.project, ref, resolved })),
+    ...ws.views.flatMap((v) =>
+      viewElementRefs(v).flatMap(({ path, value }) => (typeof value === "string" ? [{ file: v.file, path: [...v.path, ...path], project: v.project, ref: value, resolved: resolve(value, v.project) }] : [])),
+    ),
+  ];
+};
+
+/** Each Saved View that made it into the Bundle (the first of a repeated id), with its definition and resolution; Deployment Views aren't resolved. */
+const resolvedSavedViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDecl; def: BundleView; resolution: SavedResolution }[] =>
+  ws.views.flatMap((decl) => {
+    const def = bundle.views.find((v) => v.id === `${decl.project.id}:${decl.id}` && v.source.file === decl.file.path && v.source.line === decl.line);
+    const resolution = def && resolveSaved(bundle, def);
+    return def && resolution ? [{ decl, def, resolution }] : [];
+  });
+
+const targetAncestry = (t: TargetDecl): TargetDecl[] => {
+  const out = [t];
+  for (let p = t.parent; p && !out.includes(p); p = p.parent) out.push(p);
+  return out;
+};
+
+/** A Saved View example: two Services, one with a Component, and `views: structural:` given as the YAML under it. */
+const viewing = (views: string, extra: Files = {}) =>
+  withServices(
+    `services:\n  web:\n    name: Web\n    relationships:\n      - to: cart\n  cart:\n    name: Cart\n    components:\n      cart-api:\n        name: Cart API\n  search:\n    name: Search\nviews:\n  structural:\n${views.replace(/^/gm, "    ")}\n`,
+    extra,
+  );
 
 export const rules: RuleDefinition[] = [
   {
@@ -221,7 +296,7 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-team",
     severity: "error",
-    summary: "An `owner` names no Team.",
+    summary: "An `owner`, or a Saved View's `{team}` selector or Team Lens, names no Team.",
     fix: "Use the id of a Team defined in `workspace.yaml`, or define the Team there.",
     example: {
       failing: withServices("services:\n  web:\n    name: Web\n    owner: cor\n"),
@@ -239,6 +314,9 @@ export const rules: RuleDefinition[] = [
       for (const e of [...ws.elements, ...ws.targets]) {
         const owner = e.data.owner;
         if (unknown(owner)) issues.push(at(e.file, [...e.path, "owner"], message(owner)));
+      }
+      for (const v of ws.views) {
+        for (const { path, value } of viewTeamRefs(v)) if (unknown(value)) issues.push(at(v.file, [...v.path, ...path], message(value)));
       }
       return issues;
     },
@@ -325,7 +403,7 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-element",
     severity: "error",
-    summary: "A reference names no Element: in `to`, `via`, `in` or a Deployment's `service`.",
+    summary: "A reference names no Element: in `to`, `via`, `in`, a Deployment's `service`, or a Saved View's selectors, `expand`, `collapse` or Lens.",
     fix: "Use the id of an Element declared in the Project, or declare it.",
     example: {
       failing: withServices("systems:\n  checkout:\n    name: Checkout\n", { "shop/cart.yaml": "services:\n  cart:\n    name: Cart\n    in: chekout\n" }),
@@ -339,12 +417,12 @@ export const rules: RuleDefinition[] = [
         const ids = ws.elements.filter((o) => o.project === e.project).map((o) => o.id);
         return [at(e.file, [...e.path, "in"], `Unknown Element "${ref}" in Project "${projectName(e)}"${didYouMean(ref, ids)}`)];
       });
-      const references = resolvedRefs(ws).flatMap(({ r, field, resolved }) => {
+      const references = elementRefs(ws).flatMap(({ file, path, project, resolved }) => {
         if (resolved.ok || resolved.reason !== "unknown-element") return [];
-        const own = resolved.project === r.from.project;
+        const own = resolved.project === project;
         const ids = ws.elements.filter((o) => o.project === resolved.project).map((o) => (own ? o.id : qualified(o)));
         const input = own ? resolved.id : `${resolved.project.id}:${resolved.id}`;
-        return [at(r.file, [...r.path, field], `Unknown Element "${resolved.id}" in Project "${resolved.project.id}"${didYouMean(input, ids)}`)];
+        return [at(file, path, `Unknown Element "${resolved.id}" in Project "${resolved.project.id}"${didYouMean(input, ids)}`)];
       });
       const deployments = ws.deployments.flatMap((d) => {
         const ref = qualify(d.data.service, d.project);
@@ -366,11 +444,11 @@ export const rules: RuleDefinition[] = [
     check: (ws) => {
       const projectIds = ws.projects.flatMap((p) => (p.id !== undefined && !p.duplicateOf ? [p.id] : []));
       const elementIds = ws.elements.filter((e) => e.project.id !== undefined && !e.project.duplicateOf).map(qualified);
-      return resolvedRefs(ws).flatMap(({ r, field, ref, resolved }) => {
+      return elementRefs(ws).flatMap(({ file, path, ref, resolved }) => {
         if (resolved.ok || resolved.reason !== "unknown-project") return [];
         // The nearest qualified id names the Element meant; failing that, the nearest Project.
         const hint = didYouMean(ref, elementIds) || didYouMean(resolved.project, projectIds);
-        return [at(r.file, [...r.path, field], `Unknown Project "${resolved.project}" in "${ref}"${hint}`)];
+        return [at(file, path, `Unknown Project "${resolved.project}" in "${ref}"${hint}`)];
       });
     },
   },
@@ -384,8 +462,8 @@ export const rules: RuleDefinition[] = [
       passing: relating("to: cart", cart),
     },
     check: (ws) =>
-      resolvedRefs(ws).flatMap(({ r, field, ref, resolved }) =>
-        resolved.ok && resolved.ownPrefix ? [at(r.file, [...r.path, field], `Write "${resolved.element.id}", not "${ref}", inside Project "${r.from.project.id}"`)] : [],
+      elementRefs(ws).flatMap(({ file, path, project, ref, resolved }) =>
+        resolved.ok && resolved.ownPrefix ? [at(file, path, `Write "${resolved.element.id}", not "${ref}", inside Project "${project.id}"`)] : [],
       ),
   },
   {
@@ -522,7 +600,7 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-environment",
     severity: "error",
-    summary: "A Deployment names no Environment.",
+    summary: "A Deployment, or a Saved Deployment View, names no Environment.",
     fix: "Use the id of an Environment defined in `workspace.yaml`, or define the Environment there.",
     example: {
       failing: withDeployments("  - { service: web, environment: production, target: eks-prod }\n"),
@@ -530,10 +608,10 @@ export const rules: RuleDefinition[] = [
     },
     check: (ws) => {
       const environments = new Set(ws.environments.map((e) => e.id));
-      return ws.deployments.flatMap((d) => {
+      return [...ws.deployments, ...ws.views].flatMap((d) => {
         const env = d.data.environment;
         // A malformed id is already an `invalid-value`.
-        if (!Id.safeParse(env).success || environments.has(env as string)) return [];
+        if (env === undefined || !Id.safeParse(env).success || environments.has(env as string)) return [];
         return [at(d.file, [...d.path, "environment"], `Unknown Environment "${env as string}"${didYouMean(env as string, environments)}`)];
       });
     },
@@ -541,18 +619,27 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-target",
     severity: "error",
-    summary: "A Deployment names no Deployment Target.",
+    summary: "A Deployment, or a Saved Deployment View's `targets`, names no Deployment Target.",
     fix: "Use the id of a Target declared in the Project, or `project:id` for one declared in another Project.",
     example: {
       failing: withDeployments("  - { service: web, environment: prod, target: eks-prd }\n"),
       passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n"),
     },
-    check: (ws) =>
-      ws.deployments.flatMap((d) => {
+    check: (ws) => {
+      const known = qualifiedIds(ws.targets);
+      const deployments = ws.deployments.flatMap((d) => {
         const ref = qualify(d.data.target, d.project);
         if (ref === undefined || d.target) return [];
         return [at(d.file, [...d.path, "target"], unknownIn("Deployment Target", ref, ws.targets))];
-      }),
+      });
+      const views = ws.views.flatMap((v) =>
+        asList(v.data.targets).flatMap((target, i) => {
+          const ref = qualify(target, v.project);
+          return ref === undefined || known.has(ref) ? [] : [at(v.file, [...v.path, "targets", i], unknownIn("Deployment Target", ref, ws.targets))];
+        }),
+      );
+      return [...deployments, ...views];
+    },
   },
   {
     id: "wrong-kind",
@@ -582,8 +669,8 @@ export const rules: RuleDefinition[] = [
   {
     id: "oversized-view",
     severity: "warning",
-    summary: `A Generated View has more than ${MAX_VIEW_NODES} nodes, too many for a readable diagram. It is reported at its System or Service, or at \`workspace.yaml\` for the Landscapes.`,
-    fix: "Split the System, or group top-level Services and Systems, so each View stays within the limit.",
+    summary: `A View has more than ${MAX_VIEW_NODES} nodes, too many for a readable diagram. A Generated View is reported at its System or Service, or at \`workspace.yaml\` for the Landscapes; a Saved View at its id.`,
+    fix: "Split the System, or group top-level Services and Systems, so each Generated View stays within the limit; narrow a Saved View's selectors or raise its `level`.",
     example: {
       failing: withServices(`systems:\n  big:\n    name: Big\n    services:\n${numbered(MAX_VIEW_NODES, "s", 6)}`),
       passing: withServices(
@@ -592,7 +679,7 @@ export const rules: RuleDefinition[] = [
     },
     check: (ws, bundle) => {
       const workspaceFile = ws.files.find((f) => f.role === "workspace");
-      return generatedViews(bundle)
+      const generated = generatedViews(bundle)
         .filter((v) => v.nodes.length > MAX_VIEW_NODES)
         .flatMap((v) => {
           const focus = bundle.elements.find((e) => e.id === v.id.slice(v.id.indexOf("/") + 1));
@@ -600,7 +687,108 @@ export const rules: RuleDefinition[] = [
           if (!where) return [];
           return [{ file: where.file, line: where.line, message: `Generated View "${v.id}" has ${v.nodes.length} nodes, more than the ${MAX_VIEW_NODES} a diagram stays readable at` }];
         });
+      const saved = resolvedSavedViews(ws, bundle)
+        .filter(({ resolution }) => resolution.view.nodes.length > MAX_VIEW_NODES)
+        .map(({ decl, def, resolution }) => at(decl.file, decl.path, `Saved View "${def.id}" has ${resolution.view.nodes.length} nodes, more than the ${MAX_VIEW_NODES} a diagram stays readable at`, true));
+      return [...generated, ...saved];
     },
+  },
+  {
+    id: "duplicate-view-id",
+    severity: "error",
+    summary: "A Saved View id repeats in a Project, across files too.",
+    fix: "Give one of the Views a different id.",
+    example: {
+      failing: viewing("front:\n  title: Front\n  level: c2", { "shop/more.yaml": "views:\n  structural:\n    front:\n      title: Front again\n      level: c2\n" }),
+      passing: viewing("front:\n  title: Front\n  level: c2", { "shop/more.yaml": "views:\n  structural:\n    front-v2:\n      title: Front again\n      level: c2\n" }),
+    },
+    check: (ws) => {
+      const seen = new Map<string, ViewDecl>();
+      return ws.views.flatMap((v) => {
+        if (v.project.id === undefined || v.project.duplicateOf) return [];
+        const key = `${v.project.id}:${v.id}`;
+        const first = seen.get(key);
+        if (!first) {
+          seen.set(key, v);
+          return [];
+        }
+        return [at(v.file, v.path, `View id "${v.id}" is already used in Project "${v.project.id}" at ${first.file.path}:${first.line}`, true)];
+      });
+    },
+  },
+  {
+    id: "target-outside-environment",
+    severity: "error",
+    summary: "A Saved Deployment View's `targets` entry has no Deployment in the View's `environment`, on it or on any Target inside it.",
+    fix: "Remove the Target from `targets`, or point the View at the Environment that runs on it.",
+    example: {
+      failing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n", {
+        "shop/views.yaml": "targets:\n  eks-staging:\n    name: EKS staging\n    kind: cluster\nviews:\n  structural:\n    runtime:\n      title: Runtime\n      level: deployment\n      environment: prod\n      targets: [eks-staging]\n",
+      }),
+      passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n", {
+        "shop/views.yaml": "targets:\n  eks-staging:\n    name: EKS staging\n    kind: cluster\nviews:\n  structural:\n    runtime:\n      title: Runtime\n      level: deployment\n      environment: prod\n      targets: [eks-prod]\n",
+      }),
+    },
+    check: (ws) => {
+      const targets = new Map(ws.targets.filter((t) => t.project.id !== undefined).map((t) => [`${t.project.id}:${t.id}`, t]));
+      return ws.views.flatMap((v) => {
+        const env = v.data.environment;
+        if (v.data.level !== "deployment" || typeof env !== "string" || !ws.environments.some((e) => e.id === env)) return [];
+        return asList(v.data.targets).flatMap((ref, i) => {
+          const id = qualify(ref, v.project);
+          const target = id === undefined ? undefined : targets.get(id);
+          if (!target) return [];
+          const hosts = ws.deployments.some((d) => d.data.environment === env && d.target && targetAncestry(d.target).includes(target));
+          return hosts ? [] : [at(v.file, [...v.path, "targets", i], `Deployment Target "${id}" has no Deployment in Environment "${env}"`)];
+        });
+      });
+    },
+  },
+  {
+    id: "bad-expand",
+    severity: "error",
+    summary: "A Saved View's `expand` or `collapse` id is not a node of the View once collapsed to its `level`, or has no children.",
+    fix: "Remove the id, include the Element in the View, or name an Element that has children.",
+    example: {
+      failing: viewing("front:\n  title: Front\n  level: c2\n  include: [web]\n  expand: [web]"),
+      passing: viewing("front:\n  title: Front\n  level: c2\n  include: [web, cart]\n  expand: [cart]"),
+    },
+    check: (ws, bundle) => {
+      const known = new Set(bundle.elements.map((e) => e.id));
+      return resolvedSavedViews(ws, bundle).flatMap(({ decl, resolution }) =>
+        resolution.badExpand
+          .filter((b) => known.has(b.id))
+          .map((b) => at(decl.file, [...decl.path, b.field, b.index], `Can't ${b.field} "${b.id}": ${b.reason === "no-children" ? "it has no children" : "it is not in the View"}`)),
+      );
+    },
+  },
+  {
+    id: "empty-view",
+    severity: "warning",
+    summary: "A Saved View resolves to no nodes.",
+    fix: "Correct the selectors so they name Elements, or remove the View.",
+    example: {
+      failing: viewing("front:\n  title: Front\n  level: c2\n  include: [{ tag: storefront }]"),
+      passing: withServices("services:\n  web:\n    name: Web\n    tags: [storefront]\nviews:\n  structural:\n    front:\n      title: Front\n      level: c2\n      include: [{ tag: storefront }]\n"),
+    },
+    check: (ws, bundle) =>
+      resolvedSavedViews(ws, bundle)
+        .filter(({ resolution }) => resolution.view.nodes.length === 0)
+        .map(({ decl, def }) => at(decl.file, decl.path, `Saved View "${def.id}" resolves to no nodes`, true)),
+  },
+  {
+    id: "unresolved-path",
+    severity: "warning",
+    summary: "A Saved View's path selector, or path Lens, finds no path between its two Elements.",
+    fix: "Check the Relationships between the two Elements, or raise `paths`; remove the selector if the path is gone for good.",
+    example: {
+      failing: viewing("front:\n  title: Front\n  level: c2\n  include: [{ from: web, to: search }]"),
+      passing: viewing("front:\n  title: Front\n  level: c2\n  include: [{ from: web, to: cart }]"),
+    },
+    check: (ws, bundle) =>
+      resolvedSavedViews(ws, bundle).flatMap(({ decl, resolution }) =>
+        resolution.unresolvedPaths.map((u) => at(decl.file, [...decl.path, ...u.at], `No path between "${u.from}" and "${u.to}"`)),
+      ),
   },
 ];
 

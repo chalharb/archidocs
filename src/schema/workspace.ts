@@ -132,6 +132,97 @@ export const Deployment = z.strictObject({
   endpoints: z.array(Endpoint).optional(),
 });
 
+/** How far `upstream` or `downstream` reaches: a number of hops, or `all` for the full transitive closure. */
+const Hops = z.union([z.number().int().min(0), z.literal("all")], { error: "must be a number of hops, or `all`" }).describe("A number of hops, or `all`");
+
+/** Which paths a path selector or Lens takes: the shortest, or every path of at most n hops. */
+const Paths = z.union([z.literal("shortest"), z.number().int().min(1)], { error: "must be `shortest`, or a number of hops" }).describe("`shortest` (the default), or n for every path of at most n hops");
+
+/** `{element}`: an Element, optionally with its children or descendants, and what it reaches upstream or downstream. */
+export const ElementSelector = z.strictObject({
+  element: Ref,
+  with: z.enum(["children", "descendants"]).optional(),
+  upstream: Hops.optional(),
+  downstream: Hops.optional(),
+});
+
+/** `{team}`: every Element the Team owns. */
+export const TeamSelector = z.strictObject({ team: Id });
+
+/** `{tag}`: every Element carrying the tag. */
+export const TagSelector = z.strictObject({ tag: z.string() });
+
+/** `{from, to}`: every Element on the paths between two Elements, as `find_paths` follows them. */
+export const PathSelector = z.strictObject({ from: Ref, to: Ref, paths: Paths.optional() });
+
+/** One entry of a Saved View's `include` or `exclude`: a bare id is the Element itself. */
+export const Selector = z.union([Ref, ElementSelector, TeamSelector, TagSelector, PathSelector]);
+
+/** The schema a selector as written is checked against, picked by its keys, so a mistake is reported against the form meant. */
+export function selectorSchemaFor(value: unknown): z.ZodType | undefined {
+  if (typeof value === "string") return Ref;
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  if ("element" in value) return ElementSelector;
+  if ("team" in value) return TeamSelector;
+  if ("tag" in value) return TagSelector;
+  if ("from" in value || "to" in value) return PathSelector;
+  return undefined;
+}
+
+export const ImpactLens = z.strictObject({ impact: Ref, direction: z.enum(["upstream", "downstream", "both"]).optional() });
+export const TeamLens = z.strictObject({ team: Id });
+export const PathLens = z.strictObject({ path: PathSelector });
+
+/** Presentation-only highlighting a Saved View opens with; it never changes which nodes the View holds. */
+export const Lens = z.union([ImpactLens, TeamLens, PathLens]);
+
+/** The schema a Lens as written is checked against, picked by its keys. */
+export function lensSchemaFor(value: unknown): z.ZodType | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  if ("impact" in value) return ImpactLens;
+  if ("team" in value) return TeamLens;
+  if ("path" in value) return PathLens;
+  return undefined;
+}
+
+export const levels = ["c1", "c2", "c3", "deployment"] as const;
+
+const viewFields = {
+  title: z.string(),
+  description: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  level: z.enum(levels),
+  expand: z.array(Ref).optional().describe("Elements opened one level deeper than `level`"),
+  collapse: z.array(Ref).optional().describe("Elements closed, hiding everything inside them"),
+  direction: z.enum(["TB", "BT", "LR", "RL"]).optional(),
+  environment: Id.optional().describe("For `level: deployment`: the Environment shown"),
+  targets: z.array(Ref).optional().describe("For `level: deployment`: only these Deployment Target subtrees"),
+};
+
+/**
+ * A Saved structural or Deployment View: `include` selectors (every Element
+ * when absent) less `exclude`, collapsed to `level`, then `expand` and
+ * `collapse` applied. A Deployment View also names its `environment`.
+ */
+export const StructuralView = z.strictObject({
+  ...viewFields,
+  include: z.array(Selector).optional().describe("Selectors to show; every Element when absent"),
+  exclude: z.array(Selector).optional(),
+  lens: Lens.optional(),
+});
+
+/** Shallow form used by Load: selectors and the Lens are checked one by one against the form each is written in. */
+export const shallowView = z.strictObject({
+  ...viewFields,
+  include: z.array(z.unknown()).optional(),
+  exclude: z.array(z.unknown()).optional(),
+  lens: z.unknown().optional(),
+});
+
+export const Views = z.strictObject({
+  structural: z.record(Id, StructuralView).optional(),
+});
+
 /**
  * Any other `*.yaml` in a Project: `people`, `systems > services > components`,
  * and top-level `services` and `components` (which attach with `in:`).
@@ -144,6 +235,7 @@ export const ModelFile = z.strictObject({
   components: z.record(Id, Component).optional(),
   targets: z.record(Id, Target).optional(),
   deployments: z.array(Deployment).optional(),
+  views: Views.optional(),
 });
 
 export type ElementKind = "person" | "system" | "service" | "component";
@@ -186,7 +278,9 @@ export const shallow = {
     components: children,
     targets: children,
     deployments: z.array(z.unknown()).optional(),
+    views: z.strictObject({ structural: children }).optional(),
   }),
+  view: shallowView,
   target: z.strictObject({ ...targetFields, targets: children }),
   deployment: Deployment,
   person: Person,
@@ -203,3 +297,6 @@ export type EnvironmentInput = z.infer<typeof Environment>;
 export type RelationshipInput = z.infer<typeof Relationship>;
 export type ServiceInput = z.infer<typeof Service>;
 export type ModelFileInput = z.infer<typeof ModelFile>;
+export type StructuralViewInput = z.infer<typeof StructuralView>;
+export type SelectorInput = z.infer<typeof Selector>;
+export type LensInput = z.infer<typeof Lens>;

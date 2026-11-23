@@ -1,6 +1,7 @@
 # 17: Saved structural Views
 
 Status: ready-for-agent
+Assignee: Claude (ticket-17-saved-views)
 Blocked by: 09, 13
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
