@@ -1,11 +1,13 @@
 import { dynamicViewsUsing, resolveDynamicView, stepViews, type ResolvedDynamicView, type ResolvedStep } from "../../src/core/dynamic-views.ts";
-import { listViews, resolveView, type ResolvedView, type ViewSummary } from "../../src/core/views.ts";
+import { saveAsView, type SavedScreen, type Screen } from "../../src/core/save-as-view.ts";
+import { listViews, pickedView, resolveView, type ResolvedView, type ViewSummary } from "../../src/core/views.ts";
 import { teamStyles, type TeamStyle } from "../../src/render/teams.ts";
 import type { Bundle, BundleElement, BundleLens, BundleTarget } from "../../src/schema/bundle.ts";
 
 export interface Crumb {
   label: string;
-  view: string;
+  /** The View a crumb opens; none for a heading such as Saved or a Project. */
+  view?: string;
 }
 
 /** One row of a rail tree: a label, what picking it does, and the rows nested under it. */
@@ -34,8 +36,12 @@ export class Workspace {
   private readonly childrenOf = new Map<string | null, BundleElement[]>();
   private readonly viewIds: Set<string>;
 
-  constructor(bundle: Bundle) {
+  /** The Workspace's name, as `archidocs export` writes it in a picture's source line. */
+  readonly workspaceName: string;
+
+  constructor(bundle: Bundle, workspaceName = "Workspace") {
     this.bundle = bundle;
+    this.workspaceName = workspaceName;
     this.byId = new Map(bundle.elements.map((e) => [e.id, e]));
     this.targets = new Map(bundle.targets.map((t) => [t.id, t]));
     this.teams = teamStyles(bundle);
@@ -64,9 +70,35 @@ export class Workspace {
     return this.views.find((v) => v.id === view)?.title;
   }
 
-  /** Resolves a View with its open boxes and, if given, a Lens marking its nodes; the same resolver MCP's `get_view` uses. */
+  /**
+   * Resolves a View with its open boxes and, if given, a Lens marking its
+   * nodes; the same resolver MCP's `get_view` uses. Without a Lens a Saved
+   * View is resolved plain too: its own Lens is applied by opening it.
+   */
   resolve(view: string, open: readonly string[], lens: BundleLens | null = null): ResolvedView | undefined {
-    return resolveView(this.bundle, view, { expand: open, ...(lens ? { lens } : {}) });
+    return resolveView(this.bundle, view, { expand: open, lens });
+  }
+
+  /** A View with only the picked nodes and their open containers, for export. */
+  picked(view: ResolvedView, picks: readonly string[]): ResolvedView {
+    return pickedView(view, picks);
+  }
+
+  /** A Saved View's own Lens, which opening it applies; null for any other View. */
+  ownLens(view: string): BundleLens | null {
+    const def = this.bundle.views.find((v) => v.id === view);
+    return def?.kind === "structural" ? def.lens : null;
+  }
+
+  /** A Saved View's own direction, if it sets one. */
+  ownDirection(view: string): "TB" | "BT" | "LR" | "RL" | null {
+    const def = this.bundle.views.find((v) => v.id === view);
+    return def?.kind === "structural" ? def.direction : null;
+  }
+
+  /** Save as View: the screen as Saved View YAML and the matching `upsert_view` call, from the core engine. */
+  saveAsView(screen: Screen, target: { project: string; id: string; title: string }): SavedScreen {
+    return saveAsView(this.bundle, screen, target);
   }
 
   /** Resolves a Dynamic View with the core engine's Step resolution; undefined for any other id. */
@@ -128,6 +160,8 @@ export class Workspace {
 
   /** The scope ladder up to a View: C1 › C2 Landscape › System › Service; a Deployment View hangs off C1. */
   crumbs(view: string): Crumb[] {
+    const saved = this.bundle.views.find((v) => v.id === view);
+    if (saved) return [{ label: "Saved" }, { label: this.bundle.projects.find((p) => p.id === saved.project)?.name ?? saved.project }, { label: saved.title, view }];
     const ladder: Crumb[] = [{ label: "C1", view: "c1" }];
     if (view === "c1") return ladder;
     if (view.startsWith("deployment/")) return [...ladder, { label: this.title(view) ?? view, view }];
@@ -181,6 +215,7 @@ export class Workspace {
       ...this.systemViewGroup("Systems", () => true),
       { key: "views:deployment", label: "Deployment", children: this.deploymentRows() },
       { key: "views:dynamic", label: "Dynamic Views", children: this.dynamicRows(() => true) },
+      { key: "views:saved", label: "Saved Views", children: this.savedByProject() },
     ].filter((g) => g.children.length > 0);
   }
 
@@ -188,13 +223,31 @@ export class Workspace {
   viewsByTeam(): TreeRow[] {
     const teams = [...this.bundle.teams].sort(byName).flatMap((team) => {
       const [group] = this.systemViewGroup(team.name, (owner) => owner === team.id, team.id);
-      return [{ ...group!, children: [...group!.children, ...this.dynamicRows((owner) => owner === team.id, team.id)] }];
+      return [{ ...group!, children: [...group!.children, ...this.dynamicRows((owner) => owner === team.id, team.id), ...this.savedRows((owner) => owner === team.id, team.id)] }];
     });
     return [{ key: "views:workspace", label: "Workspace", children: [...this.landscapeRows(), ...this.deploymentRows()] }, ...teams].filter((g) => g.children.length > 0);
   }
 
   private landscapeRows(): TreeRow[] {
-    return this.views.filter((v) => v.kind !== "c3" && v.kind !== "dynamic" && !v.id.includes("/")).map((v) => ({ key: v.id, label: v.title, view: v.id, children: [] }));
+    return this.views.filter((v) => v.kind !== "c3" && v.kind !== "dynamic" && !v.id.includes("/") && !v.id.includes(":")).map((v) => ({ key: v.id, label: v.title, view: v.id, children: [] }));
+  }
+
+  /** The Saved structural Views the viewer can draw, one group per Project, by Project name. */
+  private savedByProject(): TreeRow[] {
+    return [...this.bundle.projects]
+      .sort(byName)
+      .map((p) => ({ key: `views:saved:${p.id}`, label: p.name, children: this.savedRows(() => true, undefined, p.id) }))
+      .filter((g) => g.children.length > 0);
+  }
+
+  /** The Saved structural Views whose Project a kept Team owns (and is `project`, when given), by title. */
+  private savedRows(keep: (owner: string) => boolean, team?: string, project?: string): TreeRow[] {
+    const owner = new Map(this.bundle.projects.map((p) => [p.id, p.owner]));
+    return this.bundle.views
+      .filter((v) => v.kind === "structural" && (project === undefined || v.project === project) && keep(owner.get(v.project) ?? ""))
+      .filter((v) => this.resolve(v.id, []) !== undefined)
+      .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
+      .map((v) => ({ key: v.id, label: v.title, view: v.id, glyph: "◇", team: team ? this.teams.get(team) : undefined, children: [] }));
   }
 
   /** One row per Environment's Deployment View, which no Team owns. */

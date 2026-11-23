@@ -96,6 +96,9 @@ async function main(argv: string[]): Promise<number> {
     if (!values["bundle-only"]) {
       if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
       await cp(VIEWER_DIR, out, { recursive: true });
+      // The viewer's exports name the Workspace as `archidocs export` does: by its repo's folder.
+      const root = await workspaceRoot(process.cwd());
+      await writeFile(join(out, "site.json"), JSON.stringify({ workspace: await workspaceName(root) }) + "\n");
     }
     await mkdir(out, { recursive: true });
     await writeFile(join(out, "workspace.bundle.json"), serializeBundle(bundle));
@@ -127,7 +130,7 @@ async function main(argv: string[]): Promise<number> {
       process.stderr.write("Not exporting: the Workspace has errors.\n");
       return FOUND_ERRORS;
     }
-    const workspace = basename((await gitTopLevel(root)) ?? root);
+    const workspace = await workspaceName(root);
     const fileName = (id: string) => `${id.replace(/[/:]/g, "-")}.${format}`;
     /** Lays out and draws one View; `--direction` wins over a Saved View's own. */
     const source = { workspace, commit: bundle.commit, date: bundle.builtAt };
@@ -232,6 +235,11 @@ function useColor(): boolean {
   if (NO_COLOR) return false;
   if (FORCE_COLOR !== undefined) return FORCE_COLOR !== "0";
   return process.stdout.isTTY === true;
+}
+
+/** How a picture's source line names the Workspace: its git repo's folder, else the Workspace root's. */
+async function workspaceName(root: string): Promise<string> {
+  return basename((await gitTopLevel(root)) ?? root);
 }
 
 async function workspaceRoot(start: string): Promise<string> {

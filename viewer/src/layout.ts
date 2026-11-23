@@ -15,7 +15,7 @@ let next = 0;
 const pending = new Map<number, (reply: LayoutReply) => void>();
 
 /** Lays out a View in the shared layout worker, with the same `layoutView` that `archidocs export` runs. */
-function layoutInWorker(view: ResolvedView, direction: Direction): Promise<LayoutReply> {
+export function layoutInWorker(view: ResolvedView, direction: Direction): Promise<LayoutReply> {
   if (!worker) {
     worker = new Worker(new URL("./layout.worker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (event: MessageEvent<LayoutReply>) => {

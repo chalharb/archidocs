@@ -309,7 +309,7 @@ owner: platform-team
 /**
  * The landscape the viewer's Playwright suite serves: the landscape Workspace
  * with a staging Environment and URLs on Cart's Deployments, so a URL can be
- * found and copied.
+ * found and copied, and a Saved View carrying an Impact Lens.
  */
 export const viewerWorkspace: Files = {
   ...landscapeWorkspace,
@@ -354,6 +354,14 @@ deployments:
       eks-staging:
         name: EKS staging
         kind: cluster
+`,
+  "shop/views.yaml": `views:
+  structural:
+    checkout-impact:
+      title: Checkout impact
+      level: c2
+      include: [shopper, web, { element: checkout, with: children }]
+      lens: { impact: cart, direction: upstream }
 `,
 };
 
