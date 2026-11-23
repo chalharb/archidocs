@@ -12,3 +12,4 @@ export { resolveSaved, type SavedResolution, type BadExpand, type UnresolvedPath
 export { findPaths, type PathsResult, type Path, type Hop, type DirectEdge } from "./paths.ts";
 export { getImpact, type ImpactResult, type ImpactRing, type ImpactedElement, type Direction } from "./impact.ts";
 export { listOwned, type OwnedResult, type OwnedGroup, type OwnedItem, type OwnedKind } from "./ownership.ts";
+export { resolveDynamic, resolveDynamicView, takesPart, type DynamicResolution, type DynamicProblem, type ResolvedDynamicView, type ResolvedStep, type StepKind } from "./dynamic-views.ts";
