@@ -82,13 +82,13 @@ test.describe("selection", () => {
 test.describe("direction", () => {
   test("defaults to LR and redraws the View in the direction picked", async ({ page }) => {
     await open(page, "#/view/c1");
-    const direction = page.getByRole("group", { name: "Direction" });
-    await expect(direction.getByRole("button", { name: "LR" })).toHaveAttribute("aria-pressed", "true");
+    const direction = page.getByLabel("Direction");
+    await expect(direction).toHaveValue("LR");
     const lr = await node(page, "shop:shopper").boundingBox();
     const lrWeb = await node(page, "shop:web").boundingBox();
     expect(lrWeb!.x).toBeGreaterThan(lr!.x + lr!.width);
 
-    await direction.getByRole("button", { name: "TB" }).click();
+    await direction.selectOption("TB");
     await settled(page);
     expect(hash(page)).toBe("#/view/c1?dir=TB");
     const tb = await node(page, "shop:shopper").boundingBox();
@@ -141,7 +141,8 @@ test.describe("Teams and zoom", () => {
     const team = (id: string) => node(page, id).getByTestId("team");
     await expect(team("shop:cart")).toHaveText("STO");
     await expect(team("shop:fraud-check")).toHaveText("PAY");
-    const stripe = (id: string) => node(page, id).getByTestId("stripe").evaluate((el) => getComputedStyle(el).backgroundColor);
+    // The Team colour is the box's own left edge, as in the Variant D prototype.
+    const stripe = (id: string) => node(page, id).evaluate((el) => getComputedStyle(el).borderLeftColor);
     expect(await stripe("shop:cart")).toBe(await stripe("shop:cart-db"));
     expect(await stripe("shop:cart")).not.toBe(await stripe("shop:fraud-check"));
   });

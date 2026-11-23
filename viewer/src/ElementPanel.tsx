@@ -6,9 +6,9 @@ import type { BundleRelationship } from "../../src/schema/bundle.ts";
 import type { Comparison } from "./App.tsx";
 import { AdrStatusBadge } from "./AdrReader.tsx";
 import { RevisionSummary } from "./History.tsx";
-import type { ImpactWay, Lens, Place } from "./place.ts";
+import type { Lens, Place } from "./place.ts";
 import { pointLabel, type Timeline } from "./revisions.ts";
-import { GLYPHS, type Workspace } from "./workspace.ts";
+import type { Workspace } from "./workspace.ts";
 
 type Tab = "Overview" | "URLs" | "ADRs" | "Links" | "History";
 const TABS: readonly Tab[] = ["Overview", "URLs", "ADRs", "Links", "History"];
@@ -26,29 +26,50 @@ export interface ElementPanelProps {
   timeline: Timeline;
   comparison: Comparison | undefined;
   onTime: (time: Pick<Place, "at" | "vs">) => void;
+  /** Clears the selection, which closes the panel. */
+  onClose?: () => void;
 }
 
 /** Everything about the selected Element: Overview with the persona actions, URLs per Environment, its ADRs, Links and its History. */
-export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onOpenAdr, onDeployed, timeline, comparison, onTime }: ElementPanelProps) {
+export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onOpenAdr, onDeployed, timeline, comparison, onTime, onClose }: ElementPanelProps) {
   const [tab, setTab] = useState<Tab>("Overview");
+  // Counts beside the ADRs and Links tabs, as the prototype shows them.
+  const counts = useMemo<Partial<Record<Tab, number>>>(
+    () => ({
+      ADRs: listAdrs(workspace.bundle, { element: id }).length,
+      Links: workspace.bundle.relationships.filter((r) => r.from === id || r.to === id).length,
+    }),
+    [workspace, id],
+  );
   const element = workspace.byId.get(id);
   if (!element) return null;
   const team = workspace.teams.get(element.owner);
   const technology = "technology" in element ? element.technology : null;
+  const kindLabel = (element.kind === "system" || element.kind === "service") && element.external ? `External ${element.kind}` : element.kind[0]!.toUpperCase() + element.kind.slice(1);
 
   return (
     <aside className="arc-panel" aria-label="Element">
       <header className="arc-panel-head">
-        <span className="arc-panel-kind" data-glyph={GLYPHS[element.kind]}>
-          {element.kind === "system" || element.kind === "service" ? (element.external ? `External ${element.kind}` : element.kind) : element.kind}
-        </span>
-        <h2>{element.name}</h2>
-        <code className="arc-panel-id">{element.id}</code>
+        <div className="arc-panel-title">
+          <div className="arc-panel-kind">
+            {kindLabel} · <code className="arc-panel-id">{element.id}</code>
+          </div>
+          <h2>{element.name}</h2>
+          <button type="button" className="arc-owner" aria-label={`Team lens: ${workspace.name(element.owner)}`} style={{ borderColor: team?.color }} onClick={() => onLens({ team: element.owner })}>
+            {team?.code} · {workspace.name(element.owner)}
+          </button>
+        </div>
+        {onClose && (
+          <button type="button" className="arc-flyout-close" aria-label="Close panel" onClick={onClose}>
+            ✕
+          </button>
+        )}
       </header>
       <div className="arc-tabs" role="tablist" aria-label="Element">
         {TABS.map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
             {t}
+            {counts[t] !== undefined && <span className="arc-tab-count"> {counts[t]}</span>}
           </button>
         ))}
       </div>
@@ -56,36 +77,22 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
         {tab === "Overview" && (
           <>
             {comparison && <Compared comparison={comparison} id={id} />}
-            {element.description && <p className="arc-description">{element.description}</p>}
-            <dl className="arc-facts">
-              {technology && (
-                <>
-                  <dt>Technology</dt>
-                  <dd>{technology}</dd>
-                </>
-              )}
-              <dt>Owner</dt>
-              <dd>
-                <button type="button" className="arc-owner" aria-label={`Team lens: ${workspace.name(element.owner)}`} style={{ borderColor: team?.color }} onClick={() => onLens({ team: element.owner })}>
-                  <span className="arc-owner-code">{team?.code}</span> {workspace.name(element.owner)}
-                </button>
-              </dd>
-            </dl>
+            {(element.description || technology) && (
+              <p className="arc-description">
+                {element.description}
+                {technology && <span className="arc-technology"> {technology}</span>}
+              </p>
+            )}
             <section className="arc-actions" aria-label="Ask">
-              <h3>Impact</h3>
-              <div className="arc-segmented" role="group" aria-label="Impact">
-                {(["upstream", "both", "downstream"] as const satisfies readonly ImpactWay[]).map((way) => (
-                  <button key={way} type="button" aria-label={`${way === "both" ? "Both ways" : way[0]!.toUpperCase() + way.slice(1)} impact`} onClick={() => onLens({ impact: id, direction: way })}>
-                    {way === "both" ? "Both" : way === "upstream" ? "Upstream" : "Downstream"}
-                  </button>
-                ))}
-              </div>
+              <button type="button" className="arc-action" aria-label="Both ways impact" onClick={() => onLens({ impact: id, direction: "both" })}>
+                ▲▼ Upstream &amp; Downstream
+              </button>
               <button type="button" className="arc-action" onClick={() => onConnect(id)}>
-                Connect to…
+                ⇄ Connect to… (picks everything between)
               </button>
               {workspace.ownView(id) !== undefined && (
                 <button type="button" className="arc-action" onClick={() => onOpenView(id)}>
-                  Open its View
+                  ⤢ Open its View
                 </button>
               )}
             </section>

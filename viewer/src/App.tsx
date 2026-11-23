@@ -364,6 +364,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               onOpenAdr={openAdr}
               onTime={(time) => go({ ...place, ...time })}
               onDeployed={(target, nodes) => go({ ...viewPlace(target, null, null, place), picks: nodes })}
+              onClose={() => select(null)}
             />
           )}
           {place.adr !== null && (

@@ -41,12 +41,13 @@ export interface LayoutOptionsInput {
 
 /** Fixed node sizes per kind, so a layout needs no text measuring. Containers are sized by their contents. */
 export const NODE_SIZES: Record<ViewNode["kind"], { width: number; height: number }> = {
-  person: { width: 180, height: 72 },
-  system: { width: 200, height: 72 },
-  service: { width: 180, height: 64 },
-  component: { width: 170, height: 60 },
+  // As the Variant D prototype sized them (ticket 14).
+  person: { width: 160, height: 58 },
+  system: { width: 190, height: 64 },
+  service: { width: 180, height: 54 },
+  component: { width: 170, height: 50 },
   target: { width: 200, height: 72 },
-  deployment: { width: 180, height: 64 },
+  deployment: { width: 180, height: 50 },
 };
 
 /** Room at the top of a container for its label. */

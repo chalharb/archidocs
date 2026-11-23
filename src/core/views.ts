@@ -38,7 +38,11 @@ export interface ViewNode {
 export interface NodeMark {
   hit: boolean;
   distance?: number;
+  /** For an impact Lens: the origin itself, or the side of it the node sits on, at its nearest distance. */
+  side?: ImpactSide;
 }
+
+export type ImpactSide = "origin" | "upstream" | "downstream";
 
 /** A Saved View's drawing direction. */
 export type ViewDirection = "TB" | "BT" | "LR" | "RL";

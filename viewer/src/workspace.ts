@@ -24,7 +24,7 @@ export interface TreeRow {
 
 const byName = (a: { id: string; name: string }, b: { id: string; name: string }) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
 
-export const GLYPHS: Record<BundleElement["kind"], string> = { person: "☺", system: "▣", service: "▢", component: "▫" };
+export const GLYPHS: Record<BundleElement["kind"], string> = { person: "◉", system: "▣", service: "▭", component: "◇" };
 
 /** Lookups over a loaded Bundle that the screens share. */
 export class Workspace {

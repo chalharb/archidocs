@@ -1,18 +1,28 @@
 :root {
-  --ink: #1f2430;
-  --muted: #667085;
+  /* Neutral engineering-tool tokens, after the Variant D prototype (ticket 14). */
+  --ink: #14181f;
+  --muted: #5b6573;
   --faint: #98a2b3;
-  --line: #d6dae1;
+  --line: #d9dee5;
   --panel: #ffffff;
   --canvas: #f6f7f9;
-  --tint: #eef2ff;
-  --accent: #4f5bd5;
-  --edge: #7c8597;
-  --container: rgba(99, 112, 140, 0.06);
-  --radius: 8px;
+  --tint: #eef1f4;
+  --accent: #2b59c3;
+  --edge: #7b8594;
+  --nodeline: #5b6573;
+  --up: #b45309;
+  --upbg: #fff4e0;
+  --down: #1d5fbf;
+  --downbg: #e6efff;
+  --origin: #c2261d;
+  --originbg: #fde8e6;
+  --path: #6d3fc0;
+  --pathbg: #f1eafd;
+  --container: rgba(238, 241, 244, 0.55);
+  --radius: 6px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   color: var(--ink);
-  font: 14px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -46,7 +56,7 @@ a {
 /* Shell: rail | location bar over canvas */
 .arc-app {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 48px 1fr;
   height: 100%;
 }
 
@@ -63,46 +73,49 @@ a {
 .arc-rail {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 6px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
   background: var(--panel);
   border-right: 1px solid var(--line);
   z-index: 30;
 }
 
-.arc-rail-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 2px;
-  border: 0;
-  border-radius: var(--radius);
-  background: none;
-  font-size: 11px;
-  color: var(--muted);
+.arc-logo {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--panel);
+  font-weight: 800;
 }
 
-.arc-rail-button:hover,
-.arc-rail-button[aria-expanded="true"] {
-  background: var(--tint);
+.arc-rail-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: none;
+  font-size: 16px;
   color: var(--ink);
 }
 
-.arc-rail-icon {
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid currentColor;
-  border-radius: 4px;
-}
-
-.arc-rail-views {
-  border-radius: 50%;
+.arc-rail-button:hover,
+.arc-rail-button[aria-expanded="true"],
+.arc-rail-button[aria-pressed="true"] {
+  background: var(--tint);
+  border-color: var(--line);
 }
 
 .arc-scrim {
   position: fixed;
-  inset: 0 0 0 72px;
+  inset: 0 0 0 48px;
   background: rgba(15, 20, 30, 0.08);
   z-index: 20;
 }
@@ -111,8 +124,8 @@ a {
   position: fixed;
   top: 0;
   bottom: 0;
-  left: 72px;
-  width: 340px;
+  left: 48px;
+  width: 300px;
   display: flex;
   flex-direction: column;
   background: var(--panel);
@@ -126,14 +139,25 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
 }
 
 .arc-flyout-head h2 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.arc-flyout-close {
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  line-height: 1;
+}
+
+.arc-flyout-by {
+  padding: 0 10px 6px;
 }
 
 .arc-segmented {
@@ -196,8 +220,8 @@ a {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-right: 12px;
-  min-height: 30px;
+  padding-right: 10px;
+  min-height: 26px;
 }
 
 .arc-row:hover {
@@ -206,6 +230,10 @@ a {
 
 .arc-row.arc-current {
   background: var(--tint);
+}
+
+.arc-row.arc-current .arc-row-label {
+  font-weight: 700;
 }
 
 .arc-disclosure,
@@ -249,9 +277,10 @@ a {
 }
 
 .arc-row-label.arc-group {
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
@@ -262,11 +291,33 @@ a {
 }
 
 .arc-row-team {
-  font-size: 10px;
-  font-weight: 600;
+  flex: none;
+  font: 600 10px ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.03em;
   padding: 0 4px;
-  border-left: 3px solid;
+  border: 1px solid;
+  border-left-width: 5px;
+  border-radius: 3px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* A View row's tag: C1, C2, C3, Env, Saved or Dyn; Saved and Dynamic Views are dashed. */
+.arc-vtag {
+  flex: none;
+  min-width: 26px;
+  margin-right: 2px;
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font: 600 9px ui-monospace, "SF Mono", Menlo, monospace;
+  text-align: center;
   color: var(--muted);
+}
+
+.arc-vtag-saved,
+.arc-vtag-dyn {
+  border-style: dashed;
 }
 
 /* Location bar */
@@ -274,11 +325,22 @@ a {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  padding: 8px 14px;
+  gap: 6px 10px;
+  padding: 6px 10px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   z-index: 10;
+}
+
+.arc-history-buttons {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.arc-step {
+  padding: 1px 8px;
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .arc-crumbs {
@@ -288,6 +350,8 @@ a {
   margin: 0;
   padding: 0;
   list-style: none;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .arc-crumbs li + li::before {
@@ -297,46 +361,38 @@ a {
 }
 
 .arc-crumbs a {
-  color: var(--muted);
+  color: var(--accent);
   text-decoration: none;
-  border-radius: 4px;
-  padding: 2px 4px;
+  padding: 2px 2px;
 }
 
 .arc-crumbs a:hover {
-  color: var(--ink);
-  background: var(--canvas);
+  text-decoration: underline;
 }
 
 .arc-crumbs [aria-current="page"] span {
-  font-weight: 600;
-  padding: 2px 4px;
+  font-weight: 700;
+  padding: 2px 2px;
 }
 
 .arc-deployments {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-left: 12px;
-  border-left: 1px solid var(--line);
+  gap: 6px;
+  font-size: 12px;
 }
 
 .arc-deployments-label {
-  color: var(--faint);
-  font-size: 12px;
-  margin-right: 2px;
+  color: var(--muted);
 }
 
 .arc-deployment-link {
-  color: var(--muted);
+  color: var(--accent);
   text-decoration: none;
-  border-radius: 4px;
-  padding: 2px 6px;
 }
 
 .arc-deployment-link:hover {
-  color: var(--ink);
-  background: var(--canvas);
+  text-decoration: underline;
 }
 
 .arc-deployment-link.arc-current {
@@ -360,11 +416,12 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 8px;
+  padding: 2px 4px 2px 10px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--tint);
+  border-radius: 16px;
+  background: var(--panel);
   font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .arc-chip-x::before {
@@ -392,26 +449,35 @@ a {
 
 .arc-tool {
   white-space: nowrap;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 5px;
   background: var(--panel);
-  font-size: 12px;
+  font-size: 13px;
+  color: var(--ink);
 }
 
 .arc-tool:hover {
   background: var(--canvas);
 }
 
+.arc-menu-button::after {
+  content: " ▾" / "";
+  font-size: 10px;
+}
+
+select.arc-tool {
+  padding: 3px 4px;
+}
+
 .arc-primary {
-  min-width: 76px;
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 
 .arc-primary:hover {
-  background: #343b4c;
+  background: #234a9f;
 }
 
 .arc-menu-root {
@@ -459,116 +525,172 @@ a {
   background: var(--canvas);
 }
 
+/* Nodes, ported from the Variant D prototype's `.el` (ticket 14):
+   [+] glyph Name TEAM on one row, the sub-label under it, the Team colour as the box's own left border. */
 .arc-box {
   position: relative;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
+  padding: 5px 8px 4px;
+  background: var(--panel);
+  border: 1.5px solid var(--nodeline);
+  border-left: 6px solid var(--team, var(--nodeline));
+  border-radius: var(--radius);
+  /* Visible, so impact badges can sit on the top edge; the name clips itself. */
+  overflow: visible;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.arc-box-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px 8px 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgba(15, 20, 30, 0.06);
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.arc-box.arc-person {
-  border-radius: 36px;
-}
-
-.arc-box.arc-external {
-  border-style: dashed;
-  background: #fafafa;
-}
-
-.arc-box.arc-container {
-  align-items: flex-start;
-  background: var(--container);
-  box-shadow: none;
-  border-style: dashed;
-  overflow: visible;
-}
-
-/* A Deployment Target is a solid frame, so the dashed System boxes inside it read as grouping only. */
-.arc-box.arc-target.arc-container {
-  border-style: solid;
-  border-color: var(--faint);
-  background: transparent;
-}
-
-.arc-box.arc-selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
-.arc-stripe {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  border-radius: var(--radius) 0 0 var(--radius);
-}
-
-.arc-container .arc-stripe {
-  bottom: auto;
-  height: 36px;
-}
-
-.arc-text {
-  flex: 1;
+  gap: 5px;
+  white-space: nowrap;
   min-width: 0;
 }
 
 .arc-name {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.arc-sublabel {
-  font-size: 11px;
+.arc-kind-glyph {
+  flex: none;
+  width: 12px;
+  font-size: 12px;
+  text-align: center;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.arc-container .arc-text {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
 }
 
 .arc-team {
   flex: none;
-  align-self: flex-start;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font: 600 9.5px ui-monospace, "SF Mono", Menlo, monospace;
   color: var(--muted);
+}
+
+.arc-sublabel {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .arc-toggle {
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: 4px;
   background: var(--panel);
+  font-weight: 700;
   line-height: 1;
 }
 
 .arc-toggle:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.arc-box.arc-person {
+  border-radius: 28px;
+  padding-left: 14px;
+}
+
+/* A collapsed System reads as a group: tinted, with a heavier frame. */
+.arc-box.arc-system:not(.arc-container) {
+  background: var(--tint);
+  border-width: 2px;
+  border-left-width: 6px;
+}
+
+/* A Service's type changes its shape: a datastore's rounded base, a broker's striped band. */
+.arc-box.arc-t-datastore {
+  border-radius: 6px 6px 14px 14px;
+}
+
+.arc-box.arc-t-broker {
+  background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--tint) 10px 12px);
+}
+
+.arc-box.arc-external {
+  border-style: dashed;
+  border-left-style: solid;
+}
+
+/* An open box: a dashed frame around what it holds, its sub-label on the right of the head row. */
+.arc-box.arc-container {
+  background: var(--container);
+  border-style: dashed;
+  border-width: 1.5px;
+  border-left-width: 6px;
+  border-left-style: solid;
+}
+
+.arc-container .arc-box-head {
+  font-size: 12px;
+}
+
+.arc-csub {
+  position: absolute;
+  top: 6px;
+  right: 52px;
+  margin: 0;
+  font-size: 10px;
+}
+
+/* A Deployment Target is a solid, quiet frame, so the dashed System boxes inside it read as grouping only. */
+.arc-box.arc-target.arc-container {
+  border: 1.5px solid var(--line);
+  background: transparent;
+}
+
+.arc-box.arc-deployment {
+  border-radius: 4px;
+}
+
+.arc-box.arc-selected {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+.arc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The canvas hint strip, the overview map and the zoom controls. */
+.react-flow__panel.arc-hintline {
+  margin-top: 8px;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.react-flow__panel.arc-minimap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--panel);
 }
 
 .arc-handle.react-flow__handle {
@@ -748,35 +870,41 @@ a {
 }
 
 .arc-panel-head {
-  padding: 14px 16px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px 8px;
+}
+
+.arc-panel-title {
+  min-width: 0;
 }
 
 .arc-panel-head h2 {
-  margin: 2px 0;
-  font-size: 17px;
+  margin: 2px 0 6px;
+  font-size: 18px;
 }
 
 .arc-panel-kind {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--muted);
 }
 
 .arc-panel-id {
-  font-size: 12px;
+  font: 11px ui-monospace, "SF Mono", Menlo, monospace;
   color: var(--muted);
 }
 
 .arc-tabs {
   display: flex;
   gap: 2px;
-  padding: 0 12px;
+  padding: 0 10px;
   border-bottom: 1px solid var(--line);
 }
 
 .arc-tabs button {
-  padding: 8px 10px;
+  padding: 6px 8px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
@@ -785,13 +913,17 @@ a {
 
 .arc-tabs button[aria-selected="true"] {
   color: var(--ink);
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--ink);
   font-weight: 600;
 }
 
 .arc-panel-body {
-  padding: 12px 16px 24px;
+  padding: 10px 14px 24px;
   overflow: auto;
+}
+
+.arc-technology {
+  color: var(--muted);
 }
 
 .arc-panel-body h3 {
@@ -833,13 +965,16 @@ a {
 .arc-link {
   padding: 3px 8px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 5px;
   background: var(--panel);
   font-size: 12px;
 }
 
+/* The owning Team as a chip: its colour as a 5px left edge beside the code and name. */
 .arc-owner {
-  border-width: 1.5px;
+  border-left-width: 5px;
+  font-weight: 600;
+  font-size: 13px;
 }
 
 .arc-owner-code {
@@ -847,7 +982,18 @@ a {
 }
 
 .arc-action {
-  margin: 8px 8px 0 0;
+  display: block;
+  width: 100%;
+  margin: 5px 0 0;
+  padding: 4px 8px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.arc-deployed .arc-action {
+  display: inline-block;
+  width: auto;
+  margin-right: 6px;
 }
 
 .arc-link {
@@ -929,17 +1075,25 @@ a {
 }
 
 .arc-box.arc-dim {
-  opacity: 0.35;
+  opacity: 0.28;
 }
 
+.arc-box.arc-container.arc-dim {
+  opacity: 0.55;
+}
+
+/* A hit node on a path Lens: purple, as the prototype marks paths. Impact hits take their side's colour instead. */
 .arc-box.arc-hit {
-  border-color: #e0a030;
-  box-shadow: 0 0 0 2px rgba(224, 160, 48, 0.35);
+  border-color: var(--path);
+  background: var(--pathbg);
 }
 
+/* A Team Lens rings what the Team owns in the Team's own colour. */
 .arc-box.arc-ringed {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(79, 91, 213, 0.35);
+  border-color: var(--nodeline);
+  border-left-color: var(--team, var(--nodeline));
+  background: var(--panel);
+  box-shadow: 0 0 0 3px var(--team, var(--accent));
 }
 
 .arc-box.arc-picked {
@@ -947,18 +1101,60 @@ a {
   outline-offset: 3px;
 }
 
-.arc-distance {
+/* An impact badge above the box's top-right corner: the origin, or the side and distance from it. */
+.arc-badge {
   position: absolute;
-  bottom: 4px;
-  right: 6px;
-  min-width: 18px;
+  top: -10px;
+  right: 34px;
   padding: 0 5px;
-  border-radius: 999px;
-  background: #e0a030;
+  border: 1px solid;
+  border-radius: 8px;
+  background: var(--panel);
+  font: 600 9.5px ui-sans-serif, system-ui, sans-serif;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.arc-badge-upstream {
+  color: var(--up);
+  border-color: var(--up);
+}
+
+.arc-badge-downstream {
+  color: var(--down);
+  border-color: var(--down);
+}
+
+.arc-badge-origin {
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
+  background: var(--origin);
+  border-color: var(--origin);
+}
+
+.arc-badge-distance {
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+/* A hit box takes its side's colour: amber upstream, blue downstream, red at the origin. */
+.arc-box.arc-side-upstream {
+  border-color: var(--up);
+  background: var(--upbg);
+}
+
+.arc-box.arc-side-downstream {
+  border-color: var(--down);
+  background: var(--downbg);
+  border-style: double;
+  border-width: 3px;
+  border-left-width: 6px;
+  border-left-style: solid;
+}
+
+.arc-box.arc-side-origin {
+  border-color: var(--origin);
+  background: var(--originbg);
+  box-shadow: 0 0 0 3px var(--originbg);
 }
 
 .arc-holds {
@@ -1877,7 +2073,7 @@ button.arc-change:focus-visible {
 /* Phones: a narrower rail leaves the canvas more room. */
 @media (max-width: 640px) {
   .arc-app {
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: 48px minmax(0, 1fr);
   }
 
   .arc-location {
@@ -1924,4 +2120,17 @@ button.arc-change:focus-visible {
     border: 0;
     border-top: 1px solid var(--line);
   }
+}
+
+/* Phones: no hint strip or overview map; the canvas needs the room. */
+@media (max-width: 640px) {
+  .react-flow__panel.arc-hintline,
+  .react-flow__panel.arc-minimap {
+    display: none;
+  }
+}
+
+/* The Element panel overlays the canvas's right edge; keep the zoom controls beside it, not under it. */
+.arc-canvas:has(> .arc-panel) .react-flow__panel.react-flow__controls {
+  right: 340px;
 }
