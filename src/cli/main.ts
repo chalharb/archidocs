@@ -5,7 +5,7 @@ import { parseArgs } from "node:util";
 import { findWorkspaceRoot, load, nodeFileSystem, serializeBundle } from "../core/index.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitHead } from "../git.ts";
-import { checkoutSource, createServer } from "../mcp/index.ts";
+import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 
 /** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
@@ -18,7 +18,8 @@ class UsageError extends Error {}
 const usage = `Usage:
   archidocs check [--format text|json|github] [--strict]
   archidocs build --bundle-only [--out <dir>]
-  archidocs mcp [--workspace <dir>] [--viewer-url <url>]
+  archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
+                [--http [--host <loopback>] [--port <n>] [--allow-writes]]
 `;
 
 async function main(argv: string[]): Promise<number> {
@@ -57,15 +58,37 @@ async function main(argv: string[]): Promise<number> {
   if (command === "mcp") {
     const { values } = parseArgs({
       args: rest,
-      options: { workspace: { type: "string" }, "viewer-url": { type: "string" } },
+      options: {
+        workspace: { type: "string" },
+        bundle: { type: "string" },
+        "viewer-url": { type: "string" },
+        http: { type: "boolean", default: false },
+        host: { type: "string" },
+        port: { type: "string" },
+        "allow-writes": { type: "boolean", default: false },
+      },
       strict: true,
     });
     const viewerUrl = values["viewer-url"];
     if (viewerUrl !== undefined && !URL.canParse(viewerUrl)) throw new UsageError(`--viewer-url "${viewerUrl}" is not a URL.`);
-    const root = await workspaceRoot(values.workspace === undefined ? process.cwd() : resolve(values.workspace));
-    const source = checkoutSource({ root });
+    if (values.workspace !== undefined && values.bundle !== undefined) throw new UsageError("Give --workspace or --bundle, not both.");
+    if (!values.http && values["allow-writes"]) throw new UsageError("--allow-writes only applies with --http; over stdio a checkout already takes writes.");
+    if (!values.http && (values.host !== undefined || values.port !== undefined)) throw new UsageError("--host and --port only apply with --http.");
+    const port = values.port === undefined ? DEFAULT_PORT : Number(values.port);
+    if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`--port "${values.port}" is not a port.`);
+
+    const source =
+      values.bundle !== undefined
+        ? bundleSource({ location: values.bundle })
+        : checkoutSource({ root: await workspaceRoot(values.workspace === undefined ? process.cwd() : resolve(values.workspace)) });
+    const options = { source, ...(viewerUrl === undefined ? {} : { viewerUrl }) };
+    if (values.http) {
+      const http = await serveHttp({ ...options, port, allowWrites: values["allow-writes"], ...(values.host === undefined ? {} : { host: values.host }) });
+      process.stderr.write(`Archidocs MCP server on ${http.url} (writes ${values["allow-writes"] && source.writesAllowed ? "allowed" : "off"})\n`);
+      return OK;
+    }
     // stdout carries the protocol; the server runs until the client closes stdin.
-    serveStdio(() => createServer({ source, ...(viewerUrl === undefined ? {} : { viewerUrl }) }));
+    serveStdio(() => createServer(options));
     return OK;
   }
   throw new UsageError(command ? `Unknown command "${command}".` : "No command given.");
