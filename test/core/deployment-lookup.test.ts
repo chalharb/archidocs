@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getDeployments, search } from "../../src/core/index.ts";
-import { deploymentWorkspace } from "../support/fixtures.ts";
+import { deploymentWorkspace, relationshipWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
 describe("getDeployments", () => {
@@ -88,5 +88,23 @@ describe("search", () => {
     const { bundle } = await loadWorkspace(deploymentWorkspace);
 
     expect(ids(search(bundle, "https://evil-shop.example.com"))).toEqual([]);
+  });
+
+  it("matches technology and Team only when asked, as the viewer's Find does", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const find = (q: string) => ids(search(bundle, q, { fields: ["team", "technology"] }));
+
+    expect(ids(search(bundle, "kafka"))).toEqual([]);
+    expect(find("kafka")).toEqual(["shop:events"]);
+    expect(find("Storefront")).toEqual(["shop:cart", "shop:cart-db", "shop:checkout", "shop:checkout-ui", "shop:events", "shop:order-history", "shop:shopper", "shop:web"]);
+    expect(find("payments-team")).toEqual(["payments:charges", "payments:payments", "payments:payments-api"]);
+  });
+
+  it("ranks a Team or technology match after any name or id match", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+
+    const ranks = search(bundle, "Storefront", { fields: ["team", "technology"] }).map((m) => m.rank);
+    expect(new Set(ranks)).toEqual(new Set([2]));
+    expect(search(bundle, "kafka", { fields: ["technology"] })[0]?.rank).toBe(2);
   });
 });

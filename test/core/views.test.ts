@@ -229,3 +229,45 @@ describe("the oversized-view warning", () => {
     ]);
   });
 });
+
+describe("a Lens over a Generated View", () => {
+  const marks = (view: ReturnType<typeof resolveView>) => Object.fromEntries(view!.nodes.map((n) => [n.id, n.mark]));
+  const lit = (view: ReturnType<typeof resolveView>) => view!.edges.filter((e) => e.lit).map((e) => [e.from, e.to]);
+
+  it("marks the open boxes it is given with impact distances, lighting only edges one hop closer to the origin", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const view = resolveView(bundle, "c2", { expand: ["shop:checkout"], lens: { impact: "shop:cart", direction: "upstream" } });
+
+    expect(view?.lens).toEqual({ impact: "shop:cart", direction: "upstream" });
+    expect(marks(view)).toMatchObject({
+      "shop:cart": { hit: true, distance: 0 },
+      "shop:web": { hit: true, distance: 1 },
+      "shop:shopper": { hit: true, distance: 2 },
+      "shop:cart-db": { hit: false },
+      "payments:payments": { hit: false },
+    });
+    expect(lit(view)).toEqual([
+      ["shop:shopper", "shop:web"],
+      ["shop:web", "shop:cart"],
+    ]);
+  });
+
+  it("marks a collapsed box when anything inside it is hit, with the nearest distance", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const view = resolveView(bundle, "c2", { lens: { impact: "shop:cart", direction: "upstream" } });
+
+    expect(marks(view)).toMatchObject({ "shop:checkout": { hit: true, distance: 0 }, "payments:payments": { hit: false } });
+  });
+
+  it("a Team Lens rings what the Team owns in C3", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const view = resolveView(bundle, "c3/shop:cart", { lens: { team: "payments-team" } });
+
+    expect(marks(view)).toMatchObject({ "shop:checkout-ui": { hit: false }, "payments:payments": { hit: true } });
+  });
+
+  it("leaves nodes unmarked without a Lens", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    expect(resolveView(bundle, "c2")!.nodes.every((n) => n.mark === undefined)).toBe(true);
+  });
+});

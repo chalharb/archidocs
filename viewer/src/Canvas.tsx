@@ -13,7 +13,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import type { ViewNode } from "../../src/core/views.ts";
+import type { NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
 import type { Workspace } from "./workspace.ts";
@@ -21,6 +21,8 @@ import type { Workspace } from "./workspace.ts";
 /** Animated transitions run up to this many nodes, and never with `prefers-reduced-motion`. */
 export const ANIMATE_MAX_NODES = 100;
 const DURATION = 300;
+/** The Element panel's width; it overlays the canvas's right edge, so the drawing is fitted to the space beside it. */
+export const PANEL_WIDTH = 340;
 /** Below this zoom, sub-labels and Team codes hide. */
 export const DETAIL_ZOOM = 0.45;
 
@@ -31,7 +33,15 @@ export interface CanvasProps {
   open: readonly string[];
   /** Changes when the screen should fit the drawing again, such as a new View or direction. */
   fitKey: string;
+  /** The same View resolved with the Lens, when one is on: its node marks and lit edges are drawn over this Layout. */
+  lensed?: ResolvedView;
+  /** Picked node ids. */
+  picks: readonly string[];
+  /** Ringed rather than badged: a Team Lens. */
+  ring: boolean;
   onSelect: (id: string | null) => void;
+  /** Shift-click: picks or unpicks a node. */
+  onPick: (id: string) => void;
   onToggle: (id: string, open: boolean) => void;
   onOpenView: (id: string) => void;
   /** Called once a Layout is fitted to the screen and any transition has finished. */
@@ -46,11 +56,16 @@ interface BoxData extends Record<string, unknown> {
   /** `+` when collapsed with children to show, `−` when opened by the viewer, else neither. */
   toggle: "expand" | "collapse" | null;
   onToggle: (id: string, open: boolean) => void;
+  mark: NodeMark | undefined;
+  ring: boolean;
+  picked: boolean;
 }
 
 interface RouteData extends Record<string, unknown> {
   points: { x: number; y: number }[];
   faded: boolean;
+  /** Set while a Lens is on: whether it lights this edge. */
+  lit: boolean | undefined;
   from: string;
   to: string;
 }
@@ -65,11 +80,14 @@ export function Canvas(props: CanvasProps) {
   );
 }
 
-function Flow({ workspace, laidOut, selected, open, fitKey, onSelect, onToggle, onOpenView, onSettled }: CanvasProps) {
+function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring, onSelect, onPick, onToggle, onOpenView, onSettled }: CanvasProps) {
   const { view, layout } = laidOut;
   const reducedMotion = useReducedMotion();
   const animate = !reducedMotion && view.nodes.length <= ANIMATE_MAX_NODES;
   const zoomedOut = useStore((s) => s.transform[2] < DETAIL_ZOOM);
+
+  const marks = useMemo(() => new Map(lensed?.nodes.map((n) => [n.id, n.mark]) ?? []), [lensed]);
+  const litEdges = useMemo(() => (lensed ? new Map(lensed.edges.map((e) => [`${e.from}>${e.to}`, e.lit === true])) : undefined), [lensed]);
 
   const nodes = useMemo<Node<BoxData>[]>(() => {
     const byId = new Map(view.nodes.map((n) => [n.id, n]));
@@ -101,10 +119,13 @@ function Flow({ workspace, laidOut, selected, open, fitKey, onSelect, onToggle, 
           container: containers.has(box.id),
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
           onToggle,
+          mark: marks.get(box.id),
+          ring,
+          picked: picks.includes(box.id),
         },
       };
     });
-  }, [view, layout, workspace, selected, open, onToggle]);
+  }, [view, layout, workspace, selected, open, onToggle, marks, ring, picks]);
 
   const edges = useMemo<Edge<RouteData>[]>(
     () =>
@@ -115,9 +136,15 @@ function Flow({ workspace, laidOut, selected, open, fitKey, onSelect, onToggle, 
         type: "route",
         markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
         selectable: false,
-        data: { points: e.points, faded: selected !== null && e.from !== selected && e.to !== selected, from: e.from, to: e.to },
+        data: {
+          points: e.points,
+          faded: selected !== null && e.from !== selected && e.to !== selected,
+          lit: litEdges?.get(`${e.from}>${e.to}`),
+          from: e.from,
+          to: e.to,
+        },
       })),
-    [layout, selected],
+    [layout, selected, litEdges],
   );
 
   return (
@@ -134,7 +161,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, onSelect, onToggle, 
       nodesConnectable={false}
       elementsSelectable={false}
       proOptions={{ hideAttribution: true }}
-      onNodeClick={(_, node) => onSelect(node.id)}
+      onNodeClick={(event, node) => (event.shiftKey ? onPick(node.id) : onSelect(node.id))}
       onNodeDoubleClick={(_, node) => onOpenView(node.id)}
       onPaneClick={() => onSelect(null)}
     >
@@ -156,10 +183,12 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
     if (!sized) return;
     const { layout } = laidOut;
     const pad = 32;
-    const zoom = Math.min(1, (width - 2 * pad) / Math.max(layout.width, 1), (height - 2 * pad) / Math.max(layout.height, 1));
+    // Leave room for the Element panel, so opening it never hides or moves a node.
+    const room = width - PANEL_WIDTH;
+    const zoom = Math.min(1, (room - 2 * pad) / Math.max(layout.width, 1), (height - 2 * pad) / Math.max(layout.height, 1));
     const duration = animate && !first.current ? DURATION : 0;
     first.current = false;
-    void setViewport({ x: (width - layout.width * zoom) / 2, y: (height - layout.height * zoom) / 2, zoom }, { duration });
+    void setViewport({ x: (room - layout.width * zoom) / 2, y: (height - layout.height * zoom) / 2, zoom }, { duration });
     // React Flow draws an edge only once both its nodes are measured, so wait for every edge too.
     let frame = 0;
     const whenDrawn = () => {
@@ -171,7 +200,8 @@ function Fitter({ laidOut, fitKey, animate, onSettled }: { laidOut: LaidOut; fit
       window.clearTimeout(timer);
       window.cancelAnimationFrame(frame);
     };
-    // A new Layout or fitKey refits; a resize alone keeps the user's zoom, so width and height are read, not watched.
+    // A new Layout or fitKey refits; a resize alone (such as the Element panel opening) keeps the drawing where it is,
+    // so width and height are read, not watched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laidOut, fitKey, sized]);
   return null;
@@ -190,11 +220,30 @@ function useReducedMotion(): boolean {
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
-  const { node, sublabel, team, container, toggle, onToggle } = data;
+  const { node, sublabel, team, container, toggle, onToggle, mark, ring, picked } = data;
   const stop = (e: MouseEvent) => e.stopPropagation();
-  const classes = ["ad-box", `ad-${node.kind}`, container ? "ad-container" : "", node.external ? "ad-external" : "", selected ? "ad-selected" : ""];
+  const classes = [
+    "ad-box",
+    `ad-${node.kind}`,
+    container ? "ad-container" : "",
+    node.external ? "ad-external" : "",
+    selected ? "ad-selected" : "",
+    mark ? (mark.hit ? "ad-hit" : "ad-dim") : "",
+    mark?.hit && ring ? "ad-ringed" : "",
+    mark?.hit && node.collapsed ? "ad-holds-hit" : "",
+    picked ? "ad-picked" : "",
+  ];
   return (
-    <div className={classes.filter(Boolean).join(" ")} data-node={node.id} data-parent={node.parent ?? ""} aria-selected={selected ? "true" : "false"} title={node.name}>
+    <div
+      className={classes.filter(Boolean).join(" ")}
+      data-node={node.id}
+      data-parent={node.parent ?? ""}
+      data-hit={mark ? String(mark.hit) : undefined}
+      data-distance={mark?.distance}
+      data-picked={picked ? "true" : undefined}
+      aria-selected={selected ? "true" : "false"}
+      title={mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
+    >
       <Handle type="target" position={Position.Left} isConnectable={false} className="ad-handle" />
       <Handle type="source" position={Position.Right} isConnectable={false} className="ad-handle" />
       {team && <span className="ad-stripe" data-testid="stripe" style={{ background: team.color }} />}
@@ -204,6 +253,12 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
           {sublabel}
         </div>
       </div>
+      {mark?.distance !== undefined && (
+        <span className="ad-distance" data-testid="distance" aria-label={`distance ${mark.distance}`}>
+          {mark.distance}
+        </span>
+      )}
+      {mark?.hit && node.collapsed && <span className="ad-holds" aria-hidden="true" />}
       {team && (
         <span className="ad-team" data-testid="team">
           {team.code}
@@ -229,7 +284,20 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
 
 function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
   const d = data!.points.map((p, i) => `${i === 0 ? "M" : "L"}${round(p.x)} ${round(p.y)}`).join(" ");
-  return <path className={data!.faded ? "ad-edge ad-faded" : "ad-edge"} d={d} markerEnd={markerEnd} fill="none" data-edge-from={data!.from} data-edge-to={data!.to} />;
+  const { faded, lit } = data!;
+  // While a Lens is on it decides which edges stand out; selection fades edges only without one.
+  const classes = ["ad-edge", (lit === undefined ? faded : !lit) ? "ad-faded" : "", lit ? "ad-lit" : ""];
+  return (
+    <path
+      className={classes.filter(Boolean).join(" ")}
+      d={d}
+      markerEnd={markerEnd}
+      fill="none"
+      data-edge-from={data!.from}
+      data-edge-to={data!.to}
+      data-lit={lit === undefined ? undefined : String(lit)}
+    />
+  );
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;

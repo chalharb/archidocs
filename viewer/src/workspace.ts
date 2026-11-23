@@ -1,6 +1,6 @@
 import { listViews, resolveView, type ResolvedView, type ViewSummary } from "../../src/core/views.ts";
 import { teamStyles, type TeamStyle } from "../../src/render/teams.ts";
-import type { Bundle, BundleElement } from "../../src/schema/bundle.ts";
+import type { Bundle, BundleElement, BundleLens } from "../../src/schema/bundle.ts";
 
 export interface Crumb {
   label: string;
@@ -61,8 +61,20 @@ export class Workspace {
     return this.views.find((v) => v.id === view)?.title;
   }
 
-  resolve(view: string, open: readonly string[]): ResolvedView | undefined {
-    return resolveView(this.bundle, view, { expand: open });
+  /** Resolves a View with its open boxes and, if given, a Lens marking its nodes; the same resolver MCP's `get_view` uses. */
+  resolve(view: string, open: readonly string[], lens: BundleLens | null = null): ResolvedView | undefined {
+    return resolveView(this.bundle, view, { expand: open, ...(lens ? { lens } : {}) });
+  }
+
+  name(id: string): string {
+    return this.byId.get(id)?.name ?? [...this.bundle.teams, ...this.bundle.environments].find((t) => t.id === id)?.name ?? id;
+  }
+
+  /** A Lens in words, for its chip. */
+  describeLens(lens: BundleLens): string {
+    if ("impact" in lens) return `Impact of ${this.name(lens.impact)}, ${lens.direction === "both" ? "both ways" : lens.direction}`;
+    if ("team" in lens) return `Team ${this.name(lens.team)}`;
+    return `Paths from ${this.name(lens.path.from)} to ${this.name(lens.path.to)}`;
   }
 
   /** A box's own Generated View: C3 for a Service with Components, else its System's C2. */

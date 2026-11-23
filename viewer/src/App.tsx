@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { Canvas } from "./Canvas.tsx";
+import { ElementPanel } from "./ElementPanel.tsx";
+import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
 import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
-import { defaultDirection, HOME, formatPlace, viewPlace, type Direction, type Place } from "./place.ts";
+import { defaultDirection, HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { remember } from "./recent.ts";
 import { Workspace } from "./workspace.ts";
@@ -39,6 +41,13 @@ function Screen({ workspace }: { workspace: Workspace }) {
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
   const ready = laidOut !== undefined && settled === laidOut && laidOut.view === view && laidOut.layout.direction === direction;
   const title = workspace.title(place.view);
+  const lensKey = place.lens ? JSON.stringify(place.lens) : "";
+  // The Lens is drawn over the Layout of the plain View, so turning it on never moves a node.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey and lensKey stand for place.open and place.lens.
+  const lensed = useMemo(() => (place.lens ? workspace.resolve(place.view, place.open, place.lens) : undefined), [workspace, place.view, openKey, lensKey]);
+  const [finding, setFinding] = useState(false);
+  /** The start of a Connect to… waiting for its end node. */
+  const [connectFrom, setConnectFrom] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = title ? `${title} · Archidocs` : "Archidocs";
@@ -47,7 +56,45 @@ function Screen({ workspace }: { workspace: Workspace }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formatPlace(place), title]);
 
-  const select = useCallback((id: string | null) => go({ ...place, selected: id }, { replace: true }), [place]);
+  /** Turns a Lens on, off or to another; a path Lens picks the nodes on its paths. */
+  const setLens = useCallback(
+    (lens: Lens | null) => {
+      const picks = lens && "path" in lens ? (workspace.resolve(place.view, place.open, lens)?.nodes.filter((n) => n.mark?.hit).map((n) => n.id) ?? []) : place.picks;
+      go({ ...place, lens, picks });
+    },
+    [place, workspace],
+  );
+
+  const connect = useCallback(
+    (to: string) => {
+      const from = connectFrom!;
+      setConnectFrom(null);
+      if (to !== from) setLens({ path: { from, to, paths: "shortest" } });
+    },
+    [connectFrom, setLens],
+  );
+
+  const select = useCallback(
+    (id: string | null) => {
+      if (connectFrom !== null && id !== null) return connect(id);
+      go({ ...place, selected: id }, { replace: true });
+    },
+    [place, connectFrom, connect],
+  );
+
+  const pick = useCallback((id: string) => go({ ...place, picks: place.picks.includes(id) ? place.picks.filter((p) => p !== id) : [...place.picks, id] }, { replace: true }), [place]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && (e.target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName));
+      if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setFinding(true);
+      } else if (e.key === "Escape" && !finding) setConnectFrom(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [finding]);
 
   const toggle = useCallback(
     (id: string, open: boolean) => {
@@ -70,9 +117,9 @@ function Screen({ workspace }: { workspace: Workspace }) {
   const openView = useCallback(
     (id: string) => {
       const target = workspace.ownView(id);
-      if (target !== undefined && target !== place.view) go(viewPlace(target));
+      if (target !== undefined && target !== place.view) go(viewPlace(target, null, place.lens));
     },
-    [place.view, workspace],
+    [place.view, place.lens, workspace],
   );
 
   /** Focuses an Element: in the current View when opening its boxes shows it there, else in its own View. */
@@ -82,7 +129,7 @@ function Screen({ workspace }: { workspace: Workspace }) {
       if (open) return go({ ...place, open, selected: id }, { replace: open.length === place.open.length });
       const element = workspace.byId.get(id);
       const home = element?.kind === "component" ? workspace.ownView(element.parent!) : element?.kind === "person" ? "c1" : workspace.ownView(id);
-      go(viewPlace(home ?? "c2", id));
+      go(viewPlace(home ?? "c2", id, place.lens));
     },
     [place, workspace],
   );
@@ -99,9 +146,34 @@ function Screen({ workspace }: { workspace: Workspace }) {
 
   return (
     <div className="ad-app">
-      <Rail workspace={workspace} view={place.view} selected={place.selected} onPickElement={focus} onPickView={(v) => go(viewPlace(v))} />
+      <Rail
+        workspace={workspace}
+        view={place.view}
+        selected={place.selected}
+        onPickElement={focus}
+        onPickView={(v) => go(viewPlace(v, null, place.lens))}
+        onPickTeam={(team) => setLens({ team })}
+        onFind={() => setFinding(true)}
+      />
+      {finding && (
+        <Find
+          workspace={workspace}
+          prompt={connectFrom !== null ? `Pick the node to connect ${workspace.name(connectFrom)} to` : undefined}
+          onClose={() => setFinding(false)}
+          onPick={(id) => {
+            setFinding(false);
+            if (connectFrom !== null) connect(id);
+            else focus(id);
+          }}
+        />
+      )}
       <main className="ad-main">
-        <LocationBar workspace={workspace} place={place} direction={direction} onCollapse={collapse} onDirection={setDirection} />
+        <LocationBar workspace={workspace} place={place} direction={direction} onCollapse={collapse} onDirection={setDirection} onLens={setLens} onPicks={(picks) => go({ ...place, picks }, { replace: true })} />
+        {connectFrom !== null && (
+          <p className="ad-banner" role="status">
+            Pick the node to connect {workspace.name(connectFrom)} to: click it, or press / to find it. Escape cancels.
+          </p>
+        )}
         <div className="ad-canvas" data-canvas data-state={ready ? "ready" : "busy"}>
           {error && <p className="ad-error">Layout failed: {error}</p>}
           {laidOut && (
@@ -111,11 +183,18 @@ function Screen({ workspace }: { workspace: Workspace }) {
               selected={place.selected}
               open={place.open}
               fitKey={`${place.view}|${direction}`}
+              lensed={lensed}
+              picks={place.picks}
+              ring={place.lens !== null && "team" in place.lens}
               onSelect={select}
+              onPick={pick}
               onToggle={toggle}
               onOpenView={openView}
               onSettled={setSettled}
             />
+          )}
+          {place.selected !== null && workspace.byId.has(place.selected) && (
+            <ElementPanel workspace={workspace} id={place.selected} onLens={setLens} onConnect={setConnectFrom} onFocus={focus} onOpenView={openView} />
           )}
         </div>
       </main>

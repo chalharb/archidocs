@@ -1,6 +1,7 @@
 # 15: Element panel, Find and Lenses
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (Opus 5.5)
 Blocked by: 07, 08, 14
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -22,5 +23,5 @@ The persona questions can be answered in the viewer.
 
 ## Acceptance criteria
 
-- [ ] Playwright acceptance tests answer the Enterprise Architect, Developer, Product Owner and QA Tester questions in the viewer.
-- [ ] A Lens survives a reload via the URL.
+- [x] Playwright acceptance tests answer the Enterprise Architect, Developer, Product Owner and QA Tester questions in the viewer.
+- [x] A Lens survives a reload via the URL.
