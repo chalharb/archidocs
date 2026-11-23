@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { listAdrs } from "../../src/core/adrs.ts";
 import { getDeployments } from "../../src/core/deployments.ts";
 import { getImpact, type ImpactRing } from "../../src/core/impact.ts";
 import type { BundleRelationship } from "../../src/schema/bundle.ts";
 import type { ImpactWay, Lens } from "./place.ts";
+import { AdrStatusBadge } from "./AdrReader.tsx";
 import { GLYPHS, type Workspace } from "./workspace.ts";
 
-type Tab = "Overview" | "URLs" | "Links";
-const TABS: readonly Tab[] = ["Overview", "URLs", "Links"];
+type Tab = "Overview" | "URLs" | "ADRs" | "Links";
+const TABS: readonly Tab[] = ["Overview", "URLs", "ADRs", "Links"];
 
 export interface ElementPanelProps {
   workspace: Workspace;
@@ -15,12 +17,13 @@ export interface ElementPanelProps {
   onConnect: (from: string) => void;
   onFocus: (id: string) => void;
   onOpenView: (id: string) => void;
+  onOpenAdr: (id: string) => void;
   /** Opens an Environment's Deployment View with these nodes marked. */
   onDeployed: (view: string, nodes: string[]) => void;
 }
 
-/** Everything about the selected Element: Overview with the persona actions, URLs per Environment, and Links. */
-export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onDeployed }: ElementPanelProps) {
+/** Everything about the selected Element: Overview with the persona actions, URLs per Environment, its ADRs, and Links. */
+export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpenView, onOpenAdr, onDeployed }: ElementPanelProps) {
   const [tab, setTab] = useState<Tab>("Overview");
   const element = workspace.byId.get(id);
   if (!element) return null;
@@ -83,6 +86,7 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
           </>
         )}
         {tab === "URLs" && <Urls workspace={workspace} id={id} />}
+        {tab === "ADRs" && <Adrs workspace={workspace} id={id} onOpen={onOpenAdr} />}
         {tab === "Links" && <Links workspace={workspace} id={id} onFocus={onFocus} />}
       </div>
     </aside>
@@ -156,6 +160,28 @@ function UrlRow({ name, url }: { name?: string; url: string }) {
         {copied ? "Copied" : "Copy"}
       </button>
     </div>
+  );
+}
+
+/** The ADRs linking the Element or its descendants, as `list_adrs(element)` gives them: newest first, superseded ones marked. */
+function Adrs({ workspace, id, onOpen }: { workspace: Workspace; id: string; onOpen: (adr: string) => void }) {
+  const adrs = useMemo(() => listAdrs(workspace.bundle, { element: id }), [workspace, id]);
+  if (adrs.length === 0) return <p className="ad-empty">No ADRs link this Element or anything inside it.</p>;
+  return (
+    <ul className="ad-adr-list">
+      {adrs.map((a) => (
+        <li key={a.id} data-superseded={a.effectiveStatus === "superseded" ? "true" : undefined}>
+          <button type="button" className="ad-adr-row" onClick={() => onOpen(a.id)}>
+            <code className="ad-adr-id">{a.id}</code>
+            <span className="ad-adr-title">{a.title}</span>
+            <AdrStatusBadge status={a.effectiveStatus} />
+            <time className="ad-muted" dateTime={a.date}>
+              {a.date}
+            </time>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 

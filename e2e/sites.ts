@@ -1,5 +1,4 @@
-/** Where e2e/serve.ts serves each fixture site; each sits under a sub-path, never at the root. */
-/** `E2E_PORT` moves it, so suites in two checkouts can run at once. */
+/** Where e2e/serve.ts serves each fixture site; each sits under a sub-path, never at the root. `E2E_PORT` moves the port, so suites in several checkouts can run side by side. */
 export const PORT = Number(process.env.E2E_PORT ?? 4517);
 export const SITES = {
   /** The landscape fixture: Systems, Services with Components, three Teams. */
@@ -8,4 +7,6 @@ export const SITES = {
   big: "/team/big/",
   /** The sequence chart scenario: the 46-Step full checkout and a short payment, with event Steps via a broker. */
   checkout: "/team/checkout/",
+  /** The landscape plus a Saved View and ADRs linked to Cart, Cart DB and Checkout. */
+  decisions: "/team/decisions/",
 } as const;

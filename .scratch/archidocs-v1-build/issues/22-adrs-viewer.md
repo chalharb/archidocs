@@ -1,6 +1,7 @@
 # 22: ADRs in the viewer
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (session epic-nightingale-c60076)
 Blocked by: 15, 21
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -13,5 +14,5 @@ People read an Element's decisions in the viewer.
 
 ## Acceptance criteria
 
-- [ ] Playwright: open an Element, open an ADR, follow a link to a Saved View.
-- [ ] A superseded ADR shows its effective status and a link to its successor.
+- [x] Playwright: open an Element, open an ADR, follow a link to a Saved View.
+- [x] A superseded ADR shows its effective status and a link to its successor.

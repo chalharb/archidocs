@@ -1390,3 +1390,142 @@ a {
   color: #fff;
   border-color: var(--accent);
 }
+
+/* ADRs tab and reader */
+.ad-adr-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  color: inherit;
+}
+
+.ad-adr-row:hover {
+  background: var(--tint);
+}
+
+.ad-adr-id {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ad-adr-title {
+  order: -1;
+  flex-basis: 100%;
+  font-weight: 600;
+}
+
+[data-superseded="true"] .ad-adr-title {
+  text-decoration: line-through;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.ad-adr-status {
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.ad-adr-status[data-status="accepted"] {
+  color: #1f7a4d;
+}
+
+.ad-adr-status[data-status="proposed"] {
+  color: #8a5a00;
+}
+
+.ad-adr-status[data-status="rejected"],
+.ad-adr-status[data-status="deprecated"] {
+  color: #a33a3a;
+}
+
+.ad-reader {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 11;
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  box-shadow: -8px 0 24px rgba(15, 20, 30, 0.08);
+}
+
+.ad-reader-beside {
+  right: 340px;
+  width: min(520px, calc(100% - 340px));
+}
+
+.ad-reader-head {
+  position: relative;
+  padding: 14px 44px 8px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ad-reader-head h2 {
+  margin: 2px 0;
+  font-size: 18px;
+}
+
+.ad-reader-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.ad-reader-body {
+  padding: 12px 20px 32px;
+  overflow: auto;
+}
+
+.ad-reader-banner {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-left: 3px solid #8a5a00;
+  background: rgba(138, 90, 0, 0.08);
+}
+
+.ad-markdown {
+  line-height: 1.55;
+}
+
+.ad-markdown h3,
+.ad-markdown h4 {
+  margin: 18px 0 6px;
+  font-size: 15px;
+}
+
+.ad-markdown pre {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(15, 20, 30, 0.05);
+  overflow: auto;
+}
+
+.ad-markdown blockquote {
+  margin: 8px 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+.ad-reader-source {
+  margin-top: 24px;
+}

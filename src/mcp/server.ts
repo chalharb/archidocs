@@ -2,7 +2,23 @@ import { McpServer, type CallToolResult, type StandardSchemaWithJSON } from "@mo
 import { z } from "zod";
 import { getDeployments, type DeploymentDetail } from "../core/deployments.ts";
 import { search } from "../core/search.ts";
-import { deriveEdges, findPaths, getImpact, levelOf, listOwned, type ImpactRing } from "../core/index.ts";
+import {
+  changeKinds,
+  countChanges,
+  deriveEdges,
+  diff,
+  filterChanges,
+  findPaths,
+  getImpact,
+  levelOf,
+  listOwned,
+  resolveScope,
+  scopeMatcher,
+  type Change,
+  type ChangeCounts,
+  type HistoryScope,
+  type ImpactRing,
+} from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
 import { listViews, resolveView, type ViewNode } from "../core/views.ts";
 import { resolveDynamic, resolveDynamicView, takesPart, type ResolvedStep } from "../core/dynamic-views.ts";
@@ -11,6 +27,7 @@ import { listAdrs, type ListedAdr } from "../core/adrs.ts";
 import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
+import { pastOf, type Past } from "./history.ts";
 import { registerWriteTools } from "./writes.ts";
 import { authoringGuide, topics } from "../guide/index.ts";
 
@@ -27,7 +44,7 @@ export interface ServerOptions {
 }
 
 /** The typed error codes a tool result can carry in `structuredContent.code`. */
-export type ErrorCode = "not_found" | "ambiguous" | "invalid_input" | "validation_failed" | "read_only" | "source_unavailable";
+export type ErrorCode = "not_found" | "ambiguous" | "invalid_input" | "validation_failed" | "read_only" | "source_unavailable" | "history_unavailable";
 
 export type ToolOutcome =
   | { ok: true; data: Record<string, unknown>; text: string }
@@ -53,31 +70,46 @@ export function createServer(options: ServerOptions): McpServer {
       ? `This server reads a published Bundle (${source.location}); write tools need a checkout.`
       : "Write tools are off over HTTP; restart the server with --allow-writes to allow them.";
 
+  const past = pastOf(source);
+
+  /**
+   * Registers a tool. A read tool also takes `at` (a ref or a date) and runs
+   * over the Bundle there; a write tool refuses `at`.
+   */
   const tool = <I extends z.ZodObject>(
     name: string,
     config: { title: string; description: string; input: I; output: z.ZodType; write?: boolean },
-    run: (args: z.output<I>, snapshot: Snapshot) => ToolOutcome | Promise<ToolOutcome>,
+    run: (args: z.output<I>, snapshot: Snapshot, context: ToolContext) => ToolOutcome | Promise<ToolOutcome>,
   ) => {
+    const input: z.ZodObject = config.write ? config.input : config.input.extend({ at: At.optional() });
     server.registerTool(
       name,
       {
         title: config.title,
         description: config.description,
-        inputSchema: advertise(config.input),
+        inputSchema: advertise(input),
         outputSchema: config.output,
         annotations: { readOnlyHint: !config.write, openWorldHint: false },
       },
       async (raw: unknown): Promise<CallToolResult> => {
         if (config.write && !writesAllowed) return toResult(fail("read_only", readOnlyReason));
-        const args = config.input.safeParse(raw ?? {});
+        if (config.write && takesAt(raw)) return toResult(fail("invalid_input", atRefused));
+        const args = input.safeParse(raw ?? {});
         if (!args.success) return toResult(fail("invalid_input", z.prettifyError(args.error)));
+        const { at, ...rest } = args.data as { at?: string };
         let snapshot: Snapshot;
         try {
           snapshot = await source.snapshot();
         } catch (error) {
           return toResult(fail("source_unavailable", `Could not read the Workspace from ${where(source)}: ${error instanceof Error ? error.message : String(error)}`));
         }
-        return toResult(await run(args.data, snapshot));
+        const current = snapshot;
+        if (at !== undefined) {
+          const then = await past.at(at, snapshot);
+          if (!then.ok) return toResult(then);
+          snapshot = then.snapshot;
+        }
+        return toResult(await run(rest as z.output<I>, snapshot, { past, at, current }));
       },
     );
   };
@@ -635,6 +667,125 @@ export function createServer(options: ServerOptions): McpServer {
   );
 
   tool(
+    "get_changes",
+    {
+      title: "Get Changes",
+      description:
+        "What changed in the Model between two points in time, each a ref (sha, tag or branch) or a date: a flat list of Changes (added, removed or changed), each with the fields that differ and the whole item before and after. `to` defaults to `at`, else the Workspace the server is reading. `scope` narrows to an Element (with its descendants and the Relationships, Deployments and ADRs touching them), a Team (what it owns at either side) or a Project; pass `scope_kind` when a Team and a Project share the id. `kinds` keeps only some item kinds.",
+      input: z.object({
+        from: Point.describe("The point to compare from: a ref or a date"),
+        to: Point.optional().describe("The point to compare to; defaults to `at`, else the current Workspace"),
+        scope: z.string().min(1).optional().describe("An Element (project:id), a Team id or a Project id"),
+        scope_kind: ScopeKind.optional(),
+        kinds: z.array(ChangeKindSchema).min(1).optional().describe(`Only these item kinds: ${changeKinds.join(", ")}`),
+        limit: Limit,
+      }),
+      output: z.object({
+        from: z.object({ point: z.string(), commit: z.string() }),
+        to: z.object({ point: z.string().nullable(), commit: z.string().nullable() }),
+        scope: z.object({ kind: ScopeKind, id: z.string() }).nullable(),
+        total: z.number(),
+        truncated: z.boolean(),
+        counts: z.record(z.string(), z.object({ added: z.number(), removed: z.number(), changed: z.number() })),
+        changes: z.array(ChangeRecord),
+      }),
+    },
+    async ({ from, to, scope, scope_kind, kinds, limit }, snapshot, { past, at }) => {
+      const before = await past.at(from, snapshot);
+      if (!before.ok) return before;
+      let after: Snapshot = snapshot;
+      if (to !== undefined) {
+        const then = await past.at(to, snapshot);
+        if (!then.ok) return then;
+        after = then.snapshot;
+      }
+      const sides = [before.snapshot.bundle, after.bundle];
+      let resolved: HistoryScope | undefined;
+      if (scope !== undefined) {
+        const found = resolveScope(scope, sides, scope_kind);
+        if (!found.ok) return scopeFailure(scope, found);
+        resolved = found.scope;
+      }
+      const changes = filterChanges(diff(before.snapshot.bundle, after.bundle), { before: before.snapshot.bundle, after: after.bundle, scope: resolved, kinds });
+      const { items, total, truncated } = page(changes, limit);
+      const toPoint = to ?? at ?? null;
+      const short = (sha: string | null) => (sha ? sha.slice(0, 7) : "no commit");
+      return ok(
+        {
+          from: { point: from, commit: before.commit },
+          to: { point: toPoint, commit: after.bundle.commit },
+          scope: resolved ?? null,
+          total,
+          truncated,
+          counts: countsByKind(changes),
+          changes: items,
+        },
+        [
+          `${count(total, "Change")} from ${from} (${short(before.commit)}) to ${toPoint ?? "the current Workspace"} (${short(after.bundle.commit)})${resolved ? ` in ${resolved.kind} ${resolved.id}` : ""}${truncated ? `; showing the first ${limit}` : ""}.`,
+          ...items.map(changeLine),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
+    "list_history",
+    {
+      title: "List history",
+      description:
+        "The Revisions (default-branch commits that changed the Workspace), newest first, each with sha, date, subject, author, tags, change counts against the Revision before, and whether its Bundle can be read with `at`. `scope` keeps the Revisions that touched an Element or its descendants, a Team or what it owns, or a Project (as they are at `at`, else now). `since` and `until` are refs or dates, inclusive; with `at`, Revisions after it are left out. Read from the Revision index, so it is cheap.",
+      input: z.object({
+        scope: z.string().min(1).optional().describe("An Element (project:id), a Team id or a Project id"),
+        scope_kind: ScopeKind.optional(),
+        since: Point.optional().describe("The earliest point: a ref or a date"),
+        until: Point.optional().describe("The latest point: a ref or a date"),
+        limit: Limit,
+      }),
+      output: z.object({
+        scope: z.object({ kind: ScopeKind, id: z.string() }).nullable(),
+        total: z.number(),
+        truncated: z.boolean(),
+        revisions: z.array(RevisionRecord),
+      }),
+    },
+    async ({ scope, scope_kind, since, until, limit }, { bundle }, { past, at }) => {
+      const listed = await past.index();
+      if (!listed.ok) return listed;
+      let revisions = listed.revisions;
+      for (const [point, edge, keep] of [
+        [since, "start", (t: number, d: number) => d >= t],
+        [until, "end", (t: number, d: number) => d <= t],
+        [at, "end", (t: number, d: number) => d <= t],
+      ] as const) {
+        if (point === undefined) continue;
+        const time = await past.time(point, edge);
+        if (!time.ok) return time;
+        revisions = revisions.filter((r) => keep(time.time, Date.parse(r.date)));
+      }
+      let resolved: HistoryScope | undefined;
+      if (scope !== undefined) {
+        const found = resolveScope(scope, [bundle], scope_kind, listed.revisions.flatMap((r) => r.changedIds));
+        if (!found.ok) return scopeFailure(scope, found);
+        resolved = found.scope;
+        const touched = scopeMatcher(resolved, [bundle]);
+        revisions = revisions.filter((r) => touched(r.changedIds));
+      }
+      const { items, total, truncated } = page(
+        revisions.map(({ sha, date, subject, author, tags, counts, bundle: kept }) => ({ sha, date, subject, author, tags, counts, bundle: kept })),
+        limit,
+      );
+      const tally = ({ added, removed, changed }: ChangeCounts) => [added && `+${added}`, removed && `-${removed}`, changed && `~${changed}`].filter(Boolean).join(" ") || "no Changes";
+      return ok(
+        { scope: resolved ?? null, total, truncated, revisions: items },
+        [
+          `${count(total, "Revision")}${resolved ? ` touching ${resolved.kind} ${resolved.id}` : ""}${truncated ? `; showing the first ${limit}` : ""}.`,
+          ...items.map((r) => `- ${r.sha.slice(0, 7)} ${r.date.slice(0, 10)} ${r.subject} (${r.author})${r.tags.length ? ` [${r.tags.join(", ")}]` : ""}: ${tally(r.counts)}${r.bundle ? "" : " (Bundle not kept)"}`),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
     "check",
     {
       title: "Check the Workspace",
@@ -658,7 +809,11 @@ export function createServer(options: ServerOptions): McpServer {
     },
   );
 
-  const GuideInput = z.object({ topic: z.string().min(1).optional().describe(`One topic's reference file: ${topics.map((t) => t.id).join(", ")}`) });
+  const GuideInput = z.object({
+    topic: z.string().min(1).optional().describe(`One topic's reference file: ${topics.map((t) => t.id).join(", ")}`),
+    // Taken like every read tool's, but the guide ships with this Archidocs, so it is the same at every point.
+    at: At.optional(),
+  });
   server.registerTool(
     "get_authoring_guide",
     {
@@ -682,6 +837,58 @@ export function createServer(options: ServerOptions): McpServer {
   registerWriteTools(server, source, writesAllowed ? undefined : readOnlyReason);
   return server;
 }
+
+/** What a tool knows besides its arguments: the source's past, the `at` it was given and the source's current Snapshot. */
+export interface ToolContext {
+  past: Past;
+  at: string | undefined;
+  current: Snapshot;
+}
+
+const Point = z.string().min(1);
+const ScopeKind = z.enum(["element", "team", "project"]).describe("What `scope` names, when a Team and a Project share the id");
+const ChangeKindSchema = z.enum(changeKinds);
+const ChangeRecord = z.object({
+  type: z.enum(["added", "removed", "changed"]),
+  kind: ChangeKindSchema,
+  id: z.string(),
+  fields: z.array(z.string()),
+  before: z.record(z.string(), z.unknown()).nullable(),
+  after: z.record(z.string(), z.unknown()).nullable(),
+});
+
+const RevisionRecord = z.object({
+  sha: z.string(),
+  date: z.string(),
+  subject: z.string(),
+  author: z.string(),
+  tags: z.array(z.string()),
+  counts: z.object({ added: z.number(), removed: z.number(), changed: z.number() }),
+  bundle: z.boolean().describe("Whether the Bundle at this Revision can be read with `at`"),
+});
+
+const changeSign = { added: "+", removed: "-", changed: "~" } as const;
+const changeLine = (c: Change) => `${changeSign[c.type]} ${c.kind} ${c.id}${c.fields.length ? `: ${c.fields.join(", ")}` : ""}`;
+
+/** Counts of Changes by type for each item kind that has any, in the order kinds are listed. */
+function countsByKind(changes: Change[]): Partial<Record<string, ChangeCounts>> {
+  return Object.fromEntries(changeKinds.flatMap((k) => {
+    const of = changes.filter((c) => c.kind === k);
+    return of.length ? [[k, countChanges(of)]] : [];
+  }));
+}
+
+/** `not_found` or `ambiguous` for a scope that names nothing, or both a Team and a Project. */
+function scopeFailure(scope: string, found: Extract<ReturnType<typeof resolveScope>, { ok: false }>): ToolOutcome {
+  if (found.reason === "ambiguous") return fail("ambiguous", `"${scope}" is both a ${found.candidates.map((c) => c.kind).join(" and a ")}; pass scope_kind to pick one.`, found.candidates.map((c) => c.kind));
+  return notFound("Element, Team or Project", scope, found.known);
+}
+
+const At = z.string().min(1).describe("A point in time to answer at: a ref (sha, tag or branch) or a date (YYYY-MM-DD, the last Revision on or before it). Leave out for the current Workspace.");
+
+/** Whether a call's raw arguments carry `at`, which write tools never take. */
+export const takesAt = (raw: unknown) => raw !== null && typeof raw === "object" && "at" in raw;
+export const atRefused = "Write tools never take `at`: they edit the Workspace as it is now.";
 
 const IssueRecord = z.object({
   file: z.string(),
