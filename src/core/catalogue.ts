@@ -40,4 +40,4 @@ const changedFiles = (files: Files, other: Files) =>
     .filter((path) => files[path] !== other[path])
     .sort();
 
-const fileBlock = (path: string, text: string) => [`\`${path}\`:`, "", "```yaml", text.trimEnd(), "```", ""];
+const fileBlock = (path: string, text: string) => [`\`${path}\`:`, "", path.endsWith(".md") ? "````markdown" : "```yaml", text.trimEnd(), path.endsWith(".md") ? "````" : "```", ""];

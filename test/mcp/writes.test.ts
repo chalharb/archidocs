@@ -417,6 +417,7 @@ describe("write tools", () => {
     expect(tools.map((t) => t.name).sort()).toEqual([
       "check",
       "create_project",
+      "propose_adr",
       "remove_deployment",
       "remove_element",
       "remove_relationship",

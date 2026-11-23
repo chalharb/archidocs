@@ -143,7 +143,7 @@ function parse(text: string, from: string): Snapshot {
   return { bundle: bundle.data, issues: [] };
 }
 
-/** Path, mtime and size of every `.yaml` file Load would read, in a stable order. */
+/** Path, mtime and size of every `.yaml` and `.md` file (ADRs) under the root, in a stable order. */
 async function fingerprint(root: string): Promise<string> {
   const lines: string[] = [];
   const dirs = [root];
@@ -152,7 +152,7 @@ async function fingerprint(root: string): Promise<string> {
       if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
       const path = join(dirs[i]!, entry.name);
       if (entry.isDirectory()) dirs.push(path);
-      else if (entry.name.endsWith(".yaml")) {
+      else if (entry.name.endsWith(".yaml") || entry.name.endsWith(".md")) {
         const s = await stat(path);
         lines.push(`${path}\0${s.mtimeMs}\0${s.size}`);
       }

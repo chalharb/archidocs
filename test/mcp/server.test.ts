@@ -52,6 +52,7 @@ describe("get_element", () => {
     const result = await call("get_element", { id: "shop:cart" });
     expect(result.isError).toBeFalsy();
     expect(result.structuredContent).toEqual({
+      adrs: [],
       element: {
         id: "shop:cart",
         kind: "service",
@@ -227,11 +228,13 @@ describe("tool surface", () => {
     const tools = (await client.listTools()).tools.filter((t) => t.annotations?.readOnlyHint);
     expect(tools.map((t) => t.name).sort()).toEqual([
       "find_paths",
+      "get_adr",
       "get_deployments",
       "get_element",
       "get_impact",
       "get_view",
       "get_workspace_info",
+      "list_adrs",
       "list_environments",
       "list_owned",
       "list_teams",

@@ -109,7 +109,7 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
     {
       title: "Remove an Element",
       description:
-        "Removes an Element and the Relationships declared under it. Refused while anything still references it (an Element in it, a Relationship to or via it, a Deployment of it), with each reference's file:line; nothing cascades.",
+        "Removes an Element and the Relationships declared under it. Refused while anything still references it (an Element in it, a Relationship to or via it, a Deployment of it, an ADR linking it), with each reference's file:line; nothing cascades.",
       input: z.object({ project: Project, id: Ref, dry_run: DryRun }),
       destructive: true,
     },
@@ -151,7 +151,7 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
     "remove_target",
     {
       title: "Remove a Deployment Target",
-      description: "Removes a Deployment Target. Refused while a Target is nested in it or a Deployment uses it, with each reference's file:line; nothing cascades.",
+      description: "Removes a Deployment Target. Refused while a Target is nested in it, a Deployment uses it or an ADR links it, with each reference's file:line; nothing cascades.",
       input: z.object({ project: Project, id: Ref, dry_run: DryRun }),
       destructive: true,
     },
@@ -240,11 +240,42 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
     "remove_view",
     {
       title: "Remove a Saved View",
-      description: "Removes a Saved View from its Project's YAML.",
+      description: "Removes a Saved View from its Project's YAML. Refused while an ADR links it, with each reference's file:line.",
       input: z.object({ project: Project, id: Ref, dry_run: DryRun }),
       destructive: true,
     },
     (a) => ({ op: "remove-view", project: a.project, id: a.id }),
+  );
+
+  writeTool(
+    "propose_adr",
+    {
+      title: "Propose an ADR",
+      description: [
+        "Writes a Proposed ADR to <project>/adr/NNNN-slug.md, taking the next free number in the Project, with `status: proposed` and today's date.",
+        "With no `body`, fills the Project's adr/template.md, else the Workspace's adr-template.md, else MADR minimal ({{title}}, {{date}}, {{elements}}, {{views}}). With `body`, writes it under a `# ` title.",
+        "`elements` (Elements and Deployment Targets), `views` (Saved Views) and `supersedes` (ADRs, NNNN or project:NNNN) are checked against the Workspace. Accepting it is a status and date edit in the pull request.",
+      ].join(" "),
+      input: z.object({
+        project: Project.describe("The Project that owns the decision, by id"),
+        title: z.string().min(1).describe("The decision, as the ADR's `# ` title"),
+        elements: z.array(Ref).optional().describe("Elements and Deployment Targets the decision affects"),
+        views: z.array(Ref).optional().describe("Saved Views the decision affects"),
+        supersedes: z.array(z.string().min(1)).optional().describe("ADRs this one replaces once accepted: NNNN in this Project, or project:NNNN"),
+        body: z.string().optional().describe("The markdown body; the template is filled when left out"),
+        dry_run: DryRun,
+      }),
+      idempotent: false,
+    },
+    (a) => ({
+      op: "propose-adr",
+      project: a.project,
+      title: a.title,
+      ...(a.elements === undefined ? {} : { elements: a.elements }),
+      ...(a.views === undefined ? {} : { views: a.views }),
+      ...(a.supersedes === undefined ? {} : { supersedes: a.supersedes }),
+      ...(a.body === undefined ? {} : { body: a.body }),
+    }),
   );
 
   writeTool(
@@ -306,6 +337,8 @@ function describe(item: WriteItem, subject: Record<string, string | null>): stri
       return `Deployment Target ${subject.id}`;
     case "view":
       return `Saved View ${subject.id}`;
+    case "adr":
+      return `ADR ${subject.id}`;
     default:
       return `${item[0]!.toUpperCase()}${item.slice(1)} ${subject.id}`;
   }

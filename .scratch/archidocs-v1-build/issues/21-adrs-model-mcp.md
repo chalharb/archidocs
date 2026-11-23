@@ -1,6 +1,7 @@
 # 21: ADRs: model, check and MCP
 
-Status: ready-for-agent
+Status: done
+Assignee: Claude (ticket-21 session)
 Blocked by: 09, 17
 Spec: [Archidocs v1](../../archidocs-v1/spec.md)
 
@@ -23,6 +24,6 @@ Decisions live as markdown beside the Model, linked to it, and agents can read a
 
 ## Acceptance criteria
 
-- [ ] Acceptance test for the Technical resource question: read the ADRs for an Element, and propose one.
-- [ ] A template override at each level is picked correctly.
-- [ ] Each ADR rule has failing and passing fixtures.
+- [x] Acceptance test for the Technical resource question: read the ADRs for an Element, and propose one.
+- [x] A template override at each level is picked correctly.
+- [x] Each ADR rule has failing and passing fixtures.

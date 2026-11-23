@@ -118,6 +118,28 @@ export interface ViewDecl extends Position {
   data: Record<string, unknown>;
 }
 
+/** One ADR file in a Project's `adr/` folder (any `.md` there but `template.md`). */
+export interface AdrDecl {
+  project: Project;
+  /** Repo-relative, with `/` separators. */
+  path: string;
+  filename: string;
+  /** The four-digit number, when the filename is `NNNN-slug.md`. */
+  number?: string;
+  /** The frontmatter's YAML, parsed; undefined when the file has no frontmatter. */
+  frontmatter?: ParsedYaml;
+  /** Lines before the frontmatter's YAML; a position in `frontmatter` is this many lines further down the file. */
+  lineOffset: number;
+  /** The frontmatter as plain data; empty when missing or unparsable. */
+  data: Record<string, unknown>;
+  /** The body's first `# ` heading, and its line in the file. */
+  title?: { text: string; line: number };
+  /** Everything after the frontmatter and the blank lines below it. */
+  body: string;
+  /** The line the body starts at. */
+  bodyLine: number;
+}
+
 /** Everything Load read from disk, before rules run and the Bundle is built. */
 export interface LoadedWorkspace {
   files: SourceFile[];
@@ -135,4 +157,6 @@ export interface LoadedWorkspace {
   deployments: DeploymentDecl[];
   /** Sorted by file, then line. */
   views: ViewDecl[];
+  /** Sorted by path. */
+  adrs: AdrDecl[];
 }

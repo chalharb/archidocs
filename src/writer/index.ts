@@ -12,6 +12,7 @@ import { byPlace, fail, findProject, local, modelFile, projectFile, type Edit, t
 import { overlayFileSystem } from "./overlay.ts";
 import { createProject, upsertDefinition, type DefinitionRequest, type ProjectRequest } from "./workspace.ts";
 import { removeView, upsertView, type ViewRequest } from "./views.ts";
+import { adrReferences, proposeAdr, type AdrRequest } from "./adrs.ts";
 
 export type { SourceRef, WriteErrorCode, WriteItem } from "./edit.ts";
 
@@ -33,7 +34,8 @@ export type WriteRequest =
   | DeploymentRequest
   | DefinitionRequest
   | ProjectRequest
-  | ViewRequest;
+  | ViewRequest
+  | AdrRequest;
 
 export type WriteResult =
   | {
@@ -66,6 +68,7 @@ export async function write(options: WriterOptions, request: WriteRequest, { dry
   const { workspace: ws, repoRoot } = before;
 
   const files = new Map<string, YamlFile>();
+  const created = new Map<string, string>();
   const edit: Edit = {
     ws,
     repoRoot,
@@ -78,15 +81,23 @@ export async function write(options: WriterOptions, request: WriteRequest, { dry
       }
       return file;
     },
+    read: async (abs) => ((await fs.exists(abs)) ? fs.readFile(abs) : undefined),
+    create: (abs, text) => void created.set(abs, text),
   };
 
   const planned = await plan(edit, request);
   if (!planned.ok) return planned;
 
   const changed = new Map<string, string>();
+  const originals = new Map<string, string | null>();
   for (const [abs, file] of files) {
     const text = file.toString();
+    originals.set(abs, file.original);
     if (text !== file.original) changed.set(abs, text);
+  }
+  for (const [abs, text] of created) {
+    originals.set(abs, null);
+    changed.set(abs, text);
   }
   const rel = (abs: string) => abs.slice(repoRoot.length + 1).split(sep).join("/");
   const ordered = [...changed.keys()].sort((a, b) => (rel(a) < rel(b) ? -1 : 1));
@@ -96,7 +107,7 @@ export async function write(options: WriterOptions, request: WriteRequest, { dry
     item: planned.item,
     subject: planned.subject,
     files: ordered.map(rel),
-    diff: ordered.map((abs) => unifiedDiff(rel(abs), files.get(abs)!.original, changed.get(abs)!)).join(""),
+    diff: ordered.map((abs) => unifiedDiff(rel(abs), originals.get(abs)!, changed.get(abs)!)).join(""),
     dryRun,
   };
   if (changed.size === 0) return result;
@@ -129,6 +140,8 @@ async function plan(edit: Edit, request: WriteRequest): Promise<Planned> {
       return upsertView(edit, request);
     case "remove-view":
       return removeView(edit, request);
+    case "propose-adr":
+      return proposeAdr(edit, request);
   }
   const project = findProject(edit, request.project);
   if ("ok" in project) return project;
@@ -299,6 +312,7 @@ async function removeElement(edit: Edit, project: Project, request: Extract<Writ
     ...edit.ws.deployments
       .filter((d) => d.service === element)
       .map((d) => ({ file: d.file.path, line: d.line, what: `Deployment of ${subject.id} to ${String(d.data.environment)} on ${qualify(d.data.target, d.project) ?? String(d.data.target)}` })),
+    ...adrReferences(edit.ws, "elements", subject.id),
   ].sort(byPlace);
   if (references.length > 0) {
     return fail("validation_failed", `${subject.id} is still referenced in ${references.length} place${references.length === 1 ? "" : "s"}; remove or change those first. Nothing was written.`, { references });

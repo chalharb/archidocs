@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { deploymentWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { connect } from "../support/mcp.ts";
@@ -125,5 +127,33 @@ describe("persona questions through MCP", () => {
         "- payments:charges (Charges): 1 upstream Team, 1 downstream Team",
       ].join("\n"),
     );
+  });
+
+  it("Technical resource: what decisions are behind an Element, and propose a new one", async () => {
+    const decision = (frontmatter: string, title: string) => `---\n${frontmatter}\n---\n\n# ${title}\n\nContext.\n`;
+    const { call, root } = await connect({
+      ...landscapeWorkspace,
+      "shop/adr/0001-cart-store.md": decision("status: accepted\ndate: 2025-05-02\nelements: [cart]", "Keep carts in Postgres"),
+      "shop/adr/0002-cart-cache.md": decision("status: accepted\ndate: 2026-02-01\nelements: [cart]\nsupersedes: [\"0001\"]", "Keep carts in Redis"),
+      "shop/adr/0003-checkout-system.md": decision("status: accepted\ndate: 2024-11-01\nelements: [checkout]", "Group checkout Services"),
+    });
+
+    const listed = (await call("list_adrs", { element: "shop:cart" })).structuredContent!.adrs as { id: string; title: string; effectiveStatus: string }[];
+    expect(listed.map((a) => [a.id, a.title, a.effectiveStatus])).toEqual([
+      ["shop:0002", "Keep carts in Redis", "accepted"],
+      ["shop:0001", "Keep carts in Postgres", "superseded"],
+    ]);
+    const current = await call("get_adr", { id: listed[0]!.id });
+    expect(current.structuredContent).toMatchObject({ supersedes: ["shop:0001"], body: "# Keep carts in Redis\n\nContext.\n" });
+
+    const proposed = await call("propose_adr", { project: "shop", title: "Shard carts by region", elements: ["cart"], supersedes: ["0002"] });
+    expect(proposed.structuredContent).toMatchObject({ action: "created", id: "shop:0004", files: ["archidocs/shop/adr/0004-shard-carts-by-region.md"] });
+    expect(await readFile(join(root, "shop/adr/0004-shard-carts-by-region.md"), "utf8")).toMatch(/^---\nstatus: proposed\n/);
+    const after = (await call("list_adrs", { element: "shop:cart" })).structuredContent!.adrs as { id: string; status: string }[];
+    expect(after.map((a) => [a.id, a.status])).toEqual([
+      ["shop:0004", "proposed"],
+      ["shop:0002", "accepted"],
+      ["shop:0001", "accepted"],
+    ]);
   });
 });

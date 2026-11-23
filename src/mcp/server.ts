@@ -7,7 +7,9 @@ import { suggest } from "../core/suggest.ts";
 import { listViews, resolveView, type ViewNode } from "../core/views.ts";
 import { resolveDynamic, resolveDynamicView, takesPart, type ResolvedStep } from "../core/dynamic-views.ts";
 import { describeLens } from "../core/saved-views.ts";
-import { BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
+import { listAdrs, type ListedAdr } from "../core/adrs.ts";
+import { AdrStatus } from "../schema/adr.ts";
+import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 import { registerWriteTools } from "./writes.ts";
 
@@ -125,7 +127,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get Element",
       description:
-        "One Element by qualified id (project:id): its fields, Owner Team, parent and children, the Relationships declared on it in and out, the edges derived onto it from its descendants', a Service's Deployments with their URLs, the Dynamic Views it takes part in (as a participant, or as the broker of an event Step), and the file and line it is declared at.",
+        "One Element by qualified id (project:id): its fields, Owner Team, parent and children, the Relationships declared on it in and out, the edges derived onto it from its descendants', a Service's Deployments with their URLs, the Dynamic Views it takes part in (as a participant, or as the broker of an event Step), the ADRs linking it or its descendants (as list_adrs gives them), and the file and line it is declared at.",
       input: z.object({ id: QualifiedId }),
       output: z.object({
         element: BundleElement,
@@ -136,6 +138,7 @@ export function createServer(options: ServerOptions): McpServer {
         relationships: z.object({ in: z.array(BundleRelationship), out: z.array(BundleRelationship) }),
         derived: z.object({ in: z.array(Edge), out: z.array(Edge) }),
         dynamicViews: z.array(z.object({ id: z.string(), title: z.string() })),
+        adrs: z.array(AdrSummary),
         viewerUrl: z.string().optional(),
       }),
     },
@@ -160,6 +163,7 @@ export function createServer(options: ServerOptions): McpServer {
         relationships,
         derived: derivedEdges,
         dynamicViews,
+        adrs: listAdrs(bundle, { element: id }).map(adrSummary),
         ...viewerLink(options.viewerUrl, id),
       };
       const fields: [string, unknown][] = [
@@ -173,6 +177,7 @@ export function createServer(options: ServerOptions): McpServer {
         ["deployments", deployments.map((d) => `${d.environment} on ${d.target}${d.url ? ` (${d.url})` : ""}`).join(", ")],
         ["uses", relationships.out.map((r) => `${r.to}${r.description ? ` (${r.description})` : ""}`).join(", ")],
         ["used by", relationships.in.map((r) => `${r.from}${r.description ? ` (${r.description})` : ""}`).join(", ")],
+        ["ADRs", data.adrs.map((a) => `${a.id} ${a.title} (${statusLabel(a)})`).join(", ")],
         [
           "derived",
           [...derivedEdges.out.map((e) => `→ ${e.to} (${count(e.relationships.length, "Relationship")})`), ...derivedEdges.in.map((e) => `← ${e.from} (${count(e.relationships.length, "Relationship")})`)].join(", "),
@@ -565,6 +570,71 @@ export function createServer(options: ServerOptions): McpServer {
   );
 
   tool(
+    "list_adrs",
+    {
+      title: "List ADRs",
+      description:
+        "Architecture decision records, newest first (by date, then number). With `element`, only the ADRs that link that Element or Deployment Target or any of its descendants (not its ancestors), each with `matchedVia`: the linked ids that matched. `status` filters on the effective status, so `superseded` finds ADRs replaced by an accepted one. Superseded ADRs are included and carry `supersededBy`.",
+      input: z.object({
+        element: QualifiedId.optional().describe("Only ADRs linking this Element or Deployment Target (project:id), or its descendants"),
+        status: AdrStatus.optional().describe("Only ADRs with this effective status"),
+        tag: z.string().min(1).optional(),
+        limit: Limit,
+      }),
+      output: z.object({ total: z.number(), truncated: z.boolean(), adrs: z.array(AdrSummary) }),
+    },
+    ({ element, status, tag, limit }, { bundle }) => {
+      if (element !== undefined) {
+        const known = [...bundle.elements, ...bundle.targets].map((e) => e.id);
+        if (!known.includes(element)) return notFound("Element or Deployment Target", element, known);
+      }
+      const { items, total, truncated } = page(listAdrs(bundle, { element, status, tag }).map(adrSummary), limit);
+      const filters = [element ? `for ${element}` : "", status ? `with status ${status}` : "", tag ? `tagged ${tag}` : ""].filter(Boolean).join(", ");
+      return ok(
+        { total, truncated, adrs: items },
+        [
+          `${total} ADR${total === 1 ? "" : "s"}${filters ? ` ${filters}` : ""}${truncated ? `; showing the first ${limit}` : ""}.`,
+          ...items.map((a) => `- ${a.id} ${a.title}: ${statusLabel(a)}, ${a.date}${a.matchedVia ? ` (via ${a.matchedVia.join(", ")})` : ""}`),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
+    "get_adr",
+    {
+      title: "Get ADR",
+      description:
+        "One ADR by id (project:NNNN): its title, status as written and effective status, date, linked Elements, Targets and Saved Views, supersedes and the derived supersededBy, decision-makers, consulted, informed, tags, the full markdown body and its file.",
+      input: z.object({ id: z.string().min(1).describe("An ADR id, project:NNNN") }),
+      output: BundleAdr,
+    },
+    ({ id }, { bundle }) => {
+      const adr = bundle.adrs.find((a) => a.id === id);
+      if (!adr) return notFound("ADR", id, bundle.adrs.map((a) => a.id));
+      const fields: [string, string][] = [
+        ["elements", adr.elements.join(", ")],
+        ["views", adr.views.join(", ")],
+        ["supersedes", adr.supersedes.join(", ")],
+        ["decision-makers", adr.decisionMakers.join(", ")],
+        ["consulted", adr.consulted.join(", ")],
+        ["informed", adr.informed.join(", ")],
+        ["tags", adr.tags.join(", ")],
+      ];
+      return ok(
+        { ...adr },
+        [
+          `ADR ${adr.id} (${adr.title}): ${adr.status}, ${adr.date}; ${adr.source.file}.`,
+          ...(adr.supersededBy.length ? [`Superseded by ${adr.supersededBy.join(", ")}.`] : []),
+          ...fields.filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`),
+          "",
+          adr.body.trimEnd(),
+        ].join("\n"),
+      );
+    },
+  );
+
+  tool(
     "check",
     {
       title: "Check the Workspace",
@@ -647,6 +717,25 @@ const deploymentResult = (d: DeploymentDetail) => ({
 const summary = (e: BundleElement) => ({ id: e.id, kind: e.kind, name: e.name });
 const label = (e: { id: string; name: string }) => `${e.id} (${e.name})`;
 const kindName = { person: "Person", system: "System", service: "Service", component: "Component" } as const;
+
+const AdrSummary = BundleAdr.pick({ id: true, title: true, status: true, effectiveStatus: true, date: true, elements: true, views: true, supersedes: true, supersededBy: true, tags: true }).extend({
+  matchedVia: z.array(z.string()).optional().describe("With `element`: the linked ids that matched"),
+});
+const adrSummary = (a: ListedAdr) => ({
+  id: a.id,
+  title: a.title,
+  status: a.status,
+  effectiveStatus: a.effectiveStatus,
+  date: a.date,
+  elements: a.elements,
+  views: a.views,
+  supersedes: a.supersedes,
+  supersededBy: a.supersededBy,
+  tags: a.tags,
+  ...(a.matchedVia ? { matchedVia: a.matchedVia } : {}),
+});
+const statusLabel = (a: { effectiveStatus: string; supersededBy: string[] }) =>
+  a.supersededBy.length ? `superseded by ${a.supersededBy.join(", ")}` : a.effectiveStatus;
 
 const Edge = z.object({ from: z.string(), to: z.string(), relationships: z.array(BundleRelationship) });
 const ImpactSide = z.object({
