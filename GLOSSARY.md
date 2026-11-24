@@ -114,6 +114,10 @@ _Avoid_: Delta, diff entry
 A diagram defined by a query over the Model; never a source of truth.
 _Avoid_: Diagram (as the stored thing), page, canvas
 
+**View id**:
+The id a View is opened by: a Generated View's scope, such as `c2/<system>`, or a Saved View's Qualified id.
+_Avoid_: View name, view path, slug
+
 **Generated View**:
 A View derived from the Model for one scope, such as a System's Services or one Environment's Deployments; it exists for every scope without anyone writing it.
 _Avoid_: Default view, auto view
@@ -121,6 +125,10 @@ _Avoid_: Default view, auto view
 **Saved View**:
 A View written into a Project's files: a named selection of the Model, or a Dynamic View.
 _Avoid_: Custom view, stored diagram
+
+**Structural View**:
+A View drawn as boxes and edges, of Elements or of Deployments on their Deployment Targets; every View that is not a Dynamic View.
+_Avoid_: Static view, box diagram, element view
 
 **Deployment View**:
 A View of Deployments placed on their Deployment Targets within an Environment.
