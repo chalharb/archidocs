@@ -36,14 +36,15 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - [How hand-written pages are kept correct](issues/08-hand-written-correctness.md): internal links fail the build; external links checked weekly; YAML samples included from `examples/` (failure samples tested); `archidocs` command lines parsed against the CLI definitions; tutorial gets an end-to-end CI test.
 - [What the README keeps](issues/10-readme-cut.md): ~70 lines: pitch, Why, Quick start, Examples, Development, License; Model, CLI, Publishing and Agents become a line plus a site link; hand-written but CLI-checked; cut ships with the first site deploy.
 - [Should check output link to rule pages](issues/11-check-links-to-rules.md): yes, always: a `docs` URL per issue in json and MCP, a Rule docs footer in text, a See-link in GitHub annotations; removed rules keep stub pages so old CLIs never 404.
+- [How diagrams look on the dark theme](issues/12-dark-theme-diagrams.md): the export is restyled to the Wayfinding Plate tokens from one shared source (no fades) and gains `--theme light|dark`; docs swap by Starlight theme; the landing page stays light.
 
 ## Not yet specified
 
-<!-- everything in scope is now ticketed; the landing page copy is part of the landing page ticket -->
-
+None. Every ticket is resolved, and the way to the spec is clear.
 
 ## Out of scope
 
 - **A cached copy of the docs for each release:** this is a likely future state. The destination is latest only. The generator choice should not rule it out (see the generator ticket).
 - **A blog.**
 - **Contributor docs:** these stay in the README and `AGENTS.md`.
+- **An Action `theme` input** for dark Saved View images: beyond the docs site; `archidocs export --theme dark` covers manual use ([dark-theme ticket](issues/12-dark-theme-diagrams.md)).
