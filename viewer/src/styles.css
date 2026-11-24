@@ -3204,3 +3204,53 @@ button.arc-change:focus-visible {
 .arc-box:has(.arc-box-foot .arc-way-in) .arc-holds {
   right: 46px;
 }
+
+/* The direction dropdown wears the same chevron as the menu buttons beside it, in place of the browser's own. */
+.arc-plate .arc-direction-label {
+  position: relative;
+  display: inline-flex;
+}
+
+.arc-plate .arc-tools select.arc-direction {
+  appearance: none;
+  padding: 0 30px 0 12px;
+}
+
+.arc-plate .arc-direction-label::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  background: var(--on-plate);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%23000' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
+@media (max-width: 1279px) {
+  .arc-plate .arc-tools select.arc-direction {
+    padding: 0 22px 0 8px;
+  }
+
+  .arc-plate .arc-direction-label::after {
+    right: 8px;
+  }
+}
+
+/* Phones: every key is the same width, and the direction key centres its arrow and chevron as one pair like the rest. */
+@media (max-width: 640px) {
+  .arc-plate .arc-tools > .arc-tool:not(.arc-primary) {
+    padding: 0;
+  }
+
+  .arc-plate .arc-tools select.arc-direction {
+    padding: 0 14px 0 0;
+  }
+
+  .arc-plate .arc-direction-label::after {
+    right: auto;
+    left: calc(50% + 4px);
+  }
+}
