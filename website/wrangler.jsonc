@@ -1,6 +1,6 @@
 // The docs site, archidocs.dev: a static-assets-only Worker on Cloudflare.
 // Build it first from the repo root with `pnpm docs:build`, which writes ./dist.
-// .github/workflows/docs.yml deploys each PR and main to Previews;
+// .github/workflows/sites.yml deploys each PR to a Preview and main to next.archidocs.dev (`--env next`);
 // the release job in .github/workflows/publish.yml deploys production from the release tag.
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
@@ -18,5 +18,18 @@
   "workers_dev": false,
   "preview_urls": true,
   // Worker Previews (`wrangler preview`) need this block; an empty one keeps the production settings.
-  "previews": {}
+  "previews": {},
+  "env": {
+    // The docs at main, ahead of the release: a Worker of its own on next.archidocs.dev.
+    "next": {
+      "name": "archidocs-docs-next",
+      "assets": {
+        "directory": "./dist",
+        "not_found_handling": "404-page"
+      },
+      "routes": [{ "pattern": "next.archidocs.dev", "custom_domain": true }],
+      "workers_dev": false,
+      "preview_urls": false
+    }
+  }
 }
