@@ -110,7 +110,7 @@ The terms (Workspace, Project, Element, Relationship, Team, Environment, Deploym
 | `archidocs check [--strict]` | Validate the Workspace. Formats: `text`, `json`, `github`. |
 | `archidocs dev` | Serve the viewer locally with live reload. |
 | `archidocs build [--out <dir>]` | Build the static viewer site with past Revisions. `--preview` builds a PR preview. |
-| `archidocs export <view-id>` | Render a View to SVG or PNG; `--all-saved` renders every Saved View. |
+| `archidocs export <view-id>` | Render a View to SVG or PNG, styled like the viewer; `--all-saved` renders every Saved View, `--theme dark` draws it in the viewer's dark palette and `--label <text>` replaces the source line. |
 | `archidocs diff <from> [<to>]` | Show what changed in the Model between two refs. |
 | `archidocs mcp` | Run the MCP server over a Workspace checkout or a published Bundle. |
 | `archidocs guide [topic]` | Print the authoring guide for agents. |

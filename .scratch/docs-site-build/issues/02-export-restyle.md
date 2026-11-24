@@ -1,6 +1,6 @@
 # 02: Export restyle, themes and label
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Archidocs docs site](../../docs-site/spec.md)
 
@@ -16,8 +16,8 @@ Bring `archidocs export` in line with the viewer's Wayfinding Plate look ([dark-
 
 ## Acceptance criteria
 
-- [ ] Light export colours equal the viewer's light tokens; dark export colours equal its dark tokens (unit tests against the shared module).
-- [ ] No element in an exported SVG has an opacity below 1 (test over every Saved View in `examples/`).
-- [ ] `--theme dark` and `--label "Big Bank · v1.2.0"` work for `export <view-id>` and `--all-saved`, for SVG and PNG.
-- [ ] Default output stays light, and the Action's `images: true` still works (the existing `action` CI job passes).
-- [ ] The viewer looks unchanged (the e2e tests pass).
+- [x] Light export colours equal the viewer's light tokens; dark export colours equal its dark tokens (unit tests against the shared module).
+- [x] No element in an exported SVG has an opacity below 1 (test over every Saved View in `examples/`).
+- [x] `--theme dark` and `--label "Big Bank · v1.2.0"` work for `export <view-id>` and `--all-saved`, for SVG and PNG.
+- [x] Default output stays light, and the Action's `images: true` still works (the existing `action` CI job passes).
+- [x] The viewer looks unchanged (the e2e tests pass).
