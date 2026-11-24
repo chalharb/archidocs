@@ -6,6 +6,8 @@ Label: wayfinder:map
 
 A **spec for the Archidocs documentation site** at archidocs.dev. It locks six areas in enough detail to split into build tickets: audience and information architecture (the page tree), the site generator, which content is generated and which is hand-written, hosting and deploy, versioning, and how the site shows the live viewer. Building the site is a separate effort.
 
+**Reached:** the spec is [spec.md](spec.md).
+
 ## Notes
 
 - **Audience:** people adopting Archidocs come first: they set up a Workspace, author Projects, wire up CI and point agents at MCP. Viewer visitors (the viewer has to answer them itself) and contributors (README, `AGENTS.md`) are out of scope. Agents are a second reader of the same docs.
