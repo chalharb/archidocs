@@ -8,6 +8,7 @@ import starlightLlmsTxt from "starlight-llms-txt";
 import { PAGEFIND_RANKING } from "./src/lib/search.ts";
 import commandLines from "./src/plugins/command-lines.ts";
 import identifierHeadings from "./src/plugins/identifier-headings.ts";
+import samples from "./src/plugins/samples.ts";
 
 /**
  * A sidebar group listing a folder's pages.
@@ -54,6 +55,7 @@ export default defineConfig({
         group("Examples", "docs/examples"),
       ],
       plugins: [
+        samples(),
         commandLines(),
         identifierHeadings(),
         starlightLinksValidator(),
@@ -77,7 +79,8 @@ export default defineConfig({
           // llms-small.txt leaves out the Examples and the Changelog.
           exclude: ["docs/examples/**", "docs/reference/changelog"],
         }),
-        starlightLlmActions(),
+        // The .md copies: sample fences filled in, Diagrams as images (src/render-markdown.ts).
+        starlightLlmActions({ renderMarkdown: { module: "./src/render-markdown.ts" } }),
       ],
     }),
   ],

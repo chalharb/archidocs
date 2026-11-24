@@ -7,6 +7,36 @@ sidebar:
 
 import Diagram from "../../../../components/Diagram.astro";
 
-This page is coming soon. Explore the [live demo](https://kitchen-sink.archidocs.dev):
+The Kitchen sink is one small Project that uses every feature of the Model: every kind of Element and Service, External ones, async Relationships through a broker, nested Deployment Targets, endpoints, structural and Dynamic Views, a Lens and an ADR. The [Model YAML reference](/docs/reference/model/model-yaml/) takes its examples from it.
+
+[Open the live demo ↗](https://kitchen-sink.archidocs.dev) · [Source on GitHub](https://github.com/chalharb/archidocs/tree/main/examples/kitchen-sink)
 
 <Diagram view="kitchen-sink/sink:everything" alt="Every kind of Element and Relationship in the Kitchen sink Workspace." />
+
+## What is where
+
+| File | Shows |
+| --- | --- |
+| `workspace.yaml` | Three Teams and one Environment. |
+| `sink/project.yaml` | A Project owned by the Core Team. |
+| `sink/model.yaml` | A Person; an internal System with an app, a datastore and a broker Service, Components, and an async Relationship through the broker; an External System; Services outside any System, one External; `owner`, `tags` and `links`. |
+| `sink/reporting.yaml` | A Service in its own file, placed in a System with `in`. |
+| `sink/deployments.yaml` | A region with a cluster inside it, Deployments with URLs, and `endpoints`. |
+| `sink/views.yaml` | A structural View, one with `exclude` and an Impact Lens, and a Dynamic View with a call, a derived edge, an event and a reply. |
+| `sink/adr/0001-…md` | An accepted ADR linked to Elements and a View. |
+
+## The Model
+
+```yaml file="examples/kitchen-sink/archidocs/sink/model.yaml"
+```
+
+## Its other Saved Views
+
+<Diagram view="kitchen-sink/sink:orders-db-outage" alt="The Kitchen sink Services that depend on Orders DB, marked by how far upstream they are." />
+
+<Diagram view="kitchen-sink/sink:place-order" alt="The Kitchen sink's Customer places an order: a call, a derived edge, an event through the broker and a reply." />
+
+## Related
+
+- [Elements and Relationships reference](/docs/reference/model/model-yaml/)
+- [Big Bank](/docs/examples/big-bank/), a larger, more realistic Workspace

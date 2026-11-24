@@ -1,7 +1,59 @@
 ---
 title: Review changes with diff
+description: See what a change does to the Model, between two refs, two dates or your working tree.
 sidebar:
   order: 1
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+A YAML diff shows which lines changed. `archidocs diff` shows what changed in the architecture: which Elements, Relationships, Deployments, Views and ADRs were added, removed or changed, and which fields.
+
+## Your working tree
+
+With one point, `diff` compares it with your uncommitted working tree, so you can see what an edit does before you commit:
+
+```bash
+archidocs diff HEAD
+```
+
+```text
+Changes from HEAD (b70fffd) to working tree: 5 added, 0 removed, 2 changed
+
++ Element sink:reports
+~ Element sink:web
+    tags: [] → ["customer-facing"]
+    links: [] → [{"label":"Runbook","url":"https://wiki.sink.example/runbooks/web"}]
++ Relationship sink:reports -> sink:orders-db
+~ Deployment sink:api in prod on sink:cluster
+    endpoints: [] → [{"name":"health","url":"https://api.sink.example/healthz"}]
++ Saved View sink:orders-db-outage
++ Saved View sink:place-order
++ ADR sink:0001
+```
+
+Each line is one [Change](/docs/reference/glossary/#term-change): `+` added, `-` removed, `~` changed, with the fields that changed.
+
+## Two points in history
+
+Give two git refs to compare them, such as a pull request's base and head, or two release tags:
+
+```bash
+archidocs diff origin/main HEAD
+```
+
+A point can also be a date, which means the last commit on the default branch at or before it:
+
+```bash
+archidocs diff 2026-01-01 2026-06-30
+```
+
+## For a pull request
+
+`--format markdown` writes the same Changes as a table for a pull request comment, and `--format json` for scripts. [PR previews](/docs/guides/publish/pr-previews/#comment-the-changes) has a workflow that comments them on every pull request, beside a preview site that opens on Compare.
+
+## In the viewer and over MCP
+
+A published viewer's **Compare** shows the Changes between two Revisions on the diagram, and over MCP [`get_changes`](/docs/reference/mcp/read-tools/#get_changes) returns them. See [Revisions and history](/docs/concepts/revisions-and-history/).
+
+## Related
+
+- [`archidocs diff` reference](/docs/reference/cli/diff/)

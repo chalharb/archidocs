@@ -31,6 +31,7 @@
     "docs:dev": "pnpm --dir website dev",
     "docs:build": "pnpm --dir website build",
     "docs:test": "pnpm --dir website test",
+    "docs:tutorial": "pnpm build:viewer && node website/scripts/tutorial.ts",
     "demo:kitchen-sink": "pnpm build:viewer && cd examples/kitchen-sink && node ../../src/cli/main.ts build --out site"
   },
   "dependencies": {

@@ -1,7 +1,54 @@
 ---
 title: Deployments
+description: Environments, Deployment Targets and Deployments, and where a Service's URL lives.
 sidebar:
   order: 5
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+import Diagram from "../../../../components/Diagram.astro";
+
+Three things describe where software runs:
+
+- An [Environment](/docs/reference/glossary/#term-environment) is a named stage, such as `prod` or `staging`, defined once in `workspace.yaml`.
+- A [Deployment Target](/docs/reference/glossary/#term-deployment-target) is a place a Service runs in: a region, a cluster in it, a namespace, a platform.
+- A [Deployment](/docs/reference/glossary/#term-deployment) is one Service running in one Environment on one Target.
+
+## Deployment Targets
+
+Targets nest to any depth, each with a `kind` that says what it is. They are declared under `targets` in any Project file. Big Bank's Platform Team declares the cloud region with its clusters, and the Core Banking Team's data centre:
+
+```yaml file="examples/big-bank/archidocs/platform/targets.yaml"
+```
+
+Targets aren't Elements: nothing depends on a cluster, and it never shows on a structural diagram. They do share the Project's ids with Elements, have an Owner of their own (the London data centre is Core Banking's), and can be linked from ADRs. Other Projects use them by Qualified id, as `platform:eks-prod`.
+
+A Target isn't tied to one Environment. Which Environments a Target serves follows from the Deployments on it.
+
+## Deployments
+
+Deployments are listed under `deployments`, each naming its `service`, `environment` and `target`:
+
+```yaml file="examples/big-bank/archidocs/digital/deployments.yaml"
+```
+
+The Service, Environment and Target name the Deployment; the same three can appear only once ([`duplicate-deployment`](/docs/reference/rules/duplicate-deployment/)). Only a Service can be deployed: Systems and Components run as part of their Services.
+
+## URLs live on Deployments
+
+A Service's `url` belongs to a Deployment, because it differs per Environment: the API is `https://api.bigbank.example` in production and `https://api.staging.bigbank.example` in staging. `endpoints` adds further named URLs, such as a health check or an admin console.
+
+That answers the QA Tester's question, "what is this Service's URL in staging?": in the viewer's Element panel, or over MCP with [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments). Agents can go the other way too: [`search_elements`](/docs/reference/mcp/read-tools/#search_elements) resolves a URL or host name to the Service deployed there.
+
+## Deployment Views
+
+Each Environment has a Generated [Deployment View](/docs/reference/glossary/#term-deployment-view), `deployment/<environment>`, which places every Deployment on its Target, nested as the Targets nest. A Saved View with `level: deployment` narrows one down, as Big Bank's view of internet banking in production does:
+
+```yaml file="examples/big-bank/archidocs/digital/views.yaml" region="prod-deployment"
+```
+
+<Diagram view="big-bank/digital:prod-deployment" alt="Big Bank's internet banking Services in production, placed on the EKS prod cluster inside the AWS London region." />
+
+## Related
+
+- [Add Deployments](/docs/guides/model/add-deployments/)
+- [Deployment Targets and Deployments reference](/docs/reference/model/deployments-yaml/)

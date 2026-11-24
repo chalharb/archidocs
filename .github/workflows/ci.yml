@@ -73,6 +73,21 @@ jobs:
             test-results/
           retention-days: 7
 
+  tutorial:
+    # The tutorial "Model your first system" (website/src/content/docs/docs/start/tutorial.mdx),
+    # run as a reader would in a temp folder: its shell blocks in order, with each file it shows,
+    # using this repo's CLI. Its files must add up to examples/tutorial/.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm docs:tutorial
+
   action:
     # The reusable Action (action.yml) against fixture Workspace repos: a site with
     # images, a failed check that publishes nothing, and a PR preview. It never deploys.

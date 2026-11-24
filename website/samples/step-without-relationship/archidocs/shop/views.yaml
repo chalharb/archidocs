@@ -1,0 +1,11 @@
+views:
+  dynamic:
+    place-order:
+      title: Place an order
+      steps:
+        - from: web
+          to: api
+          description: POST /orders
+        - from: api
+          to: web
+          description: Order placed

@@ -26,6 +26,6 @@ test("the dark picture follows the system theme when the toggle is on Auto", asy
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/docs/examples/kitchen-sink/");
   await page.getByRole("combobox", { name: "Select theme" }).first().selectOption("auto");
-  await expect(page.locator("img.diagram-dark")).toBeVisible();
-  await expect(page.locator("img.diagram-light")).toBeHidden();
+  await expect(page.locator("img.diagram-dark").first()).toBeVisible();
+  await expect(page.locator("img.diagram-light").first()).toBeHidden();
 });

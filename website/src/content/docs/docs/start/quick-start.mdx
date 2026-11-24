@@ -5,12 +5,42 @@ sidebar:
   order: 2
 ---
 
-This page is coming soon. In short:
+Archidocs needs Node.js 22.18 or later. Install the CLI:
 
 ```bash
-npx archidocs init
-npx archidocs check
-npx archidocs dev
+npm install --global archidocs
 ```
 
-See the [CLI reference](/docs/reference/cli/) for every command and flag.
+Or run any command without installing it, as in `npx archidocs check`.
+
+## Set up a Workspace
+
+In the repo that will hold your Workspace:
+
+```bash
+archidocs init
+```
+
+This writes `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. Run it again at any time: it leaves what's there alone.
+
+## Add a Project
+
+Define a Team and an Environment in `archidocs/workspace.yaml`, then give the Team a Project folder with a `project.yaml` and a file of Elements, such as `archidocs/shop/model.yaml`. The [tutorial](/docs/start/tutorial/) walks through each file, and [Add a Project](/docs/guides/model/add-a-project/) is the short version.
+
+## Check it and open the viewer
+
+```bash
+archidocs check
+```
+
+```bash
+archidocs dev
+```
+
+`archidocs check` validates the Workspace and explains each problem, with a link to its [rule](/docs/reference/rules/). `archidocs dev` serves the viewer on `http://localhost:4321` and reloads it as you edit.
+
+## Next
+
+- [Publish the viewer](/docs/guides/publish/github-pages/) from CI.
+- [Connect an agent](/docs/guides/agents/connect-mcp/) to the Model over MCP.
+- Look up any command in the [CLI reference](/docs/reference/cli/).

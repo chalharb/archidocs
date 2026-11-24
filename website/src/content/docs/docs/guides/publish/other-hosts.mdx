@@ -1,7 +1,88 @@
 ---
 title: Other hosts
+description: Publish the viewer to an S3-style bucket, Netlify, Cloudflare Pages or any static host.
 sidebar:
   order: 5
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+The site `archidocs build` writes is plain static files with relative URLs and hash routing, so any static host can serve it, under any base path, with no rewrites.
+
+## In CI
+
+1. Check out the full history (`fetch-depth: 0` on GitHub, `GIT_DEPTH: 0` on GitLab): the site shows past Revisions.
+2. Restore `.archidocs/cache/` from your CI cache, keyed by the Bundle `schemaVersion` that `archidocs version --format json` prints.
+3. Check, then build. If the check fails, stop, so the last good site stays up:
+
+   ```bash
+   archidocs check
+   archidocs build --out site
+   ```
+
+4. Save `.archidocs/cache/`, then upload `site/`.
+
+Publish on every push to the default branch and on every tag.
+
+## Cache headers
+
+| Path | `Cache-Control` |
+| --- | --- |
+| `bundles/<sha>.json` | `public, max-age=31536000, immutable` (it never changes once published) |
+| `bundles/index.json` | `no-cache` |
+| `workspace.bundle.json` | `no-cache` |
+| `index.html` | `no-cache` |
+
+No headers are required. `archidocs mcp --bundle <url>` re-checks `index.json` at most every 60 seconds, with `If-None-Match` or `If-Modified-Since` when the host gives an `ETag` or `Last-Modified`.
+
+## S3-style buckets
+
+Upload the past Bundles first and the index last, so a reader never sees an index naming a Bundle that isn't there yet:
+
+```sh
+aws s3 sync site/bundles/ "s3://$BUCKET/bundles/" --delete --exclude index.json \
+  --cache-control "public, max-age=31536000, immutable"
+aws s3 sync site/ "s3://$BUCKET/" --delete --exclude "bundles/*" --exclude index.html --exclude workspace.bundle.json
+aws s3 cp site/workspace.bundle.json "s3://$BUCKET/" --cache-control no-cache
+aws s3 cp site/index.html "s3://$BUCKET/" --cache-control no-cache
+aws s3 cp site/bundles/index.json "s3://$BUCKET/bundles/" --cache-control no-cache
+```
+
+## Netlify
+
+Netlify can apply more than one matching rule in `_headers`, so give each Bundle a rule of its own rather than a `/bundles/*` rule that `index.json` also matches. Write the file into the site before deploying:
+
+```sh
+{
+  printf '/index.html\n  Cache-Control: no-cache\n'
+  printf '/workspace.bundle.json\n  Cache-Control: no-cache\n'
+  printf '/bundles/index.json\n  Cache-Control: no-cache\n'
+  for f in site/bundles/*.json; do
+    [ "$(basename "$f")" = index.json ] && continue
+    printf '/bundles/%s\n  Cache-Control: public, max-age=31536000, immutable\n' "$(basename "$f")"
+  done
+} > site/_headers
+netlify deploy --prod --dir site
+```
+
+## Cloudflare Pages
+
+Cloudflare Pages joins the values of matching rules and allows 100 rules, so detach the general rule's header for the index with `!`:
+
+```sh
+cat > site/_headers <<'EOF'
+/bundles/*
+  Cache-Control: public, max-age=31536000, immutable
+/bundles/index.json
+  ! Cache-Control
+  Cache-Control: no-cache
+/workspace.bundle.json
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+EOF
+wrangler pages deploy site --project-name <project>
+```
+
+## Related
+
+- [GitHub Pages](/docs/guides/publish/github-pages/), which the Action does for you
+- [`archidocs build`](/docs/reference/cli/build/)

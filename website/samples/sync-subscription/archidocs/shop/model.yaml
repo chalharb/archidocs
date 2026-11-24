@@ -1,0 +1,13 @@
+services:
+  orders:
+    name: Orders
+  events:
+    name: Events
+    type: broker
+  mailer:
+    name: Mailer
+    relationships:
+      - to: orders
+        description: Emails a receipt for each placed order
+        via: events
+        channel: orders.placed

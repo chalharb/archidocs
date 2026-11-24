@@ -1,7 +1,51 @@
 ---
 title: Export diagrams
+description: Render any View to SVG or PNG for docs, wikis and slides, styled like the viewer.
 sidebar:
   order: 2
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+import Diagram from "../../../../../components/Diagram.astro";
+
+`archidocs export` draws a View as a picture, styled like the viewer: SVG for docs and wikis, PNG for slides and chat. Every diagram on this site is drawn this way.
+
+<Diagram view="kitchen-sink/sink:place-order" alt="The Kitchen sink's Customer places an order: a sequence chart with a call, a derived edge, an event through the broker and a reply." />
+
+## One View
+
+Name the View: a Generated View (`c1`, `c2`, `c2/<system>`, `c3/<service>`, `deployment/<environment>`) or a Saved View by its Qualified id:
+
+```bash
+archidocs export c2
+```
+
+```bash
+archidocs export payments:make-a-payment --format png --out make-a-payment.png
+```
+
+Without `--out`, the picture is written to `<view-id>.<format>` in the current folder.
+
+## Every Saved View
+
+```bash
+archidocs export --all-saved --out views
+```
+
+writes one picture per Saved View into `views/`, named by its id with `:` and `/` turned into `-`. This is what the Action's `images` input publishes. See [Saved View images](/docs/guides/publish/saved-view-images/).
+
+## Options
+
+- `--theme dark` draws it in the viewer's dark Night shift palette, for dark slides and pages.
+- `--direction LR` lays a structural View out left to right; `TB`, `BT` and `RL` are the others. Dynamic Views ignore it.
+- `--label "Big Bank · v1.2.0"` replaces the line under the title, which otherwise names the Workspace, the short commit and the date.
+
+Each is in the [`archidocs export` reference](/docs/reference/cli/export/).
+
+## From the viewer
+
+The viewer downloads the View on screen as SVG or PNG too, with what is open and the Lens as they are. Use `export` when a picture should be rebuilt from the Model, in CI or a docs build.
+
+## Related
+
+- [Views](/docs/concepts/views/)
+- [Save a View](/docs/guides/model/save-a-view/)

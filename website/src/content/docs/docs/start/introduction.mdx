@@ -5,4 +5,47 @@ sidebar:
   order: 1
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+import Flow from "../../../../components/Flow.astro";
+
+Archidocs is git-native architecture as code. Each Team declares its slice of the architecture as YAML in one repo; Archidocs validates it, combines it into one Model, and publishes a diagram viewer for people and an MCP server for agents.
+
+<Flow>
+1. **Project YAML in git.** Each Team edits its own Project folder, through pull requests.
+2. **`archidocs check`** validates every file and every reference between Projects.
+3. **One Model** of the whole Workspace, rebuilt at any commit.
+4. **Two ways in:**
+   - the **viewer**, for people
+   - the **MCP server**, for agents
+</Flow>
+
+## Why
+
+- **Diagrams that don't go stale.** Every diagram is generated from the validated Model at a commit, never drawn by hand.
+- **Ownership is first-class.** Every Element has exactly one Owner Team, shown on every node.
+- **One answer, many Teams.** Each Team keeps its own Project folder in one Workspace repo. Archidocs merges them, so nobody has to ask around.
+- **Every screen is a link.** Any view in the viewer can be shared by URL and saved as View YAML.
+- **Same answers for people and agents.** What the viewer shows, the MCP server can answer, and agents can edit the Model through it.
+
+## The questions it answers
+
+| Who | Question | In the viewer | Over MCP |
+| --- | --- | --- | --- |
+| Enterprise Architect | How are two Services connected? | The Connect to… Lens | [`find_paths`](/docs/reference/mcp/read-tools/#find_paths) |
+| Solutions Architect | Where is a Service deployed? | Where is it deployed? in the Element panel, and the Deployment Views | [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments) |
+| Developer | What does my Team own? | The Team Lens | [`list_owned`](/docs/reference/mcp/read-tools/#list_owned) |
+| Product Owner | What is upstream and downstream of an outage? | The Impact Lens | [`get_impact`](/docs/reference/mcp/read-tools/#get_impact) |
+| QA Tester | What is a Service's URL in a given Environment? | The Element panel | [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments) |
+| Technical staff | Which decisions sit behind an Element, and how has the system changed? | The ADR reader, history and Compare | [`list_adrs`](/docs/reference/mcp/read-tools/#list_adrs), [`get_changes`](/docs/reference/mcp/read-tools/#get_changes) |
+
+## See it working
+
+Two example Workspaces are published as live demos:
+
+- **[Big Bank](/docs/examples/big-bank/)**: a fictional bank with five Teams, two Environments and a history of Revisions to browse and compare. [Open the demo ↗](https://big-bank.archidocs.dev)
+- **[Kitchen sink](/docs/examples/kitchen-sink/)**: every feature of the Model in one Workspace. [Open the demo ↗](https://kitchen-sink.archidocs.dev)
+
+## Where to start
+
+- [Quick start](/docs/start/quick-start/): the viewer on your own Workspace in a few commands.
+- [Model your first system](/docs/start/tutorial/): a tutorial from an empty repo to a published site.
+- [Concepts](/docs/concepts/workspace-and-projects/): how the Model fits together.

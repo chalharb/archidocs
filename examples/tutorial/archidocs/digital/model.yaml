@@ -1,0 +1,38 @@
+#region customer
+people:
+  customer:
+    name: Personal Banking Customer
+    description: A customer of the bank, with personal bank accounts.
+    relationships:
+      - to: spa
+        description: Views account balances and makes payments using
+#endregion
+
+#region system
+systems:
+  internet-banking:
+    name: Internet Banking System
+    description: Lets customers view their accounts and make payments.
+    services:
+      spa:
+        name: Single-Page Application
+        description: Internet banking in the customer's browser.
+        technology: TypeScript, Angular
+        relationships:
+          - to: api
+            description: Reads balances and makes payments through
+            technology: JSON/HTTPS
+      api:
+        name: API Application
+        description: Internet banking over a JSON/HTTPS API.
+        technology: Java, Spring Boot
+        relationships:
+          - to: database
+            description: Stores sessions and preferences in
+            technology: JDBC
+      database:
+        name: Database
+        description: Sessions and customer preferences.
+        type: datastore
+        technology: Oracle Database
+#endregion

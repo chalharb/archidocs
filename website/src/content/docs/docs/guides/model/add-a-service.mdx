@@ -1,7 +1,60 @@
 ---
 title: Add a Service
+description: Declare a Service with its Components, Relationships and Deployments.
 sidebar:
   order: 2
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+A Service is something you deploy: it has Deployments and a URL in each Environment. See [Elements](/docs/concepts/elements/) for how Services relate to Systems and Components.
+
+:::note[For agents]
+The agent topic for this task is [`add-service`](/docs/reference/agent-guide/add-service/).
+:::
+
+## 1. Place it
+
+Decide which Project the Service belongs in (its Owner's, usually) and whether it belongs to a System. Its id is a lowercase slug, unique in the Project across Elements and Deployment Targets.
+
+## 2. Declare it
+
+Put it under its System's `services`, or under a top-level `services` key if it belongs to no System. Big Bank's Payments System holds three:
+
+```yaml file="examples/big-bank/archidocs/payments/model.yaml" region="payments-service"
+```
+
+- `name` is required. Add a `description` that says what it does for the business, and a `technology`.
+- `type` is `app` unless the Service is a `datastore` or a message `broker`.
+- Set `external: true` for a Service run outside the organisation, such as a provider's API.
+- Set `owner` only if a Team other than the Project's owns it.
+- `tags` group Elements for Saved Views, and `links` add labelled URLs, such as a runbook, to the Element panel.
+
+If the System is declared in another file of the Project, declare the Service at the top level of its own file and attach it with `in`:
+
+```yaml file="examples/kitchen-sink/archidocs/sink/reporting.yaml"
+```
+
+## 3. Add its Components
+
+A Component is a part of the Service that isn't deployed on its own, such as a controller or a module. List them under the Service's `components`, only when people talk about them by name. An External Service has none.
+
+## 4. Connect it
+
+Declare what the Service depends on under its `relationships`. See [Connect Services](/docs/guides/model/connect-services/).
+
+## 5. Deploy it
+
+Add a Deployment for each Environment it runs in, with its URL. See [Add Deployments](/docs/guides/model/add-deployments/).
+
+## 6. Check it
+
+```bash
+archidocs check
+```
+
+## With an agent
+
+[`upsert_element`](/docs/reference/mcp/write-tools/#upsert_element) adds a Service, or a Component with a `parent`, and returns the diff. Relationships and Deployments have tools of their own.
+
+## Related
+
+- [Elements and Relationships reference](/docs/reference/model/model-yaml/)

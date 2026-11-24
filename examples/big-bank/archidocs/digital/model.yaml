@@ -48,6 +48,7 @@ systems:
           - to: payments-controller
             description: Makes payments through
             technology: JSON/HTTPS
+      #region api
       api:
         name: API Application
         description: Internet banking over a JSON/HTTPS API.
@@ -93,6 +94,7 @@ systems:
               - to: core:mainframe
                 description: Reads accounts and transactions from
                 technology: XML/HTTPS
+      #endregion
       database:
         name: Database
         description: Sessions and customer preferences.

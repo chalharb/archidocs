@@ -1,7 +1,45 @@
 ---
 title: Saved View images
+description: Publish every Saved View as an SVG at a stable URL, for wikis and READMEs.
 sidebar:
   order: 4
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+With images on, the published site also holds a picture of every Saved View, at a URL that never changes. Embed it in a wiki page or a README and it always shows the latest Model.
+
+## Turn them on
+
+On GitHub, set the Action's `images` input:
+
+```yaml title=".github/workflows/architecture.yml"
+      - uses: chalharb/archidocs@v1
+        id: archidocs
+        with:
+          images: true
+```
+
+On GitLab, set the [template](/docs/guides/publish/gitlab-pages/)'s `images` input to `true`.
+
+Each Saved View is rendered to `views/<view-id>.svg` in the site, with any `:` or `/` in its id turned into `-`: `shop:checkout-impact` is `views/shop-checkout-impact.svg`. Pictures are styled like the viewer and drawn for the latest Revision only, never per Revision.
+
+## Embed one
+
+```markdown
+![Checkout impact](https://<owner>.github.io/<repo>/views/shop-checkout-impact.svg)
+```
+
+Link the picture to the same View in the viewer, `https://<owner>.github.io/<repo>/#/view/shop:checkout-impact`, so readers can explore it.
+
+## Without CI
+
+The Action runs `archidocs export --all-saved --format svg` into the site. Run it yourself for pictures anywhere else, such as a docs folder or a slide deck:
+
+```bash
+archidocs export --all-saved --out views
+```
+
+See [Export diagrams](/docs/guides/review/export/) for themes, PNG and one View at a time.
+
+## Related
+
+- [Save a View](/docs/guides/model/save-a-view/)

@@ -1,0 +1,12 @@
+# A Service declared in a file of its own and placed in a System with `in`.
+services:
+  reports:
+    name: Reports
+    description: A Service in Shop, declared outside the System's file.
+    technology: Python
+    in: shop
+    owner: data
+    relationships:
+      - to: orders-db
+        description: Reads order history from
+        technology: SQL

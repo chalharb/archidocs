@@ -36,7 +36,13 @@ describe("the built site", () => {
   });
 
   it("has a Markdown copy of each page, hand-written and generated", () => {
-    expect(read("docs/start/quick-start.md")).toContain("npx archidocs init");
+    expect(read("docs/start/quick-start.md")).toContain("archidocs init");
+    // Sample fences are filled from their files, Diagrams become images, and MDX imports go.
+    const tutorial = read("docs/start/tutorial.md");
+    expect(tutorial).toContain('```yaml title="digital/project.yaml"\nid: digital\n');
+    expect(tutorial).not.toContain('file="examples/');
+    expect(tutorial).not.toMatch(/^import /m);
+    expect(read("docs/examples/big-bank.md")).toContain("![Everything that depends on the Big Bank mainframe");
     const generated = read("docs/reference/cli/export.md");
     expect(generated).toMatch(/^# archidocs export$/m);
     expect(generated).toMatch(/^### `--all-saved`$/m);

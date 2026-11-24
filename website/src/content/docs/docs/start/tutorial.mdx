@@ -5,4 +5,163 @@ sidebar:
   order: 3
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+import Diagram from "../../../../components/Diagram.astro";
+
+In this tutorial you model a small slice of Big Bank, the fictional bank in the [Big Bank example](/docs/examples/big-bank/): the internet banking that its Digital Banking Team runs. You start from an empty repo, declare a customer, three Services and how they connect, say where they run, and finish with the viewer published on GitHub Pages.
+
+It takes about twenty minutes. Every file you write is shown in full, and the finished Workspace is in [`examples/tutorial`](https://github.com/chalharb/archidocs/tree/main/examples/tutorial) if you want to compare.
+
+## Before you start
+
+You need Node.js 22.18 or later, git, and a GitHub account for the last step. Install the CLI:
+
+```bash
+npm install --global archidocs
+```
+
+## 1. Create a Workspace
+
+A [Workspace](/docs/reference/glossary/#term-workspace) is one git repo that holds the whole architecture. Create one and set it up:
+
+```bash
+git init big-bank
+cd big-bank
+archidocs init
+```
+
+`archidocs init` writes `archidocs/workspace.yaml`, adds the `.archidocs/` cache folder to `.gitignore`, and installs the authoring skill for coding agents, with a pointer to it in `AGENTS.md`. Everything Archidocs reads lives under `archidocs/`.
+
+## 2. Define the Team and Environments
+
+`workspace.yaml` defines the [Teams](/docs/reference/glossary/#term-team) that own things and the [Environments](/docs/reference/glossary/#term-environment) that Services run in, once for every Project. Replace the starter file with:
+
+```yaml file="examples/tutorial/archidocs/workspace.yaml"
+```
+
+The keys under `teams` and `environments` are ids: lowercase slugs that the rest of the Model refers to.
+
+## 3. Add a Project
+
+A [Project](/docs/reference/glossary/#term-project) is one Team's slice of the Workspace, in a folder of its own. A `project.yaml` marks the folder and names the Team that owns everything in it. Create `archidocs/digital/project.yaml`:
+
+```yaml file="examples/tutorial/archidocs/digital/project.yaml"
+```
+
+## 4. Declare the Elements
+
+Every other `.yaml` file in a Project folder declares its [Elements](/docs/reference/glossary/#term-element) and their [Relationships](/docs/reference/glossary/#term-relationship). Create `archidocs/digital/model.yaml`, starting with the customer:
+
+```yaml file="examples/tutorial/archidocs/digital/model.yaml" region="customer"
+```
+
+A Person is someone who uses a System. Its Relationship sits under it and points `to` what it uses, with a `description` that reads as a sentence: "Personal Banking Customer views account balances and makes payments using Single-Page Application".
+
+Then add the System and its Services below it, in the same file:
+
+```yaml file="examples/tutorial/archidocs/digital/model.yaml" region="system"
+```
+
+- The **System** groups the Services that deliver internet banking. Systems don't nest.
+- Each **Service** is something you deploy. `type: datastore` draws the database as one.
+- Each Relationship is declared once, under its **consumer**, pointing at the **provider** it depends on. The SPA depends on the API, and the API on the database.
+
+Nobody owns anything here explicitly: every Element is owned by the Project's Team, `digital-banking`. See [Teams and ownership](/docs/concepts/teams-and-ownership/).
+
+## 5. Check the Workspace
+
+```bash
+archidocs check
+```
+
+```text
+0 errors, 0 warnings
+```
+
+`check` validates every file against the [check rules](/docs/reference/rules/). Try breaking something: change the SPA's `to: api` to `to: apii` and run it again.
+
+```text
+archidocs/digital/model.yaml:19:17  error  unknown-element  Unknown Element "apii" in Project "digital"; did you mean "api"?
+
+1 error, 0 warnings
+
+Rule docs:
+  unknown-element  https://archidocs.dev/docs/reference/rules/unknown-element/
+```
+
+Each issue names the file, line, [rule](/docs/reference/rules/unknown-element/) and what is wrong, and the footer links the page that explains each rule. Put `to: api` back before you go on.
+
+## 6. Say where it runs
+
+A [Deployment](/docs/reference/glossary/#term-deployment) is one Service running in one Environment on one [Deployment Target](/docs/reference/glossary/#term-deployment-target), and it is where a URL lives. Create `archidocs/digital/deployments.yaml`:
+
+```yaml file="examples/tutorial/archidocs/digital/deployments.yaml"
+```
+
+The Targets nest: two EKS clusters in one AWS region. The API runs in both Environments, each with its own URL. Check again:
+
+```bash
+archidocs check
+```
+
+## 7. Open the viewer
+
+```bash
+archidocs dev
+```
+
+Open `http://localhost:4321`. The viewer starts on the C2 Landscape with Internet Banking System closed; open it to see its Services. Then try what it was built for:
+
+- Select **API Application**: the panel shows its Owner, its Relationships and its URL in each Environment.
+- Turn on the **Impact** Lens for **Database**: everything that depends on it lights up, the customer included.
+- Switch to the **Production** Deployment View to see the Services on their Targets.
+
+The viewer reloads as you edit. Stop it with Ctrl+C. [The viewer](/docs/concepts/viewer/) explains each part.
+
+## 8. Commit
+
+The Model is plain files, so it goes through review like code:
+
+```bash
+git add .
+git commit -m "Model internet banking"
+```
+
+## 9. Build the site
+
+`archidocs build` writes the viewer as a static site, with the Model at every past [Revision](/docs/reference/glossary/#term-revision) so the viewer can show history:
+
+```bash
+archidocs build --out _site
+echo "_site/" >> .gitignore
+```
+
+Open `_site/index.html` through any static file server to see what will be published. You don't commit `_site`: CI builds it.
+
+## 10. Publish on GitHub Pages
+
+The Archidocs GitHub Action checks the Workspace, builds the site and deploys it to GitHub Pages. Add it as `.github/workflows/architecture.yml`:
+
+```yaml file="examples/tutorial/.github/workflows/architecture.yml" title=".github/workflows/architecture.yml"
+```
+
+Create an empty repository called `big-bank` on GitHub, set its **Settings › Pages › Source** to **GitHub Actions**, and push (use your own GitHub user name in the URL):
+
+```bash
+git add .gitignore .github
+git commit -m "Publish the architecture"
+git branch -M main
+git remote add origin "https://github.com/YOUR-NAME/big-bank.git"
+git push -u origin main
+```
+
+When the workflow finishes, its summary links the site. From now on every push to `main` republishes it, and a push whose `check` fails publishes nothing, so the last good site stays up. [GitHub Pages](/docs/guides/publish/github-pages/) covers the Action's options.
+
+## Where to go next
+
+Your slice is a small part of the full Big Bank demo, where five Teams own five Projects that depend on each other:
+
+<Diagram view="big-bank/digital:sign-in-path" alt="How a Big Bank customer signs in: from the customer through the internet banking app to the Identity Team's Auth Service." />
+
+- Grow the Model: [add a Project](/docs/guides/model/add-a-project/) for another Team, [connect Services](/docs/guides/model/connect-services/) across Projects, and [save a View](/docs/guides/model/save-a-view/) that answers a question.
+- Let an agent do it: [connect an agent over MCP](/docs/guides/agents/connect-mcp/).
+- Review changes: add [PR previews](/docs/guides/publish/pr-previews/) so every pull request shows what it changes.

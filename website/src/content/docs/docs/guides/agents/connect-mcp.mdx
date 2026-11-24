@@ -1,7 +1,70 @@
 ---
 title: Connect an agent over MCP
+description: Register the Archidocs MCP server with a coding agent, over a checkout or a published site.
 sidebar:
   order: 1
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+`archidocs mcp` is an MCP server that agent harnesses start themselves, over stdio. Register it once and the agent can answer architecture questions and edit the Model. See [Agents and MCP](/docs/concepts/agents-and-mcp/) for what it offers.
+
+## In the Workspace repo
+
+Serve the checkout, so the agent gets the read tools and the write tools. From the repo root:
+
+```bash
+archidocs mcp --workspace archidocs
+```
+
+`archidocs init` prints this command for your repo. Register it the way your harness takes MCP servers. Most read a JSON file such as `.mcp.json` at the repo root:
+
+```json title=".mcp.json"
+{
+  "mcpServers": {
+    "archidocs": {
+      "command": "archidocs",
+      "args": ["mcp", "--workspace", "archidocs"]
+    }
+  }
+}
+```
+
+Paths are relative to where the harness starts the server, usually the repo root. If the CLI isn't installed globally, use `"command": "npx"` and put `"archidocs"` first in `args`.
+
+## In a code repo
+
+An agent working on a Service's code can keep the Model in step from there. Clone the Workspace repo beside the code repo and point the server at that checkout:
+
+```bash
+archidocs mcp --workspace ../architecture/archidocs
+```
+
+`archidocs init --skill --workspace ../architecture/archidocs` installs the skill in the code repo and prints the same command. See [Install the agent skill](/docs/guides/agents/install-skill/).
+
+## From a published site, read-only
+
+To answer questions without a checkout, serve the Bundle a published viewer site holds:
+
+```bash
+archidocs mcp --bundle https://architecture.example.com/workspace.bundle.json --viewer-url https://architecture.example.com/
+```
+
+Only the read tools are offered. The server re-reads the site's Revision index at most once a minute, so it follows new deploys. With `--viewer-url`, results link to the same View in the published viewer.
+
+## Over HTTP
+
+For a harness that connects to a URL instead of starting a process:
+
+```bash
+archidocs mcp --http --port 3737 --workspace archidocs
+```
+
+It listens on a loopback address only, at `/mcp`, and leaves the write tools off unless you add `--allow-writes`.
+
+## Try it
+
+Ask the agent something the Model knows, such as "what breaks if the Orders DB goes down?". It should call [`get_impact`](/docs/reference/mcp/read-tools/#get_impact) and answer from the Model, with the Elements' Owners. Then ask it to load the authoring guide before an edit: it calls [`get_authoring_guide`](/docs/reference/mcp/read-tools/#get_authoring_guide).
+
+## Related
+
+- [`archidocs mcp` reference](/docs/reference/cli/mcp/)
+- [Read tools](/docs/reference/mcp/read-tools/) and [write tools](/docs/reference/mcp/write-tools/)

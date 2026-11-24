@@ -1,0 +1,10 @@
+# The Workspace from the tutorial "Model your first system": a slice of Big Bank.
+teams:
+  digital-banking:
+    name: Digital Banking
+    description: Web, mobile and the internet banking API.
+environments:
+  staging:
+    name: Staging
+  prod:
+    name: Production

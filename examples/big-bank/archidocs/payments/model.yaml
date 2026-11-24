@@ -3,6 +3,7 @@ systems:
     name: Payments
     description: Moves money between accounts and banks.
     services:
+      #region payments-service
       payments-service:
         name: Payments Service
         description: Validates, posts and settles customer payments.
@@ -17,10 +18,12 @@ systems:
           - to: card-gateway
             description: Settles card payments through
             technology: ISO 8583
+      #endregion
       payments-db:
         name: Payments DB
         type: datastore
         technology: PostgreSQL (Amazon RDS)
+      #region fraud-detection
       fraud-detection:
         name: Fraud Detection
         description: Scores each payment for fraud and holds suspicious ones.
@@ -31,6 +34,7 @@ systems:
             interaction: async
             via: platform:kafka
             channel: payments.initiated
+      #endregion
   card-network:
     name: Card Network
     description: The card scheme the bank settles card payments with.

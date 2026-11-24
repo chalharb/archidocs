@@ -1,7 +1,45 @@
 ---
 title: GitHub Pages
+description: Check, build and deploy the viewer from GitHub Actions on every push.
 sidebar:
   order: 1
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+`archidocs build --out <dir>` writes a complete static site: the viewer, the latest Bundle (`workspace.bundle.json`), the past Bundles (`bundles/<sha>.json`) and the Revision index (`bundles/index.json`). Every URL in it is relative and the viewer uses hash routing, so any static host can serve it under any base path, with no rewrites.
+
+The Archidocs GitHub Action does the whole job: it sets up Node, restores the history cache, runs `archidocs check`, then `archidocs build`, and deploys the site with `upload-pages-artifact` and `deploy-pages`.
+
+## Add the workflow
+
+Add `.github/workflows/architecture.yml` to the Workspace repo:
+
+```yaml file="examples/tutorial/.github/workflows/architecture.yml" title=".github/workflows/architecture.yml"
+```
+
+Then set the repository's **Settings › Pages › Source** to **GitHub Actions**.
+
+- It runs on every push to the default branch and on every tag. Tagged Revisions are always kept in the site's history.
+- `fetch-depth: 0` checks out the full history, which the site needs to show past Revisions.
+- If `archidocs check` fails, nothing is deployed, so the last good site stays up.
+- The Action only ever deploys on a push to the default branch or a tag.
+
+## Options
+
+Pass inputs under `with:`. The common ones:
+
+- `working-directory`: where to run Archidocs, when the Workspace isn't at the repo root.
+- `keep`: how many past Revisions the site keeps Bundles for (200 by default), or `all`.
+- `images: true`: also publish each Saved View as an SVG. See [Saved View images](/docs/guides/publish/saved-view-images/).
+- `preview: true`: build a PR preview instead. See [PR previews](/docs/guides/publish/pr-previews/).
+- `version`: the archidocs npm version to run, to pin it.
+
+Every input and output is in the [GitHub Action reference](/docs/reference/ci/github-action/#inputs). Its outputs are `site`, the built site's folder, and `page-url`.
+
+## The history cache
+
+Past Bundles are built from git, never fetched from the live site. Archidocs keeps the ones it has built in `.archidocs/cache/` and the Action saves that folder in the Actions cache, keyed by the Bundle `schemaVersion`. A first deploy, a lost cache or a new `schemaVersion` only costs build time: any Revision missing from the cache is rebuilt from git.
+
+## Related
+
+- [Revisions and history](/docs/concepts/revisions-and-history/)
+- [Other hosts](/docs/guides/publish/other-hosts/), to publish somewhere else from GitHub Actions

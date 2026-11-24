@@ -1,5 +1,6 @@
 views:
   structural:
+    #region mainframe-outage
     mainframe-outage:
       title: What a mainframe outage takes down
       description: Everything that depends on the mainframe, directly or not.
@@ -10,6 +11,7 @@ views:
       lens:
         impact: core:mainframe
         direction: upstream
+    #endregion
     sign-in-path:
       title: How a customer signs in
       level: c3
@@ -17,6 +19,7 @@ views:
         - from: customer
           to: identity:auth-service
       direction: LR
+    #region prod-deployment
     prod-deployment:
       title: Internet banking in production
       level: deployment
@@ -24,7 +27,9 @@ views:
       include:
         - element: internet-banking
           with: descendants
+    #endregion
   dynamic:
+    #region sign-in
     sign-in:
       title: Customer signs in
       steps:
@@ -48,3 +53,4 @@ views:
           to: spa
           return: true
           description: Session cookie
+    #endregion

@@ -30,3 +30,17 @@ describe("the build fails on a page that is wrong", () => {
     expect(result.output).toContain('Unknown command "publish"');
   });
 });
+
+describe("the build fails on a sample fence that is wrong", () => {
+  it("fails on a sample fence with YAML typed into it", async () => {
+    const result = await buildSite({ pages: { "fixture/typed-sample.mdx": page("Typed sample", '```yaml file="examples/kitchen-sink/archidocs/sink/project.yaml"\nid: typed\n```') } });
+    expect(result.ok, result.output).toBe(false);
+    expect(result.output).toContain("must be empty");
+  });
+
+  it("fails on a sample region the file doesn't have", async () => {
+    const result = await buildSite({ pages: { "fixture/missing-region.mdx": page("Missing region", '```yaml file="examples/kitchen-sink/archidocs/sink/model.yaml" region="no-such-region"\n```') } });
+    expect(result.ok, result.output).toBe(false);
+    expect(result.output).toContain("has no #region no-such-region");
+  });
+});

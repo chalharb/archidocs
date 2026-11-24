@@ -1,3 +1,4 @@
+#region people
 people:
   customer:
     name: Customer
@@ -6,7 +7,9 @@ people:
       - to: web
         description: Uses
         technology: HTTPS
+#endregion
 
+#region systems
 systems:
   shop:
     name: Shop
@@ -17,6 +20,10 @@ systems:
         description: An app Service.
         technology: React
         owner: edge
+        tags: [customer-facing]
+        links:
+          - label: Runbook
+            url: https://wiki.sink.example/runbooks/web
         relationships:
           - to: api
             description: Calls
@@ -70,7 +77,9 @@ systems:
     description: An External System.
     external: true
     owner: edge
+#endregion
 
+#region services
 services:
   search:
     name: Search
@@ -83,3 +92,4 @@ services:
     external: true
     technology: Stripe API
     owner: edge
+#endregion

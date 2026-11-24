@@ -7,8 +7,61 @@ sidebar:
 
 import Diagram from "../../../../components/Diagram.astro";
 
-This page is coming soon. Explore the [live demo](https://big-bank.archidocs.dev), or start with one of its Saved Views:
+Big Bank plc is a fictional bank, after the internet banking example of the [C4 model](https://c4model.com). Five Teams each own a Project, and the Projects depend on each other, so it shows what Archidocs is for: one answer about an architecture that no single Team holds.
 
-<Diagram view="big-bank/digital:mainframe-outage" alt="The Big Bank Systems that a mainframe outage affects." />
+[Open the live demo ↗](https://big-bank.archidocs.dev) · [Source on GitHub](https://github.com/chalharb/archidocs/tree/main/examples/big-bank)
 
-<Diagram view="big-bank/payments:make-a-payment" alt="The Make a payment scenario, step by step." />
+## The Workspace
+
+| Project | Team | What it holds |
+| --- | --- | --- |
+| `digital` | Digital Banking | The customer, internet banking (web, single-page and mobile apps, the API and its Components), notifications |
+| `core` | Core Banking | The mainframe, the ATM network, and the staff who use them |
+| `identity` | Identity | Customer sign-in: the Auth Service and the user directory |
+| `payments` | Payments | The Payments Service, fraud detection and the External card network |
+| `platform` | Platform | The AWS region and its clusters, Kafka, e-mail |
+
+```yaml file="examples/big-bank/archidocs/workspace.yaml"
+```
+
+There are two Environments, staging and production. The Platform Team declares the shared Deployment Targets that the other Teams deploy onto; the Core Banking Team declares its own data centre.
+
+## Its Saved Views
+
+What an outage of the mainframe takes down, with the Impact Lens on:
+
+<Diagram view="big-bank/digital:mainframe-outage" alt="Everything that depends on the Big Bank mainframe, directly or not, with the Impact Lens on." />
+
+How a customer signs in, as the path from the customer to the Identity Team's Auth Service:
+
+<Diagram view="big-bank/digital:sign-in-path" alt="The path from the Big Bank customer through internet banking to the Auth Service." />
+
+The same journey as a scenario, Step by Step:
+
+<Diagram view="big-bank/digital:sign-in" alt="A Big Bank customer signs in: numbered Steps through the app, the API's Components and the Auth Service, with the replies." />
+
+A payment, across three Teams' Projects, with the events Kafka carries:
+
+<Diagram view="big-bank/payments:make-a-payment" alt="A Big Bank customer makes a payment: from the app through the Payments Service to the mainframe, with the payment events and the reply." />
+
+Internet banking in production, on its Deployment Targets:
+
+<Diagram view="big-bank/digital:prod-deployment" alt="Big Bank's internet banking Services in production, on the EKS prod cluster in the AWS London region." />
+
+## Its history
+
+The demo is built from four dated commits that replay how the bank's Model grew: internet banking and the mainframe, then the move of sign-in to the Identity Platform, then Payments and the Event Bus, then the Saved Views. In the viewer, pick a Revision to see the bank as it was, or Compare two. Five ADRs record the decisions along the way, one of them superseded and one still proposed.
+
+## Things to try
+
+- [Everything upstream of the mainframe](https://big-bank.archidocs.dev/#/view/c2?impact=core:mainframe&way=upstream), on the Service Landscape.
+- [What the Payments Team owns](https://big-bank.archidocs.dev/#/view/c2?team=payments), with the Team Lens.
+- Select the API Application to see its URL in each Environment and the ADRs behind it.
+- Compare the first Revision with the latest to see what was added since launch.
+
+Then ask the same questions of an agent: serve the demo's Bundle read-only with `archidocs mcp --bundle https://big-bank.archidocs.dev/workspace.bundle.json` and [connect your agent](/docs/guides/agents/connect-mcp/).
+
+## Related
+
+- [Model your first system](/docs/start/tutorial/), which builds a slice of this Workspace
+- [Kitchen sink](/docs/examples/kitchen-sink/)
