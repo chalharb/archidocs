@@ -225,7 +225,7 @@ describe("every write", () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       code: "validation_failed",
-      issues: [{ file: "archidocs/shop/systems.yaml", line: 14, rule: "unknown-team", severity: "error" }],
+      issues: [{ file: "archidocs/shop/systems.yaml", line: 14, rule: "unknown-team", severity: "error", docs: "https://archidocs.dev/docs/reference/rules/unknown-team/" }],
     });
     expect(await read("shop/systems.yaml")).toBe(before);
   });

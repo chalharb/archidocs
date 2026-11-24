@@ -1,6 +1,7 @@
 import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { nodeFileSystem } from "../core/fs.ts";
+import { withDocs } from "../core/rules.ts";
 import { write, type SourceRef, type WriteItem, type WriteRequest, type WriteResult } from "../writer/index.ts";
 import { advertise, atRefused, takesAt, toResult, type ToolOutcome } from "./server.ts";
 import type { Source } from "./source.ts";
@@ -306,7 +307,7 @@ function outcome(result: WriteResult): ToolOutcome {
       ...refs("Candidates:", candidates),
       ...refs("Referenced by:", references),
     ].join("\n");
-    const details = { ...(issues ? { issues } : {}), ...(candidates ? { candidates } : {}), ...(references ? { references } : {}) };
+    const details = { ...(issues ? { issues: issues.map(withDocs) } : {}), ...(candidates ? { candidates } : {}), ...(references ? { references } : {}) };
     return { ok: false, code, message, ...(suggestions ? { suggestions } : {}), details, ...(detailText ? { detailText } : {}) };
   }
   const { item, subject, action, files, diff, dryRun } = result;
