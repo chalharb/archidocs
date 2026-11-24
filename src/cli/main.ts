@@ -3,7 +3,6 @@ import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
 import type { Bundle } from "../schema/bundle.ts";
 import { findWorkspaceRoot, load, nodeFileSystem, resolveDynamicView, resolveView, serializeBundle, type ResolvedDynamicView, type ResolvedView } from "../core/index.ts";
 import { directions, layoutView, renderSequenceSvg, renderSvg, themes, type Direction, type Theme } from "../render/index.ts";
@@ -12,6 +11,7 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitHead, gitTopLevel } from "../git.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { authoringGuide } from "../guide/index.ts";
+import { parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
@@ -37,28 +37,12 @@ const VIEWER_DIR = fileURLToPath(new URL("../../dist/viewer/", import.meta.url))
 /** The package's own package.json, two levels up from dist/cli/ or src/cli/ like the viewer. */
 const PACKAGE_JSON = fileURLToPath(new URL("../../package.json", import.meta.url));
 
-const usage = `Usage:
-  archidocs version [--format text|json]
-  archidocs init [--skill [--workspace <dir>]]
-  archidocs guide [topic]
-  archidocs check [--format text|json|github] [--strict]
-  archidocs build [--out <dir>] [--bundle-only] [--keep <n|all>]
-  archidocs build --preview [--base <branch>] [--out <dir>]
-  archidocs dev [--workspace <dir>] [--port <n>] [--host <host>]
-  archidocs export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]
-                   [--theme light|dark] [--label <text>]
-  archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]
-                   [--theme light|dark] [--label <text>]
-  archidocs diff <from> [<to>] [--format text|json|markdown]
-  archidocs history build [--since <ref|date>]
-  archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
-                [--http [--host <loopback>] [--port <n>] [--allow-writes]]
-`;
+const usage = usageText();
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   if (command === "init") {
-    const { values } = parseArgs({ args: rest, options: { skill: { type: "boolean", default: false }, workspace: { type: "string" } }, strict: true });
+    const { values } = parseCommand("init", rest);
     if (values.workspace !== undefined && !values.skill) throw new UsageError("--workspace only applies with --skill; without it, init uses or creates this repo's Workspace.");
     const cwd = await realpath(process.cwd());
     const repoRoot = (await gitTopLevel(cwd)) ?? cwd;
@@ -67,14 +51,14 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   if (command === "version") {
-    const { values } = parseArgs({ args: rest, options: { format: { type: "string", default: "text" } }, strict: true });
+    const { values } = parseCommand("version", rest);
     if (values.format !== "text" && values.format !== "json") throw new UsageError(`Unknown format "${values.format}"; use text or json.`);
     const { version } = JSON.parse(await readFile(PACKAGE_JSON, "utf8")) as { version: string };
     process.stdout.write(values.format === "json" ? JSON.stringify({ version, schemaVersion: SCHEMA_VERSION }) + "\n" : `archidocs ${version} (Bundle schemaVersion ${SCHEMA_VERSION})\n`);
     return OK;
   }
   if (command === "guide") {
-    const { positionals } = parseArgs({ args: rest, options: {}, allowPositionals: true, strict: true });
+    const { positionals } = parseCommand("guide", rest);
     if (positionals.length > 1) throw new UsageError(`Give one topic at a time; got ${positionals.join(", ")}.`);
     const guide = await authoringGuide(positionals[0]);
     if (!guide.ok) throw new UsageError(guide.message);
@@ -82,11 +66,7 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   if (command === "check") {
-    const { values } = parseArgs({
-      args: rest,
-      options: { format: { type: "string", default: "text" }, strict: { type: "boolean", default: false } },
-      strict: true,
-    });
+    const { values } = parseCommand("check", rest);
     const format = values.format as Format;
     if (!formats.includes(format)) throw new UsageError(`Unknown format "${values.format}"; use ${formats.join(", ")}.`);
     const { issues } = await loadFromCwd();
@@ -94,17 +74,7 @@ async function main(argv: string[]): Promise<number> {
     return exitCodeFor(issues, { strict: values.strict });
   }
   if (command === "build") {
-    const { values } = parseArgs({
-      args: rest,
-      options: {
-        "bundle-only": { type: "boolean" },
-        out: { type: "string", default: "dist" },
-        keep: { type: "string" },
-        preview: { type: "boolean", default: false },
-        base: { type: "string" },
-      },
-      strict: true,
-    });
+    const { values } = parseCommand("build", rest);
     if (values.preview && values.keep !== undefined) throw new UsageError("--keep doesn't apply to --preview, whose site holds just the base and the PR head.");
     if (values.preview && values["bundle-only"]) throw new UsageError("--bundle-only doesn't apply to --preview, which writes a site.");
     if (values.base !== undefined && !values.preview) throw new UsageError("--base only applies with --preview.");
@@ -143,7 +113,7 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   if (command === "dev") {
-    const { values } = parseArgs({ args: rest, options: { port: { type: "string" }, host: { type: "string" }, workspace: { type: "string" } }, strict: true });
+    const { values } = parseCommand("dev", rest);
     const port = values.port === undefined ? DEFAULT_DEV_PORT : Number(values.port);
     if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`--port "${values.port}" is not a port.`);
     if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
@@ -169,12 +139,7 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   if (command === "export") {
-    const { values, positionals } = parseArgs({
-      args: rest,
-      options: { format: { type: "string", default: "svg" }, out: { type: "string" }, direction: { type: "string" }, "all-saved": { type: "boolean", default: false }, theme: { type: "string", default: "light" }, label: { type: "string" } },
-      allowPositionals: true,
-      strict: true,
-    });
+    const { values, positionals } = parseCommand("export", rest);
     const allSaved = values["all-saved"];
     const [viewId, ...extra] = positionals;
     if (allSaved && viewId !== undefined) throw new UsageError("Give a View or --all-saved, not both.");
@@ -226,7 +191,7 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   if (command === "diff") {
-    const { values, positionals } = parseArgs({ args: rest, options: { format: { type: "string", default: "text" } }, allowPositionals: true, strict: true });
+    const { values, positionals } = parseCommand("diff", rest);
     const format = values.format as DiffFormat;
     if (!diffFormats.includes(format)) throw new UsageError(`Unknown format "${values.format}"; use ${diffFormats.join(", ")}.`);
     const [fromPoint, toPoint, ...extra] = positionals;
@@ -248,7 +213,7 @@ async function main(argv: string[]): Promise<number> {
   if (command === "history") {
     const [sub, ...args] = rest;
     if (sub !== "build") throw new UsageError(sub ? `Unknown history command "${sub}".` : "Give a history command: build.");
-    const { values } = parseArgs({ args, options: { since: { type: "string" } }, strict: true });
+    const { values } = parseCommand("history build", args);
     const h = await historyFromCwd();
     const { revisions, built } = await buildHistory(h, values.since === undefined ? {} : { since: values.since });
     const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -256,19 +221,7 @@ async function main(argv: string[]): Promise<number> {
     return OK;
   }
   if (command === "mcp") {
-    const { values } = parseArgs({
-      args: rest,
-      options: {
-        workspace: { type: "string" },
-        bundle: { type: "string" },
-        "viewer-url": { type: "string" },
-        http: { type: "boolean", default: false },
-        host: { type: "string" },
-        port: { type: "string" },
-        "allow-writes": { type: "boolean", default: false },
-      },
-      strict: true,
-    });
+    const { values } = parseCommand("mcp", rest);
     const viewerUrl = values["viewer-url"];
     if (viewerUrl !== undefined && !URL.canParse(viewerUrl)) throw new UsageError(`--viewer-url "${viewerUrl}" is not a URL.`);
     if (values.workspace !== undefined && values.bundle !== undefined) throw new UsageError("Give --workspace or --bundle, not both.");

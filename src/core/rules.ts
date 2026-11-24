@@ -1119,3 +1119,24 @@ export const rules: RuleDefinition[] = [
 function numbered(count: number, prefix: string, indent: number, from = 0): string {
   return Array.from({ length: count }, (_, i) => `${" ".repeat(indent)}${prefix}${from + i + 1}: { name: ${prefix.toUpperCase()}${from + i + 1} }\n`).join("");
 }
+
+/** Base URL of the per-rule pages on the docs site; a rule's page is `<base><rule-id>/`. */
+export const RULE_DOCS_BASE_URL = "https://archidocs.dev/docs/reference/rules/";
+
+/** The docs page for a check rule. The site keeps a page for every rule id, removed ones included. */
+export const ruleDocsUrl = (ruleId: string): string => `${RULE_DOCS_BASE_URL}${ruleId}/`;
+
+/** An issue with a link to its rule's docs page, as `check --format json` and MCP report it. */
+export const withDocs = <T extends { rule: string }>(issue: T): T & { docs: string } => ({ ...issue, docs: ruleDocsUrl(issue.rule) });
+
+/** A check rule taken out of the registry. The docs site keeps a stub page for it, so links older CLIs print still work. */
+export interface RemovedRule {
+  id: string;
+  /** The release that removed it, such as `"1.4.0"`. */
+  removedIn: string;
+  /** What replaced it: another rule id, or a sentence. */
+  replacement: string;
+}
+
+/** Rules removed from the registry, oldest first. An id here never returns to `rules`. */
+export const removed: RemovedRule[] = [];

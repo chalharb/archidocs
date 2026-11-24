@@ -1,6 +1,6 @@
 # 01: Structured CLI definitions
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Archidocs docs site](../../docs-site/spec.md)
 
@@ -14,7 +14,7 @@ Replace the hand-written `usage` string in `src/cli/main.ts` with structured com
 
 ## Acceptance criteria
 
-- [ ] The usage text printed today is reproduced from the definitions (snapshot test), apart from wording improvements.
-- [ ] Every flag of every command has a non-empty description (unit test).
-- [ ] `parseCommandLine` accepts every documented synopsis and rejects an unknown command and an unknown flag.
-- [ ] The existing CLI tests still pass.
+- [x] The usage text printed today is reproduced from the definitions (snapshot test), apart from wording improvements.
+- [x] Every flag of every command has a non-empty description (unit test).
+- [x] `parseCommandLine` accepts every documented synopsis and rejects an unknown command and an unknown flag.
+- [x] The existing CLI tests still pass.

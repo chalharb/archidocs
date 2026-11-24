@@ -16,10 +16,49 @@ describe("check output for warnings", () => {
   });
 
   it("counts warnings in every format", () => {
-    expect(formatIssues([error, warning], "text")).toBe(
-      "archidocs/shop/services.yaml:4:5  error  unknown-field  Unknown field\n\narchidocs/shop/views.yaml:3  warning  empty-view  View resolves to no nodes\n\n1 error, 1 warning\n",
-    );
+    expect(formatIssues([error, warning], "text")).toContain("\n1 error, 1 warning\n");
     expect(JSON.parse(formatIssues([error, warning], "json")).summary).toEqual({ errors: 1, warnings: 1 });
-    expect(formatIssues([warning], "github")).toBe("::warning file=archidocs/shop/views.yaml,line=3,title=empty-view::View resolves to no nodes\n");
+    expect(formatIssues([warning], "github")).toMatch(/^::warning /);
+  });
+});
+
+describe("check output links each rule to its docs page", () => {
+  const docs = (rule: string) => `https://archidocs.dev/docs/reference/rules/${rule}/`;
+  const again: Issue = { ...error, line: 9, message: "Unknown field again" };
+
+  it("ends text output with a Rule docs footer listing each distinct rule once", () => {
+    expect(formatIssues([error, warning, again], "text")).toBe(
+      [
+        "archidocs/shop/services.yaml:4:5  error  unknown-field  Unknown field",
+        "",
+        "archidocs/shop/views.yaml:3  warning  empty-view  View resolves to no nodes",
+        "",
+        "archidocs/shop/services.yaml:9:5  error  unknown-field  Unknown field again",
+        "",
+        "2 errors, 1 warning",
+        "",
+        "Rule docs:",
+        `  unknown-field  ${docs("unknown-field")}`,
+        `  empty-view  ${docs("empty-view")}`,
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("prints no footer when there are no issues", () => {
+    expect(formatIssues([], "text")).toBe("0 errors, 0 warnings\n");
+  });
+
+  it("gives each JSON issue a docs field", () => {
+    expect(JSON.parse(formatIssues([error, warning], "json")).issues).toEqual([
+      { ...error, docs: docs("unknown-field") },
+      { ...warning, docs: docs("empty-view") },
+    ]);
+  });
+
+  it("ends each GitHub annotation message with See <url>", () => {
+    expect(formatIssues([warning], "github")).toBe(
+      `::warning file=archidocs/shop/views.yaml,line=3,title=empty-view::View resolves to no nodes See ${docs("empty-view")}\n`,
+    );
   });
 });
