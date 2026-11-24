@@ -1,0 +1,22 @@
+# 14: Viewer URL reference
+
+Status: ready-for-agent
+Blocked by: None (can start immediately)
+Spec: [Docs rewrite proposal](../spec.md)
+
+## What to build
+
+"Every screen is a link" is a headline feature, and the URL's parts appear only inside examples (`#/view/c2?impact=core:mainframe&way=upstream`).
+
+- **One list of parameters:** in `viewer/src/place.ts`, declare the route and each query parameter as data: its name, its values and what it does. Parsing and formatting use the list, so the list can't fall behind.
+- **Page:** a generated `reference/viewer-urls` page from that list: the route (`#/view/<view-id>`), a row per parameter, and worked links into the Big Bank demo for each persona question.
+- **Stability:** say on the page that these URLs are meant to be shared and kept. What that promises across releases is for ticket 19.
+
+Don't change what any existing URL means.
+
+## Acceptance criteria
+
+- [ ] The page lists every parameter the viewer reads.
+- [ ] A unit test fails when the parser reads a parameter that isn't in the list.
+- [ ] Every example link on the page opens the View it describes on the Big Bank demo (checked in the viewer's end-to-end tests).
+- [ ] The viewer's existing URL tests pass unchanged.
