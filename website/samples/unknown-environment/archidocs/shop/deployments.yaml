@@ -1,0 +1,9 @@
+targets:
+  eu-west-1:
+    name: EU West 1
+    kind: region
+deployments:
+  - service: web
+    environment: production
+    target: eu-west-1
+    url: https://shop.example.com

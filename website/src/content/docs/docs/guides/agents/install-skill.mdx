@@ -1,7 +1,44 @@
 ---
 title: Install the agent skill
+description: Point coding agents at the authoring guide that matches the installed CLI.
 sidebar:
   order: 2
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+The `archidocs-authoring` skill tells a coding agent how to edit the Model: load the authoring guide, follow its edit loop, and finish with `check`. The skill itself is a short stub; the guide it points to ships with the CLI, so agents always get the version that matches it.
+
+## In the Workspace repo
+
+`archidocs init` installs it with the Workspace:
+
+```bash
+archidocs init
+```
+
+It writes `archidocs-authoring/SKILL.md` into each folder where harnesses look for skills (`.agents/skills`, `.claude/skills` and `.github/skills`), and appends an "Architecture model" section to `AGENTS.md`, and to `CLAUDE.md` if there is one, that names the skill.
+
+## In a code repo
+
+A repo whose code the Model describes, without a Workspace of its own, gets the skill alone:
+
+```bash
+archidocs init --skill --workspace ../architecture/archidocs
+```
+
+`--workspace` is the path to a checkout of the Workspace repo; `init` prints the MCP command that serves it. See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/#in-a-code-repo).
+
+## Keeping it current
+
+Run `archidocs init` again after upgrading the CLI. It rewrites the stubs if they changed and leaves everything else alone. The guide itself needs no updating: `archidocs guide` and the MCP `get_authoring_guide` tool always serve the installed version's.
+
+## What the agent reads
+
+- `archidocs guide`, or `get_authoring_guide` with no topic: the Model in brief, the edit loop, and the list of task topics.
+- `archidocs guide <topic>`, or `get_authoring_guide(topic)`: one task, such as [`add-service`](/docs/reference/agent-guide/add-service/) or [`bootstrap`](/docs/reference/agent-guide/bootstrap/).
+
+You can read the same guide, for the latest release, under [Reference › Authoring guide for agents](/docs/reference/agent-guide/).
+
+## Related
+
+- [`archidocs init`](/docs/reference/cli/init/)
+- [`archidocs guide`](/docs/reference/cli/guide/)

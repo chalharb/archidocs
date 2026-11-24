@@ -1,7 +1,66 @@
 ---
 title: Add a Project
+description: Give a Team its own folder in the Workspace.
 sidebar:
   order: 1
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+A Project is one Team's slice of the Workspace. Add one when a Team starts modelling what it owns. See [Workspace and Projects](/docs/concepts/workspace-and-projects/) for the idea.
+
+:::note[For agents]
+The agent topic for this task is [`bootstrap`](/docs/reference/agent-guide/bootstrap/), which also declares the Project's contents from its code.
+:::
+
+## 1. Make sure the Team exists
+
+The Team that will own the Project must be defined in `workspace.yaml`. Add it if it is new:
+
+```yaml file="examples/big-bank/archidocs/workspace.yaml"
+```
+
+## 2. Create the folder and `project.yaml`
+
+Create a folder under the Workspace folder, usually named after the Project's id, with a `project.yaml`:
+
+```yaml file="examples/big-bank/archidocs/identity/project.yaml"
+```
+
+- `id` is how other Projects name this one's Elements, as `identity:auth-service`. Choose it with care: changing it later means changing every reference.
+- `name` is shown in the viewer.
+- `owner` is the Team that owns everything declared here, unless an Element says otherwise.
+
+Projects don't nest: a Project folder can't sit inside another.
+
+## 3. Declare its Elements
+
+Add a file such as `model.yaml` beside `project.yaml`. Any name works, and you can split a Project across as many files as you like. Big Bank's Identity Project is one System with two Services:
+
+```yaml file="examples/big-bank/archidocs/identity/model.yaml"
+```
+
+The Auth Service depends on `platform:email-system`, an Element of another Team's Project. Declare only this Project's outbound Relationships; the Teams that depend on this one declare theirs.
+
+Then [add Services](/docs/guides/model/add-a-service/) and [Deployments](/docs/guides/model/add-deployments/) as the Project grows.
+
+## 4. Check it
+
+```bash
+archidocs check
+```
+
+## 5. Route its reviews
+
+Each Team changes only its own folder, so a `CODEOWNERS` line per Project sends every change to the Team that owns it:
+
+```text
+/archidocs/identity/  @bigbank/identity
+```
+
+## With an agent
+
+Over MCP, [`create_project`](/docs/reference/mcp/write-tools/#create_project) writes the folder and `project.yaml`, and [`upsert_team`](/docs/reference/mcp/write-tools/#upsert_team) adds a missing Team. To model an existing codebase in one go, see [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/).
+
+## Related
+
+- [`project.yaml` reference](/docs/reference/model/project-yaml/)
+- [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/)

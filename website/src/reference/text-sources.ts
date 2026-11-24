@@ -69,8 +69,16 @@ export function agentGuidePages(): GeneratedPage[] {
   return [index, ...pages];
 }
 
+/** The anchor of a Glossary term, such as `term-deployment-target`, for hand-written pages to link to. */
+export const termAnchor = (term: string): string => `term-${term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+
+/** Gives each term (a line `**Term**:`) an anchor of its own, so a page can link to its entry. */
+export function anchorTerms(markdown: string): string {
+  return markdown.replace(/^\*\*([^*\n]+)\*\*:$/gm, (line, term: string) => `<span id="${termAnchor(term)}"></span>${line}`);
+}
+
 export function glossaryPage(): GeneratedPage {
-  const { rest } = splitTitle(readRepoFile("GLOSSARY.md"));
+  const { rest } = splitTitle(anchorTerms(readRepoFile("GLOSSARY.md")));
   return {
     id: "docs/reference/glossary",
     title: "Glossary",

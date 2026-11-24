@@ -1,3 +1,4 @@
+#region targets
 targets:
   cloud:
     name: Cloud region
@@ -6,6 +7,9 @@ targets:
       cluster:
         name: Kubernetes cluster
         kind: cluster
+#endregion
+
+#region deployments
 deployments:
   - service: web
     environment: prod
@@ -15,6 +19,9 @@ deployments:
     environment: prod
     target: cluster
     url: https://api.sink.example
+    endpoints:
+      - name: health
+        url: https://api.sink.example/healthz
   - service: orders-db
     environment: prod
     target: cloud
@@ -27,3 +34,4 @@ deployments:
   - service: search
     environment: prod
     target: cloud
+#endregion

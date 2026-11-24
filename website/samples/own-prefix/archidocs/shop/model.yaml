@@ -1,0 +1,8 @@
+services:
+  web:
+    name: Web
+    relationships:
+      - to: shop:api
+        description: Places orders through
+  api:
+    name: API

@@ -1,7 +1,60 @@
 ---
 title: Connect Services
+description: Declare what a Service depends on, in its Project or another, sync or through a broker.
 sidebar:
   order: 3
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+A Relationship says that a consumer depends on a provider. See [Relationships](/docs/concepts/relationships/) for why they point the way they do.
+
+:::note[For agents]
+The agent topic for this task is [`relationships`](/docs/reference/agent-guide/relationships/).
+:::
+
+## A call
+
+Under the consumer, add a `relationships` entry pointing `to` the provider:
+
+```yaml file="examples/big-bank/archidocs/payments/model.yaml" region="payments-service"
+```
+
+- Write the `description` as a verb phrase that completes "consumer … provider": "Stores payment state in".
+- Put the protocol or format in `technology`: "JDBC", "JSON/HTTPS", "gRPC".
+- Declare it at the most detailed level you know: between Components if the code shows which part calls which, else between Services. Edges between Systems are derived from these.
+
+## To another Project
+
+Name a provider in another Project by its Qualified id, `project:id`, as `core:mainframe` above. Declare only your Project's outbound Relationships: the provider's Team declares its own. If the provider isn't in the Model yet, leave the Relationship out and tell its Team; don't declare another Team's Elements in your Project.
+
+A provider outside the organisation, such as a payment provider's API, can be declared in your Project as an External Service.
+
+## Through a broker
+
+An event is declared by the Subscriber, pointing `to` the Publisher whose events it depends on, with `interaction: async`, `via` the broker Service and `channel` the topic or queue:
+
+```yaml file="examples/big-bank/archidocs/payments/model.yaml" region="fraud-detection"
+```
+
+The broker must be a Service with `type: broker` ([`via-not-broker`](/docs/reference/rules/via-not-broker/)). Leave out `interaction: async` and `check` refuses `via` and `channel`:
+
+```yaml file="website/samples/sync-subscription/archidocs/shop/model.yaml" fails="via-on-sync"
+```
+
+That is [`via-on-sync`](/docs/reference/rules/via-on-sync/): add `interaction: async` to the Relationship. An async Relationship with no broker, such as a webhook, has `interaction: async` and no `via`.
+
+## Check it
+
+```bash
+archidocs check
+```
+
+Then look at it in the viewer: `archidocs dev`, select the consumer, and its new Relationship is listed in the Element panel and drawn on the Views that show both ends.
+
+## With an agent
+
+[`upsert_relationship`](/docs/reference/mcp/write-tools/#upsert_relationship) adds or updates one, and [`search_elements`](/docs/reference/mcp/read-tools/#search_elements) resolves a provider's name, URL or host to its Qualified id.
+
+## Related
+
+- [Elements and Relationships reference](/docs/reference/model/model-yaml/)
+- [Dynamic Views](/docs/guides/model/dynamic-views/)

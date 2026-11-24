@@ -1,0 +1,9 @@
+people:
+  shopper:
+    name: Shopper
+services:
+  web:
+    name: Web
+    relationships:
+      - to: shopper
+        description: Shows the basket to

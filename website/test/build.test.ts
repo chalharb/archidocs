@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { rules } from "../../src/core/rules.ts";
 import { EXAMPLES, exportDiagrams } from "../src/lib/examples.ts";
+import { repoPath } from "../src/lib/repo.ts";
 import { buildSite, type BuildResult } from "./support.ts";
 
 let site: BuildResult;
@@ -36,10 +37,24 @@ describe("the built site", () => {
   });
 
   it("has a Markdown copy of each page, hand-written and generated", () => {
-    expect(read("docs/start/quick-start.md")).toContain("npx archidocs init");
+    expect(read("docs/start/quick-start.md")).toContain("archidocs init");
+    // Sample fences are filled from their files, Diagrams become images, and MDX imports go.
+    const tutorial = read("docs/start/tutorial.md");
+    expect(tutorial).toContain('```yaml title="digital/project.yaml"\nid: digital\n');
+    expect(tutorial).not.toContain('file="examples/');
+    expect(tutorial).not.toMatch(/^import /m);
+    expect(read("docs/examples/big-bank.md")).toContain("![Everything that depends on the Big Bank mainframe");
     const generated = read("docs/reference/cli/export.md");
     expect(generated).toMatch(/^# archidocs export$/m);
     expect(generated).toMatch(/^### `--all-saved`$/m);
+  });
+
+  it("carries the Archidocs brand: the mark beside the title, and the viewer's favicon", () => {
+    const html = read("docs/index.html");
+    expect(html).toMatch(/<img[^>]*src="\/_astro\/archidocs-mark-dark\.[^"]+\.svg"/);
+    expect(html).toMatch(/<img[^>]*src="\/_astro\/archidocs-mark-light\.[^"]+\.svg"/);
+    expect(html).toContain('href="/favicon.svg"');
+    expect(read("favicon.svg")).toBe(readFileSync(repoPath("viewer/public/favicon.svg"), "utf8"));
   });
 
   it("serves the Markdown copies and llms files as UTF-8", () => {

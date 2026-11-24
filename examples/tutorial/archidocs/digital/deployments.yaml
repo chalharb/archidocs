@@ -1,0 +1,23 @@
+targets:
+  aws-eu-west-2:
+    name: AWS eu-west-2 (London)
+    kind: region
+    targets:
+      eks-prod:
+        name: EKS prod
+        kind: cluster
+      eks-staging:
+        name: EKS staging
+        kind: cluster
+deployments:
+  - service: api
+    environment: prod
+    target: eks-prod
+    url: https://api.bigbank.example
+  - service: api
+    environment: staging
+    target: eks-staging
+    url: https://api.staging.bigbank.example
+  - service: database
+    environment: prod
+    target: eks-prod

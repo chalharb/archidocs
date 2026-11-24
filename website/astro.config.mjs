@@ -8,6 +8,7 @@ import starlightLlmsTxt from "starlight-llms-txt";
 import { PAGEFIND_RANKING } from "./src/lib/search.ts";
 import commandLines from "./src/plugins/command-lines.ts";
 import identifierHeadings from "./src/plugins/identifier-headings.ts";
+import samples from "./src/plugins/samples.ts";
 
 /**
  * A sidebar group listing a folder's pages.
@@ -29,7 +30,11 @@ export default defineConfig({
       description: "Git-native architecture as code: one Model in YAML, a diagram viewer for people and MCP tools for agents.",
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/chalharb/archidocs" }],
       editLink: { baseUrl: "https://github.com/chalharb/archidocs/edit/main/website/" },
-      customCss: ["./src/styles/diagram.css"],
+      // The mark from assets/brand/: the dark tile on the light theme, the light tile on the dark one.
+      logo: { light: "../assets/brand/archidocs-mark-dark.svg", dark: "../assets/brand/archidocs-mark-light.svg" },
+      // /favicon.svg is the viewer's own favicon (src/pages/favicon.svg.ts).
+      favicon: "/favicon.svg",
+      customCss: ["./src/styles/brand.css", "./src/styles/diagram.css"],
       pagefind: { ranking: PAGEFIND_RANKING },
       sidebar: [
         group("Start here", "docs/start"),
@@ -54,6 +59,7 @@ export default defineConfig({
         group("Examples", "docs/examples"),
       ],
       plugins: [
+        samples(),
         commandLines(),
         identifierHeadings(),
         starlightLinksValidator(),
@@ -77,7 +83,8 @@ export default defineConfig({
           // llms-small.txt leaves out the Examples and the Changelog.
           exclude: ["docs/examples/**", "docs/reference/changelog"],
         }),
-        starlightLlmActions(),
+        // The .md copies: sample fences filled in, Diagrams as images (src/render-markdown.ts).
+        starlightLlmActions({ renderMarkdown: { module: "./src/render-markdown.ts" } }),
       ],
     }),
   ],

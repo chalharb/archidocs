@@ -1,0 +1,11 @@
+services:
+  web:
+    name: Web
+    relationships:
+      - to: api
+        description: Places orders through
+  api:
+    name: API
+    relationships:
+      - to: legacy-db
+        description: Stores orders in

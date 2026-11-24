@@ -1,7 +1,93 @@
 ---
 title: PR previews
+description: Show every pull request's architecture changes as a site and a comment.
 sidebar:
   order: 3
 ---
 
-This page is coming soon. Until then, see the [reference](/docs/reference/cli/).
+A PR preview is a viewer site built from a pull request that opens on Compare, from the base branch to the pull request, so reviewers see what the change does to the architecture on the diagrams.
+
+## Build one
+
+`archidocs build --preview` builds a site that holds two Bundles: the pull request's head (the checkout as it is) and the base branch's latest Revision. It opens with Compare "base → PR" applied on the C2 Landscape.
+
+```sh
+archidocs build --preview --base main --out preview
+```
+
+- The base is read from `origin/<base>` in the checkout. Archidocs never fetches it, so fetch it first; with GitHub's `actions/checkout` and `fetch-depth: 0` it is already there.
+- Without `--base`, the base is the branch that `origin/HEAD` names, else `main`.
+- A base with no Workspace yet Compares against an empty Model, so everything in the pull request shows as added.
+
+## On GitHub
+
+Archidocs hosts nothing. With `preview: true`, the Action builds the preview and uploads it as the `archidocs-preview` workflow artifact:
+
+```yaml title=".github/workflows/architecture-preview.yml"
+name: Architecture preview
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: chalharb/archidocs@v1
+        id: archidocs
+        with:
+          preview: true
+```
+
+GitHub Pages can't host a site per pull request. To browse previews, deploy the Action's `site` output somewhere that can:
+
+- **Netlify:** `netlify deploy --dir "$SITE" --alias "pr-$PR_NUMBER"`.
+- **Cloudflare Pages:** `wrangler pages deploy "$SITE" --project-name <project> --branch "pr-$PR_NUMBER"`.
+- **An S3-style bucket:** sync it under a prefix, such as `s3://<bucket>/pr/<n>/`. The site works under any base path.
+
+## On GitLab
+
+The [GitLab template](/docs/guides/publish/gitlab-pages/)'s `archidocs-preview` job builds the preview on every merge request and keeps it as a merge request artifact, "Archidocs preview".
+
+## Comment the changes
+
+`archidocs diff --format markdown` writes the Changes between two points as Markdown. Archidocs posts no comments itself; post it as your CI user. On GitHub, add this job to the preview workflow:
+
+```yaml title=".github/workflows/architecture-preview.yml"
+  comment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --global archidocs
+      - name: Comment the architecture changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.base_ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "### Architecture changes"
+            archidocs diff "origin/$BASE" HEAD --format markdown
+          } > architecture.md
+          # Edit the comment this job posted before, or post one.
+          gh pr comment "$PR" --body-file architecture.md --edit-last --create-if-none
+```
+
+Run it on `pull_request`, not `pull_request_target`, so a pull request from a fork never runs with a write token. On GitLab, post `architecture.md` with the Notes API and a project access token.
+
+## Related
+
+- [Review changes with diff](/docs/guides/review/diff/)
+- [`archidocs build`](/docs/reference/cli/build/#--preview)

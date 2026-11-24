@@ -9,7 +9,7 @@ import { generatedPages } from "../src/reference/index.ts";
 import { listTools, mcpPages } from "../src/reference/mcp.ts";
 import { modelPages } from "../src/reference/model.ts";
 import { rulePages } from "../src/reference/rules.ts";
-import { rewriteLinks } from "../src/reference/text-sources.ts";
+import { anchorTerms, glossaryPage, rewriteLinks, termAnchor } from "../src/reference/text-sources.ts";
 
 const byId = async () => new Map((await generatedPages()).map((p) => [p.id, p]));
 
@@ -75,6 +75,13 @@ describe("generated reference pages", () => {
       "See [x](/docs/reference/agent-guide/saved-view/#steps), [g](/docs/reference/glossary/) and [a](https://github.com/chalharb/archidocs/blob/main/docs/publishing.md).",
     );
     expect(rewriteLinks("as the `rules` topic explains", "guide/SKILL.md")).toBe("as the [`rules` topic](/docs/reference/rules/) explains");
+  });
+
+  it("gives each Glossary term an anchor of its own", () => {
+    expect(anchorTerms("**Deployment Target**:\nThe place a Service runs.")).toBe('<span id="term-deployment-target"></span>**Deployment Target**:\nThe place a Service runs.');
+    expect(termAnchor("Upstream / Downstream")).toBe("term-upstream-downstream");
+    const body = glossaryPage().body;
+    for (const term of ["Workspace", "Project", "Element", "Relationship", "Team", "Owner", "Saved View", "Lens"]) expect(body).toContain(`id="${termAnchor(term)}"`);
   });
 
   it("commits no generated page: none has a file in src/content/docs", async () => {

@@ -1,9 +1,52 @@
 ---
 title: Agents and MCP
+description: The MCP server answers the viewer's questions for agents and lets them edit the Model safely.
 sidebar:
   order: 10
 ---
 
-This page is coming soon.
+:::tip[If you are an agent]
+If you can run Archidocs, prefer its own guide: `archidocs guide` or the MCP `get_authoring_guide` tool serves the [authoring guide](/docs/reference/agent-guide/) that matches the installed version. This site documents the latest release only.
+:::
 
-If you are an agent that can run Archidocs, `archidocs guide` or the MCP `get_authoring_guide` tool serves the [authoring guide](/docs/reference/agent-guide/) that matches the installed version; this site documents the latest release only. The [MCP tools](/docs/reference/mcp/read-tools/) are listed in the reference.
+`archidocs mcp` serves the Model to AI agents over the [Model Context Protocol](https://modelcontextprotocol.io). It is the viewer's twin: what a person can see in the viewer, an agent can ask the MCP server, and the answers come from the same Model.
+
+## Read tools
+
+The [read tools](/docs/reference/mcp/read-tools/) answer the same questions as the viewer: how two Services are connected ([`find_paths`](/docs/reference/mcp/read-tools/#find_paths)), what an outage affects ([`get_impact`](/docs/reference/mcp/read-tools/#get_impact)), where a Service is deployed and at which URL ([`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments)), what a Team owns ([`list_owned`](/docs/reference/mcp/read-tools/#list_owned)), which decisions sit behind an Element ([`list_adrs`](/docs/reference/mcp/read-tools/#list_adrs)) and what changed between two Revisions ([`get_changes`](/docs/reference/mcp/read-tools/#get_changes)). With `--viewer-url`, results link to the same thing in the published viewer, so an agent can hand a person the picture.
+
+## Write tools
+
+Over a Workspace checkout, the [write tools](/docs/reference/mcp/write-tools/) edit the YAML in place: [`upsert_element`](/docs/reference/mcp/write-tools/#upsert_element), [`upsert_relationship`](/docs/reference/mcp/write-tools/#upsert_relationship), [`upsert_deployment`](/docs/reference/mcp/write-tools/#upsert_deployment), [`upsert_view`](/docs/reference/mcp/write-tools/#upsert_view), [`propose_adr`](/docs/reference/mcp/write-tools/#propose_adr), the `remove_*` tools and more. Each one:
+
+- keeps the file's comments and formatting, and returns a unified diff of what it changed;
+- refuses any change that would fail `archidocs check`, with `validation_failed` and each issue's rule and file:line, so the Model is valid after every step;
+- refuses to remove something still referenced, listing each reference, rather than cascading;
+- can be tried first with `dry_run: true`, which returns the diff and writes nothing.
+
+The agent edits files in your checkout, like a person would. Committing, opening the pull request and reviewing it stay with you.
+
+## Two places to serve from
+
+- **A checkout**, `archidocs mcp --workspace ./archidocs`: read and write tools, for an agent working in the Workspace repo.
+- **A published Bundle**, `archidocs mcp --bundle https://architecture.example.com/workspace.bundle.json`: read tools only, from a site that `archidocs build` published. Any agent can then answer architecture questions without a checkout, and sees the latest published Revision.
+
+The server talks over stdio by default, which is what agent harnesses start. `--http` serves Streamable HTTP on a loopback address instead, with the write tools off unless `--allow-writes` turns them on.
+
+## The authoring guide
+
+The MCP tools say what they do; the authoring guide says how to model well with them: the Model's rules, the edit loop (read, write, handle a refusal, show the diff, finish with `check`), and a task topic for each job, such as bootstrapping a Project from code. It ships with the CLI, so it always matches it:
+
+- `archidocs guide` and `archidocs guide <topic>` print it;
+- the MCP tool [`get_authoring_guide`](/docs/reference/mcp/read-tools/#get_authoring_guide) serves it;
+- `archidocs init` installs a skill that points agents at it;
+- this site renders it under [Reference › Authoring guide for agents](/docs/reference/agent-guide/), for the latest release.
+
+The guides on this site cover the same tasks for people, and each links its agent topic.
+
+## Related
+
+- [Connect an agent over MCP](/docs/guides/agents/connect-mcp/)
+- [Install the agent skill](/docs/guides/agents/install-skill/)
+- [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
+- [`archidocs mcp`](/docs/reference/cli/mcp/)
