@@ -69,7 +69,7 @@ jobs:
 
   docs:
     # The docs site documents the released CLI, so production deploys only here, from the release tag.
-    # Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see docs.yml); website/wrangler.jsonc
+    # Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see sites.yml); website/wrangler.jsonc
     # holds the Worker and its archidocs.dev Custom Domains.
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'

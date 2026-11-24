@@ -1,0 +1,183 @@
+name: Sites
+
+# Builds the docs site (website/) and the example sites (examples/*) and deploys them
+# to Cloudflare Workers (static assets, configured in each wrangler.jsonc):
+#   - a push to main deploys the docs to next.archidocs.dev and the demos to production
+#     (big-bank.archidocs.dev, kitchen-sink.archidocs.dev)
+#   - each PR gets a Worker Preview named pr-<number> per site, listed in one PR comment
+#   - closing the PR deletes its Previews
+# Docs production (archidocs.dev) deploys only from a release tag, in publish.yml,
+# because the site documents the released CLI.
+#
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN (Account › Workers Scripts › Edit,
+# Zone › Workers Routes › Edit and Zone › DNS › Edit on archidocs.dev) and
+# CLOUDFLARE_ACCOUNT_ID. Without them (forks, Dependabot, before setup) the deploy
+# jobs are skipped rather than failed.
+on:
+  push:
+    branches: [main]
+    paths-ignore: [".scratch/**"]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths-ignore: [".scratch/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sites-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  credentials:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No Cloudflare secrets here, so the sites are not deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: credentials
+    if: needs.credentials.outputs.ready == 'true' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { site: docs, dir: website, build: "docs:build", main: "wrangler deploy --env next" }
+          - { site: big-bank, dir: examples/big-bank, build: "demo:big-bank", main: "wrangler deploy" }
+          - { site: kitchen-sink, dir: examples/kitchen-sink, build: "demo:kitchen-sink", main: "wrangler deploy" }
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SITE: ${{ matrix.site }}
+      DIR: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm "${{ matrix.build }}"
+
+      - name: Deploy main
+        if: github.event_name == 'push'
+        run: pnpm exec ${{ matrix.main }} --cwd "$DIR"
+
+      - name: Deploy the PR Preview
+        if: github.event_name == 'pull_request'
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -o pipefail
+          # Keep wrangler's output even when it fails, so the log says why.
+          status=0
+          output="$(pnpm exec wrangler preview --cwd "$DIR" --name "pr-$PR" --message "$TITLE" --json 2> "$RUNNER_TEMP/wrangler.err")" || status=$?
+          cat "$RUNNER_TEMP/wrangler.err" >&2
+          printf '%s\n' "$output"
+          [ "$status" -eq 0 ] || exit "$status"
+          # Upload progress comes before the JSON, which starts at the first line that is just "{".
+          url="$(printf '%s\n' "$output" | sed -n '/^{$/,$p' | jq -er '.preview.urls[0]')"
+          echo "**$SITE** Preview: $url" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p "$RUNNER_TEMP/preview"
+          printf '%s' "$url" > "$RUNNER_TEMP/preview/$SITE"
+      - name: Hand the URL to the comment job
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-${{ matrix.site }}
+          path: ${{ runner.temp }}/preview/${{ matrix.site }}
+          retention-days: 1
+
+  comment:
+    # One comment for all the Previews. A site whose deploy failed shows as failed.
+    needs: [credentials, deploy]
+    if: >-
+      always() && github.event_name == 'pull_request' && github.event.action != 'closed'
+      && needs.credentials.outputs.ready == 'true' && needs.deploy.result != 'cancelled'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: preview-*
+          merge-multiple: true
+          path: preview
+      - name: Write the comment
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # The Worker each site deploys to; `:account` lets the dashboard pick the reader's account.
+          dash="https://dash.cloudflare.com/?to=/:account/workers/services/view"
+          updated="$(date -u '+%b %-d, %Y %H:%M UTC')"
+          {
+            echo "The latest updates on your Cloudflare Workers Previews, built from ${SHA:0:7}."
+            echo
+            echo "| Worker | Deployment | Actions | Updated |"
+            echo "| :--- | :--- | :--- | :--- |"
+            for site in docs big-bank kitchen-sink; do
+              worker="archidocs-$site"
+              if [ -s "preview/$site" ]; then
+                status="🟢 [Ready]($RUN)"; action="[Preview]($(cat "preview/$site"))"
+              else
+                status="🔴 [Error]($RUN)"; action=""
+              fi
+              echo "| 🟠 [**$worker**]($dash/$worker) | $status | $action | $updated |"
+            done
+          } > comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: previews
+          path: comment.md
+      # The per-site comments that docs.yml and demos.yml used to post.
+      - name: Remove the old per-site comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq '.[] | select(.body | test("<!-- Sticky Pull Request Comment(docs|demo-big-bank|demo-kitchen-sink) -->")) | .id' |
+            while read -r id; do gh api -X DELETE "repos/$REPO/issues/comments/$id"; done
+
+  cleanup:
+    needs: credentials
+    if: needs.credentials.outputs.ready == 'true' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [website, examples/big-bank, examples/kitchen-sink]
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Delete the PR Preview
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          DIR: ${{ matrix.dir }}
+        # A PR whose Preview was never made (skipped or failed) has nothing to delete.
+        run: pnpm exec wrangler preview delete --cwd "$DIR" --name "pr-$PR" --skip-confirmation || true
