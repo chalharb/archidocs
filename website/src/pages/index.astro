@@ -12,6 +12,7 @@ import mark from "../../../assets/brand/archidocs-mark-light.svg?url";
 import { findExample, liveViewerUrl } from "../lib/examples.ts";
 import { captureLanding, countWord, LANDING_MAP_URL, landingDiagram, QUESTION } from "../lib/landing.ts";
 import { GITHUB_URL, VERSION } from "../lib/repo.ts";
+import { shareHead } from "../lib/share.ts";
 import { toolPath } from "../reference/mcp.ts";
 
 const landing = await captureLanding();
@@ -81,6 +82,11 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
     <meta property="og:title" content="Archidocs" />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={new URL("/", Astro.site)} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Archidocs" />
+    <meta name="twitter:title" content="Archidocs" />
+    <meta name="twitter:description" content={description} />
+    {shareHead(Astro.site!).map(({ tag: Tag, attrs }) => <Tag {...attrs} />)}
   </head>
   <body>
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">

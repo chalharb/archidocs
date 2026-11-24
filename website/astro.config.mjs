@@ -1,11 +1,13 @@
 // @ts-check
 import process from "node:process";
+import { URL } from "node:url";
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmActions from "starlight-llm-actions";
 import starlightLlmsTxt from "starlight-llms-txt";
 import { PAGEFIND_RANKING } from "./src/lib/search.ts";
+import { shareHead } from "./src/lib/share.ts";
 import commandLines from "./src/plugins/command-lines.ts";
 import identifierHeadings from "./src/plugins/identifier-headings.ts";
 import samples from "./src/plugins/samples.ts";
@@ -18,8 +20,10 @@ import samples from "./src/plugins/samples.ts";
  */
 const group = (label, directory, extra = {}) => ({ label, items: [{ autogenerate: { directory } }], ...extra });
 
+const site = "https://archidocs.dev";
+
 export default defineConfig({
-  site: "https://archidocs.dev",
+  site,
   // The fixture tests (test/fixtures.test.ts) build a copy of src/ with a broken page added, into a temp folder.
   srcDir: process.env.ARCHIDOCS_DOCS_SRC_DIR ?? "./src",
   outDir: process.env.ARCHIDOCS_DOCS_OUT_DIR ?? "./dist",
@@ -34,6 +38,8 @@ export default defineConfig({
       logo: { light: "../assets/brand/archidocs-mark-dark.svg", dark: "../assets/brand/archidocs-mark-light.svg" },
       // /favicon.svg is the viewer's own favicon (src/pages/favicon.svg.ts).
       favicon: "/favicon.svg",
+      // The social card and app icon for link previews (src/lib/share.ts).
+      head: shareHead(new URL(site)).map(({ tag, attrs }) => ({ tag, attrs: { ...attrs } })),
       customCss: ["./src/styles/brand.css", "./src/styles/diagram.css"],
       pagefind: { ranking: PAGEFIND_RANKING },
       sidebar: [
