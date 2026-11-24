@@ -30,6 +30,7 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - [How docs pages show diagrams and the live viewer](issues/03-diagrams-in-docs.md): a static `archidocs export` SVG plus an "Open in the live viewer" deep link to the demo; no embedded viewer (cramped at docs width).
 - [How the docs site serves agents](issues/04-agents-as-readers.md): same pages for humans and agents, plus `llms.txt` / `-full` / `-small` and a `.md` copy per page; `llms.txt` points agents to `archidocs guide` / MCP for their installed version; human Guides and agent topics stay separate, cross-linked.
 - [Which content is generated and which is hand-written](issues/05-content-sources.md): reference pages built at site-build time from the rule registry, JSON Schemas (adds an ADR frontmatter page), new structured CLI definitions, MCP `listTools`, `guide/`, `GLOSSARY.md`, `CHANGELOG.md` and `examples/*` exports; never committed. `docs/rules.md` deleted; `docs/publishing.md` split into Publish guides.
+- [Does Pagefind find rule ids and CLI flags](issues/09-search-identifiers.md): yes, untuned, for full and partial rule ids, `--flags` and snake_case tool names, as long as each is a page title or its own heading; no Pagefind settings.
 
 ## Not yet specified
 
