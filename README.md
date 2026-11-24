@@ -162,8 +162,8 @@ archidocs mcp --workspace ./archidocs
 
 | Example | What it shows | Source | Demo |
 | --- | --- | --- | --- |
-| Big Bank plc | A fictional bank with five Teams, two Environments and a history of Revisions to browse and compare. | [examples/big-bank](examples/big-bank) | [archidocs-big-bank.vercel.app](https://archidocs-big-bank.vercel.app) |
-| Kitchen sink | Every feature of the Model in one Workspace. | [examples/kitchen-sink](examples/kitchen-sink) | [archidocs-kitchen-sink.vercel.app](https://archidocs-kitchen-sink.vercel.app) |
+| Big Bank plc | A fictional bank with five Teams, two Environments and a history of Revisions to browse and compare. | [examples/big-bank](examples/big-bank) | [big-bank.archidocs.dev](https://big-bank.archidocs.dev) |
+| Kitchen sink | Every feature of the Model in one Workspace. | [examples/kitchen-sink](examples/kitchen-sink) | [kitchen-sink.archidocs.dev](https://kitchen-sink.archidocs.dev) |
 
 ## Development
 
