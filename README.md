@@ -177,4 +177,4 @@ pnpm dev
 
 ## License
 
-MIT
+[MIT](LICENSE)
