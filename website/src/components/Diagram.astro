@@ -1,0 +1,37 @@
+---
+/**
+ * A Saved View from an example Workspace, as `archidocs export` renders it
+ * at build time: the light and dark pictures, of which CSS shows the one for
+ * Starlight's `[data-theme]`, and a link to the same View in the live viewer.
+ *
+ *   <Diagram view="big-bank/digital:mainframe-outage" alt="…" />
+ */
+import { diagramFile, diagramUrl, exportDiagrams, findExample, liveViewerUrl } from "../lib/examples.ts";
+
+interface Props {
+  /** `<example>/<project>:<view-id>`, such as `big-bank/digital:mainframe-outage`. */
+  view: string;
+  alt: string;
+  caption?: string;
+}
+
+const { view, alt, caption } = Astro.props;
+const slash = view.indexOf("/");
+if (slash < 0) throw new Error(`<Diagram view="${view}">: write the view as <example>/<project>:<view-id>.`);
+const example = findExample(view.slice(0, slash));
+const viewId = view.slice(slash + 1);
+const diagrams = await exportDiagrams();
+if (!diagrams.has(`${example.slug}/light/${diagramFile(viewId)}`)) {
+  const saved = [...diagrams.keys()].filter((k) => k.startsWith(`${example.slug}/light/`)).map((k) => k.split("/")[2]);
+  throw new Error(`<Diagram view="${view}">: ${example.name} has no Saved View ${viewId}. Its exported Saved Views: ${saved.join(", ")}.`);
+}
+---
+
+<figure class="diagram not-content" data-view={view}>
+  <img class="diagram-light" src={diagramUrl(example, "light", viewId)} alt={alt} loading="lazy" decoding="async" />
+  <img class="diagram-dark" src={diagramUrl(example, "dark", viewId)} alt={alt} loading="lazy" decoding="async" />
+  <figcaption>
+    {caption && <span>{caption} · </span>}
+    <a href={liveViewerUrl(example, viewId)}>Open in the live viewer ↗</a>
+  </figcaption>
+</figure>

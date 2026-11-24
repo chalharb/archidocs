@@ -1,0 +1,4 @@
+# The repo root is the archidocs package; website/ is the docs site (archidocs.dev),
+# a package of its own that builds from this repo's code.
+packages:
+  - website

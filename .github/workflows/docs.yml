@@ -1,0 +1,111 @@
+name: Docs
+
+# Builds the docs site in website/ and deploys it to Cloudflare Workers
+# (static assets, configured in website/wrangler.jsonc) as Previews:
+#   - each PR gets a Worker Preview named pr-<number>, with its URL in a PR comment
+#   - each push to main updates the Preview named main
+#   - closing the PR deletes its Preview
+# Production (archidocs.dev) deploys only from a release tag, in publish.yml,
+# because the site documents the released CLI.
+#
+# Needs the same two repository secrets as demos.yml: CLOUDFLARE_API_TOKEN and
+# CLOUDFLARE_ACCOUNT_ID. Without them (forks, Dependabot) the deploy jobs are skipped.
+on:
+  push:
+    branches: [main]
+    paths-ignore: [".scratch/**"]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths-ignore: [".scratch/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  credentials:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No Cloudflare secrets here, so the docs are not deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  preview:
+    needs: credentials
+    if: needs.credentials.outputs.ready == 'true' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # the Preview URL comment
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm docs:build
+
+      - name: Deploy the Preview
+        id: preview
+        env:
+          NAME: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'main' }}
+          MESSAGE: ${{ github.event.pull_request.title || github.event.head_commit.message }}
+        run: |
+          set -o pipefail
+          # Keep wrangler's output even when it fails, so the log says why.
+          status=0
+          output="$(pnpm exec wrangler preview --cwd website --name "$NAME" --message "${MESSAGE%%$'\n'*}" --json 2> "$RUNNER_TEMP/wrangler.err")" || status=$?
+          cat "$RUNNER_TEMP/wrangler.err" >&2
+          printf '%s\n' "$output"
+          [ "$status" -eq 0 ] || exit "$status"
+          # Upload progress comes before the JSON, which starts at the first line that is just "{".
+          url="$(printf '%s\n' "$output" | sed -n '/^{$/,$p' | jq -er '.preview.urls[0]')"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "**docs** Preview ($NAME): $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment the Preview URL
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: docs
+          message: |
+            **Docs** Preview: ${{ steps.preview.outputs.url }}
+            Built from ${{ github.event.pull_request.head.sha }}.
+
+  cleanup:
+    needs: credentials
+    if: needs.credentials.outputs.ready == 'true' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Delete the PR Preview
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        # A PR whose Preview was never made (skipped or failed) has nothing to delete.
+        run: pnpm exec wrangler preview delete --cwd website --name "pr-$PR" --skip-confirmation || true

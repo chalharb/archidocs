@@ -4,7 +4,7 @@ name: Release
 # PR whose package.json version and CHANGELOG.md follow the Conventional Commit titles
 # merged since the last release (fix → patch, feat → minor, `!` or BREAKING CHANGE → major).
 # Merging that PR tags vX.Y.Z, creates the GitHub Release, and the publish job below
-# publishes archidocs@X.Y.Z to npm.
+# publishes archidocs@X.Y.Z to npm, and the docs job deploys archidocs.dev from the same tag.
 #
 # npm authenticates with trusted publishing (OIDC), so the repo holds no npm token.
 # One-time setup on npmjs.com: archidocs → Settings → Trusted Publisher →
@@ -66,3 +66,28 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: npm publish
+
+  docs:
+    # The docs site documents the released CLI, so production deploys only here, from the release tag.
+    # Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see docs.yml); website/wrangler.jsonc
+    # holds the Worker and its archidocs.dev Custom Domains.
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm docs:build
+      - run: pnpm exec wrangler deploy --cwd website
