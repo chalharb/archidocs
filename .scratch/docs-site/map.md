@@ -27,6 +27,7 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 
 - [Which site generator fits the docs site](issues/01-site-generator.md): Astro Starlight (pinned, pre-1.0) on the repo's Vite 8 + React 19 stack; Pagefind search, community llms.txt plugins, static deploy; Fumadocs runner-up.
 - [What is the docs site's page tree](issues/02-information-architecture.md): five groups (Start here, Concepts, Guides, Reference, Examples) under `/docs/`, landing at `/`; a page per CLI command, Model file and check rule; agent guide published as-is under Reference.
+- [How docs pages show diagrams and the live viewer](issues/03-diagrams-in-docs.md): a static `archidocs export` SVG plus an "Open in the live viewer" deep link to the demo; no embedded viewer (cramped at docs width).
 
 ## Not yet specified
 
@@ -36,6 +37,7 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - **Landing page copy:** the message and calls to action, once the IA and the landing prototype exist.
 - **README slimming:** the README keeps a short pitch and links out (page tree ticket); the exact cut is still open.
 - **Linking check output to rule pages:** whether `archidocs check` and MCP `validation_failed` issues print a link to `/docs/reference/rules/<rule-id>/`.
+- **Dark-theme diagrams:** `archidocs export` renders light only, so diagrams are white cards on the dark theme. Either add a dark export (and swap the image by theme) or keep white cards on purpose.
 
 ## Out of scope
 
