@@ -4,6 +4,14 @@
   "description": "Git-native architecture as code: check and bundle a Workspace of Projects.",
   "type": "module",
   "license": "MIT",
+  "homepage": "https://archidocs.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chalharb/archidocs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chalharb/archidocs/issues"
+  },
   "bin": {
     "archidocs": "dist/cli/main.js"
   },
