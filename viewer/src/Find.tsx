@@ -74,6 +74,7 @@ export function Find({ workspace, prompt, onPick, onClose }: FindProps) {
               </li>
             );
           })}
+          {!query.trim() && <li className="arc-empty">Start typing to see matching elements.</li>}
           {query.trim() && results.length === 0 && <li className="arc-empty">No matches</li>}
         </ul>
       </section>
