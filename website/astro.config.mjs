@@ -30,7 +30,11 @@ export default defineConfig({
       description: "Git-native architecture as code: one Model in YAML, a diagram viewer for people and MCP tools for agents.",
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/chalharb/archidocs" }],
       editLink: { baseUrl: "https://github.com/chalharb/archidocs/edit/main/website/" },
-      customCss: ["./src/styles/diagram.css"],
+      // The mark from assets/brand/: the dark tile on the light theme, the light tile on the dark one.
+      logo: { light: "../assets/brand/archidocs-mark-dark.svg", dark: "../assets/brand/archidocs-mark-light.svg" },
+      // /favicon.svg is the viewer's own favicon (src/pages/favicon.svg.ts).
+      favicon: "/favicon.svg",
+      customCss: ["./src/styles/brand.css", "./src/styles/diagram.css"],
       pagefind: { ranking: PAGEFIND_RANKING },
       sidebar: [
         group("Start here", "docs/start"),
