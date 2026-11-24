@@ -142,7 +142,7 @@ export function layoutSequence(view: ResolvedDynamicView, options: SequenceOptio
   const messages = sequenceMessages(view, options);
   const ids = sequenceParticipants(view, options);
   const index = new Map(ids.map((id, i) => [id, i]));
-  const widths = ids.map((id) => Math.min(S.maxColumn, Math.max(S.minColumn, textWidth(options.name(id), S.nameSize) + S.headerPad)));
+  const widths = ids.map((id) => Math.min(S.maxColumn, Math.max(S.minColumn, textWidth(options.name(id), S.nameSize, 700) + S.headerPad)));
 
   const labelWidths = messages.map((m) => {
     const via = viaLine(m, options.name);

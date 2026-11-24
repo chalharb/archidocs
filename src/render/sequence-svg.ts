@@ -47,12 +47,12 @@ export function renderSequenceSvg({ bundle, view, source, brokers = false, theme
 
   const subtitle = sourceLine(source, label);
   const key = drawKey(c);
-  const width = Math.ceil(Math.max(layout.width, key.width, textWidth(view.title, 20), textWidth(subtitle, 12)) + 2 * PAD);
+  const width = Math.ceil(Math.max(layout.width, key.width, textWidth(view.title, 20, 700), textWidth(subtitle, 12)) + 2 * PAD);
   const height = Math.ceil(TITLE + layout.height + KEY);
 
   return [
     ...opening(width, height, c.ground, heads(c.ink)),
-    text(PAD, 34, view.title, { size: 20, fill: c.ink }),
+    text(PAD, 34, view.title, { size: 20, fill: c.ink, weight: 700 }),
     text(PAD, 56, subtitle, { size: 12, fill: c.muted }),
     `<g transform="translate(${PAD},${TITLE})">`,
     ...layout.columns.map((col) => lifeline(c, col.x, layout)),
@@ -84,11 +84,11 @@ function header(c: Palette, id: string, x: number, w: number, element: BundleEle
   const name = element?.name ?? id;
   const external = element !== undefined && "external" in element && element.external;
   // The code tile sits 6px in from the right, 4px clear of the name; `SEQUENCE.headerPad` budgets for both.
-  const tileWidth = team ? textWidth(team.code, 10) + 16 + 4 : 0;
+  const tileWidth = team ? textWidth(team.code, 10, 700) + 16 + 4 : 0;
   return [
     `<g>`,
     `<rect x="${fmt(left)}" y="0" width="${fmt(w)}" height="${HEADER_BOX}" fill="${external ? c.ground : c.paper}" stroke="${c.ink}" stroke-width="1.5"${external ? ` stroke-dasharray="6 4"` : ""}/>`,
-    text(left + 14, 27, cut(name, SEQUENCE.nameSize, w - 20 - tileWidth), { size: SEQUENCE.nameSize, fill: c.ink }),
+    text(left + 14, 27, cut(name, SEQUENCE.nameSize, w - 20 - tileWidth, 700), { size: SEQUENCE.nameSize, fill: c.ink, weight: 700 }),
     ...(team ? [codeTile(c, team, left + w - 6, HEADER_BOX / 2 - 8)] : []),
     `</g>`,
   ].join("");
@@ -104,7 +104,7 @@ function arrow(c: Palette, r: SequenceRow, name: (id: string) => string): string
   return [
     `<path data-step="${r.key}" d="M${fmt(r.x1)},${fmt(r.y)} L${fmt(r.x2)},${fmt(r.y)}" fill="none" stroke="${c.ink}" stroke-width="1.5"${dash ? ` stroke-dasharray="${dash}"` : ""} marker-end="url(#head-${head})"/>`,
     `<circle cx="${fmt(badgeX)}" cy="${fmt(r.y)}" r="9" fill="${c.ink}"/>`,
-    text(badgeX, r.y + 3.5, r.key, { size: r.key.length > 2 ? 8 : 10, fill: c.paper, anchor: "middle" }),
+    text(badgeX, r.y + 3.5, r.key, { size: r.key.length > 2 ? 8 : 10, fill: c.paper, anchor: "middle", weight: 700 }),
     text(labelX, r.y - 7, r.label, { size: SEQUENCE.labelSize, fill: c.ink, ...(anchor ? { anchor } : {}) }),
     ...under.map((s, i) => text(labelX, r.y + 16 + i * SEQUENCE.lineHeight, s, { size: SEQUENCE.subSize, fill: c.muted, ...(anchor ? { anchor } : {}) })),
   ].join("");

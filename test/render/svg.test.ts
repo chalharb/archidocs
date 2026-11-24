@@ -101,10 +101,11 @@ describe("renderSvg", () => {
     expect(svg).not.toContain("<Web &");
   });
 
-  it("embeds its one font, so it draws the same without the font installed", async () => {
+  it("embeds Overpass Regular and Bold, so it draws the same without the font installed", async () => {
     const svg = await render(workspace, "c1");
 
-    expect(svg).toMatch(/@font-face\{font-family:"Inter";src:url\(data:font\/ttf;base64,[A-Za-z0-9+/=]+\)/);
+    for (const weight of [400, 700]) expect(svg).toMatch(new RegExp(`@font-face\\{font-family:"Overpass";font-weight:${weight};src:url\\(data:font/ttf;base64,[A-Za-z0-9+/=]+\\)`));
+    expect(svg).toContain(`font-family="Overpass, sans-serif"`);
   });
 });
 

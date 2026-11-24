@@ -1,7 +1,7 @@
 import type { ResolvedView, ViewEdge, ViewNode } from "../core/views.ts";
 import { describeLens } from "../core/saved-views.ts";
 import type { Bundle, BundleElement, BundleLens } from "../schema/bundle.ts";
-import { FONT_BASE64, FONT_FAMILY } from "./font.ts";
+import { FONT_FAMILY, FONTS } from "./font.ts";
 import type { Layout, LaidOutNode } from "./layout.ts";
 import { teamStyles, type TeamStyle } from "./teams.ts";
 import { cut, fmt, text, textWidth } from "./text.ts";
@@ -38,10 +38,10 @@ const EDGE = 6;
 export const sourceLine = (source: RenderSource, label?: string) =>
   label ?? [source.workspace, source.commit?.slice(0, 7) ?? "uncommitted", ...(source.date ? [source.date.slice(0, 10)] : [])].join(" · ");
 
-/** The `<svg>` open tag, embedded font and background every picture starts with. */
+/** The `<svg>` open tag, embedded fonts and background every picture starts with. */
 export const opening = (width: number, height: number, ground: string, defs: string) => [
   `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="${FONT_FAMILY}, sans-serif">`,
-  `<style>@font-face{font-family:"${FONT_FAMILY}";src:url(data:font/ttf;base64,${FONT_BASE64}) format("truetype")}</style>`,
+  `<style>${FONTS.map((f) => `@font-face{font-family:"${FONT_FAMILY}";font-weight:${f.weight};src:url(data:font/ttf;base64,${f.base64}) format("truetype")}`).join("")}</style>`,
   `<defs>${defs}</defs>`,
   `<rect width="${width}" height="${height}" fill="${ground}"/>`,
 ];
@@ -64,7 +64,7 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
   const title = view.title;
   const subtitle = sourceLine(source, label);
   const key = drawKey(c, view.lens);
-  const width = Math.ceil(Math.max(layout.width, key.width, textWidth(title, 20), textWidth(subtitle, 12)) + 2 * PAD);
+  const width = Math.ceil(Math.max(layout.width, key.width, textWidth(title, 20, 700), textWidth(subtitle, 12)) + 2 * PAD);
   const height = Math.ceil(HEADER + layout.height + PAD + KEY);
 
   const depth = (n: ViewNode): number => (n.parent === null ? 0 : 1 + depth(view.nodes.find((p) => p.id === n.parent)!));
@@ -81,7 +81,7 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
 
   return [
     ...opening(width, height, c.ground, `${marker("arrow", c.edge)}${view.lens ? marker("arrow-faint", c["edge-faint"]) + marker("arrow-lit", c.ink) : ""}${brokerPattern(c)}`),
-    text(PAD, 34, title, { size: 20, fill: c.ink }),
+    text(PAD, 34, title, { size: 20, fill: c.ink, weight: 700 }),
     text(PAD, 56, subtitle, { size: 12, fill: c.muted }),
     `<g transform="translate(${PAD},${HEADER})">`,
     ...byDepth.filter((n) => containers.has(n.id)).map(drawn),
@@ -115,12 +115,12 @@ function shape(x: number, y: number, w: number, h: number, [tl, tr, br, bl]: [nu
 
 /** A reversed Team code tile with the Team colour as its leading band, its right edge at `right`. */
 export function codeTile(c: Palette, team: TeamStyle, right: number, top: number): string {
-  const w = textWidth(team.code, 10) + 16;
+  const w = textWidth(team.code, 10, 700) + 16;
   const x = right - w;
   return [
     `<rect x="${fmt(x)}" y="${fmt(top)}" width="${fmt(w)}" height="16" fill="${c["code-bg"]}"/>`,
     `<rect x="${fmt(x)}" y="${fmt(top)}" width="5" height="16" fill="${team.color}"/>`,
-    text(x + 10, top + 12, team.code, { size: 10, fill: c["code-fg"] }),
+    text(x + 10, top + 12, team.code, { size: 10, fill: c["code-fg"], weight: 700 }),
   ].join("");
 }
 
@@ -155,13 +155,13 @@ function badge(c: Palette, n: ViewNode, box: LaidOutNode): string[] {
   const mark = n.mark;
   if (mark?.distance === undefined) return [];
   const words = mark.side === "origin" ? "ORIGIN" : mark.side ? `${mark.side.toUpperCase()} ${mark.distance}` : String(mark.distance);
-  const w = textWidth(words, 10) + 12;
+  const w = textWidth(words, 10, 700) + 12;
   const x = box.x + box.width - 36 - w;
   const y = box.y - 10;
   const [fill, ink, frame] = mark.side === "origin" ? [c.here, c["on-here"], c.ink] : mark.side === "upstream" ? [c.up, c.paper, undefined] : mark.side === "downstream" ? [c.down, c.paper, undefined] : [c.paper, c.ink, c.ink];
   return [
     `<rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(w)}" height="16" fill="${fill}"${frame ? ` stroke="${frame}" stroke-width="${FRAME}"` : ""}/>`,
-    text(x + 6, y + 12, words, { size: 10, fill: ink }),
+    text(x + 6, y + 12, words, { size: 10, fill: ink, weight: 700 }),
   ];
 }
 
@@ -174,7 +174,7 @@ function drawNode(c: Palette, n: ViewNode, box: LaidOutNode, element: BundleElem
   const d = shape(x, y, w, h, n.kind === "person" ? [r, r, r, r] : type === "datastore" ? [0, 0, 12, 12] : [0, 0, 0, 0]);
   const dash = n.external ? ` stroke-dasharray="6 4"` : "";
   const frameWidth = system ? 2 : FRAME;
-  const tileWidth = team ? textWidth(team.code, 10) + 16 + 8 : 0;
+  const tileWidth = team ? textWidth(team.code, 10, 700) + 16 + 8 : 0;
   const left = x + EDGE + (n.kind === "person" ? 12 : 8);
   const right = n.kind === "person" ? x + w - 16 : x + w - 10;
   return [
@@ -186,7 +186,7 @@ function drawNode(c: Palette, n: ViewNode, box: LaidOutNode, element: BundleElem
     `<path d="${d}" fill="none" stroke="${l.frame}" stroke-width="${frameWidth}"${dash}/>`,
     ...(l.double ? [`<path d="${shape(x + 3, y + 3, w - 6, h - 6, [0, 0, type === "datastore" ? 9 : 0, type === "datastore" ? 9 : 0])}" fill="none" stroke="${l.frame}" stroke-width="${FRAME}"/>`] : []),
     `<rect x="${fmt(x - 1)}" y="${fmt(y - 1)}" width="${EDGE + 1}" height="${fmt(h + 2)}" fill="${l.edge}" clip-path="url(#${clip})"/>`,
-    text(left, y + h / 2 - 4, cut(n.name, 13, right - left - tileWidth), { size: 13, fill: l.name }),
+    text(left, y + h / 2 - 4, cut(n.name, 13, right - left - tileWidth, 700), { size: 13, fill: l.name, weight: 700 }),
     text(left, y + h / 2 + 13, cut(subLabel(n, element), 11, right - left), { size: 11, fill: l.sub }),
     ...(team ? [codeTile(c, team, right, y + 8)] : []),
     ...badge(c, n, box),
@@ -203,13 +203,13 @@ function drawContainer(c: Palette, n: ViewNode, box: LaidOutNode, team: TeamStyl
   const frame = n.external ? c.ink : c.line;
   const fill = target || dimmed ? "none" : flatten(c.container, c.ground);
   const dash = n.external ? ` stroke-dasharray="6 4"` : "";
-  const tileWidth = team ? textWidth(team.code, 10) + 16 + 8 : 0;
+  const tileWidth = team ? textWidth(team.code, 10, 700) + 16 + 8 : 0;
   const left = x + (target ? 12 : EDGE + 10);
   return [
     `<g>`,
     `<rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(w)}" height="${fmt(h)}" fill="${fill}" stroke="${frame}" stroke-width="${FRAME}"${dash}/>`,
     ...(target ? [] : [`<rect x="${fmt(x - FRAME / 2)}" y="${fmt(y - FRAME / 2)}" width="${EDGE}" height="${fmt(h + FRAME)}" fill="${frame}"/>`]),
-    text(left, y + 22, cut(`${n.name} · ${targetKind ?? kindName(n)}`, 13, x + w - 10 - left - tileWidth), { size: 13, fill: dimmed ? c.faint : c.ink }),
+    text(left, y + 22, cut(`${n.name} · ${targetKind ?? kindName(n)}`, 13, x + w - 10 - left - tileWidth, 700), { size: 13, fill: dimmed ? c.faint : c.ink, weight: 700 }),
     ...(team ? [codeTile(c, team, x + w - 10, y + 9)] : []),
     ...badge(c, n, box),
     `</g>`,
@@ -236,8 +236,8 @@ function drawKey(c: Palette, lens: BundleLens | undefined): { parts: string[]; w
     parts.push(`<rect x="${fmt(x)}" y="4" width="28" height="16" ${attrs}/>`);
     x += 36;
   };
-  parts.push(codeTile(c, { code: "ABC", color: c.muted }, x + textWidth("ABC", 10) + 16, 4));
-  x += textWidth("ABC", 10) + 24;
+  parts.push(codeTile(c, { code: "ABC", color: c.muted }, x + textWidth("ABC", 10, 700) + 16, 4));
+  x += textWidth("ABC", 10, 700) + 24;
   label("Team (stripe and code)");
   swatch(`fill="${c.paper}" stroke="${c.ink}" stroke-width="${FRAME}" stroke-dasharray="6 4"`);
   label("External");
