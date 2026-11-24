@@ -5,6 +5,8 @@ name: Release
 # merged since the last release (fix → patch, feat → minor, `!` or BREAKING CHANGE → major).
 # Merging that PR tags vX.Y.Z, creates the GitHub Release, and the publish job below
 # publishes archidocs@X.Y.Z to npm, and the docs job deploys archidocs.dev from the same tag.
+# Once npm has the release, the major-tag job moves the major tag (v1) to it: the docs tell
+# people to use the Action as `chalharb/archidocs@v1` and the GitLab template from `v1`.
 #
 # npm authenticates with trusted publishing (OIDC), so the repo holds no npm token.
 # One-time setup on npmjs.com: archidocs → Settings → Trusted Publisher →
@@ -66,6 +68,25 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: npm publish
+
+  major-tag:
+    # Moved only after publish passed, so `@v1` never points at a release whose tests failed.
+    needs: [release-please, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+      - name: Move the major tag to this release
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          # v1.2.0 → v1
+          major="${TAG%%.*}"
+          git tag --force "$major"
+          git push --force origin "refs/tags/$major"
 
   docs:
     # The docs site documents the released CLI, so production deploys only here, from the release tag.
