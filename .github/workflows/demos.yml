@@ -79,8 +79,11 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           set -o pipefail
-          output="$(pnpm exec wrangler preview --cwd "examples/$SITE" --name "pr-$PR" --message "$(git log -1 --format=%s)" --json)"
+          # Keep wrangler's output even when it fails, so the log says why.
+          status=0
+          output="$(pnpm exec wrangler preview --cwd "examples/$SITE" --name "pr-$PR" --message "$(git log -1 --format=%s)" --json 2>&1)" || status=$?
           printf '%s\n' "$output"
+          [ "$status" -eq 0 ] || exit "$status"
           url="$(printf '%s' "$output" | jq -er '.preview.urls[0]')"
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "**$SITE** Preview: $url" >> "$GITHUB_STEP_SUMMARY"
