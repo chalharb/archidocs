@@ -28,6 +28,7 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - [Which site generator fits the docs site](issues/01-site-generator.md): Astro Starlight (pinned, pre-1.0) on the repo's Vite 8 + React 19 stack; Pagefind search, community llms.txt plugins, static deploy; Fumadocs runner-up.
 - [What is the docs site's page tree](issues/02-information-architecture.md): five groups (Start here, Concepts, Guides, Reference, Examples) under `/docs/`, landing at `/`; a page per CLI command, Model file and check rule; agent guide published as-is under Reference.
 - [How docs pages show diagrams and the live viewer](issues/03-diagrams-in-docs.md): a static `archidocs export` SVG plus an "Open in the live viewer" deep link to the demo; no embedded viewer (cramped at docs width).
+- [How the docs site serves agents](issues/04-agents-as-readers.md): same pages for humans and agents, plus `llms.txt` / `-full` / `-small` and a `.md` copy per page; `llms.txt` points agents to `archidocs guide` / MCP for their installed version; human Guides and agent topics stay separate, cross-linked.
 
 ## Not yet specified
 
