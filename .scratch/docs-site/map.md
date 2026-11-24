@@ -6,6 +6,8 @@ Label: wayfinder:map
 
 A **spec for the Archidocs documentation site** at archidocs.dev. It locks six areas in enough detail to split into build tickets: audience and information architecture (the page tree), the site generator, which content is generated and which is hand-written, hosting and deploy, versioning, and how the site shows the live viewer. Building the site is a separate effort.
 
+**Reached:** the spec is [spec.md](spec.md).
+
 ## Notes
 
 - **Audience:** people adopting Archidocs come first: they set up a Workspace, author Projects, wire up CI and point agents at MCP. Viewer visitors (the viewer has to answer them itself) and contributors (README, `AGENTS.md`) are out of scope. Agents are a second reader of the same docs.
@@ -26,17 +28,25 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 <!-- one line per closed ticket: [title](issues/NN-slug.md): gist -->
 
 - [Which site generator fits the docs site](issues/01-site-generator.md): Astro Starlight (pinned, pre-1.0) on the repo's Vite 8 + React 19 stack; Pagefind search, community llms.txt plugins, static deploy; Fumadocs runner-up.
+- [What is the docs site's page tree](issues/02-information-architecture.md): five groups (Start here, Concepts, Guides, Reference, Examples) under `/docs/`, landing at `/`; a page per CLI command, Model file and check rule; agent guide published as-is under Reference.
+- [How docs pages show diagrams and the live viewer](issues/03-diagrams-in-docs.md): a static `archidocs export` SVG plus an "Open in the live viewer" deep link to the demo; no embedded viewer (cramped at docs width).
+- [How the docs site serves agents](issues/04-agents-as-readers.md): same pages for humans and agents, plus `llms.txt` / `-full` / `-small` and a `.md` copy per page; `llms.txt` points agents to `archidocs guide` / MCP for their installed version; human Guides and agent topics stay separate, cross-linked.
+- [Which content is generated and which is hand-written](issues/05-content-sources.md): reference pages built at site-build time from the rule registry, JSON Schemas (adds an ADR frontmatter page), new structured CLI definitions, MCP `listTools`, `guide/`, `GLOSSARY.md`, `CHANGELOG.md` and `examples/*` exports; never committed. `docs/rules.md` deleted; `docs/publishing.md` split into Publish guides.
+- [Does Pagefind find rule ids and CLI flags](issues/09-search-identifiers.md): yes, untuned, for full and partial rule ids, `--flags` and snake_case tool names, as long as each is a page title or its own heading; no Pagefind settings.
+- [What the landing page looks like](issues/06-landing-page.md): Twin screens: one real question answered side by side by an agent over MCP and by the viewer; primary action opens the Big Bank demo; direction contract in `.impeccable/surfaces/website-src-pages-index-astro.md`.
+- [How the site is built and deployed](issues/07-build-and-deploy.md): the failing root Vercel project becomes the docs site (root `website/`, builds on Vercel); previews on every PR and push, production only from release tags; apex + www DNS-only on Cloudflare; export gets a label option (`Big Bank · v1.2.0`).
+- [How hand-written pages are kept correct](issues/08-hand-written-correctness.md): internal links fail the build; external links checked weekly; YAML samples included from `examples/` (failure samples tested); `archidocs` command lines parsed against the CLI definitions; tutorial gets an end-to-end CI test.
+- [What the README keeps](issues/10-readme-cut.md): ~70 lines: pitch, Why, Quick start, Examples, Development, License; Model, CLI, Publishing and Agents become a line plus a site link; hand-written but CLI-checked; cut ships with the first site deploy.
+- [Should check output link to rule pages](issues/11-check-links-to-rules.md): yes, always: a `docs` URL per issue in json and MCP, a Rule docs footer in text, a See-link in GitHub annotations; removed rules keep stub pages so old CLIs never 404.
+- [How diagrams look on the dark theme](issues/12-dark-theme-diagrams.md): the export is restyled to the Wayfinding Plate tokens from one shared source (no fades) and gains `--theme light|dark`; docs swap by Starlight theme; the landing page stays light.
 
 ## Not yet specified
 
-- **Deploy pipeline details:** a preview deploy per PR, whether the site builds in CI or on Vercel, link checking, and DNS for the root domain (it's unclear what serves archidocs.dev today).
-- **Drift checks:** how CI proves that generated reference pages match the code (regenerate and diff, the same way `rules:catalogue` and `schemas` do today?).
-- **Search:** whether the generator's built-in search is enough, or whether it needs tuning for terms like rule ids and CLI flags.
-- **Landing page copy:** the message and calls to action, once the IA and the landing prototype exist.
-- **README slimming:** what stays in the README (it is the npm and GitHub front page) and what moves to the site.
+None. Every ticket is resolved, and the way to the spec is clear.
 
 ## Out of scope
 
 - **A cached copy of the docs for each release:** this is a likely future state. The destination is latest only. The generator choice should not rule it out (see the generator ticket).
 - **A blog.**
 - **Contributor docs:** these stay in the README and `AGENTS.md`.
+- **An Action `theme` input** for dark Saved View images: beyond the docs site; `archidocs export --theme dark` covers manual use ([dark-theme ticket](issues/12-dark-theme-diagrams.md)).
