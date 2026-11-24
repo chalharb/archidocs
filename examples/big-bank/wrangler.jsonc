@@ -11,5 +11,7 @@
   "routes": [{ "pattern": "big-bank.archidocs.dev", "custom_domain": true }],
   // Production is served only on the custom domain; Previews get workers.dev URLs.
   "workers_dev": false,
-  "preview_urls": true
+  "preview_urls": true,
+  // Worker Previews (`wrangler preview`) need this block; an empty one keeps the production settings.
+  "previews": {}
 }
