@@ -77,14 +77,17 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
           set -o pipefail
           # Keep wrangler's output even when it fails, so the log says why.
           status=0
-          output="$(pnpm exec wrangler preview --cwd "examples/$SITE" --name "pr-$PR" --message "$(git log -1 --format=%s)" --json 2>&1)" || status=$?
+          output="$(pnpm exec wrangler preview --cwd "examples/$SITE" --name "pr-$PR" --message "$TITLE" --json 2> "$RUNNER_TEMP/wrangler.err")" || status=$?
+          cat "$RUNNER_TEMP/wrangler.err" >&2
           printf '%s\n' "$output"
           [ "$status" -eq 0 ] || exit "$status"
-          url="$(printf '%s' "$output" | jq -er '.preview.urls[0]')"
+          # Upload progress comes before the JSON, which starts at the first line that is just "{".
+          url="$(printf '%s\n' "$output" | sed -n '/^{$/,$p' | jq -er '.preview.urls[0]')"
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "**$SITE** Preview: $url" >> "$GITHUB_STEP_SUMMARY"
       - name: Comment the Preview URL
