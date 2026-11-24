@@ -3254,3 +3254,9 @@ button.arc-change:focus-visible {
     left: calc(50% + 4px);
   }
 }
+
+/* Find's head: the prompt takes the room between the title and the close button. */
+.arc-find .arc-flyout-head p {
+  flex: 1;
+  min-width: 0;
+}

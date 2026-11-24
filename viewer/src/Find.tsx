@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { search } from "../../src/core/search.ts";
 import { GLYPH_ICON, Icon } from "./Icon.tsx";
+import { Close } from "./Rail.tsx";
 import { GLYPHS, type Workspace } from "./workspace.ts";
 
 const LIMIT = 30;
@@ -16,7 +17,7 @@ export interface FindProps {
 /**
  * Find (`/`): the core engine's `search` over name, id, Team, technology and
  * URL, the same function MCP's `search_elements` runs. Enter picks the first
- * result; Escape closes.
+ * result; Escape, the close button or a click outside closes.
  */
 export function Find({ workspace, prompt, onPick, onClose }: FindProps) {
   const [query, setQuery] = useState("");
@@ -37,6 +38,7 @@ export function Find({ workspace, prompt, onPick, onClose }: FindProps) {
         <header className="arc-flyout-head">
           <h2>Find</h2>
           {prompt && <p className="arc-muted">{prompt}</p>}
+          <Close onClose={onClose} />
         </header>
         <input
           ref={input}
