@@ -29,16 +29,11 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - [What is the docs site's page tree](issues/02-information-architecture.md): five groups (Start here, Concepts, Guides, Reference, Examples) under `/docs/`, landing at `/`; a page per CLI command, Model file and check rule; agent guide published as-is under Reference.
 - [How docs pages show diagrams and the live viewer](issues/03-diagrams-in-docs.md): a static `archidocs export` SVG plus an "Open in the live viewer" deep link to the demo; no embedded viewer (cramped at docs width).
 - [How the docs site serves agents](issues/04-agents-as-readers.md): same pages for humans and agents, plus `llms.txt` / `-full` / `-small` and a `.md` copy per page; `llms.txt` points agents to `archidocs guide` / MCP for their installed version; human Guides and agent topics stay separate, cross-linked.
+- [Which content is generated and which is hand-written](issues/05-content-sources.md): reference pages built at site-build time from the rule registry, JSON Schemas (adds an ADR frontmatter page), new structured CLI definitions, MCP `listTools`, `guide/`, `GLOSSARY.md`, `CHANGELOG.md` and `examples/*` exports; never committed. `docs/rules.md` deleted; `docs/publishing.md` split into Publish guides.
 
 ## Not yet specified
 
-- **Deploy pipeline details:** a preview deploy per PR, whether the site builds in CI or on Vercel, link checking, and DNS for the root domain (it's unclear what serves archidocs.dev today).
-- **Drift checks:** how CI proves that generated reference pages match the code (regenerate and diff, the same way `rules:catalogue` and `schemas` do today?).
-- **Search:** whether the generator's built-in search is enough, or whether it needs tuning for terms like rule ids and CLI flags.
-- **Landing page copy:** the message and calls to action, once the IA and the landing prototype exist.
-- **README slimming:** the README keeps a short pitch and links out (page tree ticket); the exact cut is still open.
-- **Linking check output to rule pages:** whether `archidocs check` and MCP `validation_failed` issues print a link to `/docs/reference/rules/<rule-id>/`.
-- **Dark-theme diagrams:** `archidocs export` renders light only, so diagrams are white cards on the dark theme. Either add a dark export (and swap the image by theme) or keep white cards on purpose.
+<!-- everything in scope is now ticketed; the landing page copy is part of the landing page ticket -->
 
 ## Out of scope
 
