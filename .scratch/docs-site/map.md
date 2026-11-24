@@ -32,6 +32,7 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - [Which content is generated and which is hand-written](issues/05-content-sources.md): reference pages built at site-build time from the rule registry, JSON Schemas (adds an ADR frontmatter page), new structured CLI definitions, MCP `listTools`, `guide/`, `GLOSSARY.md`, `CHANGELOG.md` and `examples/*` exports; never committed. `docs/rules.md` deleted; `docs/publishing.md` split into Publish guides.
 - [Does Pagefind find rule ids and CLI flags](issues/09-search-identifiers.md): yes, untuned, for full and partial rule ids, `--flags` and snake_case tool names, as long as each is a page title or its own heading; no Pagefind settings.
 - [What the landing page looks like](issues/06-landing-page.md): Twin screens: one real question answered side by side by an agent over MCP and by the viewer; primary action opens the Big Bank demo; direction contract in `.impeccable/surfaces/website-src-pages-index-astro.md`.
+- [How the site is built and deployed](issues/07-build-and-deploy.md): the failing root Vercel project becomes the docs site (root `website/`, builds on Vercel); previews on every PR and push, production only from release tags; apex + www DNS-only on Cloudflare; export gets a label option (`Big Bank · v1.2.0`).
 
 ## Not yet specified
 
