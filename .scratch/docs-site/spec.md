@@ -20,7 +20,7 @@ Copying reference material into hand-written pages would go stale, which is the 
 
 ## Solution
 
-One static site at **archidocs.dev**: a landing page at `/` and the docs under `/docs/`. It's built with **Astro Starlight** from `website/` in this repo and deployed on **Vercel**. It's **latest only** and documents the released CLI.
+One static site at **archidocs.dev**: a landing page at `/` and the docs under `/docs/`. It's built with **Astro Starlight** from `website/` in this repo and deployed on **Cloudflare Workers** (static assets), like `examples/*`. It's **latest only** and documents the released CLI.
 
 **Reference pages are generated during the site build and never committed.** The sources are:
 - the rule registry
@@ -151,11 +151,11 @@ Links are always on:
 
 ### Build and deploy ([build and deploy](issues/07-build-and-deploy.md))
 
-- **Vercel project:** the existing root Vercel project (today's always-failing "Vercel" check) becomes the docs site, with root directory `website/`. `website/vercel.json` follows the `examples/*` pattern: `framework: null`, install at the repo root with `--frozen-lockfile`, output to `website/dist`.
-- **Builds run on Vercel.**
-- **Previews:** every PR and every push to `main` gets a preview.
-- **Production deploys only from a release tag** created by release-please, through an Ignored Build Step or a deploy hook from `publish.yml`. There's no manual docs redeploy; urgent docs fixes ship as a patch release.
-- **DNS:** the `archidocs.dev` apex and `www` (which redirects to the apex) point to the project, DNS-only on Cloudflare. The demo subdomains stay as they are.
+- **Worker:** a static-assets Worker `archidocs-docs`, configured in `website/wrangler.jsonc` in the `examples/*` pattern: `assets.directory` is `./dist`, Custom Domains `archidocs.dev` and `www.archidocs.dev`, `preview_urls: true`. (Moved off Vercel in Nov 2026: the free plan rate-limited PR deploys. The old root Vercel project is disconnected, not repurposed.)
+- **Builds run in GitHub Actions** with `pnpm docs:build` at the repo root, then `wrangler` deploys `website/dist`, as `.github/workflows/demos.yml` does for `examples/*`.
+- **Previews:** every PR gets a Worker Preview (`wrangler preview --name pr-<n>`, URL commented on the PR); every push to `main` updates a Preview named `main`.
+- **Production deploys only from a release tag** created by release-please: a job in `publish.yml` checks out the tag and runs `wrangler deploy`. There's no manual docs redeploy; urgent docs fixes ship as a patch release.
+- **DNS:** the `archidocs.dev` apex is a Workers Custom Domain (Cloudflare creates the proxied record and certificate); `www` redirects to the apex with a Cloudflare redirect rule. The demo subdomains are Custom Domains of their own Workers.
 
 ## Testing Decisions
 
@@ -176,7 +176,7 @@ The build tickets are in [docs-site-build/issues/](../docs-site-build/issues/). 
 2. **Export restyle:** shared Wayfinding Plate tokens for the viewer and the export, no fades, plus `--theme light|dark` and a header label option.
 3. **`check` rule links:** a `docs` field in json and MCP, a text footer, the GitHub `See` link, and a `removed` rule list.
 4. **`website/` scaffold:** Starlight, the page tree, the generated-content loaders (rules with stubs, schemas, MCP tools, agent guide, glossary, changelog, CI inputs, diagrams), the LLM plugins, and the links validator. Depends on 1–3 for some of its pages.
-5. **Vercel and DNS:** repurpose the root project, set production to release tags only, and point the apex and `www` at it. HITL (Vercel and Cloudflare dashboards).
+5. **Cloudflare and DNS:** API token and repo secrets, the `archidocs.dev` Custom Domain and the `www` redirect, and disconnecting the old Vercel projects. HITL (Cloudflare, GitHub and Vercel dashboards).
 6. **Hand-written content:** Start here (with the tutorial and its end-to-end test), Concepts, Guides (splitting `docs/publishing.md`), Examples, and the failure samples.
 7. **Landing page:** built to the direction contract, with the real `get_impact` output captured at build time.
 8. **Cutover:** delete `docs/rules.md` and its script and test, repoint the comments, cut the README, add the weekly link check, and do the first production deploy.
@@ -193,4 +193,4 @@ The build tickets are in [docs-site-build/issues/](../docs-site-build/issues/). 
 ## Further Notes
 
 - **Throwaway branches:** prototypes and research live on branches that are never merged: `research/site-generator`, `research/search-identifiers`, `prototype/diagrams-in-docs` and `prototype/landing-page`.
-- **Memory note:** once the root Vercel project builds the site, the "Vercel" check will pass. The note to ignore it no longer applies then.
+- **Memory note:** once the Vercel projects are disconnected, the "Vercel" checks stop appearing. The note to ignore the root one no longer applies then.

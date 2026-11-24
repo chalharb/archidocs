@@ -31,3 +31,13 @@ Also decide what label the site build stamps into exported diagram SVGs: `archid
   - Both records are **DNS-only (grey cloud)** on Cloudflare, so Vercel handles TLS and caching.
   - The demo subdomains stay as they are.
 - **Diagram export label:** the site build stamps the **example name and release version** into exported SVG headers, e.g. `Big Bank · v1.2.0`, not the checkout folder and commit. This needs a label option on `archidocs export`, which becomes a build-effort ticket.
+
+## Update (Nov 2026): Cloudflare Workers instead of Vercel
+
+Vercel's free plan rate-limited PR deploys ("Deployment rate limited — retry in 24 hours"), and the account pays for Cloudflare, so hosting moved to **Cloudflare Workers (static assets)**. The answer above changes like this; the rest stands.
+
+- **Worker, not a Vercel project:** `website/wrangler.jsonc` with `assets.directory: ./dist`, like `examples/*/wrangler.jsonc`. The root Vercel project is disconnected, not repurposed.
+- **Builds run in GitHub Actions,** not on the host. They still need the whole repo. `wrangler` uploads the built `dist`. Workers Builds (Cloudflare's Git integration) was the alternative; Actions won because production must deploy from a release tag, which Workers Builds can't trigger, and because one workflow keeps the demos and the docs on the same path, with build logs next to CI.
+- **Previews:** `wrangler preview --name pr-<n>` per PR (URL commented on the PR, deleted on close), and a Preview named `main` on each push to `main`.
+- **Production:** a job in `publish.yml`, after release-please creates a release, checks out the tag and runs `wrangler deploy`.
+- **DNS:** `archidocs.dev` is a Workers Custom Domain, so its record is proxied and Cloudflare handles TLS and caching. `www` gets a proxied placeholder record and a redirect rule to the apex.

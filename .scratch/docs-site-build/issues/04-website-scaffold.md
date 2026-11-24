@@ -22,7 +22,8 @@ Spec: [Archidocs docs site](../../docs-site/spec.md)
   - A `<Diagram>` component shows the image for Starlight's `[data-theme]`, plus an "Open in the live viewer" link ([diagrams](../../docs-site/issues/03-diagrams-in-docs.md)).
 - **Agents:** `starlight-llms-txt` (`llms.txt` with full and small versions; the small one leaves out Examples and the Changelog; the header points agents to `archidocs guide` and MCP). `starlight-llm-actions` for `.md` copies; if the build shows the copies aren't static files, a hand-written endpoint returning `entry.body` replaces it ([agents](../../docs-site/issues/04-agents-as-readers.md)).
 - **Checks:** `starlight-links-validator` fails the build on a broken internal link. A remark step parses every `archidocs …` line with 01's `parseCommandLine`.
-- **Vercel config:** `website/vercel.json` in the `examples/*` pattern (`framework: null`, install at the repo root, output `website/dist`).
+- **Workers config:** `website/wrangler.jsonc` in the `examples/*` pattern (Worker `archidocs-docs`, `assets.directory: ./dist`, Custom Domains `archidocs.dev` and `www.archidocs.dev`, `workers_dev: false`, `preview_urls: true`).
+- **Deploy workflow:** build and deploy the site from GitHub Actions like `.github/workflows/demos.yml`: a Preview per PR (`pr-<n>`) and for `main`, and a production `wrangler deploy` from the release tag in `publish.yml`.
 - **Commands:** `pnpm docs:dev` and `pnpm docs:build` at the repo root.
 
 ## Acceptance criteria
