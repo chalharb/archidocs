@@ -15,8 +15,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import type { CompareMark } from "../../src/core/compare.ts";
-import type { ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views.ts";
+import type { CompareMark, ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views/index.ts";
 import type { BundleElement } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";

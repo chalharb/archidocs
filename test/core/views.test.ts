@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { listViews, resolveView } from "../../src/core/index.ts";
+import { listViews } from "../../src/core/index.ts";
+import { structuralView } from "../support/views.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 import { elementTreeWorkspace, relationshipWorkspace } from "../support/fixtures.ts";
 
 /** A View's nodes as `[id, parent, collapsed]` and edges as `[from, to, relationship count]`, for compact assertions. */
-const shape = (view: ReturnType<typeof resolveView>) => ({
+const shape = (view: ReturnType<typeof structuralView>) => ({
   nodes: view?.nodes.map((n) => [n.id, n.parent, n.collapsed]),
   edges: view?.edges.map((e) => [e.from, e.to, e.relationships.length]),
 });
@@ -12,7 +13,7 @@ const shape = (view: ReturnType<typeof resolveView>) => ({
 describe("the C1 Landscape", () => {
   it("shows Persons, Systems and Services outside any System, with edges derived between them", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c1");
+    const view = structuralView(bundle, "c1");
 
     expect(view).toMatchObject({ id: "c1", kind: "c1", title: "C1 Landscape" });
     expect(shape(view)).toEqual({
@@ -33,7 +34,7 @@ describe("the C1 Landscape", () => {
 
   it("flags External Elements", async () => {
     const { bundle } = await loadWorkspace(elementTreeWorkspace);
-    const view = resolveView(bundle, "c1");
+    const view = structuralView(bundle, "c1");
 
     expect(view?.nodes.map((n) => [n.id, n.kind, n.name, n.external])).toEqual([
       ["shop:checkout", "system", "Checkout", false],
@@ -47,15 +48,15 @@ describe("the C1 Landscape", () => {
 describe("the C2 Landscape", () => {
   it("starts with every System collapsed", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c2");
+    const view = structuralView(bundle, "c2");
 
     expect(view).toMatchObject({ id: "c2", kind: "c2", title: "C2 Landscape" });
-    expect(shape(view)).toEqual(shape(resolveView(bundle, "c1")));
+    expect(shape(view)).toEqual(shape(structuralView(bundle, "c1")));
   });
 
   it("opens the Systems it is asked to expand, deriving edges to their Services", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c2", { expand: ["shop:checkout"] });
+    const view = structuralView(bundle, "c2", { expand: ["shop:checkout"] });
 
     expect(shape(view)).toEqual({
       nodes: [
@@ -80,20 +81,20 @@ describe("the C2 Landscape", () => {
 
   it("opens a Service with Components once its System is open, and ignores it while the System is closed", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const open = resolveView(bundle, "c2", { expand: ["shop:checkout", "shop:cart"] });
-    const closed = resolveView(bundle, "c2", { expand: ["shop:cart"] });
+    const open = structuralView(bundle, "c2", { expand: ["shop:checkout", "shop:cart"] });
+    const closed = structuralView(bundle, "c2", { expand: ["shop:cart"] });
 
     expect(open?.nodes.filter((n) => n.parent === "shop:cart").map((n) => n.id)).toEqual(["shop:checkout-ui"]);
     expect(open?.nodes.find((n) => n.id === "shop:cart")?.collapsed).toBe(false);
     expect(open?.edges.map((e) => [e.from, e.to])).toContainEqual(["shop:checkout-ui", "payments:payments"]);
-    expect(shape(closed)).toEqual(shape(resolveView(bundle, "c2")));
+    expect(shape(closed)).toEqual(shape(structuralView(bundle, "c2")));
   });
 });
 
 describe("C2 per System", () => {
   it("shows the System's Services in it, and each neighbour collapsed to its top-level Element", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c2/shop:checkout");
+    const view = structuralView(bundle, "c2/shop:checkout");
 
     expect(view).toMatchObject({ id: "c2/shop:checkout", kind: "c2", title: "Checkout (C2)" });
     // The shopper only reaches web, outside the focus, so it is not a neighbour.
@@ -117,12 +118,12 @@ describe("C2 per System", () => {
 
   it("does not exist for an Element that is not a System", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    expect(resolveView(bundle, "c2/shop:cart")).toBeUndefined();
-    expect(resolveView(bundle, "c2/shop:nope")).toBeUndefined();
+    expect(structuralView(bundle, "c2/shop:cart")).toBeUndefined();
+    expect(structuralView(bundle, "c2/shop:nope")).toBeUndefined();
   });
   it("opens its Services with Components when asked to expand them", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c2/shop:checkout", { expand: ["shop:cart"] });
+    const view = structuralView(bundle, "c2/shop:checkout", { expand: ["shop:cart"] });
 
     expect(view?.nodes.filter((n) => n.parent === "shop:cart").map((n) => n.id)).toEqual(["shop:checkout-ui"]);
     expect(view?.edges.map((e) => [e.from, e.to])).toContainEqual(["shop:checkout-ui", "payments:payments"]);
@@ -132,7 +133,7 @@ describe("C2 per System", () => {
 describe("C3 per Service", () => {
   it("shows the Service's Components, keeping a neighbour in the same System at Service level", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c3/shop:cart");
+    const view = structuralView(bundle, "c3/shop:cart");
 
     expect(view).toMatchObject({ id: "c3/shop:cart", kind: "c3", title: "Cart (C3)" });
     // cart-db shares the Checkout System with cart, so Checkout can't separate them; payments-api's System can.
@@ -154,7 +155,7 @@ describe("C3 per Service", () => {
 
   it("collapses neighbours from another System to that System", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c3/payments:payments-api");
+    const view = structuralView(bundle, "c3/payments:payments-api");
 
     expect(shape(view)).toEqual({
       nodes: [
@@ -168,8 +169,8 @@ describe("C3 per Service", () => {
 
   it("exists only for Services that declare Components", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    expect(resolveView(bundle, "c3/shop:web")).toBeUndefined();
-    expect(resolveView(bundle, "c3/shop:checkout")).toBeUndefined();
+    expect(structuralView(bundle, "c3/shop:web")).toBeUndefined();
+    expect(structuralView(bundle, "c3/shop:checkout")).toBeUndefined();
   });
 });
 
@@ -231,12 +232,12 @@ describe("the oversized-view warning", () => {
 });
 
 describe("a Lens over a Generated View", () => {
-  const marks = (view: ReturnType<typeof resolveView>) => Object.fromEntries(view!.nodes.map((n) => [n.id, n.mark]));
-  const lit = (view: ReturnType<typeof resolveView>) => view!.edges.filter((e) => e.lit).map((e) => [e.from, e.to]);
+  const marks = (view: ReturnType<typeof structuralView>) => Object.fromEntries(view!.nodes.map((n) => [n.id, n.mark]));
+  const lit = (view: ReturnType<typeof structuralView>) => view!.edges.filter((e) => e.lit).map((e) => [e.from, e.to]);
 
   it("says which side of the origin each node an impact Lens hits is on", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c2", { expand: ["shop:checkout"], lens: { impact: "shop:cart", direction: "both" } });
+    const view = structuralView(bundle, "c2", { expand: ["shop:checkout"], lens: { impact: "shop:cart", direction: "both" } });
 
     expect(marks(view)).toMatchObject({
       "shop:cart": { hit: true, distance: 0, side: "origin" },
@@ -247,7 +248,7 @@ describe("a Lens over a Generated View", () => {
 
   it("marks the open boxes it is given with impact distances, lighting only edges one hop closer to the origin", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c2", { expand: ["shop:checkout"], lens: { impact: "shop:cart", direction: "upstream" } });
+    const view = structuralView(bundle, "c2", { expand: ["shop:checkout"], lens: { impact: "shop:cart", direction: "upstream" } });
 
     expect(view?.lens).toEqual({ impact: "shop:cart", direction: "upstream" });
     expect(marks(view)).toMatchObject({
@@ -265,20 +266,20 @@ describe("a Lens over a Generated View", () => {
 
   it("marks a collapsed box when anything inside it is hit, with the nearest distance", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c2", { lens: { impact: "shop:cart", direction: "upstream" } });
+    const view = structuralView(bundle, "c2", { lens: { impact: "shop:cart", direction: "upstream" } });
 
     expect(marks(view)).toMatchObject({ "shop:checkout": { hit: true, distance: 0 }, "payments:payments": { hit: false } });
   });
 
   it("a Team Lens rings what the Team owns in C3", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = resolveView(bundle, "c3/shop:cart", { lens: { team: "payments-team" } });
+    const view = structuralView(bundle, "c3/shop:cart", { lens: { team: "payments-team" } });
 
     expect(marks(view)).toMatchObject({ "shop:checkout-ui": { hit: false }, "payments:payments": { hit: true } });
   });
 
   it("leaves nodes unmarked without a Lens", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    expect(resolveView(bundle, "c2")!.nodes.every((n) => n.mark === undefined)).toBe(true);
+    expect(structuralView(bundle, "c2")!.nodes.every((n) => n.mark === undefined)).toBe(true);
   });
 });

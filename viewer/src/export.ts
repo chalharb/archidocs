@@ -1,4 +1,4 @@
-import type { ResolvedView } from "../../src/core/views.ts";
+import type { ResolvedView } from "../../src/core/views/index.ts";
 import type { Direction } from "../../src/render/layout.ts";
 import { layoutInWorker } from "./layout.ts";
 import type { Workspace } from "./workspace.ts";

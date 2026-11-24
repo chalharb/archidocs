@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { load, nodeFileSystem, resolveDynamicView, resolveView } from "../../src/core/index.ts";
+import { load, nodeFileSystem, resolveView } from "../../src/core/index.ts";
 import { layoutView, PALETTES, renderSequenceSvg, renderSvg, teamStyles, themes, type Theme } from "../../src/render/index.ts";
 import { flatten } from "../../src/render/tokens.ts";
 
@@ -30,9 +30,8 @@ describe.each(["big-bank", "kitchen-sink"])("exports of examples/%s", async (exa
   const { bundle } = await load({ fs: nodeFileSystem(), root, repoRoot: join(root, "..") });
   const source = { workspace: example, commit: null, date: null };
   const draw = async (id: string, theme: Theme) => {
-    const dynamic = resolveDynamicView(bundle, id);
-    if (dynamic) return renderSequenceSvg({ bundle, view: dynamic, source, theme });
     const view = resolveView(bundle, id)!;
+    if (view.kind === "dynamic") return renderSequenceSvg({ bundle, view, source, theme });
     return renderSvg({ bundle, view, layout: await layoutView(view, view.direction ? { direction: view.direction } : {}), source, theme });
   };
   const teamColours = [...teamStyles(bundle).values()].map((t) => t.color);

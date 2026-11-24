@@ -1,4 +1,4 @@
-import type { ResolvedDynamicView, ResolvedStep } from "../core/dynamic-views.ts";
+import type { ResolvedDynamicView, ResolvedStep } from "../core/views/index.ts";
 import { textWidth } from "./text.ts";
 
 /** How a message is drawn: sync is solid with a filled head, async solid with an open head, return dashed with an open head. */

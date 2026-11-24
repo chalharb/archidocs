@@ -21,9 +21,7 @@ import {
   type ImpactRing,
 } from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
-import { listViews, resolveView, type ViewNode } from "../core/views.ts";
-import { resolveDynamic, resolveDynamicView, takesPart, type ResolvedStep } from "../core/dynamic-views.ts";
-import { describeLens } from "../core/saved-views.ts";
+import { describeLens, listViews, resolveView, type ResolvedStep, type ViewNode } from "../core/views/index.ts";
 import { listAdrs, type ListedAdr } from "../core/adrs.ts";
 import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
@@ -187,7 +185,7 @@ export function createServer(options: ServerOptions): McpServer {
       // Edges at the Element's level that carry at least one Relationship declared beneath either end.
       const derived = deriveEdges(bundle, levelOf(element)).filter((e) => e.relationships.some((r) => r.from !== e.from || r.to !== e.to));
       const derivedEdges = { in: derived.filter((e) => e.to === id), out: derived.filter((e) => e.from === id) };
-      const dynamicViews = bundle.views.flatMap((v) => (v.kind === "dynamic" && takesPart(resolveDynamic(bundle, v).view, id) ? [{ id: v.id, title: v.title }] : []));
+      const dynamicViews = listViews(bundle, { kind: "dynamic", element: id }).map((v) => ({ id: v.id, title: v.title }));
       const data = {
         element,
         owner: team ? { id: team.id, name: team.name } : null,
@@ -438,8 +436,10 @@ export function createServer(options: ServerOptions): McpServer {
       }),
     },
     ({ id }, { bundle }) => {
-      const dynamic = resolveDynamicView(bundle, id);
-      if (dynamic) {
+      const view = resolveView(bundle, id);
+      if (!view) return notFound("View", id, listViews(bundle).map((v) => v.id));
+      if (view.kind === "dynamic") {
+        const dynamic = view;
         return ok(
           { ...dynamic },
           [
@@ -449,8 +449,6 @@ export function createServer(options: ServerOptions): McpServer {
           ].join("\n"),
         );
       }
-      const view = resolveView(bundle, id);
-      if (!view) return notFound("View", id, listViews(bundle).map((v) => v.id));
       const edgeCount = `${view.edges.length} edge${view.edges.length === 1 ? "" : "s"}`;
       return ok(
         { ...view },

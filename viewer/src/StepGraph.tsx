@@ -1,7 +1,6 @@
 import { Controls, EdgeLabelRenderer, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, useReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useEffect, useMemo } from "react";
-import type { ResolvedDynamicView } from "../../src/core/dynamic-views.ts";
-import type { ResolvedView, ViewEdge } from "../../src/core/views.ts";
+import type { ResolvedDynamicView, ResolvedView, ViewEdge } from "../../src/core/views/index.ts";
 import { sequenceMessages, sequenceParticipants, type SequenceMessage } from "../../src/render/sequence.ts";
 import { useLayout } from "./layout.ts";
 import type { Workspace } from "./workspace.ts";

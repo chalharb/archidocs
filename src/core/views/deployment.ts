@@ -1,6 +1,7 @@
-import type { Bundle, BundleDeployment, BundleRelationship, BundleTarget } from "../schema/bundle.ts";
-import { lifter } from "./query.ts";
-import { ModelIndex, type ResolvedView, type ViewEdge, type ViewNode } from "./views.ts";
+import type { Bundle, BundleDeployment, BundleRelationship, BundleTarget } from "../../schema/bundle.ts";
+import { cmp, lifter } from "../query.ts";
+import type { ModelIndex } from "./model.ts";
+import type { ResolvedView, ViewEdge, ViewNode } from "./types.ts";
 
 /** Which Deployments a Deployment View draws, and which Services it leaves out altogether. */
 export interface DeploymentScope {
@@ -11,7 +12,7 @@ export interface DeploymentScope {
 }
 
 /** A Deployment's node id: its Service and Target, as `<service>@<target>`. */
-export const deploymentNodeId = (d: Pick<BundleDeployment, "service" | "target">): string => `${d.service}@${d.target}`;
+const deploymentNodeId = (d: Pick<BundleDeployment, "service" | "target">): string => `${d.service}@${d.target}`;
 
 /**
  * Resolves the Deployment View of one Environment:
@@ -26,8 +27,7 @@ export const deploymentNodeId = (d: Pick<BundleDeployment, "service" | "target">
  *   logical node outside every Target. Persons are not drawn.
  * Nodes are sorted by id, edges by `from`, then `to`.
  */
-export function resolveDeployment(bundle: Bundle, head: { id: string; title: string }, environment: string, scope: DeploymentScope = {}): ResolvedView {
-  const model = new ModelIndex(bundle);
+export function resolveDeployment(bundle: Bundle, model: ModelIndex, head: { id: string; title: string }, environment: string, scope: DeploymentScope = {}): ResolvedView {
   const targets = new Map(bundle.targets.map((t) => [t.id, t]));
   const keep = scope.keep ?? (() => true);
   const deployed = scope.deployed ?? (() => true);
@@ -112,5 +112,3 @@ function sharedDepth(a: string[], b: string[]): number {
   while (i < a.length && i < b.length && a[i] === b[i]) i++;
   return i;
 }
-
-const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);

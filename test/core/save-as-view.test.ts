@@ -1,12 +1,13 @@
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
-import { resolveView, saveAsView, type Screen } from "../../src/core/index.ts";
+import { saveAsView, type Screen } from "../../src/core/index.ts";
+import { structuralView } from "../support/views.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
 import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 
 const screen = (s: Partial<Screen> & Pick<Screen, "view">): Screen => ({ open: [], lens: null, picks: [], direction: null, ...s });
-const ids = (view: ReturnType<typeof resolveView>) => view?.nodes.map((n) => n.id) ?? [];
+const ids = (view: ReturnType<typeof structuralView>) => view?.nodes.map((n) => n.id) ?? [];
 
 /** Saves the screen, writes its YAML into the shop Project and loads it again: the Saved View as the core engine resolves it. */
 async function saved(s: Screen, files: Files = landscapeWorkspace) {
@@ -14,7 +15,7 @@ async function saved(s: Screen, files: Files = landscapeWorkspace) {
   const out = saveAsView(bundle, s, { project: "shop", id: "saved", title: "Saved" });
   const reloaded = await loadWorkspace({ ...files, "shop/saved.yaml": out.yaml });
   expect(reloaded.issues.filter((i) => i.severity === "error")).toEqual([]);
-  return { ...out, bundle, view: resolveView(reloaded.bundle, "shop:saved"), screenView: resolveView(bundle, s.view, { expand: s.open, ...(s.lens ? { lens: s.lens } : {}) }) };
+  return { ...out, bundle, view: structuralView(reloaded.bundle, "shop:saved"), screenView: structuralView(bundle, s.view, { expand: s.open, ...(s.lens ? { lens: s.lens } : {}) }) };
 }
 
 describe("Save as View", () => {
@@ -77,7 +78,7 @@ describe("Save as View", () => {
   it("turns Connect to… into a path selector, with its picks", async () => {
     const lens = { path: { from: "shop:shopper", to: "shop:cart-db", paths: "shortest" as const } };
     const { bundle } = await loadWorkspace(landscapeWorkspace);
-    const picks = resolveView(bundle, "c2", { expand: ["shop:checkout"], lens })!.nodes.filter((n) => n.mark?.hit).map((n) => n.id);
+    const picks = structuralView(bundle, "c2", { expand: ["shop:checkout"], lens })!.nodes.filter((n) => n.mark?.hit).map((n) => n.id);
     const { definition, view } = await saved(screen({ view: "c2", open: ["shop:checkout"], lens, picks }));
     expect(definition.include).toEqual([{ from: "shopper", to: "cart-db", paths: "shortest" }, "checkout"]);
     expect(definition.lens).toEqual({ path: { from: "shopper", to: "cart-db", paths: "shortest" } });
@@ -97,7 +98,7 @@ describe("Save as View", () => {
     };
     const { definition, view, bundle } = await saved(screen({ view: "shop:mine", lens: null }), files);
     expect(definition).not.toHaveProperty("lens");
-    expect(ids(view)).toEqual(ids(resolveView(bundle as Bundle, "shop:mine")));
+    expect(ids(view)).toEqual(ids(structuralView(bundle as Bundle, "shop:mine")));
   });
 
   it("saves an Environment's Deployment View as level: deployment over that Environment", async () => {

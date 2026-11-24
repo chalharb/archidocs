@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveView } from "../../src/core/index.ts";
-import type { ViewNode } from "../../src/core/views.ts";
+import { structuralView } from "../support/views.ts";
+import type { ViewNode } from "../../src/core/views/index.ts";
 import { layoutView } from "../../src/render/index.ts";
 import { NAME_LINE, NODE_MAX_WIDTH, NODE_SIZES, nameRoom, nodeSize } from "../../src/render/layout.ts";
 import { textWidth } from "../../src/render/text.ts";
@@ -14,7 +14,7 @@ const noProblems = { overlaps: [], throughNodes: [], diagonal: [], detached: [] 
 describe("layoutView", () => {
   it("places every node of the C1 Landscape and routes every edge, meeting the auto-layout definition", async () => {
     const { bundle } = await loadWorkspace(landscapeWorkspace);
-    const view = resolveView(bundle, "c1")!;
+    const view = structuralView(bundle, "c1")!;
     const layout = await layoutView(view);
 
     expect(layout.nodes.map((n) => n.id)).toEqual(view.nodes.map((n) => n.id));
@@ -30,7 +30,7 @@ describe("the auto-layout definition", () => {
       const { bundle, issues } = await loadWorkspace(syntheticWorkspace());
       expect(issues.filter((i) => i.severity === "error")).toEqual([]);
       const systems = bundle.elements.filter((e) => e.kind === "system").map((e) => e.id);
-      const view = name === "c2 expanded" ? resolveView(bundle, "c2", { expand: systems })! : resolveView(bundle, name)!;
+      const view = name === "c2 expanded" ? structuralView(bundle, "c2", { expand: systems })! : structuralView(bundle, name)!;
       expect(view.edges.length).toBeGreaterThan(0);
       const layout = await layoutView(view, { direction });
 
@@ -43,7 +43,7 @@ describe("the auto-layout definition", () => {
 describe("a Deployment View's layout", () => {
   it.each(["TB", "LR"] as const)("meets the auto-layout definition drawn %s, with every Deployment inside its Target", async (direction) => {
     const { bundle } = await loadWorkspace(deploymentViewWorkspace);
-    const view = resolveView(bundle, "deployment/prod")!;
+    const view = structuralView(bundle, "deployment/prod")!;
     const layout = await layoutView(view, { direction });
     const boxes = new Map(layout.nodes.map((n) => [n.id, n]));
     const inside = (a: string, b: string) => {
@@ -75,7 +75,7 @@ describe("layout stability", () => {
     expect(after.bundle.elements).toHaveLength(before.bundle.elements.length + 1);
     const systems = before.bundle.elements.filter((e) => e.kind === "system").map((e) => e.id);
     const [a, b] = await Promise.all(
-      [before, after].map(({ bundle }) => layoutView(resolveView(bundle, "c2", { expand: systems })!)),
+      [before, after].map(({ bundle }) => layoutView(structuralView(bundle, "c2", { expand: systems })!)),
     );
 
     const untouched = systems.filter((s) => s !== "land:sys-c");
@@ -86,7 +86,7 @@ describe("layout stability", () => {
 
   it("gives the same Layout for the same View every time", async () => {
     const { bundle } = await loadWorkspace(syntheticWorkspace());
-    const view = resolveView(bundle, "c2", { expand: ["land:sys-a", "land:sys-b"] })!;
+    const view = structuralView(bundle, "c2", { expand: ["land:sys-a", "land:sys-b"] })!;
 
     expect(await layoutView(view)).toEqual(await layoutView(view));
   });

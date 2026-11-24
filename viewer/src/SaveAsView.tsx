@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Screen } from "../../src/core/save-as-view.ts";
+import type { Screen } from "../../src/core/views/index.ts";
 import type { Workspace } from "./workspace.ts";
 
 export interface SaveAsViewProps {

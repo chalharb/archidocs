@@ -4,7 +4,7 @@ import { cp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Bundle } from "../schema/bundle.ts";
-import { findWorkspaceRoot, load, nodeFileSystem, resolveDynamicView, resolveView, serializeBundle, type ResolvedDynamicView, type ResolvedView } from "../core/index.ts";
+import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle, type AnyView } from "../core/index.ts";
 import { directions, layoutView, renderSequenceSvg, renderSvg, themes, type Direction, type Theme } from "../render/index.ts";
 import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
@@ -169,23 +169,22 @@ async function main(argv: string[]): Promise<number> {
       process.stdout.write(`Wrote ${out}\n`);
     };
     /** Lays out and draws one View: a Dynamic View as a sequence chart, any other as a diagram. */
-    const draw = async (view: ResolvedView | ResolvedDynamicView, out: string) => {
+    const draw = async (view: AnyView, out: string) => {
       if (view.kind === "dynamic") return write(renderSequenceSvg({ bundle, view, source, theme, label }), out);
       const chosen = direction ?? view.direction;
       const layout = await layoutView(view, chosen === undefined ? {} : { direction: chosen });
       await write(renderSvg({ bundle, view, layout, source, theme, label }), out);
     };
-    const resolveAny = (id: string) => resolveDynamicView(bundle, id) ?? resolveView(bundle, id);
 
     if (allSaved) {
       await mkdir(resolve(values.out!), { recursive: true });
       for (const saved of bundle.views) {
-        const view = resolveAny(saved.id);
+        const view = resolveView(bundle, saved.id);
         if (view) await draw(view, join(values.out!, fileName(saved.id)));
       }
       return OK;
     }
-    const view = resolveAny(viewId!);
+    const view = resolveView(bundle, viewId!);
     if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components>, deployment/<environment> and Saved Views (project:view-id).`);
     await draw(view, values.out ?? fileName(viewId!));
     return OK;

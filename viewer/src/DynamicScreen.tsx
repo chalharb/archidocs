@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import type { ResolvedDynamicView, ResolvedStep } from "../../src/core/dynamic-views.ts";
+import type { ResolvedDynamicView, ResolvedStep } from "../../src/core/views/index.ts";
 import { layoutSequence, type MessageStyle } from "../../src/render/sequence.ts";
 import { go } from "./history.ts";
 import { CopyLink, RecentMenu } from "./LocationBar.tsx";
