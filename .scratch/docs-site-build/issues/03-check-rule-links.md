@@ -1,6 +1,6 @@
 # 03: Rule links in check output
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Archidocs docs site](../../docs-site/spec.md)
 
@@ -16,7 +16,7 @@ Link each issue's rule to `https://archidocs.dev/docs/reference/rules/<rule-id>/
 
 ## Acceptance criteria
 
-- [ ] Each format shows the link as described (format tests).
-- [ ] MCP `validation_failed` issues carry `docs` (MCP write-tool test).
-- [ ] The JSON output schema and any snapshot tests are updated.
-- [ ] A test fails if a rule id appears in both the registry and the `removed` list.
+- [x] Each format shows the link as described (format tests).
+- [x] MCP `validation_failed` issues carry `docs` (MCP write-tool test).
+- [x] The JSON output schema and any snapshot tests are updated.
+- [x] A test fails if a rule id appears in both the registry and the `removed` list.

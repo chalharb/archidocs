@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rules } from "../../src/core/index.ts";
+import { removed, ruleDocsUrl, rules } from "../../src/core/index.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
 // The rules tickets 01, 03, 04 and 05 introduce; later tickets add to the registry.
@@ -49,5 +49,23 @@ describe("rule registry", () => {
       const { issues } = await loadWorkspace(rule.example.passing);
       expect(issues).toEqual([]);
     });
+  });
+});
+
+describe("removed rules", () => {
+  it("never shares an id with the registry", () => {
+    const live = new Set(rules.map((r) => r.id));
+    expect(removed.map((r) => r.id).filter((id) => live.has(id))).toEqual([]);
+  });
+
+  it("lists each removed id once", () => {
+    const ids = removed.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("rule docs links", () => {
+  it("points at the rule's page on the docs site", () => {
+    expect(ruleDocsUrl("unknown-team")).toBe("https://archidocs.dev/docs/reference/rules/unknown-team/");
   });
 });

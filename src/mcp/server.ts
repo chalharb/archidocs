@@ -1,6 +1,7 @@
 import { McpServer, type CallToolResult, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { getDeployments, type DeploymentDetail } from "../core/deployments.ts";
+import { withDocs } from "../core/rules.ts";
 import { search } from "../core/search.ts";
 import {
   changeKinds,
@@ -800,7 +801,7 @@ export function createServer(options: ServerOptions): McpServer {
       const summary = { errors, warnings: issues.length - errors };
       const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
       return ok(
-        { issues, summary },
+        { issues: issues.map(withDocs), summary },
         [
           `${plural(errors, "error")}, ${plural(summary.warnings, "warning")}.`,
           ...issues.map((i) => `- ${i.file}:${i.line} ${i.severity} ${i.rule}: ${i.message}`),
@@ -897,6 +898,7 @@ const IssueRecord = z.object({
   rule: z.string(),
   severity: z.enum(["error", "warning"]),
   message: z.string(),
+  docs: z.string().describe("The rule's page on the docs site"),
 });
 
 const where = (source: Source) => (source.kind === "checkout" ? source.root : source.location);

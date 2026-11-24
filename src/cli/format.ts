@@ -1,4 +1,4 @@
-import type { Issue } from "../core/index.ts";
+import { ruleDocsUrl, withDocs, type Issue } from "../core/index.ts";
 
 export const formats = ["text", "json", "github"] as const;
 export type Format = (typeof formats)[number];
@@ -30,7 +30,7 @@ function summarize(issues: Issue[]) {
 const ansi = (code: number) => (s: string) => `\x1b[${code}m${s}\x1b[0m`;
 const plain = (s: string) => s;
 
-/** `--format text`: issues grouped by file, one per line, then a summary count. */
+/** `--format text`: issues grouped by file, one per line, then a summary count and each distinct rule's docs link. */
 export function formatText(issues: Issue[], { color = false }: FormatOptions = {}): string {
   const red = color ? ansi(31) : plain;
   const yellow = color ? ansi(33) : plain;
@@ -47,26 +47,28 @@ export function formatText(issues: Issue[], { color = false }: FormatOptions = {
   const { errors, warnings } = summarize(issues);
   if (lines.length > 0) lines.push("");
   lines.push(`${plural(errors, "error")}, ${plural(warnings, "warning")}`);
+  const ruleIds = [...new Set(issues.map((i) => i.rule))];
+  if (ruleIds.length > 0) lines.push("", "Rule docs:", ...ruleIds.map((id) => `  ${dim(id)}  ${ruleDocsUrl(id)}`));
   return lines.join("\n") + "\n";
 }
 
-/** `--format json`: the issue records, as MCP returns them, and a summary. */
+/** `--format json`: the issue records with their rule's `docs` link, as MCP returns them, and a summary. */
 function formatJson(issues: Issue[]): string {
-  return JSON.stringify({ issues, summary: summarize(issues) }, null, 2) + "\n";
+  return JSON.stringify({ issues: issues.map(withDocs), summary: summarize(issues) }, null, 2) + "\n";
 }
 
 // GitHub workflow command escaping: https://github.com/actions/toolkit/blob/main/packages/core/src/command.ts
 const escapeData = (s: string) => s.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
 const escapeProperty = (s: string) => escapeData(s).replace(/:/g, "%3A").replace(/,/g, "%2C");
 
-/** `--format github`: one `::error`/`::warning` workflow command per issue, for inline PR annotations. */
+/** `--format github`: one `::error`/`::warning` workflow command per issue, for inline PR annotations, ending with its rule's docs link. */
 function formatGithub(issues: Issue[]): string {
   return issues
     .map((i) => {
       const props = [`file=${escapeProperty(i.file)}`, `line=${i.line}`];
       if (i.column !== undefined) props.push(`col=${i.column}`);
       props.push(`title=${escapeProperty(i.rule)}`);
-      return `::${i.severity} ${props.join(",")}::${escapeData(i.message)}\n`;
+      return `::${i.severity} ${props.join(",")}::${escapeData(`${i.message} See ${ruleDocsUrl(i.rule)}`)}\n`;
     })
     .join("");
 }

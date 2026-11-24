@@ -56,6 +56,10 @@ describe("archidocs CLI", () => {
         "",
         "2 errors, 0 warnings",
         "",
+        "Rule docs:",
+        "  unknown-team  https://archidocs.dev/docs/reference/rules/unknown-team/",
+        "  unknown-field  https://archidocs.dev/docs/reference/rules/unknown-field/",
+        "",
       ].join("\n"),
     );
   });
@@ -75,7 +79,8 @@ describe("archidocs CLI", () => {
     const { code, stdout } = await archidocs(repoRoot, "check", "--format", "json");
 
     expect(code).toBe(1);
-    expect(JSON.parse(stdout)).toEqual({ issues: [unknownTeam, unknownField], summary: { errors: 2, warnings: 0 } });
+    const docs = (rule: string) => `https://archidocs.dev/docs/reference/rules/${rule}/`;
+    expect(JSON.parse(stdout)).toEqual({ issues: [unknownTeam, unknownField].map((i) => ({ ...i, docs: docs(i.rule) })), summary: { errors: 2, warnings: 0 } });
   });
 
   it("check --format github prints a workflow command per issue", async () => {
@@ -84,8 +89,8 @@ describe("archidocs CLI", () => {
 
     expect(code).toBe(1);
     expect(stdout).toBe(
-      '::error file=archidocs/shop/more.yaml,line=4,col=12,title=unknown-team::Unknown Team "storefront"; did you mean "storefront-team"?\n' +
-        '::error file=archidocs/shop/services.yaml,line=4,col=5,title=unknown-field::Unknown field "techology"; did you mean "technology"?\n',
+      '::error file=archidocs/shop/more.yaml,line=4,col=12,title=unknown-team::Unknown Team "storefront"; did you mean "storefront-team"? See https://archidocs.dev/docs/reference/rules/unknown-team/\n' +
+        '::error file=archidocs/shop/services.yaml,line=4,col=5,title=unknown-field::Unknown field "techology"; did you mean "technology"? See https://archidocs.dev/docs/reference/rules/unknown-field/\n',
     );
   });
 
@@ -94,7 +99,7 @@ describe("archidocs CLI", () => {
     const { stdout } = await archidocs(repoRoot, "check", "--format", "github");
 
     expect(stdout).toBe(
-      '::error file=archidocs/shop/odd%2Cname.yaml,line=4,col=12,title=unknown-team::Unknown Team "storefront"; did you mean "storefront-team"?\n',
+      '::error file=archidocs/shop/odd%2Cname.yaml,line=4,col=12,title=unknown-team::Unknown Team "storefront"; did you mean "storefront-team"? See https://archidocs.dev/docs/reference/rules/unknown-team/\n',
     );
   });
 
