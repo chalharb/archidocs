@@ -9,20 +9,21 @@
 import "../styles/landing.css";
 import favicon from "../../../viewer/public/favicon.svg?url";
 import mark from "../../../assets/brand/archidocs-mark-light.svg?url";
-import { diagramFile, diagramUrl, exportDiagrams, findExample, liveViewerUrl } from "../lib/examples.ts";
-import { captureLanding, countWord, QUESTION } from "../lib/landing.ts";
+import { findExample, liveViewerUrl } from "../lib/examples.ts";
+import { captureLanding, countWord, LANDING_MAP_URL, landingDiagram, QUESTION } from "../lib/landing.ts";
 import { GITHUB_URL, VERSION } from "../lib/repo.ts";
 import { toolPath } from "../reference/mcp.ts";
 
 const landing = await captureLanding();
 const example = findExample(QUESTION.example);
-const diagrams = await exportDiagrams();
-if (!diagrams.has(`${example.slug}/light/${diagramFile(landing.view.id)}`)) throw new Error(`${example.name} exported no diagram for ${landing.view.id}.`);
+// The map is drawn at 85% of the export's size, so its 13px node names stay readable.
+const MAP_SCALE = 0.85;
+const map = await landingDiagram();
 const live = liveViewerUrl(example, landing.view.id);
 
 const { impact, subject } = landing;
 const total = impact.upstream.total;
-const owners = [...new Set(impact.upstream.rings.flatMap((r) => r.elements.map((e) => e.owner)))].map((id) => landing.teams.get(id) ?? id);
+const owners = [...new Set(impact.upstream.rings.flatMap((r) => r.elements.map((e) => e.owner)))].map((id) => landing.teams.get(id)?.name ?? id);
 const list = (items: string[]) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const hops = (d: number) => (d === 1 ? "Directly" : `${capital(countWord(d))} hops away`);
@@ -44,7 +45,7 @@ const yaml = landing.yaml.lines
     return `${gap}<span class="ln${line.mark ? " mark" : ""}"><span class="n">${line.n}</span><span>${yamlLine(line.text)}</span></span>`;
   })
   .join("");
-const marked = landing.yaml.lines.find((l) => l.mark)!;
+const marked = { n: landing.yaml.lines.find((l) => l.mark)!.n, description: landing.yaml.description.charAt(0).toLowerCase() + landing.yaml.description.slice(1) };
 
 // The six persona questions (PRODUCT.md), each with where the viewer answers it and the MCP tools that do.
 const PERSONAS = [
@@ -85,6 +86,7 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
       <symbol id="i-out" viewBox="0 0 16 16"><path d="M6 3h7v7M13 3 4 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
       <symbol id="i-right" viewBox="0 0 16 16"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
+      <symbol id="i-left" viewBox="0 0 16 16"><path d="M14 8H3M7 4 3 8l4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
       <symbol id="i-chev" viewBox="0 0 10 10"><path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
       <symbol id="i-split" viewBox="0 0 44 44"><path d="M3 22h13l10-11h15M16 22l10 11h15M35 5l6 6-6 6M35 27l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
     </svg>
@@ -114,10 +116,7 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
             <a class="btn ghost" href={QUICK_START}>Read the quick start <svg class="icon" aria-hidden="true"><use href="#i-right"></use></svg></a>
           </div>
 
-          <div class="asked">
-            <span class="label">Asked twice</span>
-            <h2 id="asked">What does a mainframe outage take down?</h2>
-          </div>
+          <h2 class="asked" id="asked"><span class="label">Asked twice</span> What does a mainframe outage take down?</h2>
           <div class="twin">
             <section class="pane" aria-label="The agent's answer, over MCP">
               <div class="pane-head"><span class="label">Agent, over MCP</span><code>archidocs mcp</code></div>
@@ -143,9 +142,19 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
                           <dt class="label">{hops(ring.distance)}</dt>
                           <dd>
                             <ul>
-                              {ring.elements.map((e) => (
-                                <li>{e.name}</li>
-                              ))}
+                              {ring.elements.map((e) => {
+                                const team = landing.teams.get(e.owner);
+                                return (
+                                  <li>
+                                    {e.name}
+                                    {team && (
+                                      <abbr class="team" title={team.name} style={`--team: ${team.color}`}>
+                                        {team.code}
+                                      </abbr>
+                                    )}
+                                  </li>
+                                );
+                              })}
                             </ul>
                           </dd>
                         </div>
@@ -182,15 +191,16 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
                 <span class="lens-chip"><span class="label">Impact</span><span>{landing.view.lens}</span></span>
                 <span class="label">{landing.view.hits} upstream</span>
               </div>
-              <div class="map" tabindex="0" role="region" aria-label="The exported diagram">
+              <div class="map" tabindex="0" role="region" aria-label="The exported diagram, scrollable" data-ring-x={Math.round(map.ringX * MAP_SCALE)}>
                 <img
-                  src={diagramUrl(example, "light", landing.view.id)}
+                  src={LANDING_MAP_URL}
                   alt={`${example.name}: ${landing.view.title}. The Impact lens marks the ${landing.view.hits} Elements upstream of the ${subject}.`}
-                  width="1428"
-                  height="686"
+                  width={Math.round(map.width * MAP_SCALE)}
+                  height={Math.round(map.height * MAP_SCALE)}
                   decoding="async"
                 />
               </div>
+              <p class="pan label"><svg class="icon" aria-hidden="true"><use href="#i-left"></use></svg>Scroll for the whole map</p>
             </section>
           </div>
           <div class="agree">
@@ -208,7 +218,7 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
             <figure class="file">
               <div class="file-head"><span>{landing.yaml.file}</span><span>{example.name}</span></div>
               <pre class="yaml" tabindex="0" aria-label={landing.yaml.file}><code set:html={yaml} /></pre>
-              <figcaption>Line {marked.n} puts {landing.yaml.element} in both answers, one hop upstream of the {subject}.</figcaption>
+              <figcaption>Line {marked.n} puts {landing.yaml.element} in both answers: it “{marked.description}” the {subject}, one hop upstream.</figcaption>
             </figure>
             <div class="joint" aria-hidden="true"><svg><use href="#i-split"></use></svg></div>
             <div class="outs">
@@ -277,5 +287,15 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
         </div>
       </div>
     </footer>
+    <script>
+      // The map opens on its right edge, the origin (RTL scrolling, no script needed). Where the
+      // pane is too narrow to show the direct ring beside the origin, scroll it to that ring.
+      const map = document.querySelector<HTMLElement>(".map[data-ring-x]");
+      if (map) {
+        const ring = Number(map.dataset.ringX) - 24;
+        const span = map.scrollWidth - map.clientWidth;
+        if (span > 0 && map.scrollWidth - ring > map.clientWidth) map.scrollLeft = ring - span;
+      }
+    </script>
   </body>
 </html>

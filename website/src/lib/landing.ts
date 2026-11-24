@@ -10,7 +10,9 @@ import { readFile } from "node:fs/promises";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { checkoutSource, createServer } from "../../../src/mcp/index.ts";
+import { teamStyles } from "../../../src/render/index.ts";
 import type { ListedTool } from "../reference/mcp.ts";
+import { diagramFile, exportDiagrams } from "./examples.ts";
 import { repoPath } from "./repo.ts";
 
 /** The question asked twice. */
@@ -51,8 +53,8 @@ export interface Landing {
   impact: ImpactResult;
   /** The Element the question is about, e.g. "Mainframe". */
   subject: string;
-  /** Team id → name. */
-  teams: Map<string, string>;
+  /** Team id → its name, and the code and stripe colour the diagrams draw it with. */
+  teams: Map<string, { name: string; code: string; color: string }>;
   view: {
     id: string;
     title: string;
@@ -66,7 +68,7 @@ export interface Landing {
   /** Every tool the server lists. */
   tools: ListedTool[];
   /** The YAML behind one Relationship in the result, with its enclosing keys. */
-  yaml: { file: string; element: string; lines: YamlLine[] };
+  yaml: { file: string; element: string; description: string; lines: YamlLine[] };
 }
 
 let captured: Promise<Landing> | undefined;
@@ -92,7 +94,6 @@ async function capture(): Promise<Landing> {
     };
     const impact = await call<ImpactResult>(QUESTION.tool, QUESTION.arguments);
     const view = await call<{ id: string; title: string; nodes: { id: string; mark?: { hit?: boolean; side?: string } }[]; lens: { impact?: string; direction?: string } | null }>("get_view", { id: QUESTION.view });
-    const { teams } = await call<{ teams: { id: string; name: string }[] }>("list_teams", {});
     const tools = (await client.listTools()).tools as ListedTool[];
 
     if (impact.upstream.truncated) throw new Error(`${QUESTION.tool} truncated its result; the landing page needs all of it.`);
@@ -104,6 +105,7 @@ async function capture(): Promise<Landing> {
     }
 
     const { bundle } = await source.snapshot();
+    const styles = teamStyles(bundle);
     const project = QUESTION.view.split(":")[0]!;
     const projectName = bundle.projects.find((p) => p.id === project)?.name ?? project;
     const subject = bundle.elements.find((e) => e.id === QUESTION.arguments.id)?.name ?? QUESTION.arguments.id;
@@ -112,7 +114,7 @@ async function capture(): Promise<Landing> {
       call: { name: QUESTION.tool, arguments: { ...QUESTION.arguments } },
       impact,
       subject,
-      teams: new Map(teams.map((t) => [t.id, t.name])),
+      teams: new Map(bundle.teams.map((t) => [t.id, { name: t.name, ...styles.get(t.id)! }])),
       view: {
         id: view.id,
         title: view.title,
@@ -155,6 +157,7 @@ async function yamlBehind(impact: ImpactResult): Promise<Landing["yaml"]> {
   return {
     file: source.file.replace(/^examples\/[^/]+\/archidocs\//, ""),
     element: first.name,
+    description: first.relationships[0]!.description ?? "depends on",
     lines: [...parents.map(line), ...Array.from({ length: end - start }, (_, k) => line(start + k))],
   };
 }
@@ -163,3 +166,63 @@ const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eig
 
 /** A count in words up to twelve, then in figures. */
 export const countWord = (n: number): string => WORDS[n] ?? String(n);
+
+export interface CroppedDiagram {
+  svg: string;
+  width: number;
+  height: number;
+  /** Where the direct ring nearest the origin starts, in the cropped picture's pixels. */
+  ringX: number;
+}
+
+/**
+ * The light export of the Saved View, cropped to its nodes and edges: the
+ * export's own title and legend repeat what the viewer pane's plate and lens
+ * strip already say. The crop comes from the export's own geometry: every
+ * point of every path and rect in its content group.
+ */
+export function cropDiagram(svg: string, margin = 12): CroppedDiagram {
+  const groups = [...svg.matchAll(/<g transform="translate\(([\d.-]+),([\d.-]+)\)">/g)];
+  const [content, legend] = groups;
+  if (!content || !legend) throw new Error("The export has no content and legend groups to crop to.");
+  const body = svg.slice(content.index, legend.index);
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const add = (x: number, y: number) => (xs.push(x), ys.push(y));
+  for (const [, d] of body.matchAll(/ d="([^"]+)"/g)) {
+    for (const [, cmd, args] of d!.matchAll(/([MLA])([^MLAZz]+)/g)) {
+      const n = args!.split(/[\s,]+/).filter(Boolean).map(Number);
+      if (cmd === "A") add(n[5]!, n[6]!);
+      else for (let i = 0; i + 1 < n.length; i += 2) add(n[i]!, n[i + 1]!);
+    }
+  }
+  for (const [, attrs] of body.matchAll(/<rect ([^>]+)>/g)) {
+    const num = (name: string) => Number(new RegExp(`\\b${name}="([\\d.-]+)"`).exec(attrs!)?.[1] ?? 0);
+    add(num("x"), num("y"));
+    add(num("x") + num("width"), num("y") + num("height"));
+  }
+  const [dx, dy] = [Number(content[1]), Number(content[2])];
+  const x = Math.floor(Math.min(...xs) + dx - margin);
+  const y = Math.floor(Math.min(...ys) + dy - margin);
+  const width = Math.ceil(Math.max(...xs) + dx + margin) - x;
+  const height = Math.ceil(Math.max(...ys) + dy + margin) - y;
+  // The left edge (its Team stripe) of the node nearest the origin among those the lens marks one hop upstream.
+  const ring = [...body.matchAll(/<g>(.*?)<\/g>/gs)].filter(([g]) => g.includes(">UPSTREAM 1<")).map(([g]) => Math.min(...[...g.matchAll(/<rect x="([\d.-]+)"/g)].map((m) => Number(m[1]))));
+  const ringX = Math.max(...ring) + dx - x;
+  // The title and label above the content group fall partly inside the margin; drop them.
+  const head = svg.slice(0, content.index).replace(/<text\b[^>]*>[^<]*<\/text>\n?/g, "");
+  const cropped = (head + svg.slice(content.index)).replace(/^<svg([^>]*?) width="[\d.]+" height="[\d.]+" viewBox="[^"]+"/, `<svg$1 width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}"`);
+  if (!cropped.startsWith(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}"`)) throw new Error("Couldn't set the cropped viewBox on the export.");
+  return { svg: cropped, width, height, ringX };
+}
+
+/** Where the page serves the cropped map. */
+export const LANDING_MAP_URL = "/landing/map.svg";
+
+/** The light export of the question's Saved View, cropped for the viewer pane. */
+export async function landingDiagram(): Promise<CroppedDiagram> {
+  const key = `${QUESTION.example}/light/${diagramFile(QUESTION.view)}`;
+  const svg = (await exportDiagrams()).get(key);
+  if (!svg) throw new Error(`The build exported no diagram ${key} for the landing page.`);
+  return cropDiagram(svg);
+}

@@ -225,20 +225,16 @@ pre {
 
 /* Asked twice */
 .asked {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 6px 16px;
+  margin: 0;
   padding: 16px 20px 14px;
   border: 1.5px solid var(--plate-line);
   border-bottom: 0;
+  font: 700 20px/1.3 var(--sans);
 }
 .asked .label {
+  margin-right: 14px;
   color: var(--plate-muted);
-}
-.asked h2 {
-  margin: 0;
-  font: 700 20px/1.3 var(--sans);
+  vertical-align: 2px;
 }
 .twin {
   display: grid;
@@ -355,7 +351,7 @@ pre {
   font-size: 13px;
 }
 .json {
-  max-height: 320px;
+  max-height: 260px;
   margin: 0;
   padding: 12px;
   overflow: auto;
@@ -400,6 +396,17 @@ pre {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+.team {
+  margin-left: 6px;
+  padding: 2px 6px 0 5px;
+  border-left: 5px solid var(--team);
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 11px/1.3 var(--sans);
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  vertical-align: 1px;
 }
 .rings li:not(:last-child)::after {
   content: "·";
@@ -468,17 +475,35 @@ pre {
   margin-left: auto;
   color: var(--up);
 }
+/* The export at 85% of its size, so node names stay readable. It opens scrolled to its right
+   edge, where the origin and the first ring sit; RTL scrolling does that without script. */
 .map {
   flex: 1;
-  display: grid;
-  place-items: center;
-  padding: 16px;
+  direction: rtl;
+  overflow: auto;
   background: var(--ground);
 }
 .map img {
   display: block;
-  width: 100%;
-  height: auto;
+  direction: ltr;
+  max-width: none;
+}
+/* Side by side, the map takes the agent pane's height and pans inside it, rather than
+   stretching the row; opening the JSON shows more map instead of empty ground. */
+@media (min-width: 961px) {
+  .map {
+    min-height: 340px;
+    contain: size;
+  }
+}
+.pan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 16px 8px;
+  border-top: 1.5px solid var(--rule);
+  color: var(--muted);
 }
 .agree {
   display: flex;
@@ -713,15 +738,9 @@ pre {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
   }
-  /* The diagram keeps a readable scale and scrolls sideways. */
-  .map {
-    display: block;
-    overflow-x: auto;
-    padding: 12px;
-  }
-  .map img {
-    width: 760px;
-    max-width: none;
+  .ctas .btn {
+    flex: 1 1 100%;
+    justify-content: space-between;
   }
   .questions thead {
     display: none;

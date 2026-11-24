@@ -65,6 +65,54 @@ typography:
     fontFamily: "Overpass Mono, ui-monospace, SF Mono, Menlo, monospace"
     fontSize: "11px"
     fontWeight: 400
+  landing-display:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "clamp(42px, 5.3vw, 76px)"
+    fontWeight: 800
+    lineHeight: 1.02
+    letterSpacing: "-0.025em"
+  landing-headline:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "clamp(30px, 3.3vw, 46px)"
+    fontWeight: 800
+    lineHeight: 1.08
+    letterSpacing: "-0.02em"
+  landing-title:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "21px"
+    fontWeight: 800
+    lineHeight: 1.2
+  landing-lede:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 400
+    lineHeight: 1.5
+  landing-question:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 700
+    lineHeight: 1.3
+  landing-body:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1.55
+    fontFeature: "tnum"
+  landing-small:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.55
+  landing-button:
+    fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "0.08em"
+  landing-mono:
+    fontFamily: "Overpass Mono, ui-monospace, SF Mono, Menlo, monospace"
+    fontSize: "13px"
+    fontWeight: 400
 rounded:
   none: "0px"
   datastore-base: "12px"
@@ -146,6 +194,61 @@ components:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
     width: "264px"
+  landing-button-primary:
+    backgroundColor: "{colors.on-plate}"
+    textColor: "{colors.plate}"
+    typography: "{typography.landing-button}"
+    rounded: "{rounded.none}"
+    padding: "0 18px"
+    height: "44px"
+  landing-button-primary-hover:
+    backgroundColor: "{colors.plate-muted}"
+    textColor: "{colors.plate}"
+  landing-button-ghost:
+    backgroundColor: "{colors.plate}"
+    textColor: "{colors.on-plate}"
+    typography: "{typography.landing-button}"
+    rounded: "{rounded.none}"
+    padding: "0 18px"
+    height: "44px"
+  asked-bar:
+    backgroundColor: "{colors.plate}"
+    textColor: "{colors.on-plate}"
+    typography: "{typography.landing-question}"
+    rounded: "{rounded.none}"
+    padding: "16px 20px 14px"
+  pane:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.none}"
+  pane-head:
+    backgroundColor: "{colors.ground}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label-strong}"
+    padding: "10px 16px 9px"
+  tool-call:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+    typography: "{typography.landing-mono}"
+    rounded: "{rounded.none}"
+    padding: "10px 12px 9px"
+  tool-call-hover:
+    backgroundColor: "{colors.tint}"
+  tool-call-result:
+    backgroundColor: "{colors.ground}"
+    textColor: "{colors.muted}"
+    typography: "{typography.landing-mono}"
+    padding: "12px"
+  file-block:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+    typography: "{typography.landing-mono}"
+    rounded: "{rounded.none}"
+  file-block-marked-line:
+    backgroundColor: "{colors.upbg}"
+  persona-table:
+    textColor: "{colors.ink}"
+    typography: "{typography.landing-small}"
 ---
 
 # Design System: Archidocs
@@ -160,6 +263,8 @@ Density is operational, not decorative. Two chrome type sizes do all the ranking
 
 Dark mode is the same station after dark: the ground drops to deep slate (#10151c), paper to #18202a, ink inverts to #e6eaef, and the plate stays a lit slate-navy sign (#1f2a3a) a step above the ground. The yellow does not change.
 
+The landing page at archidocs.dev is a persuade surface in the same world, read rather than operated. It is the station's signage at a reading distance: slate plate fields hold the hero and the close, the stone ground runs between them, and the proof sits in white panes framed at 1.5px with square corners and no shadows. It keeps the viewer's colours, fonts and frames and adds a larger reading ramp; it is light only.
+
 **Key Characteristics:**
 - One dark sign plate (52px) over the canvas; one labelled rail (64px) on the left.
 - One yellow, reserved for you-are-here.
@@ -167,6 +272,7 @@ Dark mode is the same station after dark: the ground drops to deep slate (#10151
 - No shadows. Depth is reversal (plate against ground) and ink frames.
 - Two chrome type sizes, 13px and 11px, in Overpass; Overpass Mono for ids.
 - Team ownership always shown as a colour stripe paired with a reversed code tile.
+- The landing page: plate fields top and bottom, stone between, white framed panes, a reading ramp of its own, yellow only inside the pictured viewer.
 
 ## Colors
 
@@ -199,6 +305,8 @@ A stone-and-slate signage palette with one wayfinding yellow and a small set of 
 
 **The No Decorative Greys Rule.** Every neutral has a job named above. A new grey needs a role, not a mood.
 
+**The Pictured Yellow Rule.** On the landing page the yellow appears only as the you-are-here tile inside the pictured viewer pane. Its crumb chevrons there are plate-muted, focus outlines on plate fields are white (on-plate) and on light fields ink, and text selection is ink on light fields and plate-muted on the plate. The exported diagram image carries the export's own yellow lens origin; that is product output, not page chrome. Upstream rust (up) labels the upstream counts, and upstream wash (upbg) marks the line a file block points at.
+
 ## Typography
 
 **Body Font:** Overpass (ui-sans-serif, system-ui, sans-serif), self-hosted variable woff2, SIL OFL.
@@ -219,15 +327,33 @@ A stone-and-slate signage palette with one wayfinding yellow and a small set of 
 
 **The Signage Case Rule.** Controls and labels are uppercase with positive tracking; names of things in the Model (Elements, Views, scopes in the breadcrumb other than the current one) keep their own case.
 
+### Landing reading ramp
+The landing page is a reading surface, so it sits outside the Two Sizes Rule with a ramp of its own, all Overpass and Overpass Mono from the viewer's self-hosted woff2 files, tabular figures on.
+- **Landing Display** (800, 42–76px clamp, 1.02, -0.025em): the hero headline, at most 15ch wide.
+- **Landing Headline** (800, 30–46px clamp, 1.08, -0.02em): section and close headings.
+- **Landing Title** (800, 21px, 1.2): titles inside framed output cards.
+- **Landing Lede** (400, 20px, 1.5, plate-muted): the hero lede; drops to 17px under 720px.
+- **Landing Question** (700, 20px, 1.3): the question in the "asked twice" heading bar.
+- **Landing Body** (400, 17px, 1.55): the base reading size; section paragraphs run 56–62ch in muted.
+- **Landing Small** (400, 15px): the transcript, captions, card copy, the persona table and the footer. Persona questions step up to 17px 700.
+- **Landing Button** (800, 12px, 0.08em, uppercase): button and card-link labels.
+- **Landing Mono** (13px): tool calls, JSON, YAML, hosts and tool names; file-block heads use 12px 600.
+- **Label Strong** (800, 11px, 0.08em, uppercase) is shared with the viewer: pane heads, run-in labels, table heads and counts. Top navigation links use 11px 700.
+- The pictured viewer pane keeps the viewer's own chrome sizes: 13px 600 crumbs and the 13px 800 you-are-here tile.
+
+**The Reading Ramp Rule.** The landing ramp belongs to reading surfaces only. It never enters viewer chrome, and the viewer's chrome inside a landing pane keeps 13px and 11px.
+
 ## Layout
 
 A fixed shell: a 64px rail (56px under 640px) and a main column whose first row is the location plate (min 52px, wrapping rather than widening) and whose second row is the canvas. Flyouts (320px) open beside the rail over a 12% slate scrim. The Element panel (340px) sits on the right edge of the canvas only while something is selected. When a lens, Compare or open boxes are active, a paper state strip spans the plate's full width beneath it, ruled off in ink.
 
 Spacing runs on one 4px module: 4, 8, 12, 16, 20, 24. Controls are 32px tall, tree rows 32px, rail buttons 52px; the Key sits 16px in from the canvas corner. Under 640px the plate tightens its padding and its tools wrap below the breadcrumb, and the Dynamic View screen stacks chart, walkthrough and Step detail into one scrolling column.
 
+The landing page runs in a 1256px wrap with a fluid gutter (20–40px, 2.8vw). A 60px top bar on the plate is ruled off in plate-line. The hero, the "asked twice" bar and the twin panes share one plate field; the source section and the persona table sit on stone; the close and footer return to the plate. The twin panes split 5/12 (agent transcript) to 7/12 (viewer pane) with a 1.5px plate-line gutter, and the source section splits file block, a 72px joint arrow and the output cards. Sections open with 64–104px of space. Under 960px the twin panes and the source split stack and the joint arrow turns down; under 720px buttons fill the width, the wide nav links drop, and the persona table becomes stacked rows with inline cell labels.
+
 ## Elevation & Depth
 
-The system is flat. Depth comes from reversal (the slate plate over stone, the reversed active tab and code tiles) and from 1.5px ink frames that separate rail, flyouts, panel and Key from the canvas. There are no drop shadows anywhere; the canvas library's control shadows are explicitly turned off.
+The system is flat. Depth comes from reversal (the slate plate over stone, the reversed active tab and code tiles) and from 1.5px ink frames that separate rail, flyouts, panel and Key from the canvas. There are no drop shadows anywhere; the canvas library's control shadows are explicitly turned off. The landing page has no box-shadows at all; its panes are separated by 1.5px frames and by the plate field behind them.
 
 ### Shadow Vocabulary
 The only box-shadows are zero-blur state rings, drawn outside the frame so the frame never moves:
@@ -281,6 +407,27 @@ A 340px paper panel ruled in ink on its left. Head: the 22px headline name, an u
 ### Lens chip
 A framed chip whose leading cell is a reversed ink tile naming the lens kind (IMPACT, PATH), followed by the plain-language description and a clear control.
 
+### Landing buttons
+Larger painted sign plates for a reading page: square, 44px tall, 18px horizontal padding, 1.5px frame, Landing Button type, a 16px pictogram after the label with a 10px gap. They sit on the plate only.
+- **Primary:** white plate (on-plate) with slate text; hover drops fill and frame to plate-muted.
+- **Ghost:** transparent with a plate-line frame and white text; hover brightens the frame to plate-muted.
+- **Focus:** a 2.5px white outline, offset 2px. Fill and frame changes run 150ms ease-out and are off under reduced motion. Under 720px they fill the width with the pictogram pushed to the end.
+
+### "Asked twice" bar and twin panes (signature)
+The heading bar is the h2 itself: a 1.5px plate-line frame, open at the bottom so it joins the panes, holding a plate-muted Label Strong run-in ("Asked twice") on the same line as the question in Landing Question type. The label runs in beside the question; it is not an eyebrow above it. Beneath, two paper panes share one plate-line frame, split 5/12 to 7/12 with a 1.5px gutter. Each pane opens with a ground-filled head ruled off in ink: a Label Strong name on the left and a muted 13px mono host or command on the right. The right pane pictures the viewer with its own chrome: location plate, lens strip with a lens chip, then the map. The map is the build's export cropped to its node geometry (12px margin; no title or legend) and shown at 85% scale on stone, in a focusable right-to-left scroll container, so it opens on the origin at its right edge without script. Where the pane is too narrow to show the direct ring beside the origin, a small script opens it on that ring instead. Above 960px the map is size-contained (at least 340px tall): it takes the agent pane's height and pans inside it rather than stretching the row. Under it, a "Scroll for the whole map" foot in muted Label Strong with a left-arrow pictogram sits below a stone rule.
+
+### Tool call
+A transcript tool call as a disclosure in a 1.5px ink frame. The summary row holds a 10px chevron that turns 90° when open (250ms), the call in 13px mono (tool name bold, arguments muted) and an upstream-rust Label Strong count; hover fills it with tint, and its focus outline is drawn inset (-4px). Open, it reveals a result head ruled in ink above and stone rule below, then the JSON on stone in 13px mono, keys in ink 600 and punctuation muted, capped at 260px and scrolling. The panel's height animates over 350ms; both motions are off under reduced motion. The user's ask sits above it as a right-aligned tint block at 32ch.
+
+### Team code tile, inline
+The viewer's Team code tile reused inside running text: ink fill, paper text, 11px 800 at 0.06em with a 5px Team-colour leading band, set 6px after the Element name it belongs to. Lists of affected Elements are grouped by hop under a muted label and separated by faint middots.
+
+### YAML file block
+A source file shown in a 1.5px ink frame on paper. Its head is 12px 600 mono, the path on the left and a muted note on the right, ruled off in ink. Lines are 13px mono at 1.7 with a 48px right-aligned faint line-number column that cannot be selected; keys are 600, values muted, an elided run is shown as a spaced gap number, and the line the page points at carries the upstream wash across its full width. A muted 15px caption sits below a stone rule.
+
+### Persona table
+A full-width table at Landing Small: Label Strong muted heads over an ink rule, rows ruled in stone, the role muted (18%), the question at 17px 700 (38%), the viewer answer, and the MCP tool names as 13px mono links separated by faint middots. Under 720px each row becomes a stacked block, ruled in stone with an ink rule above the first, and each cell gains its column name as an inline muted prefix.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -293,6 +440,9 @@ A framed chip whose leading cell is a reversed ink tile naming the lens kind (IM
 - **Do** match focus to its field: an ink outline on light fields, yellow only on reversed or ink fields.
 - **Do** draw new pictograms on the 16-unit grid with a 1.75 stroke, square caps and mitred joins.
 - **Do** ship fonts with the static site; never fetch them from a CDN.
+- **Do** build landing sections from plate fields, stone ground and white panes in 1.5px frames, with square corners.
+- **Do** set landing reading text in the landing ramp (17px body, 15px small, 20px lede and question, 30–46px headlines, 42–76px display) and keep the pictured viewer's chrome at 13px and 11px.
+- **Do** keep landing focus outlines white on plate fields and ink on light fields.
 
 ### Don't:
 - **Don't** use yellow as a brand accent, hover colour, warning or emphasis.
@@ -304,3 +454,5 @@ A framed chip whose leading cell is a reversed ink tile naming the lens kind (IM
 - **Don't** fade dimmed elements below legibility.
 - **Don't** dash an edge to step it back; dashes are reserved for External, open boxes, removed Relationships and sequence-chart Returns and lifelines.
 - **Don't** use a yellow focus outline on a light field.
+- **Don't** use yellow anywhere on the landing page outside the pictured viewer's you-are-here tile; not for crumb chevrons, focus, selection or emphasis.
+- **Don't** bring the landing reading ramp into viewer chrome.

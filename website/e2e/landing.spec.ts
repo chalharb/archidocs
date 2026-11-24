@@ -25,12 +25,16 @@ test("the landing page asks one question twice and both answers agree", async ({
   await expect(call.locator("summary")).toContainText(`${total} upstream`);
   await expect(page.locator(".lens")).toContainText(`${total} upstream`);
   const names = result.upstream.rings.flatMap((r) => r.elements.map((e) => e.name));
-  await expect(page.locator(".rings li")).toHaveText(names);
+  // Each named with its owning Team's code, as the diagram draws it.
+  await expect(page.locator(".rings li")).toHaveText(names.map((n) => new RegExp(`^${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[A-Z]{2,3}$`)));
 
   // The diagram is the build's own export of the Saved View.
   const diagram = page.locator(".map img");
-  await expect(diagram).toHaveAttribute("src", "/diagrams/big-bank/light/digital-mainframe-outage.svg");
+  await expect(diagram).toHaveAttribute("src", "/landing/map.svg");
   await expect.poll(() => diagram.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
+  // The map keeps a readable scale and opens at its right edge, where the origin is.
+  const map = page.locator(".map");
+  expect(await map.evaluate((el) => el.scrollWidth > el.clientWidth && Math.abs(el.scrollLeft) < 1 && getComputedStyle(el).direction === "rtl")).toBe(true);
   await expect(page.getByRole("link", { name: "Open this View live" })).toHaveAttribute("href", "https://big-bank.archidocs.dev/#/view/digital:mainframe-outage");
 });
 
@@ -73,5 +77,8 @@ test("at 390 wide the page doesn't scroll sideways and the diagram does", async 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   const map = page.locator(".map");
   expect(await map.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  // Too narrow to show the origin and its direct ring together, it opens on the ring.
+  const left = await map.evaluate((el) => el.scrollLeft + el.scrollWidth - el.clientWidth - (Number(el.dataset.ringX) - 24));
+  expect(Math.abs(left)).toBeLessThan(2);
   await expect(page.getByRole("link", { name: "Open the Big Bank demo" }).first()).toBeInViewport();
 });
