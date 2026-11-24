@@ -2868,3 +2868,339 @@ button.arc-change:focus-visible {
     border-bottom: 1.5px solid var(--ink);
   }
 }
+
+/* Roomier nodes: every box is laid out wide enough for its name (`nodeSize`), so the head row breathes
+   and a name is cut only past the widest box, where it takes a second line instead. */
+.arc-box {
+  gap: 6px;
+  padding: 10px 14px;
+}
+
+.arc-box-head {
+  gap: 8px;
+}
+
+.arc-name {
+  line-height: 1.3;
+}
+
+.arc-box.arc-two-line .arc-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.arc-kind-glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.arc-team {
+  flex: none;
+}
+
+.arc-sublabel {
+  line-height: 1.35;
+}
+
+/* The foot row: the sub-label, and the way in at its end where the box has a View of its own. */
+.arc-box-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.arc-box-foot .arc-sublabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.arc-toggle {
+  width: 22px;
+  height: 22px;
+}
+
+.arc-box.arc-person {
+  padding-left: 20px;
+  padding-right: 18px;
+}
+
+.arc-box.arc-container {
+  padding: 10px 14px;
+}
+
+/* The way in: a reversed arrow tile at the end of the head row opens the box's own View.
+   The + beside the name opens the box here; the tile goes down a level. */
+.arc-way-in {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  line-height: 0;
+}
+
+.arc-way-in .arc-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.25;
+}
+
+.arc-way-in:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.arc-way-in:active,
+.arc-toggle:active {
+  transform: translateY(1px);
+}
+
+.arc-way-in:focus-visible,
+.arc-toggle:focus-visible {
+  outline: 2.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.arc-zoomed-out .arc-way-in {
+  display: none;
+}
+
+.arc-key-way-in {
+  width: 16px;
+  margin: 0 6px;
+  background: var(--ink)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h11M9 4l4 4-4 4' fill='none' stroke='%23fff' stroke-width='2.25'/%3E%3C/svg%3E")
+    center / 10px no-repeat;
+}
+
+@media (prefers-color-scheme: dark) {
+  .arc-key-way-in {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8h11M9 4l4 4-4 4' fill='none' stroke='%2310151c' stroke-width='2.25'/%3E%3C/svg%3E");
+  }
+}
+
+/* The plate, reflowing on purpose. Where you are (history, the scope ladder, the way down) is one unit that
+   gives up width before anything wraps: earlier scopes shorten to an ellipsis first, the you-are-here tile last. */
+.arc-plate {
+  position: relative;
+}
+
+.arc-where {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.arc-where > nav {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.arc-plate .arc-crumbs,
+.arc-plate .arc-crumbs li {
+  min-width: 0;
+}
+
+.arc-plate .arc-crumbs li {
+  flex: 0 3 auto;
+}
+
+.arc-plate .arc-crumbs li:first-child {
+  flex-shrink: 0;
+}
+
+.arc-plate .arc-crumbs li + li {
+  min-width: 76px;
+}
+
+.arc-plate .arc-crumbs li[aria-current="page"] {
+  flex-shrink: 2;
+  min-width: 96px;
+}
+
+.arc-plate .arc-crumbs li::before {
+  flex: none;
+}
+
+.arc-plate .arc-crumbs a,
+.arc-plate .arc-crumbs span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arc-deeper {
+  flex: none;
+}
+
+.arc-menu.arc-menu-start {
+  left: 0;
+  right: auto;
+}
+
+/* Wide: one row, always. The ladder takes what the Deployment tiles and the tools leave. */
+@media (min-width: 900px) {
+  .arc-plate {
+    display: grid;
+    grid-template-columns: minmax(200px, 1fr) minmax(0, auto) auto;
+    align-items: center;
+    gap: 8px 12px;
+  }
+
+  .arc-plate .arc-deployments {
+    grid-column: 2;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .arc-plate .arc-tools {
+    grid-column: 3;
+    flex-wrap: nowrap;
+    margin-left: 0;
+  }
+
+  .arc-plate .arc-state {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Narrow: two rows by design, not by accident. Where you are takes the first; the Deployment tiles and the tools share the second. */
+@media (max-width: 899px) {
+  .arc-plate .arc-where {
+    flex: 1 1 100%;
+  }
+
+  .arc-plate .arc-deployments {
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .arc-plate .arc-deployment-link {
+    flex: none;
+  }
+
+  .arc-plate .arc-tools {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    margin-left: auto;
+  }
+}
+
+/* Phones: the tools fill their row in equal 40px keys, nothing scrolls out of sight,
+   and a menu opens as a sheet across the plate instead of off the screen's edge. */
+@media (max-width: 640px) {
+  .arc-plate .arc-where {
+    gap: 8px;
+  }
+
+  /* The ladder shortens to the way up and where you are; the scope above is one tap further. */
+  .arc-plate .arc-crumbs li:not(:nth-last-child(-n + 2)) {
+    display: none;
+  }
+
+  .arc-plate .arc-crumbs li:first-child:not(:only-child) {
+    flex-shrink: 3;
+    min-width: 20px;
+  }
+
+  .arc-plate .arc-crumbs a {
+    padding: 0;
+    line-height: 40px;
+  }
+
+  .arc-plate .arc-tool.arc-step,
+  .arc-plate .arc-deeper .arc-tool {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .arc-plate .arc-deeper .arc-menu-button::after {
+    display: none;
+  }
+
+  .arc-plate .arc-deployments {
+    flex: 1 1 100%;
+  }
+
+  .arc-plate .arc-deployment-link {
+    display: grid;
+    place-items: center;
+    min-height: 32px;
+    padding: 0 10px;
+  }
+
+  .arc-plate .arc-tools {
+    flex: 1 1 100%;
+    gap: 8px;
+    margin-left: 0;
+    padding-right: 0;
+    overflow: visible;
+    mask-image: none;
+  }
+
+  .arc-plate .arc-tools > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .arc-plate .arc-tools > .arc-primary {
+    flex: 0 0 auto;
+    order: -1;
+    height: 40px;
+  }
+
+  .arc-plate .arc-tools .arc-tool:not(.arc-primary),
+  .arc-plate .arc-tools select.arc-direction {
+    width: 100%;
+    height: 40px;
+    justify-content: center;
+  }
+
+  .arc-plate .arc-tools select.arc-direction {
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .arc-plate .arc-menu-root {
+    position: static;
+  }
+
+  .arc-plate .arc-menu,
+  .arc-plate .arc-menu.arc-menu-start {
+    left: 12px;
+    right: 12px;
+    top: calc(100% - 4px);
+    min-width: 0;
+  }
+
+  .arc-plate .arc-menu a,
+  .arc-plate .arc-menu button {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    white-space: normal;
+  }
+}
+
+/* The something-inside-is-hit mark steps aside for the way in. */
+.arc-box:has(.arc-box-foot .arc-way-in) .arc-holds {
+  right: 46px;
+}

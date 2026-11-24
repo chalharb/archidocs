@@ -33,6 +33,31 @@ test.describe("expand and collapse", () => {
   });
 });
 
+test.describe("the way in", () => {
+  test("a box's arrow tile opens its own View, and only boxes with one show it", async ({ page }) => {
+    await open(page, "#/view/c1");
+    await node(page, "shop:checkout").getByRole("button", { name: "Open Checkout's View" }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2/shop:checkout");
+    // On its own View the System is the open box, so it offers no way in to itself; a Person never does.
+    await expect(node(page, "shop:checkout").getByRole("button", { name: "Open Checkout's View" })).toHaveCount(0);
+    await expect(node(page, "shop:shopper").getByRole("button", { name: /Open .* View/ })).toHaveCount(0);
+  });
+
+  test("Go deeper on the plate lists the Views one level down", async ({ page }) => {
+    await open(page, "#/view/c1");
+    await page.getByRole("button", { name: "Go deeper" }).click();
+    await page.getByRole("menu", { name: "Go deeper" }).getByRole("menuitem", { name: "C2 Landscape" }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2");
+
+    await page.getByRole("button", { name: "Go deeper" }).click();
+    await page.getByRole("menu", { name: "Go deeper" }).getByRole("menuitem", { name: "Checkout" }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2/shop:checkout");
+  });
+});
+
 test.describe("double-click", () => {
   test("opens a System's C2 View", async ({ page }) => {
     await open(page, "#/view/c1");

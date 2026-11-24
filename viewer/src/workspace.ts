@@ -143,6 +143,22 @@ export class Workspace {
     return system === undefined ? undefined : `c2/${system}`;
   }
 
+  /** The View a box is the way into: its own C2 or C3, when the Workspace has one. */
+  wayIn(id: string): string | undefined {
+    const own = this.ownView(id);
+    return own !== undefined && own.endsWith(`/${id}`) && this.viewIds.has(own) ? own : undefined;
+  }
+
+  /** The Views one step down the scope ladder from a View: C1 to the C2 Landscape, that to each System, a System to each Service with Components. */
+  deeper(view: string): { label: string; view: string }[] {
+    if (view === "c1") return this.viewIds.has("c2") ? [{ label: "C2 Landscape", view: "c2" }] : [];
+    const inside = view === "c2" ? this.children(null).filter((e) => e.kind === "system") : view.startsWith("c2/") ? this.children(view.slice(3)) : [];
+    return inside.flatMap((e) => {
+      const own = this.wayIn(e.id);
+      return own === undefined ? [] : [{ label: e.name, view: own }];
+    });
+  }
+
   /** Each Environment's Deployment View, in `listViews` order. */
   deploymentViews(): { view: string; environment: string; label: string }[] {
     return this.views

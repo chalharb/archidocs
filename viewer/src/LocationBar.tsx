@@ -32,7 +32,8 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
   const compact = useMediaQuery(COMPACT_TOOLS);
   const name = (id: string) => workspace.byId.get(id)?.name ?? id;
   return (
-    <header className="arc-location">
+    <header className="arc-location arc-plate">
+      <div className="arc-where">
       <span className="arc-history-buttons">
         <button type="button" className="arc-tool arc-step" aria-label="Back" title="Back" onClick={() => window.history.back()}>
           <Icon name="back" />
@@ -47,12 +48,20 @@ export function LocationBar({ workspace, place, direction, compare, timeline, on
             const last = i === crumbs.length - 1;
             return (
               <li key={`${i}:${c.label}`} aria-current={last ? "page" : undefined}>
-                {last || c.view === undefined ? <span>{c.label}</span> : <a href={formatPlace(viewPlace(c.view, null, place.lens, place))}>{c.label}</a>}
+                {last || c.view === undefined ? (
+                  <span title={c.label}>{c.label}</span>
+                ) : (
+                  <a href={formatPlace(viewPlace(c.view, null, place.lens, place))} title={`Up to ${c.label}`}>
+                    {c.label}
+                  </a>
+                )}
               </li>
             );
           })}
         </ol>
       </nav>
+      <DeeperMenu workspace={workspace} place={place} />
+      </div>
       <DeploymentLinks workspace={workspace} place={place} />
       <div className="arc-tools">
         <RevisionsMenu timeline={timeline} onAt={(r) => onTime({ at: timeline.isLatest(r) ? null : pointLabel(r) })} onVs={(r) => onTime({ vs: pointLabel(r) })} />
@@ -154,6 +163,31 @@ function ExportMenu({ picks, onExport }: { picks: number; onExport: LocationBarP
             >
               {label}
             </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The way down: the Views one step deeper than this one, so the scope ladder can be walked from the plate in both directions. */
+function DeeperMenu({ workspace, place }: { workspace: Workspace; place: Place }) {
+  const [open, setOpen] = useState(false);
+  const root = useDismiss(open, () => setOpen(false));
+  const deeper = workspace.deeper(place.view);
+  if (deeper.length === 0) return null;
+  return (
+    <div className="arc-menu-root arc-deeper" ref={root}>
+      <button type="button" className="arc-tool arc-menu-button" aria-haspopup="menu" aria-expanded={open} title="Go a level deeper" onClick={() => setOpen(!open)}>
+        <Icon name="down" />
+        <span className="arc-tool-label">Go deeper</span>
+      </button>
+      {open && (
+        <div className="arc-menu arc-menu-start" role="menu" aria-label="Go deeper">
+          {deeper.map((d) => (
+            <a key={d.view} role="menuitem" href={formatPlace(viewPlace(d.view, null, place.lens, place))} onClick={() => setOpen(false)}>
+              {d.label}
+            </a>
           ))}
         </div>
       )}

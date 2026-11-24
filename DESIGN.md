@@ -180,7 +180,13 @@ components:
     textColor: "{colors.ink}"
     typography: "{typography.body-strong}"
     rounded: "{rounded.none}"
-    padding: "6px 8px 4px"
+    padding: "10px 14px"
+  way-in-tile:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.paper}"
+    rounded: "{rounded.none}"
+    width: "22px"
+    height: "22px"
   tab-active:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.paper}"
@@ -387,7 +393,9 @@ Painted sign buttons: square, framed, uppercase.
 A framed strip of uppercase options divided by 1.5px ink rules; the chosen option reverses to ink with paper text. Used for lens direction and grouping choices.
 
 ### Location plate (signature)
-The station sign. Back and forward as square 32px tools, then the breadcrumb at 13px semibold in plate-muted with a yellow arrow before each step, ending in the yellow you-are-here tile (uppercase, 800). Deployments follow as outlined uppercase tiles, the current one filled yellow. Recent, direction, Copy link, Export and the white primary sit at the right and wrap when space runs out.
+The station sign. Back and forward as square 32px tools, then the breadcrumb at 13px semibold in plate-muted with a yellow arrow before each step, ending in the yellow you-are-here tile (uppercase, 800). Deployments follow as outlined uppercase tiles, the current one filled yellow. Recent, direction, Copy link, Export and the white primary sit at the right. After the you-are-here tile, a Go deeper tool lists the Views one level down, so the scope ladder is walked both ways from the plate.
+
+The plate reflows on purpose, never by accident. From 900px it is one row: the ladder takes what the Deployment tiles and tools leave, and gives up width before anything wraps (earlier scopes shorten to an ellipsis first, the you-are-here tile last; each keeps its full name in a tooltip). Under 1280px the secondary tools drop their words and keep their pictograms. Under 900px it is two rows: where you are, then Deployment tiles and tools. Under 640px the ladder shortens to the way up and where you are, the tools fill their row as equal 40px keys with nothing scrolled out of sight, and a menu opens as a sheet across the plate.
 
 ### Rail and flyouts
 Paper rail with an ink rule on its right edge, the Archidocs mark at the top (the "Doorway tile": its tile drawn in ink so it follows light and dark mode, its keystone in brand indigo `#5146E5`; see `assets/brand/`), and icon-over-label buttons that reverse to the plate when their flyout is open. Flyouts have a plate-coloured head with an uppercase title and a framed square close button; tree rows are 32px, hover tint, current row in here-wash with an 800 label.
@@ -396,7 +404,7 @@ Paper rail with an ink rule on its right edge, the Archidocs mark at the top (th
 The reversed plate tile: ink fill, paper text, 11px 800 tracked code, with the Team colour as a 5px leading band. It appears on every node, in trees, in the Element panel owner line and in the Key.
 
 ### Nodes (signature)
-Paper box with a 1.5px ink frame and a 6px Team-coloured left edge; one head row of expand toggle, kind pictogram, bold name and Team code tile, with an 11px muted sub-label beneath. Shape encodes kind (see Shapes). Lens badges sit on the top edge as small filled tiles (Upstream rust, Downstream blue, Origin yellow), each with an arrow or mark and a word.
+Paper box with a 1.5px ink frame and a 6px Team-coloured left edge; one head row of expand toggle, kind pictogram, bold name and Team code tile, with an 11px muted sub-label beneath. Shape encodes kind (see Shapes). A box is laid out wide enough for its name: its kind's size, widened in 10px steps up to 360px, past which the name takes a second line; an open box is at least as wide as its head row needs. Padding is 10px by 14px, so the head row breathes. Where a box has a View of its own, a reversed ink arrow tile (22px, the "way in") ends its foot row, or its head row on an open box; the + beside the name opens the box here, the tile goes down a level, and a double-click still does the same. Lens badges sit on the top edge as small filled tiles (Upstream rust, Downstream blue, Origin yellow), each with an arrow or mark and a word.
 
 ### Map Key
 Replaces the minimap, bottom-left. A 264px paper card with an ink frame and a plate-coloured summary bar ("KEY", 11px 800, 0.1em) that collapses it. Each row pairs a 28x16 swatch drawn in the canvas's own vocabulary (code tile, dashed, striped, origin ring, up and down fills, held mark) with a sentence.
