@@ -1,0 +1,58 @@
+name: Publish
+
+# Publishing a GitHub Release tagged vX.Y.Z publishes archidocs@X.Y.Z to npm.
+# Authenticates with npm trusted publishing (OIDC), so the repo holds no npm token.
+# One-time setup on npmjs.com: archidocs → Settings → Trusted Publisher →
+# GitHub Actions, repository chalharb/archidocs, workflow publish.yml.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write # OIDC for trusted publishing and provenance
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install -g npm@latest
+
+      - name: The release tag matches package.json
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Release tag $TAG does not match package.json version $version (expected v$version)."
+            exit 1
+          fi
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+      # Prereleases (1.1.0-beta.1) go to the `next` dist-tag so `latest` stays stable.
+      - name: Publish to npm
+        env:
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          if [ "$PRERELEASE" = true ]; then
+            npm publish --tag next
+          else
+            npm publish
+          fi
