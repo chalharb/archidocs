@@ -26,6 +26,7 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 <!-- one line per closed ticket: [title](issues/NN-slug.md): gist -->
 
 - [Which site generator fits the docs site](issues/01-site-generator.md): Astro Starlight (pinned, pre-1.0) on the repo's Vite 8 + React 19 stack; Pagefind search, community llms.txt plugins, static deploy; Fumadocs runner-up.
+- [What is the docs site's page tree](issues/02-information-architecture.md): five groups (Start here, Concepts, Guides, Reference, Examples) under `/docs/`, landing at `/`; a page per CLI command, Model file and check rule; agent guide published as-is under Reference.
 
 ## Not yet specified
 
@@ -33,7 +34,8 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - **Drift checks:** how CI proves that generated reference pages match the code (regenerate and diff, the same way `rules:catalogue` and `schemas` do today?).
 - **Search:** whether the generator's built-in search is enough, or whether it needs tuning for terms like rule ids and CLI flags.
 - **Landing page copy:** the message and calls to action, once the IA and the landing prototype exist.
-- **README slimming:** what stays in the README (it is the npm and GitHub front page) and what moves to the site.
+- **README slimming:** the README keeps a short pitch and links out (page tree ticket); the exact cut is still open.
+- **Linking check output to rule pages:** whether `archidocs check` and MCP `validation_failed` issues print a link to `/docs/reference/rules/<rule-id>/`.
 
 ## Out of scope
 
