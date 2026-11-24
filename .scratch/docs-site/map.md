@@ -35,6 +35,7 @@ A **spec for the Archidocs documentation site** at archidocs.dev. It locks six a
 - [How the site is built and deployed](issues/07-build-and-deploy.md): the failing root Vercel project becomes the docs site (root `website/`, builds on Vercel); previews on every PR and push, production only from release tags; apex + www DNS-only on Cloudflare; export gets a label option (`Big Bank · v1.2.0`).
 - [How hand-written pages are kept correct](issues/08-hand-written-correctness.md): internal links fail the build; external links checked weekly; YAML samples included from `examples/` (failure samples tested); `archidocs` command lines parsed against the CLI definitions; tutorial gets an end-to-end CI test.
 - [What the README keeps](issues/10-readme-cut.md): ~70 lines: pitch, Why, Quick start, Examples, Development, License; Model, CLI, Publishing and Agents become a line plus a site link; hand-written but CLI-checked; cut ships with the first site deploy.
+- [Should check output link to rule pages](issues/11-check-links-to-rules.md): yes, always: a `docs` URL per issue in json and MCP, a Rule docs footer in text, a See-link in GitHub annotations; removed rules keep stub pages so old CLIs never 404.
 
 ## Not yet specified
 
