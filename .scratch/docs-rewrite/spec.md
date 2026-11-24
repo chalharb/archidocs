@@ -275,11 +275,12 @@ The tickets are in [issues/](issues/). Ticket 01 held the reopened decisions and
 | 16 | ["Use the viewer" guides](issues/16-viewer-guides.md) | 4 | 07, 15 |
 | 17 | ["Why Archidocs" and Modelling guidelines](issues/17-why-and-modelling-guidelines.md) | 4 | 07 |
 | 18 | ["Set up your editor" and "Check a Workspace in CI"](issues/18-editor-setup-and-check-in-ci.md) | 4 | 07 |
-| 19 | [Upgrading and versioning](issues/19-upgrading-and-versioning.md) | 4 | Needs the maintainer's policy |
+| 19 | [Upgrading and versioning](issues/19-upgrading-and-versioning.md) | 4 | |
 | 20 | [Contributor and community files](issues/20-community-files.md) | 4 | |
 | 21 | [US spelling throughout](issues/21-us-spelling.md) | 2 | 07 |
+| 22 | [A moving `v1` tag for the Action and the GitLab template](issues/22-moving-v1-tag.md) | 1 | Done |
 
-Tickets 02, 03, 04, 05, 06, 07, 10, 11, 12, 13, 14, 15 and 20 can start now.
+Tickets 02, 03, 04, 05, 06, 07, 10, 11, 12, 13, 14, 15, 19 and 20 can start now.
 
 ## Decisions
 
@@ -296,4 +297,9 @@ Answered by the maintainer on 2026-11-24 ([ticket 01](issues/01-decisions.md)).
 | Which MCP clients get a tab? | Claude Code, Cursor, VS Code / Copilot and Codex |
 | Does "Why Archidocs" name other tools? | No |
 
-Still open: the versioning policy in [ticket 19](issues/19-upgrading-and-versioning.md), and which private channel the Code of Conduct names ([ticket 20](issues/20-community-files.md)).
+The versioning policy was answered the same day and is in [ticket 19](issues/19-upgrading-and-versioning.md): the CLI, Model YAML, MCP tools, rule ids, viewer URLs and Node.js LTS support break only in a major release; the Bundle format carries no promise; `@v1` is a moving tag ([ticket 22](issues/22-moving-v1-tag.md)).
+
+Still open:
+
+- Which private channel the Code of Conduct names ([ticket 20](issues/20-community-files.md)).
+- What old `#/view/…` links do once viewer URLs drop `/#/`, which the maintainer plans for a 1.x release.
