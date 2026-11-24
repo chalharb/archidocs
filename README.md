@@ -1,0 +1,180 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/archidocs-mark-light.svg">
+    <img src="assets/brand/archidocs-mark-dark.svg" alt="Archidocs" width="72">
+  </picture>
+</p>
+
+<h1 align="center">Archidocs</h1>
+
+<p align="center">Git-native architecture as code. Each Team declares its slice of the architecture as YAML; Archidocs validates it, combines it into one Model, and publishes a diagram viewer for people and an MCP server for agents.</p>
+
+---
+
+## Why
+
+- **Diagrams that don't go stale.** Every diagram is generated from the validated Model at a commit, never drawn by hand.
+- **Ownership is first-class.** Every Element has exactly one Owner Team, shown on every node.
+- **One answer, many Teams.** Each Team keeps its own Project folder in one Workspace repo. Archidocs merges them, so nobody has to ask around.
+- **Every screen is a link.** Any view in the viewer can be shared by URL and saved as View YAML.
+- **Same answers for people and agents.** What the viewer shows, the MCP server can answer, and agents can edit the Model through it.
+
+The questions it's built to answer:
+
+| Who | Question |
+| --- | --- |
+| Enterprise Architect | How are two Services connected? |
+| Solutions Architect | Where is a Service deployed? |
+| Developer | What does my Team own? |
+| Product Owner | What is upstream and downstream of an outage? |
+| QA Tester | What is a Service's URL in a given Environment? |
+| Technical staff | Which decisions sit behind an Element, and how has the system changed? |
+
+## Quick start
+
+Requires Node.js 22.18 or later.
+
+```bash
+npm install --global archidocs
+```
+
+In the repo that will hold your Workspace:
+
+```bash
+archidocs init
+```
+
+This writes `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. Add a Project folder, then check it and open the viewer:
+
+```bash
+archidocs check
+```
+
+```bash
+archidocs dev
+```
+
+`archidocs dev` serves the viewer on <http://localhost:4321> and reloads as you edit.
+
+## The Model
+
+A Workspace is one repo. `workspace.yaml` defines Teams and Environments; each Project folder, marked by a `project.yaml`, declares one Team's Elements, Relationships, Deployments and Saved Views.
+
+```text
+archidocs/
+├── workspace.yaml        # Teams and Environments
+├── payments/
+│   ├── project.yaml      # id, name, owner Team
+│   ├── model.yaml        # Systems, Services, Components, Relationships
+│   ├── deployments.yaml  # which Service runs where, and its URL
+│   └── views.yaml        # Saved Views
+└── core/
+    └── ...
+```
+
+```yaml
+# payments/model.yaml
+systems:
+  payments:
+    name: Payments
+    services:
+      payments-service:
+        name: Payments Service
+        technology: Java, Spring Boot
+        relationships:
+          - to: payments-db
+            description: Stores payment state in
+          - to: core:mainframe            # another Project's Element
+            description: Posts payments to the ledger in
+      payments-db:
+        name: Payments DB
+        type: datastore
+```
+
+```yaml
+# payments/deployments.yaml
+deployments:
+  - service: payments-service
+    environment: prod
+    target: platform:eks-prod
+    url: https://payments.bigbank.example
+```
+
+The terms (Workspace, Project, Element, Relationship, Team, Environment, Deployment Target and more) are defined in [GLOSSARY.md](GLOSSARY.md). Every check rule is listed in [docs/rules.md](docs/rules.md).
+
+## CLI
+
+| Command | What it does |
+| --- | --- |
+| `archidocs init [--skill]` | Set up a Workspace, or with `--skill` install only the agent skill in a code repo. |
+| `archidocs check [--strict]` | Validate the Workspace. Formats: `text`, `json`, `github`. |
+| `archidocs dev` | Serve the viewer locally with live reload. |
+| `archidocs build [--out <dir>]` | Build the static viewer site with past Revisions. `--preview` builds a PR preview. |
+| `archidocs export <view-id>` | Render a View to SVG or PNG; `--all-saved` renders every Saved View. |
+| `archidocs diff <from> [<to>]` | Show what changed in the Model between two refs. |
+| `archidocs mcp` | Run the MCP server over a Workspace checkout or a published Bundle. |
+| `archidocs guide [topic]` | Print the authoring guide for agents. |
+| `archidocs version` | Print the CLI and Bundle schema versions. |
+
+## Publishing
+
+`archidocs build` writes a fully static site with relative URLs and hash routing, so any static host can serve it. The GitHub Action checks, builds and deploys to GitHub Pages:
+
+```yaml
+# .github/workflows/architecture.yml
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.archidocs.outputs.page-url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: chalharb/archidocs@v1
+        id: archidocs
+```
+
+A failed check deploys nothing, so the last good site stays up. GitLab Pages, PR previews, Saved View images for wikis, and other hosts are covered in [docs/publishing.md](docs/publishing.md); the GitLab template is in [templates/gitlab](templates/gitlab).
+
+## Agents and MCP
+
+`archidocs mcp` serves the Model to AI agents. Read tools answer the same questions as the viewer; write tools (`upsert_element`, `upsert_relationship`, `upsert_deployment`, `upsert_view`, `propose_adr` and more) edit the YAML in place, keep comments and formatting, return a diff, and refuse any change that would fail `archidocs check`.
+
+```bash
+archidocs mcp --workspace ./archidocs
+```
+
+`archidocs init` installs the authoring skill into `.agents/skills`, `.claude/skills` and `.github/skills`. The full guide is in [guide/SKILL.md](guide/SKILL.md) with task topics in [guide/topics](guide/topics).
+
+## Examples
+
+- [examples/big-bank](examples/big-bank): Big Bank plc, a fictional bank with five Teams, two Environments and history.
+- [examples/kitchen-sink](examples/kitchen-sink): exercises every feature of the Model.
+
+## Development
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm dev
+```
+
+`pnpm test` runs the unit tests, `pnpm test:e2e` the Playwright tests, and `pnpm typecheck` and `pnpm lint` the static checks. Design and product notes are in [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md).
+
+## License
+
+MIT
