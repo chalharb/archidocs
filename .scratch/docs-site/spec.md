@@ -170,7 +170,7 @@ Links are always on:
 
 ## Build Tickets
 
-These are a starting split for the build effort. Tickets 1, 2, 3 and 5 don't depend on each other.
+The build tickets are in [docs-site-build/issues/](../docs-site-build/issues/). Tickets 1, 2, 3 and 5 don't depend on each other.
 
 1. **Structured CLI definitions:** commands and flags with descriptions, driving the usage text. Unblocks the CLI reference and the CLI-line check.
 2. **Export restyle:** shared Wayfinding Plate tokens for the viewer and the export, no fades, plus `--theme light|dark` and a header label option.
