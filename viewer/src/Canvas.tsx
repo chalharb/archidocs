@@ -20,6 +20,7 @@ import type { ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/cor
 import type { BundleElement } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
+import { NODE_SIZES } from "../../src/render/layout.ts";
 import { Icon, type IconName } from "./Icon.tsx";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
@@ -108,9 +109,14 @@ interface BoxData extends Record<string, unknown> {
   sublabel: string;
   team: TeamStyle | undefined;
   container: boolean;
+  /** The box was laid out a line taller, for a name too long for the widest box. */
+  twoLine: boolean;
   /** `+` when collapsed with children to show, `−` when opened by the viewer, else neither. */
   toggle: "expand" | "collapse" | null;
   onToggle: (id: string, open: boolean) => void;
+  /** Set when the box is the way into its own View, other than the one on screen. */
+  wayIn: boolean;
+  onOpenView: (id: string) => void;
   mark: NodeMark | undefined;
   ring: boolean;
   picked: boolean;
@@ -180,8 +186,11 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
           sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.id, node) : undefined),
           team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
+          twoLine: !containers.has(box.id) && box.height > NODE_SIZES[node.kind].height,
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
           onToggle,
+          wayIn: element !== undefined && workspace.wayIn(element.id) !== undefined && workspace.wayIn(element.id) !== view.id,
+          onOpenView,
           mark: marks.get(box.id),
           ring,
           picked: picks.includes(box.id),
@@ -189,7 +198,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         },
       };
     });
-  }, [view, layout, workspace, selected, open, onToggle, marks, ring, picks]);
+  }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks]);
 
   const edgeChanges = useMemo(() => new Map(view.edges.map((e) => [`${e.from}>${e.to}`, e.change])), [view]);
   const edges = useMemo<Edge<RouteData>[]>(
@@ -244,7 +253,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       {view.nodes.length > MINIMAP_MIN_NODES && <MiniMap position="top-right" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeStrokeWidth={0} />}
       <Controls position="bottom-right" showInteractive={false} />
       <Fitter laidOut={laidOut} fitKey={fitKey} selected={selected} animate={animate} onSettled={onSettled} />
-      <KeepBesidePanel selected={selected} animate={animate} />
+      <KeepBesidePanel selected={selected} animate={animate} drawingWidth={layout.width} />
       <CtrlWheelZoom />
     </ReactFlow>
   );
@@ -272,6 +281,10 @@ function Key({ lens }: { lens: boolean }) {
             <span>COR</span>
           </span>
           Left edge and code: owning Team
+        </li>
+        <li>
+          <span className="arc-key-swatch arc-key-way-in" aria-hidden="true" />
+          Arrow tile: opens the box's own View
         </li>
         <li>
           <span className="arc-key-swatch arc-key-external" aria-hidden="true" />
@@ -302,7 +315,7 @@ function Key({ lens }: { lens: boolean }) {
           </>
         )}
       </ul>
-      <p className="arc-key-gestures">Shift-click picks for export · double-click opens a box's own View · / finds</p>
+      <p className="arc-key-gestures">+ shows what is inside, here · the arrow tile (or a double-click) opens a box's own View · Shift-click picks for export · / finds</p>
     </details>
   );
 }
@@ -373,8 +386,11 @@ function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: La
   return null;
 }
 
-/** When a selection opens the Element panel over the selected box, pans just enough to bring the box out beside it. */
-function KeepBesidePanel({ selected, animate }: { selected: string | null; animate: boolean }) {
+/**
+ * When a selection opens the Element panel over the drawing, pans just enough to bring the whole drawing out
+ * beside it when there is room for that, so the panel covers no box; otherwise the selected box alone.
+ */
+function KeepBesidePanel({ selected, animate, drawingWidth }: { selected: string | null; animate: boolean; drawingWidth: number }) {
   const { getInternalNode, getViewport, setViewport } = useReactFlow();
   const width = useStore((s) => s.width);
   useEffect(() => {
@@ -387,6 +403,9 @@ function KeepBesidePanel({ selected, animate }: { selected: string | null; anima
       const left = node.internals.positionAbsolute.x * zoom + x;
       const right = left + (node.measured.width ?? node.width ?? 0) * zoom;
       const edge = besidePanel(width) - FIT_PAD;
+      // The whole drawing, when moving it clear of the panel keeps its own left edge on the canvas.
+      const over = x + drawingWidth * zoom - edge;
+      if (over > 0 && x - over >= FIT_PAD / 2) return void setViewport({ x: x - over, y, zoom }, { duration: animate ? DURATION : 0 });
       if (right <= edge) return;
       // Move left by the overlap, but never push the box's own left edge off the canvas.
       const shift = Math.min(right - edge, Math.max(0, left - FIT_PAD));
@@ -400,13 +419,14 @@ function KeepBesidePanel({ selected, animate }: { selected: string | null; anima
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
-  const { node, type, sublabel, team, container, toggle, onToggle, mark, ring, picked, change } = data;
+  const { node, type, sublabel, team, container, twoLine, toggle, onToggle, wayIn, onOpenView, mark, ring, picked, change } = data;
   const stop = (e: MouseEvent) => e.stopPropagation();
   const toggleButton = toggle && (
     <button
       type="button"
       className="arc-toggle nodrag nopan"
       aria-label={`${toggle === "expand" ? "Expand" : "Collapse"} ${node.name}`}
+      title={toggle === "expand" ? `Show what is inside ${node.name}, here` : `Close ${node.name}`}
       onClick={(e) => {
         stop(e);
         onToggle(node.id, toggle === "expand");
@@ -416,11 +436,28 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       <Icon name={toggle === "expand" ? "plus" : "minus"} />
     </button>
   );
+  // The way in: a reversed arrow tile, so going down a level never depends on knowing the double-click.
+  const wayInButton = wayIn && (
+    <button
+      type="button"
+      className="arc-way-in nodrag nopan"
+      aria-label={`Open ${node.name}'s View`}
+      title={`Open ${node.name}'s own View`}
+      onClick={(e) => {
+        stop(e);
+        onOpenView(node.id);
+      }}
+      onDoubleClick={stop}
+    >
+      <Icon name="arrow" />
+    </button>
+  );
   const classes = [
     "arc-box",
     `arc-${node.kind}`,
     type ? `arc-t-${type}` : "",
     container ? "arc-container" : "",
+    twoLine ? "arc-two-line" : "",
     node.external ? "arc-external" : "",
     selected ? "arc-selected" : "",
     mark ? (mark.hit ? "arc-hit" : "arc-dim") : "",
@@ -449,7 +486,9 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       <div className="arc-box-head">
         {toggleButton}
         <Icon name={KIND_ICON[type ?? node.kind]!} className="arc-kind-glyph" />
-        <span className="arc-name">{node.name}</span>
+        <span className="arc-name" data-testid="name">
+          {node.name}
+        </span>
         {/* An open box's sub-label sits in its head row, after the name, and gives way to it when space runs out. */}
         {container && (
           <span className="arc-sublabel arc-csub" data-testid="sublabel" title={sublabel}>
@@ -461,10 +500,14 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
             {team.code}
           </span>
         )}
+        {container && wayInButton}
       </div>
       {!container && (
-        <div className="arc-sublabel" data-testid="sublabel">
-          {sublabel}
+        <div className="arc-box-foot">
+          <div className="arc-sublabel" data-testid="sublabel" title={sublabel}>
+            {sublabel}
+          </div>
+          {wayInButton}
         </div>
       )}
       {mark?.distance !== undefined && !(container && !node.collapsed) && (

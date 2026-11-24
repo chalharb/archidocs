@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { resolveView } from "../../src/core/index.ts";
+import type { ViewNode } from "../../src/core/views.ts";
 import { layoutView } from "../../src/render/index.ts";
+import { NAME_LINE, NODE_MAX_WIDTH, NODE_SIZES, nameRoom, nodeSize } from "../../src/render/layout.ts";
+import { textWidth } from "../../src/render/text.ts";
 import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 import { layoutProblems } from "./geometry.ts";
@@ -86,5 +89,31 @@ describe("layout stability", () => {
     const view = resolveView(bundle, "c2", { expand: ["land:sys-a", "land:sys-b"] })!;
 
     expect(await layoutView(view)).toEqual(await layoutView(view));
+  });
+});
+
+describe("nodeSize", () => {
+  const node = (name: string, over: Partial<ViewNode> = {}): ViewNode => ({ id: "n", kind: "service", name, parent: null, collapsed: false, external: false, ...over });
+
+  it("keeps a short name's box at its kind's size", () => {
+    expect(nodeSize(node("API"))).toEqual(NODE_SIZES.service);
+  });
+
+  it("widens the box until a long name fits on one line", () => {
+    const name = "Mainframe Banking Facade";
+    const { width, height } = nodeSize(node(name));
+    expect(width).toBeGreaterThan(NODE_SIZES.service.width);
+    expect(nameRoom(node(name), width)).toBeGreaterThanOrEqual(textWidth(name, 13, 700));
+    expect(height).toBe(NODE_SIZES.service.height);
+  });
+
+  it("caps the width and gives a longer name a second line", () => {
+    const size = nodeSize(node("Accounts Summary and Quarterly Regulatory Reporting Controller"));
+    expect(size).toEqual({ width: NODE_MAX_WIDTH, height: NODE_SIZES.service.height + NAME_LINE });
+  });
+
+  it("leaves room for the expand toggle and the way in on a collapsed System", () => {
+    const name = "Internet Banking System";
+    expect(nodeSize(node(name, { kind: "system", collapsed: true })).width).toBeGreaterThan(nodeSize(node(name, { kind: "component" })).width);
   });
 });

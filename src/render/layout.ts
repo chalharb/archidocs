@@ -1,6 +1,7 @@
 import ElkBundled from "elkjs/lib/elk.bundled.js";
 import type { ELK, ElkExtendedEdge, ElkNode, LayoutOptions } from "elkjs/lib/elk-api.js";
 import type { ResolvedView, ViewNode } from "../core/views.ts";
+import { textWidth } from "./text.ts";
 
 /** Which way a View's edges flow: top to bottom, bottom to top, left to right or right to left. */
 export type Direction = "TB" | "BT" | "LR" | "RL";
@@ -39,20 +40,62 @@ export interface LayoutOptionsInput {
   elk?: ELK;
 }
 
-/** Fixed node sizes per kind, so a layout needs no text measuring. Containers are sized by their contents. */
+/** The least size of a node per kind; `nodeSize` widens it for a long name. Containers are sized by their contents. */
 export const NODE_SIZES: Record<ViewNode["kind"], { width: number; height: number }> = {
-  // The Variant D prototype's sizes (ticket 14), 40px wider and 12px taller, so names fit and boxes breathe.
-  person: { width: 200, height: 70 },
-  system: { width: 230, height: 76 },
-  service: { width: 220, height: 66 },
-  component: { width: 210, height: 62 },
+  // The Variant D prototype's sizes (ticket 14), 40px wider and up to 22px taller, so names fit and boxes breathe.
+  person: { width: 200, height: 76 },
+  system: { width: 230, height: 80 },
+  service: { width: 220, height: 72 },
+  component: { width: 210, height: 68 },
   target: { width: 240, height: 84 },
-  deployment: { width: 220, height: 62 },
+  deployment: { width: 220, height: 68 },
 };
+
+/** No box grows wider than this for its name; a longer name takes a second line instead. */
+export const NODE_MAX_WIDTH = 360;
+/** The extra height a box gets for a second line of name. */
+export const NAME_LINE = 18;
+/** What a box's head row holds beside the name: Team edge, padding, kind glyph and the Team code tile. */
+const HEAD_CHROME = 116;
+/** The expand toggle of a collapsed System or Service, and the way-in tile in an open box's head row. */
+const TOGGLE_CHROME = 30;
+const WAY_IN_CHROME = 30;
+
+/** The room a box of this kind and state needs beside its name. */
+function headChrome(n: ViewNode): number {
+  const opens = n.kind === "system" || (n.kind === "service" && n.collapsed);
+  return HEAD_CHROME + (n.collapsed && opens ? TOGGLE_CHROME : 0) + (n.kind === "person" ? 12 : 0);
+}
+
+/** The width a box of `width` leaves for its name. */
+export function nameRoom(n: ViewNode, width: number): number {
+  return width - headChrome(n);
+}
+
+/**
+ * A box's size: its kind's size, widened in 10px steps until its name fits on one line, up to NODE_MAX_WIDTH;
+ * a name longer than that takes two lines and the box grows by one. Measured with the embedded font's advances,
+ * so the same View lays out the same everywhere.
+ */
+export function nodeSize(n: ViewNode): { width: number; height: number } {
+  const base = NODE_SIZES[n.kind];
+  const wanted = Math.ceil((textWidth(n.name, 13, 700) + headChrome(n)) / 10) * 10;
+  const width = Math.min(NODE_MAX_WIDTH, Math.max(base.width, wanted));
+  return { width, height: base.height + (wanted > NODE_MAX_WIDTH ? NAME_LINE : 0) };
+}
+
+/** What an open box's head row holds beside its name: Team edge, padding, glyph, its kind in words and the Team code tile. */
+const CONTAINER_CHROME = 210;
+
+/** The least width of an open box, so its head row shows its whole name; capped like any box, past which the name is cut. */
+export function containerMinWidth(n: ViewNode): number {
+  const opens = n.kind === "system" || n.kind === "service";
+  return Math.min(NODE_MAX_WIDTH + 80, Math.ceil(textWidth(n.name, 13, 700) + CONTAINER_CHROME + (opens ? TOGGLE_CHROME + WAY_IN_CHROME : 0)));
+}
 
 /** Room at the top of a container for its label. */
 export const CONTAINER_HEADER = 40;
-const CONTAINER_PADDING = `[top=${CONTAINER_HEADER + 8},left=20,bottom=20,right=20]`;
+const CONTAINER_PADDING = `[top=${CONTAINER_HEADER + 12},left=24,bottom=24,right=24]`;
 
 const ELK_DIRECTION: Record<Direction, string> = { TB: "DOWN", BT: "UP", LR: "RIGHT", RL: "LEFT" };
 /** The border side edges leave a container by, then the side they enter one by. */
@@ -127,7 +170,7 @@ function toElk(graph: ViewGraph, direction: Direction): { root: ElkNode; routes:
     "elk.direction": ELK_DIRECTION[direction],
     "elk.edgeRouting": "ORTHOGONAL",
     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
-    "elk.spacing.nodeNode": "40",
+    "elk.spacing.nodeNode": "48",
     "elk.layered.spacing.nodeNodeBetweenLayers": "72",
     "elk.spacing.edgeNode": "20",
     "elk.spacing.edgeEdge": "12",
@@ -175,10 +218,10 @@ function toElk(graph: ViewGraph, direction: Direction): { root: ElkNode; routes:
     const nodePorts = [...(ports.get(n.id) ?? [])].sort(([a], [b]) => cmp(a, b));
     const node: ElkNode = {
       id: n.id,
-      ...(children.length > 0 ? { children } : NODE_SIZES[n.kind]),
+      ...(children.length > 0 ? { children } : nodeSize(n)),
       ...(nodePorts.length > 0 ? { ports: nodePorts.map(([id, side]) => ({ id, width: 0, height: 0, layoutOptions: { "elk.port.side": side } })) } : {}),
       layoutOptions: {
-        ...(children.length > 0 ? { ...common, "elk.padding": CONTAINER_PADDING } : {}),
+        ...(children.length > 0 ? { ...common, "elk.padding": CONTAINER_PADDING, "elk.nodeSize.constraints": "MINIMUM_SIZE", "elk.nodeSize.minimum": `(${containerMinWidth(n)},0)` } : {}),
         ...(nodePorts.length > 0 ? { "elk.portConstraints": "FIXED_SIDE" } : {}),
       },
       edges: [],

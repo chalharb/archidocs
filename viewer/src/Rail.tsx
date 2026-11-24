@@ -158,7 +158,8 @@ export function Rail({ workspace, view, selected, home, onPickElement, onPickVie
   );
 }
 
-function Close({ onClose }: { onClose: () => void }) {
+/** A flyout's close button, at the end of its head. */
+export function Close({ onClose }: { onClose: () => void }) {
   return (
     <button type="button" className="arc-flyout-close" aria-label="Close" onClick={onClose}>
       <Icon name="close" />

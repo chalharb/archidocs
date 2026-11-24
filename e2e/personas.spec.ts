@@ -153,6 +153,13 @@ test.describe("Find", () => {
     await expect(page.getByRole("dialog", { name: "Find" }).getByRole("option").first()).toContainText("Cart DB");
   });
 
+  test("its close button closes it", async ({ page }) => {
+    await open(page, "#/view/c2");
+    await find(page, "kafka");
+    await page.getByRole("dialog", { name: "Find" }).getByRole("button", { name: "Close" }).click();
+    await expect(page.getByRole("dialog", { name: "Find" })).toHaveCount(0);
+  });
+
   test("focusing a result stays in the current View when it can, and Enter picks the first", async ({ page }) => {
     await open(page, "#/view/c2/shop:checkout");
     await find(page, "Cart DB");
