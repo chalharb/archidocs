@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/chalharb/archidocs/compare/v1.1.0...v1.2.0) (2026-11-24)
+
+
+### Features
+
+* **website:** branded link previews ([#54](https://github.com/chalharb/archidocs/issues/54)) ([457d69f](https://github.com/chalharb/archidocs/commit/457d69f3238e106953c4035f8fa470fad74f3dd2))
+
+
+### Bug fixes
+
+* **package:** name the repository so npm accepts provenance ([#55](https://github.com/chalharb/archidocs/issues/55)) ([9853f06](https://github.com/chalharb/archidocs/commit/9853f069f8f9d25d27fc6863f178fbdca7d1d7d2))
+
 ## [1.1.0](https://github.com/chalharb/archidocs/compare/v1.0.0...v1.1.0) (2026-11-24)
 
 
