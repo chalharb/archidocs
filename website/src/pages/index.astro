@@ -1,5 +1,71 @@
 ---
-// The landing page placeholder; the landing page ticket replaces it.
+/**
+ * The landing page at /. One question asked twice: the real `get_impact`
+ * call to the MCP server and the viewer's Impact lens on the same Saved View,
+ * both captured from the Big Bank example while the site builds (see
+ * `src/lib/landing.ts`). Light theme only, and not a docs page, so it stays
+ * out of llms*.txt.
+ */
+import "../styles/landing.css";
+import favicon from "../../../viewer/public/favicon.svg?url";
+import mark from "../../../assets/brand/archidocs-mark-light.svg?url";
+import { findExample, liveViewerUrl } from "../lib/examples.ts";
+import { captureLanding, countWord, LANDING_MAP_URL, landingDiagram, QUESTION } from "../lib/landing.ts";
+import { GITHUB_URL, VERSION } from "../lib/repo.ts";
+import { toolPath } from "../reference/mcp.ts";
+
+const landing = await captureLanding();
+const example = findExample(QUESTION.example);
+// The map is drawn at 85% of the export's size, so its 13px node names stay readable.
+const MAP_SCALE = 0.85;
+const map = await landingDiagram();
+const live = liveViewerUrl(example, landing.view.id);
+
+const { impact, subject } = landing;
+const total = impact.upstream.total;
+const owners = [...new Set(impact.upstream.rings.flatMap((r) => r.elements.map((e) => e.owner)))].map((id) => landing.teams.get(id)?.name ?? id);
+const list = (items: string[]) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
+const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const hops = (d: number) => (d === 1 ? "Directly" : `${capital(countWord(d))} hops away`);
+const args = Object.entries(landing.call.arguments)
+  .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+  .join(", ");
+
+const escape = (s: string) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
+const json = escape(JSON.stringify(impact, null, 2)).replace(/("(?:[^"\\]|\\.)*")(\s*:)?/g, (_, str: string, colon?: string) =>
+  colon ? `<span class="k">${str}</span>${colon}` : `<span class="s">${str}</span>`,
+);
+const yamlLine = (text: string) => {
+  const m = /^(\s*(?:- )?)([\w-]+)(:)(.*)$/.exec(text);
+  return m ? `${escape(m[1]!)}<span class="yk">${escape(m[2]!)}</span>${m[3]}<span class="yv">${escape(m[4]!)}</span>` : escape(text);
+};
+const yaml = landing.yaml.lines
+  .map((line, i, all) => {
+    const gap = i > 0 && line.n !== all[i - 1]!.n + 1 ? `<span class="ln gap" aria-hidden="true"><span class="n">⋮</span><span></span></span>` : "";
+    return `${gap}<span class="ln${line.mark ? " mark" : ""}"><span class="n">${line.n}</span><span>${yamlLine(line.text)}</span></span>`;
+  })
+  .join("");
+const marked = { n: landing.yaml.lines.find((l) => l.mark)!.n, description: landing.yaml.description.charAt(0).toLowerCase() + landing.yaml.description.slice(1) };
+
+// The six persona questions (PRODUCT.md), each with where the viewer answers it and the MCP tools that do.
+const PERSONAS = [
+  { who: "Enterprise Architect", q: "How are two Services connected?", viewer: "Connect to… lens", tools: ["find_paths"] },
+  { who: "Solutions Architect", q: "Where is a Service deployed?", viewer: "Where is it deployed?", tools: ["get_deployments"] },
+  { who: "Developer", q: "What does my Team own?", viewer: "Team lens", tools: ["list_owned"] },
+  { who: "Product Owner", q: "What is upstream and downstream of an outage?", viewer: "Impact lens", tools: ["get_impact"] },
+  { who: "QA Tester", q: "What is a Service's URL in an Environment?", viewer: "Element panel, URLs tab", tools: ["get_deployments"] },
+  { who: "Technical staff", q: "Which decisions sit behind an Element, and how did it change?", viewer: "ADRs, History and Compare", tools: ["list_adrs", "get_changes"] },
+];
+const tool = (name: string) => {
+  const found = landing.tools.find((t) => t.name === name);
+  if (!found) throw new Error(`The landing page names the MCP tool ${name}, which the server doesn't list.`);
+  return found;
+};
+const personas = PERSONAS.map((p) => ({ ...p, tools: p.tools.map(tool) }));
+
+const DEMO = example.demo;
+const QUICK_START = "/docs/start/quick-start/";
+const description = "Archidocs turns each Team's architecture YAML into one checked Model, and publishes a diagram viewer for people and an MCP server for agents from the same commit.";
 ---
 
 <!doctype html>
@@ -7,14 +73,229 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Archidocs</title>
-    <meta name="description" content="One architecture. Same answer for people and agents." />
+    <title>Archidocs: one architecture, the same answer for people and agents</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={new URL("/", Astro.site)} />
+    <link rel="icon" href={favicon} type="image/svg+xml" />
+    <meta name="theme-color" content="#1c2633" />
+    <meta property="og:title" content="Archidocs" />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={new URL("/", Astro.site)} />
   </head>
   <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="i-out" viewBox="0 0 16 16"><path d="M6 3h7v7M13 3 4 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
+      <symbol id="i-right" viewBox="0 0 16 16"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
+      <symbol id="i-left" viewBox="0 0 16 16"><path d="M14 8H3M7 4 3 8l4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
+      <symbol id="i-chev" viewBox="0 0 10 10"><path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
+      <symbol id="i-split" viewBox="0 0 44 44"><path d="M3 22h13l10-11h15M16 22l10 11h15M35 5l6 6-6 6M35 27l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"></path></symbol>
+    </svg>
+
+    <header class="plate">
+      <div class="wrap top">
+        <a class="brand" href="/"><img src={mark} alt="" width="28" height="28" />Archidocs</a>
+        <nav aria-label="Site">
+          <a href="/docs/">Docs</a>
+          <a class="wide" href={`/docs/examples/${example.slug}/`}>Examples</a>
+          <a class="wide" href="/docs/reference/changelog/">Changelog</a>
+          <a href={GITHUB_URL}>GitHub</a>
+        </nav>
+      </div>
+    </header>
+
     <main>
-      <h1>Archidocs</h1>
-      <p>One architecture. Same answer for people and agents.</p>
-      <p><a href="/docs/">Read the docs</a> · <a href="https://big-bank.archidocs.dev">Open the Big Bank demo</a></p>
+      <section class="plate hero" aria-labelledby="claim">
+        <div class="wrap">
+          <h1 id="claim">One architecture. Same answer for people and agents.</h1>
+          <p class="lede">
+            Each Team declares its slice as YAML in one repo. Archidocs checks it, merges it into one Model, and publishes a diagram viewer for people and an MCP server for agents. Both answer from the same
+            commit.
+          </p>
+          <div class="ctas">
+            <a class="btn primary" href={DEMO}>Open the Big Bank demo <svg class="icon" aria-hidden="true"><use href="#i-out"></use></svg></a>
+            <a class="btn ghost" href={QUICK_START}>Read the quick start <svg class="icon" aria-hidden="true"><use href="#i-right"></use></svg></a>
+          </div>
+
+          <h2 class="asked" id="asked"><span class="label">Asked twice</span> What does a mainframe outage take down?</h2>
+          <div class="twin">
+            <section class="pane" aria-label="The agent's answer, over MCP">
+              <div class="pane-head"><span class="label">Agent, over MCP</span><code>archidocs mcp</code></div>
+              <div class="chat">
+                <p class="ask">The mainframe is down. Who's affected?</p>
+                <details class="call">
+                  <summary>
+                    <svg class="chev" aria-hidden="true"><use href="#i-chev"></use></svg>
+                    <code><b>{landing.call.name}</b><span>({args})</span></code>
+                    <span class="label">{total} upstream</span>
+                  </summary>
+                  <div class="result-head"><code>structuredContent</code><span class="label">What the agent read</span></div>
+                  <pre class="json" tabindex="0" aria-label={`The ${landing.call.name} result`}><code set:html={json} /></pre>
+                </details>
+                <div class="reply">
+                  <p>
+                    {capital(countWord(total))} Elements depend on the {subject}, owned by {list(owners)}.
+                  </p>
+                  <dl class="rings">
+                    {
+                      impact.upstream.rings.map((ring) => (
+                        <div>
+                          <dt class="label">{hops(ring.distance)}</dt>
+                          <dd>
+                            <ul>
+                              {ring.elements.map((e) => {
+                                const team = landing.teams.get(e.owner);
+                                return (
+                                  <li>
+                                    {e.name}
+                                    {team && (
+                                      <abbr class="team" title={team.name} style={`--team: ${team.color}`}>
+                                        {team.code}
+                                      </abbr>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </dd>
+                        </div>
+                      ))
+                    }
+                  </dl>
+                </div>
+              </div>
+            </section>
+
+            <section class="pane" aria-label="A person's answer, in the viewer">
+              <div class="pane-head"><span class="label">Person, in the viewer</span><code>{new URL(example.demo).host}</code></div>
+              <nav class="viewer-plate" aria-label="Where the viewer is">
+                <ol>
+                  {
+                    landing.view.crumbs.map((crumb, i, all) =>
+                      i < all.length - 1 ? (
+                        <li>
+                          <span class="crumb">{crumb}</span>
+                          <svg class="chev" aria-hidden="true">
+                            <use href="#i-chev" />
+                          </svg>
+                        </li>
+                      ) : (
+                        <li aria-current="page">
+                          <span class="here">{crumb}</span>
+                        </li>
+                      ),
+                    )
+                  }
+                </ol>
+              </nav>
+              <div class="lens">
+                <span class="lens-chip"><span class="label">Impact</span><span>{landing.view.lens}</span></span>
+                <span class="label">{landing.view.hits} upstream</span>
+              </div>
+              <div class="map" tabindex="0" role="region" aria-label="The exported diagram, scrollable" data-ring-x={Math.round(map.ringX * MAP_SCALE)}>
+                <img
+                  src={LANDING_MAP_URL}
+                  alt={`${example.name}: ${landing.view.title}. The Impact lens marks the ${landing.view.hits} Elements upstream of the ${subject}.`}
+                  width={Math.round(map.width * MAP_SCALE)}
+                  height={Math.round(map.height * MAP_SCALE)}
+                  decoding="async"
+                />
+              </div>
+              <p class="pan label"><svg class="icon" aria-hidden="true"><use href="#i-left"></use></svg>Scroll for the whole map</p>
+            </section>
+          </div>
+          <div class="agree">
+            <span>Both name the same {countWord(total)} Elements. Captured from the {example.name} example (v{VERSION}) when this page was built.</span>
+            <a href={live}>Open this View live <svg class="icon" aria-hidden="true"><use href="#i-out"></use></svg></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="source">
+        <div class="wrap">
+          <h2 id="source">Both answers come from the YAML your Teams already review.</h2>
+          <p>No diagram is drawn by hand and no answer is typed in. Change a Relationship in a pull request, and the viewer and the MCP server change with it.</p>
+          <div class="split">
+            <figure class="file">
+              <div class="file-head"><span>{landing.yaml.file}</span><span>{example.name}</span></div>
+              <pre class="yaml" tabindex="0" aria-label={landing.yaml.file}><code set:html={yaml} /></pre>
+              <figcaption>Line {marked.n} puts {landing.yaml.element} in both answers: it “{marked.description}” the {subject}, one hop upstream.</figcaption>
+            </figure>
+            <div class="joint" aria-hidden="true"><svg><use href="#i-split"></use></svg></div>
+            <div class="outs">
+              <div class="out">
+                <h3>For people: the viewer</h3>
+                <p>A static site where every screen is a link. Lenses for impact, ownership, paths and deployments; share the URL in the incident channel.</p>
+                <a href="/docs/concepts/viewer/">How the viewer works <svg class="icon" aria-hidden="true"><use href="#i-right"></use></svg></a>
+              </div>
+              <div class="out">
+                <h3>For agents: the MCP server</h3>
+                <p>{landing.tools.length} tools that read the Model and edit its YAML. Writes keep your comments and formatting, and refuse anything that would fail <code>archidocs check</code>.</p>
+                <a href="/docs/reference/mcp/read-tools/">The MCP tools <svg class="icon" aria-hidden="true"><use href="#i-right"></use></svg></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section questions" aria-labelledby="six">
+        <div class="wrap">
+          <h2 id="six">Six questions, each answered both ways</h2>
+          <p>The questions people across an engineering organisation ask about the architecture, and where each one is answered.</p>
+          <table>
+            <thead>
+              <tr><th class="label" scope="col">Who</th><th class="label" scope="col">Question</th><th class="label" scope="col">In the viewer</th><th class="label" scope="col">Through MCP</th></tr>
+            </thead>
+            <tbody>
+              {
+                personas.map((p) => (
+                  <tr>
+                    <td class="who label">{p.who}</td>
+                    <td class="q">{p.q}</td>
+                    <td data-label="In the viewer">{p.viewer}</td>
+                    <td data-label="Through MCP">
+                      {p.tools.map((t) => (
+                        <code>
+                          <a href={toolPath(t)}>{t.name}</a>
+                        </code>
+                      ))}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
+
+    <footer class="plate close">
+      <div class="wrap">
+        <h2>Ask the Big Bank demo yourself.</h2>
+        <p>Every View, lens and Revision in it is built from <code>examples/big-bank</code> in the Archidocs repo, the same way your Workspace would be.</p>
+        <div class="ctas">
+          <a class="btn primary" href={DEMO}>Open the Big Bank demo <svg class="icon" aria-hidden="true"><use href="#i-out"></use></svg></a>
+          <a class="btn ghost" href={QUICK_START}>Read the quick start <svg class="icon" aria-hidden="true"><use href="#i-right"></use></svg></a>
+        </div>
+        <div class="foot">
+          <img src={mark} alt="" width="22" height="22" />
+          <span>Archidocs is open source under the MIT licence.</span>
+          <nav aria-label="Project">
+            <a href="/docs/">Docs</a>
+            <a href={GITHUB_URL}>GitHub</a>
+            <a href="https://www.npmjs.com/package/archidocs">npm</a>
+          </nav>
+        </div>
+      </div>
+    </footer>
+    <script>
+      // The map opens on its right edge, the origin (RTL scrolling, no script needed). Where the
+      // pane is too narrow to show the direct ring beside the origin, scroll it to that ring.
+      const map = document.querySelector<HTMLElement>(".map[data-ring-x]");
+      if (map) {
+        const ring = Number(map.dataset.ringX) - 24;
+        const span = map.scrollWidth - map.clientWidth;
+        if (span > 0 && map.scrollWidth - ring > map.clientWidth) map.scrollLeft = ring - span;
+      }
+    </script>
   </body>
 </html>

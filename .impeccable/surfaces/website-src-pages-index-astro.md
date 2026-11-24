@@ -29,6 +29,6 @@ STORY: The visitor reads the claim, sees a real question answered by an agent (`
 
 FIRST VIEWPORT: Full-width slate plate. 60px top bar: mark and wordmark left; Docs, Examples, Changelog, GitHub right. Headline at ~76px, max 15ch, left; lede 20px below; primary white "Open the Big Bank demo" button and ghost "Read the quick start". Under them a framed "asked twice" question bar, then the twin panes: agent transcript with an expandable real tool result (5/12 width) beside a viewer pane with the sign plate, yellow current-View tile, Impact lens strip and the exported diagram (7/12). The panes start inside the first viewport.
 
-FORM: Twin screens, candidate 5 of 7 on the ordered list (twin screens, route map, annotated specimen among them), seed:5b51a3d49902e698. Signature interaction: expanding the MCP call reveals the real JSON the agent read.
+FORM: Twin screens, candidate 5 of 7 on the ordered list (twin screens, route map, annotated specimen among them), seed:5b51a3d49902e698 (recorded by the ticket-06 prototype session; `concept-seed --check-seed` can't verify it on the build machine, so treat the roll as unverified). Signature interaction: expanding the MCP call reveals the real JSON the agent read.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

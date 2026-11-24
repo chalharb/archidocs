@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-23T21:47:08+00:00",
+  "generatedAt": "2026-11-24T04:22:41+00:00",
   "title": "Design System: Archidocs",
   "extensions": {
     "colorMeta": {
@@ -463,6 +463,42 @@
       "mono": {
         "displayName": "Mono",
         "purpose": "Element ids in Overpass Mono."
+      },
+      "landing-display": {
+        "displayName": "Landing Display",
+        "purpose": "The landing hero headline, at most 15ch."
+      },
+      "landing-headline": {
+        "displayName": "Landing Headline",
+        "purpose": "Landing section and close headings."
+      },
+      "landing-title": {
+        "displayName": "Landing Title",
+        "purpose": "Titles inside framed landing output cards."
+      },
+      "landing-lede": {
+        "displayName": "Landing Lede",
+        "purpose": "The hero lede in plate-muted; 17px under 720px."
+      },
+      "landing-question": {
+        "displayName": "Landing Question",
+        "purpose": "The question in the asked-twice heading bar."
+      },
+      "landing-body": {
+        "displayName": "Landing Body",
+        "purpose": "Base reading size on the landing page."
+      },
+      "landing-small": {
+        "displayName": "Landing Small",
+        "purpose": "Transcript, captions, card copy, persona table and footer."
+      },
+      "landing-button": {
+        "displayName": "Landing Button",
+        "purpose": "Uppercase labels of 44px landing buttons and card links."
+      },
+      "landing-mono": {
+        "displayName": "Landing Mono",
+        "purpose": "Tool calls, JSON, YAML, hosts and tool names; file heads at 12px 600."
       }
     },
     "shadows": [
@@ -492,12 +528,30 @@
         "name": "ease",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
         "purpose": "Single easing for disclosure turns (160ms), node opacity (200ms) and panel width; layout transitions run on up to 100 nodes and are off under prefers-reduced-motion."
+      },
+      {
+        "name": "landing-ease",
+        "value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Landing disclosures: tool-call chevron turn (250ms) and panel height (350ms); off under prefers-reduced-motion."
+      },
+      {
+        "name": "landing-button-fade",
+        "value": "150ms ease-out",
+        "purpose": "Landing button fill and frame changes; off under prefers-reduced-motion."
       }
     ],
     "breakpoints": [
       {
         "name": "phone",
         "value": "640px"
+      },
+      {
+        "name": "landing-stack",
+        "value": "960px"
+      },
+      {
+        "name": "landing-phone",
+        "value": "720px"
       }
     ],
     "edges": [
@@ -532,6 +586,11 @@
         "name": "icon",
         "value": "16-unit grid, stroke 1.75, square caps, mitre joins",
         "purpose": "All pictograms."
+      },
+      {
+        "name": "landing-focus",
+        "value": "2.5px solid, offset 2px (inset -4px on tool-call summaries)",
+        "purpose": "Landing page: white (on-plate) on plate fields, ink on light fields; never yellow."
       }
     ]
   },
@@ -599,18 +658,59 @@
       "description": "Collapsible legend that explains every mark on the canvas in its own vocabulary.",
       "html": "<details class=\"ds-key\" open><summary>Key</summary><ul><li><span class=\"ds-sw ds-sw-dash\"></span>Dashed: External</li><li><span class=\"ds-sw ds-sw-broker\"></span>Striped: broker</li><li><span class=\"ds-sw ds-sw-origin\"></span>Lens origin</li><li><span class=\"ds-sw ds-sw-up\"></span>Upstream</li></ul></details>",
       "css": ".ds-key { width: 264px; background: var(--paper, #fff); color: var(--ink, #1c2633); border: 1.5px solid var(--ink, #1c2633); font-family: var(--sans, \"Overpass\", ui-sans-serif, system-ui, sans-serif); font-size: 13px; } .ds-key summary { padding: 6px 12px 5px; background: var(--plate, #1c2633); color: var(--on-plate, #fff); font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; list-style: none; } .ds-key summary:focus-visible { outline: 2.5px solid var(--here, #ffc629); outline-offset: -4px; } .ds-key ul { margin: 0; padding: 8px 12px 4px; list-style: none; } .ds-key li { display: flex; align-items: center; gap: 8px; min-height: 24px; } .ds-sw { width: 28px; height: 16px; border: 1.5px solid var(--ink, #1c2633); background: var(--paper, #fff); } .ds-sw-dash { border-style: dashed; } .ds-sw-broker { background-image: repeating-linear-gradient(90deg, transparent 0 4px, var(--line, #c4c9c1) 4px 7px); } .ds-sw-origin { background: var(--herebg, #fff4cc); box-shadow: 0 0 0 2.5px var(--here, #ffc629); } .ds-sw-up { background: var(--up, #a4461a); border-color: var(--up, #a4461a); }"
+    },
+    {
+      "name": "Landing Buttons",
+      "kind": "button",
+      "refersTo": "landing-button-primary",
+      "description": "44px painted sign plates on the landing plate: white primary and plate-line ghost.",
+      "html": "<div class=\"ds-lp\"><a class=\"ds-lbtn ds-lbtn-primary\" href=\"#\">Open the Big Bank demo <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"M6 3H3v10h10v-3M9 3h4v4M13 3 7 9\"/></svg></a><a class=\"ds-lbtn ds-lbtn-ghost\" href=\"#\">Read the quick start <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"M3 8h10M9 4l4 4-4 4\"/></svg></a></div>",
+      "css": ".ds-lp { display: flex; flex-wrap: wrap; gap: 12px; padding: 24px; background: var(--plate, #1c2633); } .ds-lbtn { display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px; border: 1.5px solid currentColor; border-radius: 0; font-family: \"Overpass\", ui-sans-serif, system-ui, sans-serif; font-weight: 800; font-size: 12px; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; transition: background-color 0.15s ease-out, border-color 0.15s ease-out; } .ds-lbtn-primary { background: var(--on-plate, #fff); border-color: var(--on-plate, #fff); color: var(--plate, #1c2633); } .ds-lbtn-primary:hover { background: var(--plate-muted, #c3cbd6); border-color: var(--plate-muted, #c3cbd6); } .ds-lbtn-ghost { border-color: var(--plate-line, #48566b); color: var(--on-plate, #fff); } .ds-lbtn-ghost:hover { border-color: var(--plate-muted, #c3cbd6); } .ds-lbtn:focus-visible { outline: 2.5px solid var(--on-plate, #fff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Asked Twice Bar and Twin Panes",
+      "kind": "custom",
+      "refersTo": "asked-bar",
+      "description": "The run-in heading bar over two paper panes (5/12 transcript, 7/12 viewer) with ground-filled heads, on the plate; the viewer pane's cropped map scrolls right-to-left from the origin and, side by side, takes the transcript's height.",
+      "html": "<div class=\"ds-tw\"><h2 class=\"ds-asked\"><span class=\"ds-lab\">Asked twice</span> What does a mainframe outage take down?</h2><div class=\"ds-twin\"><div class=\"ds-pane\"><div class=\"ds-phead\"><span class=\"ds-lab ds-ink\">Agent, over MCP</span><code>archidocs mcp</code></div><div class=\"ds-pbody\">Transcript</div></div><div class=\"ds-pane\"><div class=\"ds-phead\"><span class=\"ds-lab ds-ink\">Person, in the viewer</span><code>demo.archidocs.dev</code></div><div class=\"ds-map\" tabindex=\"0\" role=\"region\" aria-label=\"The exported diagram, scrollable\"><div class=\"ds-map-img\">Cropped export at 85%, origin at the right edge</div></div><p class=\"ds-pan\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"M13 8H3M7 4 3 8l4 4\"/></svg>Scroll for the whole map</p></div></div></div>",
+      "css": ".ds-tw { padding: 24px; background: var(--plate, #1c2633); color: var(--on-plate, #fff); font-family: \"Overpass\", ui-sans-serif, system-ui, sans-serif; } .ds-asked { margin: 0; padding: 16px 20px 14px; border: 1.5px solid var(--plate-line, #48566b); border-bottom: 0; font-weight: 700; font-size: 20px; line-height: 1.3; } .ds-lab { margin-right: 14px; color: var(--plate-muted, #c3cbd6); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: 2px; } .ds-ink { color: var(--ink, #1c2633); margin: 0; vertical-align: 0; } .ds-twin { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1.5px; border: 1.5px solid var(--plate-line, #48566b); background: var(--plate-line, #48566b); } .ds-pane { display: flex; flex-direction: column; min-width: 0; background: var(--paper, #fff); color: var(--ink, #1c2633); } .ds-phead { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 16px 9px; border-bottom: 1.5px solid var(--ink, #1c2633); background: var(--ground, #f3f4f1); } .ds-phead code { color: var(--muted, #4f5966); font-size: 13px; font-family: \"Overpass Mono\", ui-monospace, \"SF Mono\", Menlo, monospace; } .ds-pbody { padding: 20px; font-size: 15px; } .ds-map { flex: 1; min-height: 340px; contain: size; direction: rtl; overflow: auto; background: var(--ground, #f3f4f1); } .ds-map:focus-visible { outline: 2.5px solid var(--ink, #1c2633); outline-offset: 2px; } .ds-map-img { direction: ltr; width: 900px; height: 420px; padding: 16px; color: var(--muted, #4f5966); font-size: 13px; } .ds-pan { display: flex; align-items: center; gap: 8px; margin: 0; padding: 9px 16px 8px; border-top: 1.5px solid var(--rule, #e2e4df); color: var(--muted, #4f5966); font-weight: 800; font-size: 11px; line-height: 1.2; letter-spacing: 0.08em; text-transform: uppercase; } @media (max-width: 960px) { .ds-twin { grid-template-columns: minmax(0, 1fr); } .ds-map { contain: none; min-height: 0; } }"
+    },
+    {
+      "name": "Tool Call",
+      "kind": "custom",
+      "refersTo": "tool-call",
+      "description": "An expandable MCP tool call in an ink frame, revealing its JSON result on stone.",
+      "html": "<details class=\"ds-call\" open><summary><svg class=\"ds-chev\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"M3 1l4 4-4 4\"/></svg><code><b>get_impact</b><span>(mainframe, upstream)</span></code><span class=\"ds-cnt\">12 upstream</span></summary><div class=\"ds-rh\"><code>structuredContent</code><span>What the agent read</span></div><pre class=\"ds-json\"><span class=\"k\">\"upstream\"</span>: { <span class=\"k\">\"total\"</span>: 12 }</pre></details>",
+      "css": ".ds-call { border: 1.5px solid var(--ink, #1c2633); background: var(--paper, #fff); color: var(--ink, #1c2633); font-family: \"Overpass\", ui-sans-serif, system-ui, sans-serif; } .ds-call summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 10px 12px 9px; cursor: pointer; list-style: none; } .ds-call summary::-webkit-details-marker { display: none; } .ds-call summary:hover { background: var(--tint, #e8eae5); } .ds-call summary:focus-visible { outline: 2.5px solid var(--ink, #1c2633); outline-offset: -4px; } .ds-chev { width: 10px; height: 10px; transition: rotate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-call[open] .ds-chev { rotate: 90deg; } .ds-call code { font-size: 13px; font-family: \"Overpass Mono\", ui-monospace, \"SF Mono\", Menlo, monospace; } .ds-call code span { color: var(--muted, #4f5966); } .ds-cnt { color: var(--up, #a4461a); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; } .ds-rh { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px 7px; border-top: 1.5px solid var(--ink, #1c2633); border-bottom: 1.5px solid var(--rule, #e2e4df); color: var(--muted, #4f5966); font-weight: 800; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; } .ds-rh code { color: var(--ink, #1c2633); text-transform: none; letter-spacing: 0; font-weight: 400; } .ds-json { margin: 0; padding: 12px; max-height: 260px; overflow: auto; background: var(--ground, #f3f4f1); color: var(--muted, #4f5966); font-size: 13px; line-height: 1.55; font-family: \"Overpass Mono\", ui-monospace, \"SF Mono\", Menlo, monospace; } .ds-json .k { color: var(--ink, #1c2633); font-weight: 600; }"
+    },
+    {
+      "name": "YAML File Block",
+      "kind": "card",
+      "refersTo": "file-block",
+      "description": "A source file in an ink frame with a mono head, line numbers and the upstream-wash marked line.",
+      "html": "<figure class=\"ds-file\"><div class=\"ds-fh\"><span>model/services.yaml</span><span>excerpt</span></div><pre class=\"ds-yaml\"><span class=\"ln\"><span class=\"n\">12</span><span><span class=\"yk\">relationships:</span></span></span><span class=\"ln mark\"><span class=\"n\">13</span><span>  - <span class=\"yk\">to:</span> <span class=\"yv\">mainframe</span></span></span><span class=\"ln\"><span class=\"n\">14</span><span>    <span class=\"yk\">description:</span> <span class=\"yv\">Reads accounts</span></span></span></pre><figcaption>One line declares the dependency.</figcaption></figure>",
+      "css": ".ds-file { margin: 0; border: 1.5px solid var(--ink, #1c2633); background: var(--paper, #fff); color: var(--ink, #1c2633); } .ds-fh { display: flex; justify-content: space-between; gap: 12px; padding: 9px 14px 8px; border-bottom: 1.5px solid var(--ink, #1c2633); font-weight: 600; font-size: 12px; line-height: 1.4; font-family: \"Overpass Mono\", ui-monospace, \"SF Mono\", Menlo, monospace; } .ds-fh span:last-child { color: var(--muted, #4f5966); } .ds-yaml { margin: 0; padding: 12px 0; overflow-x: auto; font-size: 13px; line-height: 1.7; font-family: \"Overpass Mono\", ui-monospace, \"SF Mono\", Menlo, monospace; } .ds-yaml .ln { display: grid; grid-template-columns: 48px max-content; padding-right: 16px; } .ds-yaml .n { padding-right: 14px; color: var(--faint, #616a76); text-align: right; user-select: none; } .ds-yaml .mark { background: var(--upbg, #fbeee6); } .ds-yaml .yk { font-weight: 600; } .ds-yaml .yv { color: var(--muted, #4f5966); } .ds-file figcaption { padding: 10px 14px 9px; border-top: 1.5px solid var(--rule, #e2e4df); color: var(--muted, #4f5966); font-size: 15px; font-family: \"Overpass\", ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Persona Table",
+      "kind": "custom",
+      "refersTo": "persona-table",
+      "description": "Who asks which question, where the viewer answers it and which MCP tools do.",
+      "html": "<table class=\"ds-pt\"><thead><tr><th>Who</th><th>Question</th><th>In the viewer</th><th>Through MCP</th></tr></thead><tbody><tr><td class=\"who\">Solutions Architect</td><td class=\"q\">Where is a Service deployed?</td><td>Where is it deployed?</td><td><code><a href=\"#\">get_deployments</a></code></td></tr></tbody></table>",
+      "css": ".ds-pt { width: 100%; border-collapse: collapse; color: var(--ink, #1c2633); font-size: 15px; font-family: \"Overpass\", ui-sans-serif, system-ui, sans-serif; } .ds-pt th { padding: 0 16px 10px 0; border-bottom: 1.5px solid var(--ink, #1c2633); color: var(--muted, #4f5966); text-align: left; font-weight: 800; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; } .ds-pt td { padding: 16px 16px 14px 0; border-bottom: 1.5px solid var(--rule, #e2e4df); vertical-align: baseline; } .ds-pt .who { width: 18%; color: var(--muted, #4f5966); } .ds-pt .q { width: 38%; font-size: 17px; font-weight: 700; } .ds-pt code { font-size: 13px; font-family: \"Overpass Mono\", ui-monospace, \"SF Mono\", Menlo, monospace; } .ds-pt a { color: inherit; text-decoration-thickness: 1.5px; text-underline-offset: 3px; } .ds-pt a:focus-visible { outline: 2.5px solid var(--ink, #1c2633); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The Wayfinding Plate",
-    "overview": "The viewer orients like a station. One dark sign plate across the top says where you are and where each way leads; the generated diagram is the map behind it, on a pale stone ground. Everything in the chrome is built from signage materials: flat painted fields, 1.5px ink frames, hairline rules, reversed tiles, uppercase labels and a single wayfinding yellow that means only \"you are here\".\n\nDensity is operational, not decorative. Two chrome type sizes do all the ranking, by weight, case and reversal rather than by size, so the plate reads at a glance and the canvas keeps the visual weight. Nothing fades out unreadably: a stepped-back edge is a fainter solid stroke that still holds about 3:1 against the ground, and dimmed nodes stay legible. Dashes are never borrowed for stepping back, because dashes carry meaning: External frames and open boxes, removed Relationships in Compare, and Return steps and lifelines in sequence charts.\n\nDark mode is the same station after dark: the ground drops to deep slate (#10151c), paper to #18202a, ink inverts to #e6eaef, and the plate stays a lit slate-navy sign (#1f2a3a) a step above the ground. The yellow does not change.",
+    "overview": "The viewer orients like a station. One dark sign plate across the top says where you are and where each way leads; the generated diagram is the map behind it, on a pale stone ground. Everything in the chrome is built from signage materials: flat painted fields, 1.5px ink frames, hairline rules, reversed tiles, uppercase labels and a single wayfinding yellow that means only \"you are here\".\n\nDensity is operational, not decorative. Two chrome type sizes do all the ranking, by weight, case and reversal rather than by size, so the plate reads at a glance and the canvas keeps the visual weight. Nothing fades out unreadably: a stepped-back edge is a fainter solid stroke that still holds about 3:1 against the ground, and dimmed nodes stay legible. Dashes are never borrowed for stepping back, because dashes carry meaning: External frames and open boxes, removed Relationships in Compare, and Return steps and lifelines in sequence charts.\n\nDark mode is the same station after dark: the ground drops to deep slate (#10151c), paper to #18202a, ink inverts to #e6eaef, and the plate stays a lit slate-navy sign (#1f2a3a) a step above the ground. The yellow does not change.\n\nThe landing page at archidocs.dev is a persuade surface in the same world, read rather than operated. It is the station's signage at a reading distance: slate plate fields hold the hero and the close, the stone ground runs between them, and the proof sits in white panes framed at 1.5px with square corners and no shadows. It keeps the viewer's colours, fonts and frames and adds a larger reading ramp; it is light only.",
     "keyCharacteristics": [
       "One dark sign plate (52px) over the canvas; one labelled rail (64px) on the left.",
       "One yellow, reserved for you-are-here.",
       "Square corners everywhere in the chrome; shape carries meaning only on nodes.",
       "No shadows. Depth is reversal (plate against ground) and ink frames.",
       "Two chrome type sizes, 13px and 11px, in Overpass; Overpass Mono for ids.",
-      "Team ownership always shown as a colour stripe paired with a reversed code tile."
+      "Team ownership always shown as a colour stripe paired with a reversed code tile.",
+      "The landing page: plate fields top and bottom, stone between, white framed panes, a reading ramp of its own, yellow only inside the pictured viewer."
     ],
     "rules": [
       {
@@ -629,6 +729,11 @@
         "section": "colors"
       },
       {
+        "name": "The Pictured Yellow Rule",
+        "body": "On the landing page the yellow appears only as the you-are-here tile inside the pictured viewer pane. Its crumb chevrons there are plate-muted, focus outlines on plate fields are white (on-plate) and on light fields ink, and text selection is ink on light fields and plate-muted on the plate. The exported diagram image carries the export's own yellow lens origin; that is product output, not page chrome. Upstream rust (up) labels the upstream counts, and upstream wash (upbg) marks the line a file block points at.",
+        "section": "colors"
+      },
+      {
         "name": "The Two Sizes Rule",
         "body": "Chrome is set in 13px and 11px only. Rank comes from weight (400 to 800), uppercase and reversal, never from a third size. The Element name headline (22px) and long-form reading surfaces (the ADR reader's Markdown) are content, not chrome.",
         "section": "typography"
@@ -636,6 +741,11 @@
       {
         "name": "The Signage Case Rule",
         "body": "Controls and labels are uppercase with positive tracking; names of things in the Model (Elements, Views, scopes in the breadcrumb other than the current one) keep their own case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Reading Ramp Rule",
+        "body": "The landing ramp belongs to reading surfaces only. It never enters viewer chrome, and the viewer's chrome inside a landing pane keeps 13px and 11px.",
         "section": "typography"
       },
       {
@@ -658,7 +768,10 @@
       "**Do** draw stepped-back marks as a fainter solid stroke at about 3:1 against the ground; never fade them, and never borrow a dash, because dashes carry meaning.",
       "**Do** match focus to its field: an ink outline on light fields, yellow only on reversed or ink fields.",
       "**Do** draw new pictograms on the 16-unit grid with a 1.75 stroke, square caps and mitred joins.",
-      "**Do** ship fonts with the static site; never fetch them from a CDN."
+      "**Do** ship fonts with the static site; never fetch them from a CDN.",
+      "**Do** build landing sections from plate fields, stone ground and white panes in 1.5px frames, with square corners.",
+      "**Do** set landing reading text in the landing ramp (17px body, 15px small, 20px lede and question, 30–46px headlines, 42–76px display) and keep the pictured viewer's chrome at 13px and 11px.",
+      "**Do** keep landing focus outlines white on plate fields and ink on light fields."
     ],
     "donts": [
       "**Don't** use yellow as a brand accent, hover colour, warning or emphasis.",
@@ -669,7 +782,9 @@
       "**Don't** recolour or redraw the Archidocs mark; use the files in `assets/brand/`. Brand indigo belongs to the keystone only, never to chrome.",
       "**Don't** fade dimmed elements below legibility.",
       "**Don't** dash an edge to step it back; dashes are reserved for External, open boxes, removed Relationships and sequence-chart Returns and lifelines.",
-      "**Don't** use a yellow focus outline on a light field."
+      "**Don't** use a yellow focus outline on a light field.",
+      "**Don't** use yellow anywhere on the landing page outside the pictured viewer's you-are-here tile; not for crumb chevrons, focus, selection or emphasis.",
+      "**Don't** bring the landing reading ramp into viewer chrome."
     ]
   }
 }
