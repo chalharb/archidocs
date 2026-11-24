@@ -22,7 +22,7 @@ Dashboard work in Cloudflare, GitHub and Vercel ([build and deploy](../../docs-s
 
 ## Acceptance criteria
 
-- [ ] The Demos workflow deploys both demos on a push to `main` and comments Preview URLs on a PR.
+- [x] The Demos workflow deploys both demos on a push to `main` and comments Preview URLs on a PR.
 - [x] `https://big-bank.archidocs.dev` and `https://kitchen-sink.archidocs.dev` are served by their Workers.
 - [ ] No `vercel.json` is left in the repo, and no "Vercel" checks appear on new PRs.
 - [ ] A release makes a production deploy of the docs built from its tag; a push to `main` only updates the `main` Preview.
