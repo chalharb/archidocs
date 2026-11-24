@@ -5,7 +5,7 @@ import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Bundle } from "../schema/bundle.ts";
 import { findWorkspaceRoot, load, nodeFileSystem, resolveDynamicView, resolveView, serializeBundle, type ResolvedDynamicView, type ResolvedView } from "../core/index.ts";
-import { directions, layoutView, renderSequenceSvg, renderSvg, type Direction } from "../render/index.ts";
+import { directions, layoutView, renderSequenceSvg, renderSvg, themes, type Direction, type Theme } from "../render/index.ts";
 import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitHead, gitTopLevel } from "../git.ts";
@@ -150,6 +150,9 @@ async function main(argv: string[]): Promise<number> {
     if (format !== "svg" && format !== "png") throw new UsageError(`Unknown format "${format}"; use svg or png.`);
     const direction = values.direction as Direction | undefined;
     if (direction !== undefined && !directions.includes(direction)) throw new UsageError(`Unknown direction "${direction}"; use ${directions.join(", ")}.`);
+    const theme = values.theme as Theme;
+    if (!themes.includes(theme)) throw new UsageError(`Unknown theme "${values.theme}"; use ${themes.join(" or ")}.`);
+    const { label } = values;
     const root = await workspaceRoot(process.cwd());
     const { bundle, issues } = await loadFromCwd();
     if (issues.some((i) => i.severity === "error")) {
@@ -167,10 +170,10 @@ async function main(argv: string[]): Promise<number> {
     };
     /** Lays out and draws one View: a Dynamic View as a sequence chart, any other as a diagram. */
     const draw = async (view: ResolvedView | ResolvedDynamicView, out: string) => {
-      if (view.kind === "dynamic") return write(renderSequenceSvg({ bundle, view, source }), out);
+      if (view.kind === "dynamic") return write(renderSequenceSvg({ bundle, view, source, theme, label }), out);
       const chosen = direction ?? view.direction;
       const layout = await layoutView(view, chosen === undefined ? {} : { direction: chosen });
-      await write(renderSvg({ bundle, view, layout, source }), out);
+      await write(renderSvg({ bundle, view, layout, source, theme, label }), out);
     };
     const resolveAny = (id: string) => resolveDynamicView(bundle, id) ?? resolveView(bundle, id);
 

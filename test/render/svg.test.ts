@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveView } from "../../src/core/index.ts";
-import { layoutView, renderSvg, type RenderSource } from "../../src/render/index.ts";
+import { layoutView, PALETTES, renderSvg, type RenderSource } from "../../src/render/index.ts";
 import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
 
@@ -57,10 +57,32 @@ describe("renderSvg", () => {
     expect(seen).toContain("Datastore");
   });
 
-  it("has a key for sync and async lines, the Team stripe and code, and External", async () => {
+  it("has a key for the Team stripe and code, External and broker", async () => {
     const svg = await render(workspace, "c1");
 
-    expect(texts(svg)).toEqual(expect.arrayContaining(["Sync", "Async", "Team (stripe and code)", "External"]));
+    expect(texts(svg)).toEqual(expect.arrayContaining(["Team (stripe and code)", "External", "Broker"]));
+  });
+
+  it("uses the viewer's light tokens by default and its Night shift tokens with the dark theme", async () => {
+    const { bundle } = await loadWorkspace(workspace);
+    const view = resolveView(bundle, "c2/shop:checkout")!;
+    const layout = await layoutView(view);
+    const light = renderSvg({ bundle, view, layout, source });
+    const dark = renderSvg({ bundle, view, layout, source, theme: "dark" });
+
+    expect(renderSvg({ bundle, view, layout, source, theme: "light" })).toBe(light);
+    expect(light).toContain(`<rect width="${/width="(\d+)"/.exec(light)![1]}" height="${/height="(\d+)"/.exec(light)![1]}" fill="${PALETTES.light.ground}"/>`);
+    expect(dark).toContain(`fill="${PALETTES.dark.ground}"/>`);
+    expect(dark).toContain(`fill="${PALETTES.dark.ink}">Checkout (C2)</text>`);
+    expect(dark).not.toContain(PALETTES.light.ink);
+  });
+
+  it("replaces the source line with a label", async () => {
+    const { bundle } = await loadWorkspace(workspace);
+    const view = resolveView(bundle, "c1")!;
+    const svg = renderSvg({ bundle, view, layout: await layoutView(view), source, label: "Big Bank · v1.2.0" });
+
+    expect(texts(svg).slice(0, 2)).toEqual(["C1 Landscape", "Big Bank · v1.2.0"]);
   });
 
   it("cuts a name too long for its box, ending it with an ellipsis", async () => {
@@ -111,16 +133,21 @@ describe("renderSvg with a Lens", () => {
   it("badges each hit node with its distance and names the Lens in the key", async () => {
     const svg = await render(lensed, "shop:cart-impact");
 
-    expect(texts(svg)).toEqual(expect.arrayContaining(["0", "1", "2", "Lens: impact of shop:cart, upstream"]));
+    expect(texts(svg)).toEqual(expect.arrayContaining(["ORIGIN", "UPSTREAM 1", "UPSTREAM 2", "Origin", "Upstream", "Lens: impact of shop:cart, upstream"]));
   });
 
-  it("dims what the Lens misses and highlights what it hits", async () => {
+  it("steps back what the Lens misses in solid faint colours, never fading it, and lights what it hits", async () => {
     const svg = await render(lensed, "shop:cart-impact");
+    const { line, ground, faint, up, upbg } = PALETTES.light;
 
+    expect(svg).not.toMatch(/opacity/);
     // Cart DB and Payments API are not upstream of Cart, nor are the edges to them.
-    expect(svg.match(/<g opacity="0.35"><g>/g)?.length).toBe(2);
-    expect(svg.match(/<g opacity="0.35"><path/g)?.length).toBe(2);
+    expect(svg.match(new RegExp(`fill="${ground}"/><path [^>]*stroke="${line}"`, "g"))?.length).toBe(2);
+    expect(texts(svg.split("<g>").filter((g) => g.includes(`fill="${faint}">`)).join(""))).toEqual(expect.arrayContaining(["Cart DB", "Payments API"]));
+    expect(svg.match(/marker-end="url\(#arrow-faint\)"/g)?.length).toBe(2);
     expect(svg).toMatch(/marker-end="url\(#arrow-lit\)"/);
+    expect(svg).toContain(`fill="${upbg}"/><path `);
+    expect(svg).toContain(`stroke="${up}"`);
   });
 
   it("draws a View without a Lens unchanged", async () => {

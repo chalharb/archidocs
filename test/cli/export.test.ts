@@ -3,6 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
+import { PALETTES } from "../../src/render/index.ts";
 import { archidocs } from "../support/cli.ts";
 import { checkoutScenarioWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { writeWorkspace } from "../support/workspace.ts";
@@ -152,6 +153,7 @@ describe("archidocs export", () => {
     [["export"], "Give the View to export"],
     [["export", "c1", "--format", "pdf"], 'Unknown format "pdf"'],
     [["export", "c1", "--direction", "UP"], 'Unknown direction "UP"'],
+    [["export", "c1", "--theme", "sepia"], 'Unknown theme "sepia"'],
   ])("exits 2 for %j", async (args, message) => {
     const { repoRoot } = await committedLandscape();
     const { code, stderr } = await archidocs(repoRoot, ...args);
@@ -159,6 +161,39 @@ describe("archidocs export", () => {
     expect(code).toBe(2);
     expect(stderr).toContain(message);
   });
+
+  it("draws light by default, and dark with --theme dark, as SVG and PNG", async () => {
+    const { repoRoot } = await committedLandscape();
+    const runs = await Promise.all([
+      archidocs(repoRoot, "export", "c1", "--out", "light.svg"),
+      archidocs(repoRoot, "export", "c1", "--theme", "dark", "--out", "dark.svg"),
+      archidocs(repoRoot, "export", "c1", "--out", "light.png", "--format", "png"),
+      archidocs(repoRoot, "export", "c1", "--theme", "dark", "--out", "dark.png", "--format", "png"),
+    ]);
+
+    expect(runs.map((r) => r.code)).toEqual([0, 0, 0, 0]);
+    expect(await readFile(join(repoRoot, "light.svg"), "utf8")).toContain(`fill="${PALETTES.light.ground}"/>`);
+    expect(await readFile(join(repoRoot, "dark.svg"), "utf8")).toContain(`fill="${PALETTES.dark.ground}"/>`);
+    // The top-left pixel is the ground.
+    const corner = async (file: string) => [...PNG.sync.read(await readFile(join(repoRoot, file))).data.subarray(0, 3)].map((v) => v.toString(16).padStart(2, "0")).join("");
+    expect(`#${await corner("light.png")}`).toBe(PALETTES.light.ground);
+    expect(`#${await corner("dark.png")}`).toBe(PALETTES.dark.ground);
+  }, 20_000);
+
+  it("--label replaces the source line, for one View and for --all-saved", async () => {
+    const { repoRoot } = await committedLandscape(withSavedViews);
+    const [one, all] = await Promise.all([
+      archidocs(repoRoot, "export", "c1", "--label", "Big Bank · v1.2.0", "--theme", "dark"),
+      archidocs(repoRoot, "export", "--all-saved", "--out", "views", "--label", "Big Bank · v1.2.0", "--theme", "dark"),
+    ]);
+
+    expect([one.code, all.code]).toEqual([0, 0]);
+    for (const file of ["c1.svg", ...(await readdir(join(repoRoot, "views"))).map((f) => join("views", f))]) {
+      const svg = await readFile(join(repoRoot, file), "utf8");
+      expect([file, texts(svg)[1]]).toEqual([file, "Big Bank · v1.2.0"]);
+      expect(svg).toContain(`fill="${PALETTES.dark.ground}"/>`);
+    }
+  }, 20_000);
 
   it("writes nothing and exits 1 when the Workspace has errors", async () => {
     const { repoRoot } = await writeWorkspace({ ...landscapeWorkspace, "shop/more.yaml": "services:\n  extra:\n    name: Extra\n    owner: nobody\n" });

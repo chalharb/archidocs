@@ -99,7 +99,10 @@ export const commands = {
   },
   export: {
     name: "export",
-    synopsis: ["export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL]", "export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL]"],
+    synopsis: [
+      "export <view-id> [--format svg|png] [--out <file>] [--direction TB|BT|LR|RL] [--theme light|dark] [--label <text>]",
+      "export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL] [--theme light|dark] [--label <text>]",
+    ],
     description: "Render a View, or every Saved View, to an SVG or PNG picture.",
     arguments: [{ name: "<view-id>", description: "The View: c1, c2, c2/<system>, c3/<service>, deployment/<environment>, or a Saved View as project:view-id." }],
     flags: {
@@ -107,6 +110,8 @@ export const commands = {
       out: { type: "string", value: "<file>", defaultText: "<view-id>.<format> in the current folder", description: "The file to write; with `--all-saved`, the folder to write each picture into." },
       direction: { type: "string", value: "TB|BT|LR|RL", defaultText: "a Saved View's own direction, else LR", description: "The layout direction: top to bottom, bottom to top, left to right or right to left. Dynamic Views ignore it." },
       "all-saved": { type: "boolean", default: false, description: "Render every Saved View into the `--out` folder, one picture each." },
+      theme: { type: "string", value: "light|dark", default: "light", description: "The palette: the viewer's light tokens, or its Night shift dark ones." },
+      label: { type: "string", value: "<text>", defaultText: "the Workspace, short commit and date", description: "The line under the title, such as `Big Bank · v1.2.0`, in place of the source line." },
     },
   },
   diff: {
