@@ -35,8 +35,24 @@ jobs:
         if: (!cancelled()) && matrix.os == 'ubuntu-latest'
       - run: pnpm build
 
+  docs:
+    # The docs site in website/: its build (links validated, every `archidocs` line parsed),
+    # and its tests, which include fixture builds that must fail.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm docs:build
+      - run: pnpm docs:test
+
   e2e:
-    # The Viewer seam: Playwright against fixture sites written by `archidocs build --out`.
+    # Playwright: the Viewer seam against fixture sites written by `archidocs build --out`,
+    # and the built docs site (website/e2e): Diagrams following the theme toggle, and search.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

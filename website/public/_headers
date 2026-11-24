@@ -1,0 +1,8 @@
+# Workers static assets serve .md as text/markdown without a charset, so
+# browsers would read the Markdown copies as windows-1252.
+/*.md
+  Content-Type: text/markdown; charset=utf-8
+/llms*.txt
+  Content-Type: text/plain; charset=utf-8
+/_llms-txt/*
+  Content-Type: text/plain; charset=utf-8
