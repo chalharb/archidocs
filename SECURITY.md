@@ -4,7 +4,7 @@
 
 Report a security vulnerability privately, through GitHub: open the repo's [report form](https://github.com/chalharb/archidocs/security/advisories/new). Only the maintainers can read it.
 
-Don't open a public issue, pull request or discussion about it.
+Don't open a public issue or pull request about it.
 
 Include what you can of:
 
@@ -15,8 +15,4 @@ Include what you can of:
 
 ## What happens next
 
-The maintainers reply on the report and work with you on a fix there. When the fix is released, the report is published as a GitHub security advisory, and you are credited unless you ask not to be.
-
-## Supported versions
-
-Fixes are made to the latest release. Upgrade to it to get them.
+The maintainers reply on the report and work with you on a fix there.

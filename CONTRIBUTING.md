@@ -51,24 +51,16 @@ Some files are generated from the source. Run these after you change it, and com
 
 ## Work on the docs site
 
-The site at [archidocs.dev](https://archidocs.dev) is built from `website/`.
+The site at [archidocs.dev](https://archidocs.dev) is built from `website/`. Serve it locally with `pnpm docs:dev`, and test it with `pnpm docs:test`.
 
-| Command | What it does |
-| --- | --- |
-| `pnpm docs:dev` | Serves the site locally and reloads it as you edit. |
-| `pnpm docs:build` | Builds the site into `website/dist/`. It fails on a broken link or an `archidocs` command the CLI wouldn't accept. |
-| `pnpm docs:test` | Runs the site's tests, including the template and style checks. |
-| `pnpm docs:tutorial` | Follows the tutorial's steps in a temp folder. |
-| `pnpm docs:quick-start` | Follows the quick start's steps in a temp folder. |
-
-Every page follows a template and the style rules in [website/README.md](website/README.md). Read it before you write a page.
+The other commands, the page templates and the style rules are in [website/README.md](website/README.md). Read it before you write a page.
 
 ## Open a pull request
 
 1. Branch from `main`.
 2. Make one change per pull request, with tests for it.
 3. Run the checks above that cover what you changed.
-4. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and `CHANGELOG.md` are made from them, so don't edit the changelog by hand.
+4. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and `CHANGELOG.md` are made from them. Don't edit the changelog by hand.
 5. Open the pull request against `main`. Say what changed and why, and link the issue or ticket it closes.
 
 ## How work is tracked
@@ -77,7 +69,8 @@ Bugs and requests from users arrive as GitHub issues. Planned work is tracked in
 
 - Each feature has a folder, `.scratch/<feature>/`, with its spec in `spec.md`.
 - The spec is split into tickets, one file each: `.scratch/<feature>/issues/<NN>-<slug>.md`.
-- A `Status:` line near the top of each ticket says where it stands: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix` or `done`.
+- A `Status:` line near the top of each ticket says where it stands.
+- Comments on a ticket go at the bottom of its file, under `## Comments`.
 - When a pull request implements a ticket, it sets the ticket's `Status: done` in the same change.
 
 The conventions are in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) and [docs/agents/triage-labels.md](docs/agents/triage-labels.md). Design and product notes are in [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md).

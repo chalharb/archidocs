@@ -25,8 +25,9 @@ The files GitHub and adopters look for by name. The repo has none of them.
 
 ## Comments
 
-**Implementation (agent):** the files, the issue templates, the `help/contributing` page and the README's Development section are in the pull request. Status stays `ready-for-agent` until the maintainer does what an agent can't:
+**Implementation (agent):** the files, the issue templates, the `help/contributing` page and the README's Development section are in the pull request. The `Status:` line is unchanged, because two steps need the maintainer, and an agent can't do them:
 
 1. Name the private channel for conduct reports in `CODE_OF_CONDUCT.md`, in place of the marked placeholder under **Enforcement**. Ticket 01 chose to publish no address, so none was invented.
 2. Turn on private vulnerability reporting under the repo's **Settings › Security**. Until then, the report form that `SECURITY.md` links doesn't accept reports.
-3. After the merge, check that **Insights › Community standards** lists the four files and the issue templates, then set `Status: done`.
+
+Do both before merging, then set `Status: done` in the same pull request. After the merge, **Insights › Community standards** should list the four files and the issue templates.
