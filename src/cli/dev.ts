@@ -5,7 +5,7 @@ import type { AddressInfo } from "node:net";
 import { extname, join, normalize, sep } from "node:path";
 import { serializeBundle, type Issue } from "../core/index.ts";
 import { formatText } from "./format.ts";
-import type { Checkout } from "../workspace/index.ts";
+import { isWorkspaceFile, type Checkout } from "../workspace/index.ts";
 import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
 
 export const DEFAULT_DEV_PORT = 4321;
@@ -154,8 +154,8 @@ export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port =
   });
 
   const watcher: FSWatcher = watch(checkout.root, { recursive: true }, (_event, name) => {
-    // Hidden folders (.git, editor swap files) and node_modules aren't Workspace files.
-    if (name && name.split(/[\\/]/).some((part) => part.startsWith(".") || part === "node_modules")) return;
+    // Only a Workspace file feeds the Bundle. Some platforms give no name, so reload then.
+    if (name && !isWorkspaceFile(name)) return;
     schedule();
   });
 

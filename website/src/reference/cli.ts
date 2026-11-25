@@ -21,6 +21,10 @@ const WORKSPACE_HEADING = "How the Workspace is found";
 /** The section's link, for a command's page and for the troubleshooting entry on a Workspace that is not found. */
 export const WORKSPACE_SECTION = `/${BASE}/#${WORKSPACE_HEADING.toLowerCase().replace(/ /g, "-")}`;
 
+const FILES_HEADING = "Which files are read";
+/** The section's link, for the `dev` page: the rule is `isWorkspaceFile` in `src/core/workspace-files.ts`. */
+export const FILES_SECTION = `/${BASE}/#${FILES_HEADING.toLowerCase().replace(/ /g, "-")}`;
+
 /**
  * Where each command starts the search for its Workspace, as the Checkout
  * module (`findCheckout` in `src/workspace/index.ts`) calls `findWorkspaceRoot`
@@ -137,6 +141,9 @@ export function cliPages(commands: readonly CommandDefinition[] = commandList): 
           ["Command", "Where the search starts"],
           commands.map((c) => [commandLink(c.name), WORKSPACE_SEARCH[c.name as CommandName] ?? "It reads no Workspace."]),
         ),
+        `## ${FILES_HEADING}`,
+        "Under the Workspace's root, a command reads every `.yaml` file, as the Model, and every `.md` file, as an ADR, in any folder. It skips any folder or file whose name starts with `.`, such as `.git`, and any `node_modules` folder. It reads no other file: a `.yml`, `.json` or `.txt` file is not part of the Workspace.",
+        `${list(["check", "build", "export", "mcp", "dev"].map(commandLink))} all read the same files. \`dev\` reloads the page only when one of them changes.`,
         "## Exit codes",
         table(
           ["Code", "Meaning"],
@@ -154,6 +161,7 @@ function commandPage(command: CommandDefinition, order: number): GeneratedPage {
   const seeAlso = [
     ...(SEE_ALSO[command.name as CommandName] ?? []),
     ...(WORKSPACE_SEARCH[command.name as CommandName] === undefined ? [] : [{ href: WORKSPACE_SECTION, title: WORKSPACE_HEADING, why: "where it looks for `workspace.yaml`" }]),
+    ...(command.name === "dev" ? [{ href: FILES_SECTION, title: FILES_HEADING, why: "the files whose changes reload the page" }] : []),
   ];
   return {
     id: `${BASE}/${commandSlug(command.name)}`,

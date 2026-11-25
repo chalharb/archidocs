@@ -172,7 +172,7 @@ export const commands = {
   dev: {
     name: "dev",
     synopsis: ["dev [--workspace <dir>] [--port <n>] [--host <host>]"],
-    description: "Serve the viewer locally and reload it as you edit the Workspace.",
+    description: "Serve the viewer locally and reload it when a `.yaml` or `.md` file in the Workspace changes.",
     arguments: [],
     flags: {
       workspace: { type: "string", value: "<dir>", defaultText: "the Workspace found from the current folder", description: "Where to look for the Workspace." },

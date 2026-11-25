@@ -1,6 +1,6 @@
 # 06: `dev` reloads only on Workspace files, and the docs say which files those are
 
-Status: ready-for-agent
+Status: done
 Blocked by: 03
 Spec: [Workspace checkout](../spec.md)
 
@@ -25,9 +25,9 @@ The one user-visible change in this spec, in its own PR so release-please gives 
 
 ## Acceptance criteria
 
-- [ ] `grep -rn 'startsWith(".")' src` finds only `core/workspace-files.ts`.
-- [ ] `archidocs dev` doesn't reload on a non-Workspace file, and does on a `.yaml` or `.md` one.
-- [ ] The usage text and the generated `dev` page show the new description.
-- [ ] The CLI reference index has "Which files are read", linked from the `dev` page.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e`, `pnpm docs:test` and `pnpm docs:build` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `grep -rn 'startsWith(".")' src` finds only `core/workspace-files.ts`.
+- [x] `archidocs dev` doesn't reload on a non-Workspace file, and does on a `.yaml` or `.md` one.
+- [x] The usage text and the generated `dev` page show the new description.
+- [x] The CLI reference index has "Which files are read", linked from the `dev` page.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e`, `pnpm docs:test` and `pnpm docs:build` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.

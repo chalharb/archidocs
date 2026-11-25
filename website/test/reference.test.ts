@@ -10,7 +10,7 @@ import { ruleAreas, rules } from "../../src/core/rules.ts";
 import { topics } from "../../src/guide/index.ts";
 import { archidocsArgs, checkMarkdown } from "../src/lib/command-lines.ts";
 import { repoPath } from "../src/lib/repo.ts";
-import { cliPages, commandPath, handWrittenFile, SEE_ALSO, WORKSPACE_SECTION } from "../src/reference/cli.ts";
+import { cliPages, commandPath, FILES_SECTION, handWrittenFile, SEE_ALSO, WORKSPACE_SECTION } from "../src/reference/cli.ts";
 import { generatedPages } from "../src/reference/index.ts";
 import { fieldSections, type JsonSchema } from "../src/reference/json-schema.ts";
 import { captureTools, EXAMPLES, listTools, mcpPages, toolErrors, toolPath } from "../src/reference/mcp.ts";
@@ -227,13 +227,25 @@ describe("generated reference pages", () => {
 
   it("explains on the CLI index how the Workspace is found, and where each command starts looking", () => {
     const [index, ...commandPages] = cliPages();
-    const section = index!.body.slice(index!.body.indexOf("## How the Workspace is found"), index!.body.indexOf("## Exit codes"));
+    const section = index!.body.slice(index!.body.indexOf("## How the Workspace is found"), index!.body.indexOf("## Which files are read"));
     expect(WORKSPACE_SECTION).toBe("/docs/reference/cli/#how-the-workspace-is-found");
     expect(section).toContain(`archidocs: ${NO_WORKSPACE}`);
     for (const command of commandList) expect(section, command.name).toMatch(new RegExp(`^\\| \\[\`archidocs ${command.name}\`\\]`, "m"));
     // Each command that takes --workspace or reads a Workspace links the section; `version` and `guide` read none.
     const linking = commandPages.filter((p) => p.body.includes(`](${WORKSPACE_SECTION})`)).map((p) => p.label);
     expect(linking).toEqual(commandList.map((c) => c.name).filter((name) => name !== "version" && name !== "guide"));
+  });
+
+  it("says on the CLI index which files a command reads, after how the Workspace is found, and links it from dev's page", () => {
+    const [index, ...commandPages] = cliPages();
+    const body = index!.body;
+    expect(body.indexOf("## How the Workspace is found")).toBeLessThan(body.indexOf("## Which files are read"));
+    const section = body.slice(body.indexOf("## Which files are read"), body.indexOf("## Exit codes"));
+    expect(FILES_SECTION).toBe("/docs/reference/cli/#which-files-are-read");
+    for (const text of ["`.yaml`", "`.md`", "`.`", "`node_modules`"]) expect(section).toContain(text);
+    for (const name of ["check", "build", "export", "mcp", "dev"]) expect(section).toContain(`[\`archidocs ${name}\`]`);
+    const linking = commandPages.filter((p) => p.body.includes(`](${FILES_SECTION})`)).map((p) => p.label);
+    expect(linking).toEqual(["dev"]);
   });
 
   it("covers every top-level key of every schema in the Model YAML pages", async () => {
