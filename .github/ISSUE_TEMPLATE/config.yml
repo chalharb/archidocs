@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/chalharb/archidocs/security/advisories/new
+    about: Report it privately. Don't open a public issue.
+  - name: Read the docs
+    url: https://archidocs.dev/docs/help/
+    about: Troubleshooting, the FAQ, and how to get help.
