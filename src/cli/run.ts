@@ -1,25 +1,23 @@
 import { existsSync } from "node:fs";
-import { cp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { readFile, realpath } from "node:fs/promises";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Bundle } from "../schema/bundle.ts";
-import { resolveView, serializeBundle, type AnyView } from "../core/index.ts";
-import { directions, layoutView, renderSequenceSvg, renderSvg, themes, type Direction, type Theme } from "../render/index.ts";
-import { renderPngInNode } from "../render/node.ts";
+import { directions, type Direction } from "../render/layout.ts";
+import { themes, type Theme } from "../render/tokens.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitTopLevel } from "../git.ts";
 import { findCheckout, type Checkout } from "../workspace/index.ts";
+import { build, buildHistory, check, diff, exportViews } from "../commands/index.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { authoringGuide } from "../guide/index.ts";
 import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
-import { diff } from "../core/index.ts";
-import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, previewSides, publishHistory, publishPreview, resolvePoint, type History, type PreviewSides } from "../history/index.ts";
-import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
+import { DEFAULT_KEEP } from "../history/index.ts";
+import { LATEST_BUNDLE_PATH } from "../revisions/index.ts";
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
-import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
+import { diffFormats, formatDiff, type DiffFormat } from "./diff-format.ts";
 
 /** Where a run of the CLI writes and what it reads instead of `process`: its folder, environment and output streams. */
 export interface Io {
@@ -45,6 +43,10 @@ const VIEWER_DIR = fileURLToPath(new URL("../../dist/viewer/", import.meta.url))
 const PACKAGE_JSON = fileURLToPath(new URL("../../package.json", import.meta.url));
 
 const usage = usageText();
+
+const NOT_IN_GIT = "History needs the Workspace in a git repository.";
+
+const viewerMissing = (viewerDir: string) => `The viewer is not built (no ${viewerDir}); run \`pnpm build\` first.`;
 
 /**
  * Runs one CLI command and returns its exit code. It never throws: an error is
@@ -92,7 +94,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     const { values } = parseCommand("check", rest);
     const format = values.format as Format;
     if (!formats.includes(format)) throw new UsageError(`Unknown format "${values.format}"; use ${formats.join(", ")}.`);
-    const { issues } = await (await checkoutFrom(io.cwd)).load();
+    const { issues } = await check(await checkoutFrom(io.cwd));
     io.stdout.write(formatIssues(issues, format, { color: useColor(io) }));
     return exitCodeFor(issues, { strict: values.strict });
   }
@@ -104,42 +106,38 @@ async function main(argv: string[], io: Io): Promise<number> {
     const keep = values.keep === undefined ? DEFAULT_KEEP : values.keep === "all" ? "all" : Number(values.keep);
     if (keep !== "all" && !(Number.isInteger(keep) && keep >= 0)) throw new UsageError(`--keep "${values.keep}" is not a count or all.`);
     if (values["bundle-only"] && values.keep !== undefined) throw new UsageError("--keep only applies to a site; --bundle-only writes no past Bundles.");
-    const checkout = await checkoutFrom(io.cwd);
-    const { bundle, issues } = await checkout.load();
-    if (issues.some((i) => i.severity === "error")) {
-      io.stdout.write(formatText(issues, { color: useColor(io) }));
-      io.stderr.write(`Not writing the ${values["bundle-only"] ? "Bundle" : "site"}: the Workspace has errors.\n`);
-      return FOUND_ERRORS;
+    const result = await build(await checkoutFrom(io.cwd), {
+      out: resolve(io.cwd, values.out),
+      viewerDir: VIEWER_DIR,
+      keep,
+      bundleOnly: values["bundle-only"],
+      ...(values.preview ? { preview: values.base === undefined ? {} : { base: values.base } } : {}),
+    });
+    switch (result.kind) {
+      case "errors":
+        io.stdout.write(formatText(result.issues, { color: useColor(io) }));
+        io.stderr.write(`Not writing the ${values["bundle-only"] ? "Bundle" : "site"}: the Workspace has errors.\n`);
+        return FOUND_ERRORS;
+      case "not-in-git":
+        throw new UsageError(NOT_IN_GIT);
+      case "viewer-missing":
+        throw new Error(viewerMissing(result.viewerDir));
+      case "preview":
+        io.stdout.write(`Wrote the preview site to ${values.out}: Compare origin/${result.base} (${result.baseSha.slice(0, 7)}) → PR (${result.headSha.slice(0, 7)})\n`);
+        return OK;
+      case "bundle":
+        io.stdout.write(`Wrote ${join(values.out, LATEST_BUNDLE_PATH)}\n`);
+        return OK;
+      case "site":
+        io.stdout.write(`Wrote the site to ${values.out}\n`);
+        return OK;
     }
-    // A preview finds both sides before writing anything, so a missing base writes no site.
-    let preview: { h: History; sides: PreviewSides } | undefined;
-    if (values.preview) {
-      const h = await historyOf(checkout);
-      preview = { h, sides: await previewSides(h, values.base ?? (await defaultBaseBranch(h.repoRoot))) };
-    }
-    const out = resolve(io.cwd, values.out);
-    if (!values["bundle-only"]) {
-      if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
-      await cp(VIEWER_DIR, out, { recursive: true });
-      // The viewer's exports name the Workspace as `archidocs export` does: by its repo's folder.
-      await writeFile(join(out, SITE_FILE_PATH), JSON.stringify({ workspace: await checkout.name() }) + "\n");
-    }
-    await mkdir(out, { recursive: true });
-    await writeFile(join(out, LATEST_BUNDLE_PATH), serializeBundle(bundle));
-    if (preview) {
-      const { base, baseSha, headSha } = await publishPreview(preview.h, out, preview.sides, bundle);
-      io.stdout.write(`Wrote the preview site to ${values.out}: Compare origin/${base} (${baseSha.slice(0, 7)}) → PR (${headSha.slice(0, 7)})\n`);
-      return OK;
-    }
-    if (!values["bundle-only"]) await writeSiteHistory(checkout, out, keep);
-    io.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, LATEST_BUNDLE_PATH)}\n` : `Wrote the site to ${values.out}\n`);
-    return OK;
   }
   if (command === "dev") {
     const { values } = parseCommand("dev", rest);
     const port = values.port === undefined ? DEFAULT_DEV_PORT : Number(values.port);
     if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`--port "${values.port}" is not a port.`);
-    if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
+    if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(viewerMissing(VIEWER_DIR));
     const checkout = await checkoutFrom(values.workspace === undefined ? io.cwd : resolve(io.cwd, values.workspace));
     const color = useColor(io);
     const dev = await serveDev({
@@ -175,39 +173,27 @@ async function main(argv: string[], io: Io): Promise<number> {
     const theme = values.theme as Theme;
     if (!themes.includes(theme)) throw new UsageError(`Unknown theme "${values.theme}"; use ${themes.join(" or ")}.`);
     const { label } = values;
-    const checkout = await checkoutFrom(io.cwd);
-    const { bundle, issues } = await checkout.load();
-    if (issues.some((i) => i.severity === "error")) {
-      io.stdout.write(formatText(issues, { color: useColor(io) }));
-      io.stderr.write("Not exporting: the Workspace has errors.\n");
-      return FOUND_ERRORS;
+    const result = await exportViews(await checkoutFrom(io.cwd), {
+      views: allSaved ? "all-saved" : [viewId!],
+      format,
+      ...(direction === undefined ? {} : { direction }),
+      theme,
+      ...(label === undefined ? {} : { label }),
+      out: allSaved ? resolve(io.cwd, values.out!) : io.cwd,
+      ...(!allSaved && values.out !== undefined ? { file: resolve(io.cwd, values.out) } : {}),
+    });
+    switch (result.kind) {
+      case "errors":
+        io.stdout.write(formatText(result.issues, { color: useColor(io) }));
+        io.stderr.write("Not exporting: the Workspace has errors.\n");
+        return FOUND_ERRORS;
+      case "unknown-view":
+        throw new UsageError(`Unknown View "${result.id}"; Views are c1, c2, c2/<system>, c3/<service with Components>, deployment/<environment> and Saved Views (project:view-id).`);
+      case "written":
+        // Each picture as the user named it: under --out, or --out itself, or its own name in the current folder.
+        for (const { path } of result.files) io.stdout.write(`Wrote ${allSaved ? join(values.out!, basename(path)) : (values.out ?? basename(path))}\n`);
+        return OK;
     }
-    const workspace = await checkout.name();
-    const fileName = (id: string) => `${id.replace(/[/:]/g, "-")}.${format}`;
-    const source = { workspace, commit: bundle.commit, date: bundle.builtAt };
-    const write = async (svg: string, out: string) => {
-      await writeFile(resolve(io.cwd, out), format === "svg" ? svg : await renderPngInNode(svg));
-      io.stdout.write(`Wrote ${out}\n`);
-    };
-    /** Lays out and draws one View: a Dynamic View as a sequence chart, any other as a diagram; `--direction` wins over the View's own. */
-    const draw = async (view: AnyView, out: string) => {
-      if (view.kind === "dynamic") return write(renderSequenceSvg({ bundle, view, source, theme, label }), out);
-      const layout = await layoutView(view, direction === undefined ? {} : { direction });
-      await write(renderSvg({ bundle, view, layout, source, theme, label }), out);
-    };
-
-    if (allSaved) {
-      await mkdir(resolve(io.cwd, values.out!), { recursive: true });
-      for (const saved of bundle.views) {
-        const view = resolveView(bundle, saved.id);
-        if (view) await draw(view, join(values.out!, fileName(saved.id)));
-      }
-      return OK;
-    }
-    const view = resolveView(bundle, viewId!);
-    if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components>, deployment/<environment> and Saved Views (project:view-id).`);
-    await draw(view, values.out ?? fileName(viewId!));
-    return OK;
   }
   if (command === "diff") {
     const { values, positionals } = parseCommand("diff", rest);
@@ -216,26 +202,19 @@ async function main(argv: string[], io: Io): Promise<number> {
     const [fromPoint, toPoint, ...extra] = positionals;
     if (fromPoint === undefined) throw new UsageError("Give the point to diff from: a ref or a date.");
     if (extra.length > 0) throw new UsageError(`Give at most two points; got ${positionals.join(", ")}.`);
-    const checkout = await checkoutFrom(io.cwd);
-    const h = await historyOf(checkout);
-    /** A point's Bundle; with no point, the working tree's. */
-    const side = async (point: string | undefined): Promise<[DiffSide, Bundle]> => {
-      if (point === undefined) return [{ point: "working tree", commit: null }, (await checkout.load()).bundle];
-      const commit = await resolvePoint(h.repoRoot, point);
-      if (!commit) throw new UsageError(`Unknown ref or date "${point}"; a date resolves to the last default-branch commit at or before it.`);
-      return [{ point, commit }, (await bundleAt(h, commit)).bundle];
-    };
-    const [from, before] = await side(fromPoint);
-    const [to, after] = await side(toPoint);
-    io.stdout.write(formatDiff(diff(before, after), from, to, format));
+    const result = await diff(await checkoutFrom(io.cwd), toPoint === undefined ? { from: fromPoint } : { from: fromPoint, to: toPoint });
+    if (result.kind === "not-in-git") throw new UsageError(NOT_IN_GIT);
+    if (result.kind === "unknown-point") throw new UsageError(`Unknown ref or date "${result.point}"; a date resolves to the last default-branch commit at or before it.`);
+    io.stdout.write(formatDiff(result.changes, result.from, result.to, format));
     return OK;
   }
   if (command === "history") {
     const [sub, ...args] = rest;
     if (sub !== "build") throw new UsageError(sub ? `Unknown history command "${sub}".` : "Give a history command: build.");
     const { values } = parseCommand("history build", args);
-    const h = await historyOf(await checkoutFrom(io.cwd));
-    const { revisions, built } = await buildHistory(h, values.since === undefined ? {} : { since: values.since });
+    const result = await buildHistory(await checkoutFrom(io.cwd), values.since === undefined ? {} : { since: values.since });
+    if (result.kind === "not-in-git") throw new UsageError(NOT_IN_GIT);
+    const { revisions, built } = result;
     const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
     io.stdout.write(`Built ${plural(built, "Revision")}; ${revisions - built} of ${revisions} already built.\n`);
     return OK;
@@ -280,21 +259,4 @@ async function checkoutFrom(start: string): Promise<Checkout> {
   const checkout = await findCheckout(start);
   if (!checkout) throw new UsageError(NO_WORKSPACE);
   return checkout;
-}
-
-/** The Checkout's history; it must be in a git repo. */
-async function historyOf(checkout: Checkout): Promise<History> {
-  const repo = await checkout.repo();
-  if (!repo) throw new UsageError("History needs the Workspace in a git repository.");
-  return repo.history;
-}
-
-/** The site's past Bundles and Revision index; outside git, an empty index, so the viewer knows there is no history. */
-async function writeSiteHistory(checkout: Checkout, out: string, keep: number | "all") {
-  const repo = await checkout.repo();
-  if (repo) await publishHistory(repo.history, out, { keep });
-  else {
-    await mkdir(dirname(join(out, INDEX_PATH)), { recursive: true });
-    await writeFile(join(out, INDEX_PATH), JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: [] }, null, 2) + "\n");
-  }
 }
