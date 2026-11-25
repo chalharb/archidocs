@@ -11,66 +11,68 @@
         "rejected",
         "deprecated",
         "superseded"
-      ]
+      ],
+      "description": "Where the decision stands. `proposed`: awaiting acceptance in a pull request. `accepted`: in force. `rejected`: turned down, and kept for its reasoning. `deprecated`: no longer in force, with no ADR replacing it. `superseded`: never written by hand; it is derived once an accepted ADR lists this one in `supersedes`."
     },
     "date": {
       "type": "string",
       "format": "date",
       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-      "description": "The date of the last status change"
+      "description": "The date of the last status change, as `YYYY-MM-DD`."
     },
     "decision-makers": {
+      "description": "Who made the decision: people's names or Team ids. Not checked.",
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "People or Team ids; not checked"
+      }
     },
     "consulted": {
+      "description": "Who was asked for input: people's names or Team ids. Not checked.",
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "People or Team ids; not checked"
+      }
     },
     "informed": {
+      "description": "Who was told of the decision: people's names or Team ids. Not checked.",
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "People or Team ids; not checked"
+      }
     },
     "tags": {
+      "description": "Free-form labels for the ADR.",
       "type": "array",
       "items": {
         "type": "string"
       }
     },
     "elements": {
-      "description": "Elements and Deployment Targets the decision affects",
+      "description": "The Elements and Deployment Targets the decision affects, each as an id in this Project or `project:id`.",
       "type": "array",
       "items": {
         "type": "string",
         "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-        "description": "An id in this Project, or `project:id` for one in another Project"
+        "description": "An id in this Project, or `project:id` for one in another Project."
       }
     },
     "views": {
-      "description": "Saved Views the decision affects",
+      "description": "The Saved Views the decision affects, each as an id in this Project or `project:id`.",
       "type": "array",
       "items": {
         "type": "string",
         "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-        "description": "An id in this Project, or `project:id` for one in another Project"
+        "description": "An id in this Project, or `project:id` for one in another Project."
       }
     },
     "supersedes": {
-      "description": "ADRs this one replaces once accepted",
+      "description": "The ADRs this one replaces once it is accepted, each as a four-digit number in this Project or `project:NNNN`. Only an accepted or deprecated ADR can be superseded.",
       "type": "array",
       "items": {
         "type": "string",
         "pattern": "^([a-z0-9][a-z0-9-]*:)?\\d{4}$",
-        "description": "An ADR number in this Project, or `project:NNNN` for one in another Project"
+        "description": "An ADR number in this Project, or `project:NNNN` for one in another Project."
       }
     }
   },
@@ -78,5 +80,6 @@
     "status",
     "date"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "An ADR's frontmatter. The ADR's title is the first `# ` heading of its body, not a field."
 }

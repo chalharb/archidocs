@@ -20,6 +20,14 @@ describe("the built site", () => {
     for (const rule of rules) expect(existsSync(file(`docs/reference/rules/${rule.id}/index.html`)), rule.id).toBe(true);
   });
 
+  it("shows what check prints and why on a rule's page, and groups the rule index by area", () => {
+    const page = read("docs/reference/rules/unknown-element.md");
+    expect(page).toContain('```text\nshop/cart.yaml:4:9  error  unknown-element  Unknown Element "chekout" in Project "shop"; did you mean "checkout"?\n```');
+    expect(page).toMatch(/^## Why$/m);
+    const index = read("docs/reference/rules/index.html");
+    for (const area of ["workspace", "elements", "relationships", "deployments", "views", "decisions"]) expect(index).toContain(`<h2 id="${area}"`);
+  });
+
   it("has llms.txt, llms-full.txt and llms-small.txt, the small one without the Examples and the Changelog", () => {
     const index = read("llms.txt");
     expect(index).toContain("archidocs guide");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveView } from "../../src/core/index.ts";
+import { structuralView } from "../support/views.ts";
 import { layoutView, PALETTES, renderSvg, type RenderSource } from "../../src/render/index.ts";
 import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
@@ -19,7 +19,7 @@ const source: RenderSource = { workspace: "acme-architecture", commit: "01234567
 
 async function render(files: Files, viewId: string) {
   const { bundle } = await loadWorkspace(files);
-  const view = resolveView(bundle, viewId)!;
+  const view = structuralView(bundle, viewId)!;
   return renderSvg({ bundle, view, layout: await layoutView(view), source });
 }
 
@@ -65,7 +65,7 @@ describe("renderSvg", () => {
 
   it("uses the viewer's light tokens by default and its Night shift tokens with the dark theme", async () => {
     const { bundle } = await loadWorkspace(workspace);
-    const view = resolveView(bundle, "c2/shop:checkout")!;
+    const view = structuralView(bundle, "c2/shop:checkout")!;
     const layout = await layoutView(view);
     const light = renderSvg({ bundle, view, layout, source });
     const dark = renderSvg({ bundle, view, layout, source, theme: "dark" });
@@ -79,7 +79,7 @@ describe("renderSvg", () => {
 
   it("replaces the source line with a label", async () => {
     const { bundle } = await loadWorkspace(workspace);
-    const view = resolveView(bundle, "c1")!;
+    const view = structuralView(bundle, "c1")!;
     const svg = renderSvg({ bundle, view, layout: await layoutView(view), source, label: "Big Bank · v1.2.0" });
 
     expect(texts(svg).slice(0, 2)).toEqual(["C1 Landscape", "Big Bank · v1.2.0"]);
@@ -162,7 +162,7 @@ describe("renderSvg with a Lens", () => {
 describe("a Deployment View", () => {
   async function renderDeployment() {
     const { bundle } = await loadWorkspace(deploymentViewWorkspace);
-    const view = resolveView(bundle, "deployment/prod")!;
+    const view = structuralView(bundle, "deployment/prod")!;
     return renderSvg({ bundle, view, layout: await layoutView(view, { direction: view.direction }), source });
   }
 

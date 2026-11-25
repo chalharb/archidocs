@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { listViews, resolveView } from "../../src/core/index.ts";
+import { listViews } from "../../src/core/index.ts";
+import { structuralView } from "../support/views.ts";
 import { deploymentViewWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
@@ -10,11 +11,11 @@ const load = async () => {
 };
 
 /** Edges as `from > to`, for compact assertions. */
-const edges = (view: ReturnType<typeof resolveView>) => view?.edges.map((e) => `${e.from} > ${e.to}`);
+const edges = (view: ReturnType<typeof structuralView>) => view?.edges.map((e) => `${e.from} > ${e.to}`);
 
 describe("the Deployment View of an Environment", () => {
   it("nests Targets as containers, with each System's Deployments in a System box inside each Target", async () => {
-    const view = resolveView(await load(), "deployment/prod");
+    const view = structuralView(await load(), "deployment/prod");
 
     expect(view).toMatchObject({ id: "deployment/prod", kind: "deployment", title: "Production (Deployment)", direction: "TB" });
     expect(view?.nodes.map((n) => [n.id, n.kind, n.parent, n.element ?? null])).toEqual([
@@ -42,7 +43,7 @@ describe("the Deployment View of an Environment", () => {
   });
 
   it("connects a consumer Deployment to the provider Deployments under their deepest shared Target", async () => {
-    const view = resolveView(await load(), "deployment/prod");
+    const view = structuralView(await load(), "deployment/prod");
 
     expect(edges(view)).toContain("shop:web@platform:ns-shop > shop:cart@platform:ns-shop");
     expect(edges(view)).toContain("shop:web@platform:eks-us > shop:cart@platform:eks-us");
@@ -53,7 +54,7 @@ describe("the Deployment View of an Environment", () => {
   });
 
   it("connects to every provider Deployment in the Environment when no Target is shared", async () => {
-    const view = resolveView(await load(), "deployment/prod");
+    const view = structuralView(await load(), "deployment/prod");
 
     expect(edges(view)?.filter((e) => e.startsWith("shop:analytics"))).toEqual([
       "shop:analytics@platform:dc > payments:payments-api@platform:eks-us",
@@ -62,7 +63,7 @@ describe("the Deployment View of an Environment", () => {
   });
 
   it("draws a related Service with no Deployment in the Environment, such as an External provider, as a logical node outside every Target", async () => {
-    const view = resolveView(await load(), "deployment/prod");
+    const view = structuralView(await load(), "deployment/prod");
 
     expect(view?.nodes.find((n) => n.id === "payments:stripe")).toMatchObject({ kind: "service", parent: null, external: true });
     expect(edges(view)?.filter((e) => e.endsWith("payments:stripe"))).toEqual([
@@ -75,7 +76,7 @@ describe("the Deployment View of an Environment", () => {
   });
 
   it("holds only that Environment's Deployments", async () => {
-    const view = resolveView(await load(), "deployment/staging");
+    const view = structuralView(await load(), "deployment/staging");
 
     expect(view?.nodes.map((n) => n.id)).toEqual(["platform:aws-eu", "platform:eks-eu", "shop:cart", "shop:checkout@platform:eks-eu", "shop:search", "shop:web@platform:eks-eu"]);
     expect(edges(view)).toEqual(["shop:web@platform:eks-eu > shop:cart", "shop:web@platform:eks-eu > shop:search"]);
@@ -89,7 +90,7 @@ describe("the Deployment View of an Environment", () => {
     ]);
     expect(listViews(bundle, { element: "shop:analytics" }).map((v) => v.id)).toContain("deployment/prod");
     expect(listViews(bundle, { element: "shop:analytics" }).map((v) => v.id)).not.toContain("deployment/staging");
-    expect(resolveView(bundle, "deployment/qa")).toBeUndefined();
+    expect(structuralView(bundle, "deployment/qa")).toBeUndefined();
   });
 });
 
@@ -104,7 +105,7 @@ describe("a Saved Deployment View", () => {
       targets: [platform:aws-eu]
 `);
     expect(issues.filter((i) => i.severity === "error")).toEqual([]);
-    const view = resolveView(bundle, "shop:eu");
+    const view = structuralView(bundle, "shop:eu");
 
     expect(view).toMatchObject({ id: "shop:eu", kind: "deployment", title: "EU", direction: "TB" });
     expect(view?.nodes.map((n) => n.id)).toEqual([
@@ -132,7 +133,7 @@ describe("a Saved Deployment View", () => {
       exclude: [search]
       direction: LR
 `);
-    const view = resolveView(bundle, "shop:checkout");
+    const view = structuralView(bundle, "shop:checkout");
 
     expect(view?.direction).toBe("LR");
     expect(view?.nodes.filter((n) => n.kind === "deployment").map((n) => n.id)).toEqual([
@@ -148,7 +149,7 @@ describe("a Saved Deployment View", () => {
 describe("a Lens over a Deployment View", () => {
   it("marks every Deployment of a Service the Lens reaches, and lights edges as on any View", async () => {
     const bundle = await load();
-    const view = resolveView(bundle, "deployment/prod", { lens: { impact: "payments:payments-api", direction: "upstream" } });
+    const view = structuralView(bundle, "deployment/prod", { lens: { impact: "payments:payments-api", direction: "upstream" } });
     const hit = view?.nodes.filter((n) => n.mark?.hit).map((n) => [n.id, n.mark?.distance]);
 
     expect(hit).toEqual([
@@ -165,7 +166,7 @@ describe("a Lens over a Deployment View", () => {
   });
 
   it("with a Team Lens, also rings the Deployment Targets the Team owns", async () => {
-    const view = resolveView(await load(), "deployment/prod", { lens: { team: "platform-team" } });
+    const view = structuralView(await load(), "deployment/prod", { lens: { team: "platform-team" } });
 
     expect(view?.nodes.filter((n) => n.mark?.hit).map((n) => n.id)).toEqual(["platform:aws-eu", "platform:aws-us", "platform:dc", "platform:eks-eu", "platform:eks-us", "platform:ns-pay", "platform:ns-shop"]);
   });

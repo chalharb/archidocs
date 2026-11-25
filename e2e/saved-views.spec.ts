@@ -3,7 +3,8 @@ import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { expect, test, type Download, type Page } from "@playwright/test";
 import { parse } from "yaml";
-import { load, nodeFileSystem, resolveView } from "../src/core/index.ts";
+import { load, nodeFileSystem } from "../src/core/index.ts";
+import { structuralView } from "../test/support/views.ts";
 import { checkoutSource, createServer } from "../src/mcp/index.ts";
 import { viewerWorkspace } from "../test/support/fixtures.ts";
 import { writeWorkspace, type Files } from "../test/support/workspace.ts";
@@ -28,7 +29,7 @@ async function resolvedIds(extra: Files, id: string): Promise<string[]> {
   const { repoRoot, root } = await writeWorkspace({ ...viewerWorkspace, ...extra });
   const { bundle, issues } = await load({ fs: nodeFileSystem(), root, repoRoot });
   expect(issues.filter((i) => i.severity === "error")).toEqual([]);
-  return resolveView(bundle, id)!.nodes.map((n) => n.id).sort();
+  return structuralView(bundle, id)!.nodes.map((n) => n.id).sort();
 }
 
 /** Runs the upsert_view call against a checkout of the fixture Workspace through MCP, then resolves what it wrote. */
@@ -46,7 +47,7 @@ async function upsertedIds(call: { tool: string; arguments: Record<string, unkno
     await client.close();
   }
   const { bundle } = await load({ fs: nodeFileSystem(), root, repoRoot });
-  return resolveView(bundle, id)!.nodes.map((n) => n.id).sort();
+  return structuralView(bundle, id)!.nodes.map((n) => n.id).sort();
 }
 
 const text = async (download: Download) => readFile((await download.path())!, "utf8");

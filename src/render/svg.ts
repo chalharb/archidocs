@@ -1,5 +1,4 @@
-import type { ResolvedView, ViewEdge, ViewNode } from "../core/views.ts";
-import { describeLens } from "../core/saved-views.ts";
+import { describeLens, type ResolvedView, type ViewEdge, type ViewNode } from "../core/views/index.ts";
 import type { Bundle, BundleElement, BundleLens } from "../schema/bundle.ts";
 import { FONT_FAMILY, FONTS } from "./font.ts";
 import type { Layout, LaidOutNode } from "./layout.ts";

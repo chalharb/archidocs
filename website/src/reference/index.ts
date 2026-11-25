@@ -10,5 +10,5 @@ import { agentGuidePages, changelogPage, glossaryPage } from "./text-sources.ts"
 export type { GeneratedPage } from "./page.ts";
 
 export async function generatedPages(): Promise<GeneratedPage[]> {
-  return [...cliPages(), ...modelPages(), ...(await mcpPages()), ...ciPages(), ...rulePages(), ...agentGuidePages(), glossaryPage(), changelogPage()];
+  return [...cliPages(), ...modelPages(), ...(await mcpPages()), ...ciPages(), ...(await rulePages()),...agentGuidePages(), glossaryPage(), changelogPage()];
 }

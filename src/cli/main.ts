@@ -4,14 +4,14 @@ import { cp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Bundle } from "../schema/bundle.ts";
-import { findWorkspaceRoot, load, nodeFileSystem, resolveDynamicView, resolveView, serializeBundle, type ResolvedDynamicView, type ResolvedView } from "../core/index.ts";
+import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle, type AnyView } from "../core/index.ts";
 import { directions, layoutView, renderSequenceSvg, renderSvg, themes, type Direction, type Theme } from "../render/index.ts";
 import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitHead, gitTopLevel } from "../git.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { authoringGuide } from "../guide/index.ts";
-import { parseCommand, usageText } from "./commands.ts";
+import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
@@ -20,10 +20,8 @@ import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, history, previ
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
 
-/** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
-const OK = 0;
-const FOUND_ERRORS = 1;
-const COULD_NOT_RUN = 2;
+/** Exit codes, shared with the command definitions that document them: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
+const { ok: OK, foundErrors: FOUND_ERRORS, couldNotRun: COULD_NOT_RUN } = EXIT;
 
 class UsageError extends Error {}
 
@@ -169,23 +167,22 @@ async function main(argv: string[]): Promise<number> {
       process.stdout.write(`Wrote ${out}\n`);
     };
     /** Lays out and draws one View: a Dynamic View as a sequence chart, any other as a diagram. */
-    const draw = async (view: ResolvedView | ResolvedDynamicView, out: string) => {
+    const draw = async (view: AnyView, out: string) => {
       if (view.kind === "dynamic") return write(renderSequenceSvg({ bundle, view, source, theme, label }), out);
       const chosen = direction ?? view.direction;
       const layout = await layoutView(view, chosen === undefined ? {} : { direction: chosen });
       await write(renderSvg({ bundle, view, layout, source, theme, label }), out);
     };
-    const resolveAny = (id: string) => resolveDynamicView(bundle, id) ?? resolveView(bundle, id);
 
     if (allSaved) {
       await mkdir(resolve(values.out!), { recursive: true });
       for (const saved of bundle.views) {
-        const view = resolveAny(saved.id);
+        const view = resolveView(bundle, saved.id);
         if (view) await draw(view, join(values.out!, fileName(saved.id)));
       }
       return OK;
     }
-    const view = resolveAny(viewId!);
+    const view = resolveView(bundle, viewId!);
     if (!view) throw new UsageError(`Unknown View "${viewId}"; Views are c1, c2, c2/<system>, c3/<service with Components>, deployment/<environment> and Saved Views (project:view-id).`);
     await draw(view, values.out ?? fileName(viewId!));
     return OK;
@@ -262,7 +259,7 @@ async function workspaceName(root: string): Promise<string> {
 
 async function workspaceRoot(start: string): Promise<string> {
   const root = await findWorkspaceRoot(nodeFileSystem(), start);
-  if (!root) throw new UsageError("No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.");
+  if (!root) throw new UsageError(NO_WORKSPACE);
   return root;
 }
 

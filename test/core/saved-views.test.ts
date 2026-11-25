@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { listViews, resolveView } from "../../src/core/index.ts";
+import { listViews } from "../../src/core/index.ts";
+import { structuralView } from "../support/views.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
 
@@ -11,16 +12,16 @@ const withViews = (views: string, extra: Files = {}): Files => ({
 });
 
 /** A View's nodes as `[id, parent, collapsed]` and edges as `[from, to]`, for compact assertions. */
-const shape = (view: ReturnType<typeof resolveView>) => ({
+const shape = (view: ReturnType<typeof structuralView>) => ({
   nodes: view?.nodes.map((n) => [n.id, n.parent, n.collapsed]),
   edges: view?.edges.map((e) => [e.from, e.to]),
 });
 
-const nodeIds = (view: ReturnType<typeof resolveView>) => view?.nodes.map((n) => n.id);
+const nodeIds = (view: ReturnType<typeof structuralView>) => view?.nodes.map((n) => n.id);
 
 async function resolved(views: string, id = "shop:v", extra: Files = {}) {
   const { bundle, issues } = await loadWorkspace(withViews(views, extra));
-  return { bundle, issues, view: resolveView(bundle, id) };
+  return { bundle, issues, view: structuralView(bundle, id) };
 }
 
 describe("Saved Views in the Bundle", () => {
@@ -119,7 +120,7 @@ describe("resolving a Saved View", () => {
   title: Everything
   level: c1`);
 
-    expect(shape(view)).toEqual(shape(resolveView(bundle, "c1")));
+    expect(shape(view)).toEqual(shape(structuralView(bundle, "c1")));
   });
 
   it("is listed beside the Generated Views, with its level as its kind", async () => {
@@ -294,8 +295,8 @@ describe("expand and collapse", () => {
 });
 
 describe("the Lens", () => {
-  const marks = (view: ReturnType<typeof resolveView>) => Object.fromEntries(view!.nodes.map((n) => [n.id, n.mark]));
-  const lit = (view: ReturnType<typeof resolveView>) => view!.edges.filter((e) => e.lit).map((e) => [e.from, e.to]);
+  const marks = (view: ReturnType<typeof structuralView>) => Object.fromEntries(view!.nodes.map((n) => [n.id, n.mark]));
+  const lit = (view: ReturnType<typeof structuralView>) => view!.edges.filter((e) => e.lit).map((e) => [e.from, e.to]);
 
   it("never changes which nodes the View holds", async () => {
     const plain = await resolved(`v:\n  title: All\n  level: c2`);

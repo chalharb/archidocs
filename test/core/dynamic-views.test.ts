@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { dynamicViewsUsing, listViews, resolveDynamicView, stepViews } from "../../src/core/index.ts";
+import { dynamicViewsUsing, listViews, stepViews } from "../../src/core/index.ts";
+import { dynamicView } from "../support/views.ts";
 import { checkoutScenarioWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
 
@@ -70,7 +71,7 @@ const withDynamic = (views: string, extra: Files = {}): Files => ({
 
 async function resolved(views: string, extra: Files = {}) {
   const { bundle, issues } = await loadWorkspace(withDynamic(views, extra));
-  return { bundle, issues, view: resolveDynamicView(bundle, "shop:flow") };
+  return { bundle, issues, view: dynamicView(bundle, "shop:flow") };
 }
 
 /** Steps as `[n, kind, from, to, description]`, for compact assertions. */
@@ -272,7 +273,7 @@ describe("where a Step leads", () => {
   async function fullCheckout(extra: Files = {}) {
     const { bundle, issues } = await loadWorkspace({ ...checkoutScenarioWorkspace, ...extra });
     expect(issues).toEqual([]);
-    const view = resolveDynamicView(bundle, "shop:full-checkout")!;
+    const view = dynamicView(bundle, "shop:full-checkout")!;
     return { bundle, step: (n: number) => view.steps.find((s) => s.n === n)! };
   }
 
@@ -318,7 +319,7 @@ views:
         - { from: ui, to: store }
 `,
     });
-    const view = resolveDynamicView(bundle, "shop:flow")!;
+    const view = dynamicView(bundle, "shop:flow")!;
     expect(stepViews(bundle, view.steps[0]!)).toEqual(["c3/shop:cart", "c2/shop:checkout", "c2"]);
   });
 

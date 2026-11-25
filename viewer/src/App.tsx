@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Bundle } from "../../src/schema/bundle.ts";
-import { compareView, unionBundle } from "../../src/core/compare.ts";
+import { unionBundle } from "../../src/core/compare.ts";
 import { diff, type Change } from "../../src/core/diff.ts";
-import type { ResolvedStep } from "../../src/core/dynamic-views.ts";
+import { compareView, type ResolvedStep } from "../../src/core/views/index.ts";
 import { AdrReader } from "./AdrReader.tsx";
 import { Canvas } from "./Canvas.tsx";
 import { DynamicScreen } from "./DynamicScreen.tsx";

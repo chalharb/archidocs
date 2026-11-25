@@ -1,6 +1,6 @@
 import ElkBundled from "elkjs/lib/elk.bundled.js";
 import type { ELK, ElkExtendedEdge, ElkNode, LayoutOptions } from "elkjs/lib/elk-api.js";
-import type { ResolvedView, ViewNode } from "../core/views.ts";
+import type { ResolvedView, ViewNode } from "../core/views/index.ts";
 import { textWidth } from "./text.ts";
 
 /** Which way a View's edges flow: top to bottom, bottom to top, left to right or right to left. */

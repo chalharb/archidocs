@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { resolveDynamicView } from "../../src/core/index.ts";
+import { dynamicView } from "../support/views.ts";
 import { renderSequenceSvg, type RenderSource } from "../../src/render/index.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { checkoutScenarioWorkspace } from "../support/fixtures.ts";
@@ -12,7 +12,7 @@ beforeAll(async () => {
   ({ bundle } = await loadWorkspace(checkoutScenarioWorkspace));
 });
 
-const render = (id: string, brokers = false) => renderSequenceSvg({ bundle, view: resolveDynamicView(bundle, id)!, source, brokers });
+const render = (id: string, brokers = false) => renderSequenceSvg({ bundle, view: dynamicView(bundle, id)!, source, brokers });
 
 /** The text a reader sees, one string per `<text>` element, entities decoded. */
 const texts = (svg: string) => [...svg.matchAll(/<text[^>]*>(.*?)<\/text>/g)].map((m) => m[1]!.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&"));

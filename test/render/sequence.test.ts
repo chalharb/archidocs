@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { resolveDynamicView, type ResolvedDynamicView } from "../../src/core/index.ts";
+import { type ResolvedDynamicView } from "../../src/core/index.ts";
+import { dynamicView } from "../support/views.ts";
 import { layoutSequence, sequenceMessages, SEQUENCE, type SequenceLayout } from "../../src/render/index.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { checkoutScenarioWorkspace } from "../support/fixtures.ts";
@@ -13,7 +14,7 @@ beforeAll(async () => {
   const loaded = await loadWorkspace(checkoutScenarioWorkspace);
   expect(loaded.issues).toEqual([]);
   bundle = loaded.bundle;
-  view = resolveDynamicView(bundle, "shop:full-checkout")!;
+  view = dynamicView(bundle, "shop:full-checkout")!;
 });
 
 const api = "shop:checkout-api";

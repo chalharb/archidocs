@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ResolvedView } from "../../src/core/views.ts";
+import type { ResolvedView } from "../../src/core/views/index.ts";
 import type { Direction, Layout } from "../../src/render/layout.ts";
 
 export interface LayoutRequest {

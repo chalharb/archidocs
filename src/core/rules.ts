@@ -1,17 +1,19 @@
 import type { Bundle } from "../schema/bundle.ts";
 import type { Files } from "./files.ts";
-import { generatedViews, MAX_VIEW_NODES } from "./views.ts";
-import { resolveSaved, type SavedResolution } from "./saved-views.ts";
+import { checkView, generatedViews, MAX_VIEW_NODES, parseViewId, type DynamicProblem, type DynamicResolution, type SavedResolution } from "./views/index.ts";
 import { Id, parentKindOf, type ElementKind } from "../schema/workspace.ts";
 import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, RelationshipDecl, Severity, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
 import { qualified, qualify, referenceResolver, type Resolved } from "./refs.ts";
 import type { BundleDynamicView, BundleStructuralView } from "../schema/bundle.ts";
-import { resolveDynamic, type DynamicProblem, type DynamicResolution } from "./dynamic-views.ts";
 import { didYouMean } from "./suggest.ts";
 import type { AdrDecl } from "./model.ts";
 import { AdrFrontmatter } from "../schema/adr.ts";
 import { checkSchema } from "./schema-check.ts";
 import { qualifyAdr } from "./adr.ts";
+
+/** The part of the Model a rule is about, in the order the docs list them. Every rule is in exactly one. */
+export const ruleAreas = ["workspace", "elements", "relationships", "deployments", "views", "decisions"] as const;
+export type RuleArea = (typeof ruleAreas)[number];
 
 /**
  * A check rule. Its examples are small Workspaces (paths relative to the
@@ -21,8 +23,15 @@ import { qualifyAdr } from "./adr.ts";
 export interface RuleDefinition {
   id: string;
   severity: Severity;
+  area: RuleArea;
+  /** The release that first shipped the rule, such as `"1.0.0"`. */
+  since: `${number}.${number}.${number}`;
   summary: string;
+  /** What goes wrong for a reader of the Model without the rule, in one or two sentences. */
+  why: string;
   fix: string;
+  /** Other rules worth reading with this one, by id. */
+  related?: readonly string[];
   example: { failing: Files; passing: Files };
   /** `bundle` is the Bundle built from the same Workspace, for rules about what it resolves to. */
   check(workspace: LoadedWorkspace, bundle: Bundle): IssueDraft[];
@@ -182,7 +191,7 @@ const resolvedSavedViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDe
     const def = bundledView(decl, bundle);
     if (def?.kind !== "structural") return [];
     if (def.level === "deployment" && !bundle.environments.some((e) => e.id === def.environment)) return [];
-    return [{ decl, def, resolution: resolveSaved(bundle, def) }];
+    return [{ decl, def, resolution: checkView(bundle, def) }];
   });
 
 /** The Bundle definition a View declaration became, if it made it into the Bundle (the first of a repeated id). */
@@ -193,7 +202,7 @@ const bundledView = (decl: ViewDecl, bundle: Bundle) =>
 const resolvedDynamicViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDecl; def: BundleDynamicView; resolution: DynamicResolution }[] =>
   ws.views.flatMap((decl) => {
     const def = bundledView(decl, bundle);
-    return def?.kind === "dynamic" ? [{ decl, def, resolution: resolveDynamic(bundle, def) }] : [];
+    return def?.kind === "dynamic" ? [{ decl, def, resolution: checkView(bundle, def) }] : [];
   });
 
 /** A rule reporting one kind of Dynamic View problem, at the Step or participant it is about. */
@@ -269,8 +278,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "yaml-syntax",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A file can't be parsed as YAML.",
+    why: "Nothing in a file that can't be parsed reaches the Model. Everything it declares goes missing, and every reference to those ids fails as well.",
     fix: "Correct the YAML syntax at the reported position.",
+    related: ["invalid-adr-frontmatter"],
     example: {
       failing: withServices("services:\n  web:\n    name: [Web\n"),
       passing: withServices("services:\n  web:\n    name: Web\n"),
@@ -284,8 +297,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-field",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A key isn't in the schema.",
+    why: "A key the schema doesn't know is almost always a misspelling. If it were ignored, the Model would quietly lack what the author meant to declare, such as a Service's `technology`.",
     fix: "Remove the key, or correct its spelling to the suggested field.",
+    related: ["missing-field", "invalid-value"],
     example: {
       failing: withServices("services:\n  web:\n    name: Web\n    techology: Go\n"),
       passing: withServices("services:\n  web:\n    name: Web\n    technology: Go\n"),
@@ -295,8 +312,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "missing-field",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A required field is absent.",
+    why: "A required field is one the rest of the Model relies on, such as the `name` an Element is shown by or the `to` of a Relationship. Without it the declaration can't be drawn or resolved.",
     fix: "Add the missing field.",
+    related: ["unknown-field", "invalid-value"],
     example: {
       failing: withServices("services:\n  web:\n    technology: Go\n"),
       passing: withServices("services:\n  web:\n    name: Web\n    technology: Go\n"),
@@ -306,8 +327,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "invalid-value",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A value has the wrong type, a bad enum value or a malformed URL.",
+    why: "A value a field doesn't accept means nothing to what reads the Model. A Service `type` outside `app`, `datastore` and `broker` can't be drawn, and a malformed `url` can't be opened.",
     fix: "Change the value to one the field accepts.",
+    related: ["unknown-field", "missing-field"],
     example: {
       failing: withServices("services:\n  orders-db:\n    name: Orders DB\n    type: database\n"),
       passing: withServices("services:\n  orders-db:\n    name: Orders DB\n    type: datastore\n"),
@@ -317,8 +342,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "nested-project",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A `project.yaml` sits inside another Project's folder.",
+    why: "A Project is one Team's folder: it namespaces the ids declared in it and gives them a default Owner. A Project inside another would put its files in two Teams' folders at once.",
     fix: "Move the inner Project's folder out of the outer Project's folder.",
+    related: ["file-outside-project"],
     example: {
       failing: { ...base, "shop/legacy/project.yaml": "id: legacy\nname: Legacy\nowner: core\n" },
       passing: { ...base, "legacy/project.yaml": "id: legacy\nname: Legacy\nowner: core\n" },
@@ -333,8 +362,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "file-outside-project",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A model file is under no Project.",
+    why: "Elements, Deployments and Views always belong to a Project, which gives them their Qualified id and default Owner. A model file under no Project has neither, so nothing in it can join the Model.",
     fix: "Move the file into a Project folder (one with a `project.yaml`).",
+    related: ["nested-project"],
     example: {
       failing: { ...base, "services.yaml": "services:\n  web:\n    name: Web\n" },
       passing: withServices("services:\n  web:\n    name: Web\n"),
@@ -347,8 +380,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-project-id",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "Two Projects share an id.",
+    why: "A Qualified id, `project:id`, names one thing across the whole Workspace. If two Projects were both `shop`, `shop:web` could mean an Element in either.",
     fix: "Give one of the Projects a different id.",
+    related: ["unknown-project", "duplicate-id"],
     example: {
       failing: { ...base, "shop-admin/project.yaml": "id: shop\nname: Shop admin\nowner: core\n" },
       passing: { ...base, "shop-admin/project.yaml": "id: shop-admin\nname: Shop admin\nowner: core\n" },
@@ -361,8 +398,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "definition-outside-workspace",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "`teams` or `environments` declared outside `workspace.yaml`.",
+    why: "Teams and Environments are defined once per Workspace, so `prod` means the same thing in every Project. A second definition inside a Project could disagree with the first.",
     fix: "Move the definitions into `workspace.yaml` at the Workspace root.",
+    related: ["unknown-team", "unknown-environment"],
     example: {
       failing: withServices("teams:\n  web-team:\n    name: Web\n"),
       passing: {
@@ -375,8 +416,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-team",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "An `owner`, or a Saved View's `{team}` selector or Team Lens, names no Team.",
+    why: "Every Element has exactly one Owner, so there is one Team to ask when something breaks. An `owner` that names no Team leaves nobody accountable, and a `{team}` selector or Team Lens that names none shows nothing.",
     fix: "Use the id of a Team defined in `workspace.yaml`, or define the Team there.",
+    related: ["definition-outside-workspace"],
     example: {
       failing: withServices("services:\n  web:\n    name: Web\n    owner: cor\n"),
       passing: withServices("services:\n  web:\n    name: Web\n    owner: core\n"),
@@ -403,8 +448,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-id",
     severity: "error",
+    area: "elements",
+    since: "1.0.0",
     summary: "An Element or Deployment Target id is declared twice in a Project, across files too, whatever its kind or nesting.",
+    why: "A reference such as `to: web` has to name one thing. Ids are unique across the whole Project, whatever the kind or nesting, so moving an Element under another parent never changes its id.",
     fix: "Rename one of the Elements or Targets, or remove the second declaration.",
+    related: ["duplicate-relationship-id", "duplicate-view-id", "duplicate-project-id"],
     example: {
       failing: withServices("services:\n  web:\n    name: Web\n", { "shop/more.yaml": "services:\n  web:\n    name: Web v2\n" }),
       passing: withServices("services:\n  web:\n    name: Web\n", { "shop/more.yaml": "services:\n  web-v2:\n    name: Web v2\n" }),
@@ -430,8 +479,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "invalid-nesting",
     severity: "error",
+    area: "elements",
+    since: "1.0.0",
     summary: "System > Service > Component is broken, by nesting or `in:`.",
+    why: "Every View shows the Model at a level: Systems at C1, Services at C2, Components at C3. That depends on the nesting System > Service > Component: a Component directly inside a System has no Service to be drawn in.",
     fix: "Move the Element under a parent of the right kind (a Service under a System, a Component under a Service), or point `in:` at one.",
+    related: ["external-with-components", "unknown-element"],
     example: {
       failing: withServices("systems:\n  checkout:\n    name: Checkout\n    components:\n      cart-api:\n        name: Cart API\n"),
       passing: withServices(
@@ -459,8 +512,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "external-with-components",
     severity: "error",
+    area: "elements",
+    since: "1.0.0",
     summary: "An External System or Service declares Components.",
+    why: "An External System or Service runs outside the organization, and you can't see inside it. Components declared there would describe software that its Owner, the Team accountable for the integration, doesn't run and can't check.",
     fix: "Remove the Components, or drop `external` if the organisation runs the Element itself.",
+    related: ["invalid-nesting"],
     example: {
       failing: withServices("services:\n  stripe:\n    name: Stripe\n    external: true\n    components:\n      stripe-sdk:\n        name: Stripe SDK\n"),
       passing: withServices("services:\n  stripe:\n    name: Stripe\n    external: true\n"),
@@ -482,8 +539,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-element",
     severity: "error",
+    area: "elements",
+    since: "1.0.0",
     summary: "A reference names no Element: in `to`, `via`, `in`, a Deployment's `service`, or a Saved View's selectors, `expand`, `collapse` or Lens.",
+    why: "A reference that names no Element leaves something hanging: a Relationship with no provider, a Deployment with no Service, a Saved View that selects nothing. It is nearly always a misspelled id, so `check` suggests the nearest one.",
     fix: "Use the id of an Element declared in the Project, or declare it.",
+    related: ["unknown-project", "wrong-kind", "unknown-target", "unknown-adr-link"],
     example: {
       failing: withServices("systems:\n  checkout:\n    name: Checkout\n", { "shop/cart.yaml": "services:\n  cart:\n    name: Cart\n    in: chekout\n" }),
       passing: withServices("systems:\n  checkout:\n    name: Checkout\n", { "shop/cart.yaml": "services:\n  cart:\n    name: Cart\n    in: checkout\n" }),
@@ -514,8 +575,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-project",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A `project:` prefix names no Project.",
+    why: "A Qualified id names its Project first. If no Project has that id, the reference points at nothing, and the Relationship or Saved View that makes it can't be resolved.",
     fix: "Correct the prefix to the id of an existing Project.",
+    related: ["own-project-prefix", "unknown-element", "duplicate-project-id"],
     example: {
       failing: { ...relating("to: paymnts:payments-api"), ...payments },
       passing: { ...relating("to: payments:payments-api"), ...payments },
@@ -534,8 +599,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "own-project-prefix",
     severity: "error",
+    area: "workspace",
+    since: "1.0.0",
     summary: "A Project qualifies its own ids.",
+    why: "Every id has one spelling: bare inside its own Project, qualified from any other. If `cart` and `shop:cart` both worked inside `shop`, one Element would be written two ways in the same Project's files.",
     fix: "Drop the `project:` prefix; within its own Project an id is written bare.",
+    related: ["unknown-project"],
     example: {
       failing: relating("to: shop:cart", cart),
       passing: relating("to: cart", cart),
@@ -548,8 +617,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-relationship-id",
     severity: "error",
+    area: "relationships",
+    since: "1.0.0",
     summary: "A Relationship `id` repeats in a Project.",
+    why: "A Relationship has an `id` so that a Dynamic View Step, or an agent, can say which of several Relationships between two Elements it means. Two Relationships with the same id can't be told apart.",
     fix: "Give one of the Relationships a different id.",
+    related: ["ambiguous-step", "duplicate-id"],
     example: {
       failing: twoToCart("add-item", "add-item"),
       passing: twoToCart("add-item", "add-gift-card"),
@@ -572,8 +645,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "self-relationship",
     severity: "error",
+    area: "relationships",
+    since: "1.0.0",
     summary: "An Element has a Relationship to itself.",
+    why: "A Relationship says that one Element depends on another. Pointed at itself, an Element would be its own upstream and downstream, which tells a reader nothing; it is usually a `to` that names the wrong id.",
     fix: "Point `to` at the Element depended on, or remove the Relationship.",
+    related: ["ancestor-descendant-relationship"],
     example: {
       failing: relating("to: web", cart),
       passing: relating("to: cart", cart),
@@ -584,7 +661,10 @@ export const rules: RuleDefinition[] = [
   {
     id: "person-as-provider",
     severity: "error",
+    area: "relationships",
+    since: "1.0.0",
     summary: "The provider of a Relationship is a Person.",
+    why: "A Relationship points from what depends to what is depended on, and a Person is only ever a consumer: it uses Systems, and nothing depends on it. Pointed at a Person, the Relationship runs backward, so impact answers upstream and downstream of it are wrong.",
     fix: "A Person is only ever a consumer: declare the Relationship under the Person, pointing at what it uses.",
     example: {
       failing: relating("to: shopper", "people:\n  shopper:\n    name: Shopper\n"),
@@ -598,8 +678,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "ancestor-descendant-relationship",
     severity: "error",
+    area: "relationships",
+    since: "1.0.0",
     summary: "An Element is linked to its own ancestor or descendant.",
+    why: "A Component is part of its Service, and a Service part of its System; the nesting already says so. A Relationship between an Element and its own ancestor can't be drawn at the ancestor's level, where both ends are the same node.",
     fix: "Point `to` at an Element outside the consumer's own branch, such as a sibling.",
+    related: ["self-relationship", "ancestor-descendant-participants"],
     example: {
       failing: withServices("services:\n  web:\n    name: Web\n    components:\n      web-ui:\n        name: Web UI\n        relationships:\n          - to: web\n"),
       passing: withServices(
@@ -616,8 +700,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "via-on-sync",
     severity: "error",
+    area: "relationships",
+    since: "1.0.0",
     summary: "`via` or `channel` on a sync Relationship.",
+    why: "`via` and `channel` say which broker and channel carry a Publisher's events to a Subscriber. A sync Relationship is a call that waits for an answer, with no broker in it, so they would add a hop that isn't there to impact and path answers.",
     fix: "Set `interaction: async` if the Relationship runs through a broker, or remove `via` and `channel`.",
+    related: ["via-not-broker", "return-on-async"],
     example: {
       failing: relating("to: cart\nvia: events\nchannel: cart.updated", `${cart}${events("broker")}`),
       passing: relating("to: cart\ninteraction: async\nvia: events\nchannel: cart.updated", `${cart}${events("broker")}`),
@@ -632,8 +720,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "via-not-broker",
     severity: "error",
+    area: "relationships",
+    since: "1.0.0",
     summary: "`via` names a Service that isn't `type: broker`.",
+    why: "Impact and path answers count the `via` Service as a hop, and as something both sides depend on. That is true only of a broker: for any other Service it would claim that both sides depend on it when they don't.",
     fix: "Point `via` at a broker Service, or mark the Service `type: broker`.",
+    related: ["via-on-sync", "wrong-kind"],
     example: {
       failing: relating("to: cart\ninteraction: async\nvia: events", `${cart}${events("app")}`),
       passing: relating("to: cart\ninteraction: async\nvia: events", `${cart}${events("broker")}`),
@@ -648,7 +740,10 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-deployment",
     severity: "error",
+    area: "deployments",
+    since: "1.0.0",
     summary: "The same Service, Environment and Target appear twice.",
+    why: "A Deployment is one Service in one Environment on one Deployment Target, and those three name it: it has no id of its own. A second one with the same three could carry a different `url`, with nothing to say which is right.",
     fix: "Remove the second Deployment, or merge its `url` and `endpoints` into the first.",
     example: {
       failing: withDeployments(
@@ -679,8 +774,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-environment",
     severity: "error",
+    area: "deployments",
+    since: "1.0.0",
     summary: "A Deployment, or a Saved Deployment View, names no Environment.",
+    why: "Environments are defined once, in `workspace.yaml`, so `prod` means the same thing in every Project. A Deployment that says `production` when the Environment is `prod` belongs to no Environment, and nobody asking where the Service runs in `prod` will find it.",
     fix: "Use the id of an Environment defined in `workspace.yaml`, or define the Environment there.",
+    related: ["unknown-target", "target-outside-environment", "definition-outside-workspace"],
     example: {
       failing: withDeployments("  - { service: web, environment: production, target: eks-prod }\n"),
       passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n"),
@@ -698,8 +797,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-target",
     severity: "error",
+    area: "deployments",
+    since: "1.0.0",
     summary: "A Deployment, or a Saved Deployment View's `targets`, names no Deployment Target.",
+    why: "A Deployment says where a Service runs. If its `target` names no Deployment Target, the Deployment has nowhere to be placed in a Deployment View; a Saved Deployment View that names one narrows to a Target that doesn't exist.",
     fix: "Use the id of a Target declared in the Project, or `project:id` for one declared in another Project.",
+    related: ["unknown-environment", "target-outside-environment", "wrong-kind"],
     example: {
       failing: withDeployments("  - { service: web, environment: prod, target: eks-prd }\n"),
       passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n"),
@@ -723,8 +826,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "wrong-kind",
     severity: "error",
+    area: "elements",
+    since: "1.0.0",
     summary: "An id resolves to a kind the field doesn't accept, such as a Deployment's `service` naming a Component or System, or a Relationship's `via` naming something other than a Service.",
+    why: "Some fields take one kind only. Only a Service is deployed, because Systems and Components run as part of their Services, and only a Service can be the broker an async Relationship runs through.",
     fix: "Point the field at an id of the kind it accepts: a Deployment's `service` and a Relationship's `via` each name a Service.",
+    related: ["unknown-element", "via-not-broker", "unknown-target"],
     example: {
       failing: withDeployments("  - { service: cart, environment: prod, target: eks-prod }\n"),
       passing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n"),
@@ -748,8 +855,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "oversized-view",
     severity: "warning",
+    area: "views",
+    since: "1.0.0",
     summary: `A View has more than ${MAX_VIEW_NODES} nodes, too many for a readable diagram. A Generated View is reported at its System or Service, or at \`workspace.yaml\` for the Landscapes; a Saved View at its id.`,
+    why: `A View is a diagram for people to read. With more than ${MAX_VIEW_NODES} nodes the boxes and lines are too many to follow, so the View answers no question at a glance.`,
     fix: "Split the System, or group top-level Services and Systems, so each Generated View stays within the limit; narrow a Saved View's selectors or raise its `level`.",
+    related: ["empty-view"],
     example: {
       failing: withServices(`systems:\n  big:\n    name: Big\n    services:\n${numbered(MAX_VIEW_NODES, "s", 6)}`),
       passing: withServices(
@@ -761,7 +872,8 @@ export const rules: RuleDefinition[] = [
       const generated = generatedViews(bundle)
         .filter((v) => v.nodes.length > MAX_VIEW_NODES)
         .flatMap((v) => {
-          const focus = bundle.elements.find((e) => e.id === v.id.slice(v.id.indexOf("/") + 1));
+          const ref = parseViewId(v.id);
+          const focus = ref?.form === "focused" ? bundle.elements.find((e) => e.id === ref.element) : undefined;
           const where = focus ? focus.source : workspaceFile ? { file: workspaceFile.path, line: 1 } : undefined;
           if (!where) return [];
           return [{ file: where.file, line: where.line, message: `Generated View "${v.id}" has ${v.nodes.length} nodes, more than the ${MAX_VIEW_NODES} a diagram stays readable at` }];
@@ -775,8 +887,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-view-id",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "A Saved View id repeats in a Project, across files too.",
+    why: "A Saved View is opened, exported and linked from ADRs by its Qualified id, such as `shop:front`. Only the first View with an id goes into the Workspace Bundle, so the second could never be opened.",
     fix: "Give one of the Views a different id.",
+    related: ["duplicate-id"],
     example: {
       failing: viewing("front:\n  title: Front\n  level: c2", { "shop/more.yaml": "views:\n  structural:\n    front:\n      title: Front again\n      level: c2\n" }),
       passing: viewing("front:\n  title: Front\n  level: c2", { "shop/more.yaml": "views:\n  structural:\n    front-v2:\n      title: Front again\n      level: c2\n" }),
@@ -798,8 +914,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "missing-step",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "A Dynamic View Step has no Relationship or derived edge between `from` and `to` (nor a `via` subscription of `to` to `from`), or the named `relationship` doesn't connect them.",
+    why: "Each Step must follow a Relationship that exists in the Model, so a scenario can't show a call the architecture doesn't have. A Step with no Relationship behind it means the scenario is wrong or the Model is missing a Relationship.",
     fix: "Point the Step at two Elements a Relationship connects, declare the Relationship, or name one that connects them.",
+    related: ["ambiguous-step", "return-without-relationship"],
     example: {
       failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: cart, to: web }"),
       passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: web, to: cart }"),
@@ -809,8 +929,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "ambiguous-step",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "Several Relationships match a Dynamic View Step (several between the pair, or both a call and an event) and no `relationship` names one.",
+    why: "A Step takes its kind, a call or an event, and its default label from the Relationship it follows. When several Relationships match, Archidocs doesn't guess which one the scenario means.",
     fix: "Name the Relationship the Step takes with `relationship: <id>`.",
+    related: ["missing-step", "duplicate-relationship-id"],
     example: {
       failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer }", "    relationships:\n      - id: notify\n        to: mailer\n"),
       passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer, relationship: notify }", "    relationships:\n      - id: notify\n        to: mailer\n"),
@@ -820,8 +944,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "return-without-relationship",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "A Dynamic View return Step has no Relationship the other way, from its `to` to its `from`.",
+    why: "A return Step is the provider's reply to a consumer, so it follows a Relationship the other way round: from its `to` to its `from`. With no such Relationship there is no call for it to be the reply to.",
     fix: "Turn the Step round, or remove `return: true` if it is a call of its own.",
+    related: ["return-on-async", "missing-step"],
     example: {
       failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: web, to: cart, return: true }"),
       passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: web, to: cart }\n    - { from: cart, to: web, return: true }"),
@@ -831,8 +959,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "return-on-async",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "A Dynamic View return Step resolves to an async Relationship, which has no reply.",
+    why: "An async Relationship doesn't wait for an answer, so there is no reply to draw. If the other side calls back later, that is a Relationship of its own and belongs in the Model.",
     fix: "Remove the return Step, or model the callback as a Relationship of its own and add a Step for it.",
+    related: ["return-without-relationship", "via-on-sync"],
     example: {
       failing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer, return: true }"),
       passing: scenario("purchase:\n  title: Purchase\n  steps:\n    - { from: orders, to: mailer }"),
@@ -842,8 +974,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "ancestor-descendant-participants",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "An Element and its own ancestor are both participants of a Dynamic View.",
+    why: "A Dynamic View tells its scenario with each Element at one level. With a Service and one of its own Components both taking part, the same software appears twice in the sequence chart, and a reader can't tell which of the two a Step really reaches.",
     fix: "Tell the scenario at one level: use the ancestor throughout, or its descendants throughout.",
+    related: ["ancestor-descendant-relationship", "missing-step"],
     example: {
       failing: scenario("purchase:\n  title: Purchase\n  participants: [cart]\n  steps:\n    - { from: web, to: cart-api }"),
       passing: scenario("purchase:\n  title: Purchase\n  participants: [cart]\n  steps:\n    - { from: web, to: cart }"),
@@ -853,8 +989,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "target-outside-environment",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "A Saved Deployment View's `targets` entry has no Deployment in the View's `environment`, on it or on any Target inside it.",
+    why: "A Deployment View shows one Environment. A Deployment Target with no Deployment in that Environment, on it or on any Target inside it, has nothing to show there; it usually means the wrong Target or the wrong Environment.",
     fix: "Remove the Target from `targets`, or point the View at the Environment that runs on it.",
+    related: ["unknown-target", "unknown-environment", "empty-view"],
     example: {
       failing: withDeployments("  - { service: web, environment: prod, target: eks-prod }\n", {
         "shop/views.yaml": "targets:\n  eks-staging:\n    name: EKS staging\n    kind: cluster\nviews:\n  structural:\n    runtime:\n      title: Runtime\n      level: deployment\n      environment: prod\n      targets: [eks-staging]\n",
@@ -881,8 +1021,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "bad-expand",
     severity: "error",
+    area: "views",
+    since: "1.0.0",
     summary: "A Saved View's `expand` or `collapse` id is not a node of the View once collapsed to its `level`, or has no children.",
+    why: "`expand` and `collapse` open or close single Elements once the View is collapsed to its `level`. An id that isn't a node of the View, or has no children, can't be opened or closed, so the View doesn't show what its author meant.",
     fix: "Remove the id, include the Element in the View, or name an Element that has children.",
+    related: ["unknown-element"],
     example: {
       failing: viewing("front:\n  title: Front\n  level: c2\n  include: [web]\n  expand: [web]"),
       passing: viewing("front:\n  title: Front\n  level: c2\n  include: [web, cart]\n  expand: [cart]"),
@@ -899,8 +1043,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "empty-view",
     severity: "warning",
+    area: "views",
+    since: "1.0.0",
     summary: "A Saved View resolves to no nodes.",
+    why: "A Saved View that selects nothing draws an empty diagram, which answers no question. It usually means the selectors no longer match the Model.",
     fix: "Correct the selectors so they name Elements, or remove the View.",
+    related: ["unresolved-path", "oversized-view"],
     example: {
       failing: viewing("front:\n  title: Front\n  level: c2\n  include: [{ tag: storefront }]"),
       passing: withServices("services:\n  web:\n    name: Web\n    tags: [storefront]\nviews:\n  structural:\n    front:\n      title: Front\n      level: c2\n      include: [{ tag: storefront }]\n"),
@@ -913,8 +1061,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unresolved-path",
     severity: "warning",
+    area: "views",
+    since: "1.0.0",
     summary: "A Saved View's path selector, or path Lens, finds no path between its two Elements.",
+    why: "A path selector or path Lens is there to show how one Element reaches another, and with no path between the two it adds nothing to the View. It is a warning, not an error, because a Model edit can legitimately break the path.",
     fix: "Check the Relationships between the two Elements, or raise `paths`; remove the selector if the path is gone for good.",
+    related: ["empty-view"],
     example: {
       failing: viewing("front:\n  title: Front\n  level: c2\n  include: [{ from: web, to: search }]"),
       passing: viewing("front:\n  title: Front\n  level: c2\n  include: [{ from: web, to: cart }]"),
@@ -927,8 +1079,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "invalid-adr-frontmatter",
     severity: "error",
+    area: "decisions",
+    since: "1.0.0",
     summary: "An ADR has no frontmatter, frontmatter that isn't valid YAML, or a field that is unknown, missing (`status`, `date`) or invalid, such as a `status` outside proposed, accepted, rejected, deprecated and superseded.",
+    why: "The frontmatter ties an ADR to the Model: `status` says whether the decision stands, and `elements` and `views` say what it affects. If it can't be read, a Proposed decision can't be told from an accepted one, and the ADR can't be shown on the Elements it is about.",
     fix: "Start the file with `---`, `status` and `date` (YYYY-MM-DD), then `---`; use only the MADR fields and the `elements`, `views` and `supersedes` links.",
+    related: ["missing-adr-title", "hand-written-superseded", "yaml-syntax"],
     example: {
       failing: deciding({ "0001-use-kafka.md": adrText("status: approved\ndate: 2026-03-01") }),
       passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
@@ -944,8 +1100,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "missing-adr-title",
     severity: "error",
+    area: "decisions",
+    since: "1.0.0",
     summary: "An ADR's body has no `# ` heading to take its title from.",
+    why: "An ADR is listed by its title, in the viewer and in `list_adrs`. The title is the body's first `# ` heading, not a frontmatter field, so an ADR without one has no name to be listed by.",
     fix: "Start the body with a `# ` heading naming the decision.",
+    related: ["invalid-adr-frontmatter", "bad-adr-filename"],
     example: {
       failing: deciding({ "0001-use-kafka.md": "---\nstatus: accepted\ndate: 2026-03-01\n---\n\nWe publish domain events on Kafka.\n" }),
       passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
@@ -956,8 +1116,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "bad-adr-filename",
     severity: "error",
+    area: "decisions",
+    since: "1.0.0",
     summary: "A file in a Project's `adr/` folder isn't named `NNNN-slug.md` (and isn't `template.md`).",
+    why: "An ADR's id is the number in its file name: `shop/adr/0003-use-kafka.md` is `shop:0003`. A file without the four-digit number has no id, so no `supersedes` can name it.",
     fix: "Rename it to the next free four-digit number and a lowercase slug, such as `0002-use-kafka.md`.",
+    related: ["duplicate-adr-number"],
     example: {
       failing: deciding({ "use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
       passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
@@ -976,8 +1140,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "duplicate-adr-number",
     severity: "error",
+    area: "decisions",
+    since: "1.0.0",
     summary: "Two ADRs in a Project share a number, as when two pull requests each take the next free one.",
+    why: "An ADR's number is its id in the Project, so two files numbered `0001` would both be `shop:0001`, and a `supersedes` naming it could mean either. It happens when two pull requests each take the next free number.",
     fix: "Renumber the later ADR to the next free number, and update any `supersedes` that meant it.",
+    related: ["bad-adr-filename"],
     example: {
       failing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01"), "0001-use-redis.md": adrText("status: proposed\ndate: 2026-03-02", "Use Redis for carts") }),
       passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01"), "0002-use-redis.md": adrText("status: proposed\ndate: 2026-03-02", "Use Redis for carts") }),
@@ -993,8 +1161,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "unknown-adr-link",
     severity: "error",
+    area: "decisions",
+    since: "1.0.0",
     summary: "An ADR's `elements` names no Element or Deployment Target, its `views` no Saved View, or its `supersedes` no ADR.",
+    why: "An ADR's links are how a reader gets from an Element to the decisions behind it. A link that names nothing attaches the decision to nothing, and a `supersedes` that names no ADR leaves the old decision looking current.",
     fix: "Use an id declared in the ADR's Project, or `project:id` (`project:NNNN` for an ADR) for one in another Project.",
+    related: ["unknown-element"],
     example: {
       failing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nelements: [wbe]") }),
       passing: deciding({ "0001-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nelements: [web]") }),
@@ -1024,8 +1196,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "hand-written-superseded",
     severity: "error",
+    area: "decisions",
+    since: "1.0.0",
     summary: "An ADR's `status` is written as `superseded`; that status is derived once an accepted ADR lists it in `supersedes`.",
+    why: "An ADR is superseded once an accepted ADR lists it in `supersedes`; Archidocs derives it. Written by hand, the status could disagree with those lists, so deriving it keeps the record of what replaced what in one place.",
     fix: "Give the old ADR back the status it had (usually accepted), and declare `supersedes` on the new ADR instead.",
+    related: ["supersedes-unaccepted", "superseded-twice"],
     example: {
       failing: deciding({ "0001-use-rabbitmq.md": adrText("status: superseded\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),
       passing: deciding({ "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
@@ -1038,8 +1214,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "supersedes-cycle",
     severity: "error",
+    area: "decisions",
+    since: "1.0.0",
     summary: "ADRs supersede each other in a cycle, directly or through others. Reported once, at the cycle's last file.",
+    why: "`supersedes` runs from a newer decision to the older one it replaces. In a cycle every ADR is replaced by another, so none of them is the decision that stands.",
     fix: "Remove the `supersedes` entry that points back to a newer ADR.",
+    related: ["superseded-twice", "supersedes-unaccepted"],
     example: {
       failing: deciding({ "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10\nsupersedes: [\"0002\"]", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
       passing: deciding({ "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
@@ -1073,8 +1253,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "superseded-twice",
     severity: "warning",
+    area: "decisions",
+    since: "1.0.0",
     summary: "An ADR is superseded by more than one accepted ADR. Reported at the last of them.",
+    why: "A superseded ADR should lead a reader to the one decision that replaced it. When two accepted ADRs both supersede it, the reader can't tell which of them stands now.",
     fix: "Keep `supersedes` on the one ADR that replaces it; have the later one supersede that ADR instead, if it replaces it in turn.",
+    related: ["supersedes-cycle", "supersedes-unaccepted"],
     example: {
       failing: deciding({
         "0001-use-rabbitmq.md": adrText("status: accepted\ndate: 2025-01-10", "Use RabbitMQ"),
@@ -1100,8 +1284,12 @@ export const rules: RuleDefinition[] = [
   {
     id: "supersedes-unaccepted",
     severity: "warning",
+    area: "decisions",
+    since: "1.0.0",
     summary: "An ADR supersedes one that isn't accepted or deprecated, such as a proposed or rejected ADR.",
+    why: "To supersede a decision is to replace one that was in force. A proposed or rejected ADR never was, yet listing it in `supersedes` shows it as superseded, as if it had once been the architecture.",
     fix: "Remove the entry from `supersedes`, or point it at the accepted ADR this one replaces.",
+    related: ["hand-written-superseded", "superseded-twice"],
     example: {
       failing: deciding({ "0001-use-rabbitmq.md": adrText("status: rejected\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01\nsupersedes: [\"0001\"]") }),
       passing: deciding({ "0001-use-rabbitmq.md": adrText("status: rejected\ndate: 2025-01-10", "Use RabbitMQ"), "0002-use-kafka.md": adrText("status: accepted\ndate: 2026-03-01") }),

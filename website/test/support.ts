@@ -31,7 +31,7 @@ export async function buildSite({ pages }: { pages?: Record<string, string> } = 
       if (entry !== "content") symlinkSync(join(WEBSITE, "src", entry), join(src, entry));
     }
     cpSync(join(WEBSITE, "src/content"), join(src, "content"), { recursive: true });
-    // A copied page that imports a package by name (Starlight's components) finds it from the folder above the copy.
+    // The copied pages sit outside the repo, so a package they import (`@astrojs/starlight/components`) is found here.
     symlinkSync(join(WEBSITE, "node_modules"), join(tmp, "node_modules"));
     for (const [path, text] of Object.entries(pages)) {
       const file = join(src, "content/docs/docs", path);
