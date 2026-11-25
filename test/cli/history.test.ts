@@ -108,22 +108,39 @@ describe("archidocs diff", () => {
     );
   });
 
-  it("resolves dates to the last default-branch commit at or before them, and diffs to the working tree by default", async () => {
+  it("resolves dates to the last Revision at or before them, and diffs to the working tree by default", async () => {
     const repo = await scriptedRepo();
     const january = await repo.commit("Model", "2026-01-10T12:00:00Z", inWorkspace(landscapeWorkspace));
+    await repo.commit("Docs only", "2026-01-20T12:00:00Z", { "README.md": "# Shop\n" });
     const february = await repo.commit("Rename web", "2026-02-10T12:00:00Z", { "archidocs/shop/web.yaml": relationshipWorkspace["shop/web.yaml"]!.replace("name: Web", "name: Web shop") });
     await writeFile(join(repo.repoRoot, "archidocs/shop/web.yaml"), relationshipWorkspace["shop/web.yaml"]!.replace("name: Web", "name: Storefront"));
 
     const byDate = JSON.parse((await archidocs(repo.repoRoot, "diff", "2026-01-31", "2026-02-10", "--format", "json")).stdout);
     const toWorkingTree = JSON.parse((await archidocs(join(repo.repoRoot, "archidocs"), "diff", "HEAD", "--format", "json")).stdout);
-    const tooEarly = await archidocs(repo.repoRoot, "diff", "2025-12-31");
 
     expect([byDate.from.commit, byDate.to.commit]).toEqual([january, february]);
     expect(byDate.changes.map((c: { id: string }) => c.id)).toEqual(["shop:web"]);
     expect(toWorkingTree.to).toEqual({ point: "working tree", commit: null });
     expect(toWorkingTree.changes.map((c: { after: { name: string } }) => c.after.name)).toEqual(["Storefront"]);
-    expect(tooEarly.code).toBe(2);
-    expect(tooEarly.stderr).toContain('Unknown ref or date "2025-12-31"');
+  });
+
+  it("reports a point that names no commit as a usage error, naming the first Revision for a date before it", async () => {
+    const repo = await scriptedRepo();
+    const january = await repo.commit("Model", "2026-01-10T12:00:00Z", inWorkspace(landscapeWorkspace));
+    const february = await repo.commit("Rename web", "2026-02-10T12:00:00Z", { "archidocs/shop/web.yaml": relationshipWorkspace["shop/web.yaml"]!.replace("name: Web", "name: Web shop") });
+    const prefix = february.slice(0, 4);
+    await repo.commitStartingWith(prefix, "Rename web again", "2026-03-10T12:00:00Z", { "archidocs/shop/web.yaml": relationshipWorkspace["shop/web.yaml"]!.replace("name: Web", "name: Storefront") });
+
+    const tooEarly = await archidocs(repo.repoRoot, "diff", "2025-12-31");
+    const unknown = await archidocs(repo.repoRoot, "diff", "origin/develop");
+    const ambiguous = await archidocs(repo.repoRoot, "diff", prefix);
+
+    expect([tooEarly.code, unknown.code, ambiguous.code]).toEqual([2, 2, 2]);
+    expect(tooEarly.stderr).toContain(
+      `archidocs: Unknown ref or date "2025-12-31"; a date names the last Revision at or before it. The first Revision is ${january.slice(0, 7)}, 2026-01-10T12:00:00Z.\n`,
+    );
+    expect(unknown.stderr).toContain('archidocs: Unknown ref or date "origin/develop"; a date names the last Revision at or before it.\n');
+    expect(ambiguous.stderr).toContain(`archidocs: "${prefix}" is the start of 2 Revisions' shas; give more of it.\n`);
   });
 
   it("rebuilds a cached Bundle from an older schemaVersion instead of comparing it raw", async () => {
@@ -198,5 +215,22 @@ describe("archidocs history build", () => {
 
     expect(byDate.stdout).toBe("Built 2 Revisions; 0 of 2 already built.\n");
     expect(byRef.stdout).toBe("Built 0 Revisions; 2 of 2 already built.\n");
+  });
+
+  it("reads a --since time without a zone as UTC, and reports an unknown point as diff does", async () => {
+    const { repo } = await repoWithHistory();
+
+    // February's Revision is at 12:00Z: 11:00 is before it as UTC, after it as Los Angeles time (19:00Z).
+    const tz = process.env.TZ;
+    process.env.TZ = "America/Los_Angeles";
+    const byTime = await archidocs(repo.repoRoot, "history", "build", "--since", "2026-02-10T11:00").finally(() => {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    });
+    const unknown = await archidocs(repo.repoRoot, "history", "build", "--since", "nope");
+
+    expect(byTime.stdout).toBe("Built 2 Revisions; 0 of 2 already built.\n");
+    expect(unknown.code).toBe(2);
+    expect(unknown.stderr).toBe('archidocs: Unknown ref or date "nope"; a date names the last Revision at or before it.\n');
   });
 });

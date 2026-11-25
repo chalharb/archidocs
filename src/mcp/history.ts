@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { bundleAt, buildHistory, migrateBundle, readIndex, resolvePoint, type History } from "../history/index.ts";
-import { find, INDEX_PATH, pastBundlePath, span, timeSpan, type Found, type RevisionEntry, type Span } from "../revisions/index.ts";
+import { find, INDEX_PATH, pastBundlePath, span, timeSpan, type Dated, type Found, type RevisionEntry, type Span } from "../revisions/index.ts";
 import { commitInfo } from "../history/git.ts";
 import type { Bundle } from "../schema/bundle.ts";
 import type { BundleSource, CheckoutSource, Snapshot, Source } from "./source.ts";
@@ -41,7 +41,7 @@ const noCommit = (point: string, suggestions?: string[]): PastFailure => ({
 const reason = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** `find`'s failure in MCP's words: no Revision (naming the first one for a date before it), or a prefix of several. */
-function findFailure(point: string, failure: Exclude<Found<RevisionEntry>, { ok: true }>): PastFailure {
+function findFailure(point: string, failure: Exclude<Found<Dated>, { ok: true }>): PastFailure {
   if (failure.kind === "ambiguous") {
     return { ok: false, code: "not_found", message: `"${point}" is the start of ${failure.count} Revisions' shas; give more of it.`, suggestions: failure.candidates.map((r) => r.sha) };
   }
@@ -57,8 +57,9 @@ function checkoutPast(source: CheckoutSource): Past {
     async at(point) {
       const h = await repo();
       if (!h) return noGit;
-      const sha = await resolvePoint(h.repoRoot, point);
-      if (!sha) return noCommit(point);
+      const resolved = await resolvePoint(h, point);
+      if (!resolved.ok) return findFailure(point, resolved);
+      const { sha } = resolved;
       try {
         return { ok: true, commit: sha, snapshot: { bundle: (await bundleAt(h, sha)).bundle, issues: [] } };
       } catch (error) {
@@ -77,14 +78,15 @@ function checkoutPast(source: CheckoutSource): Past {
       }
     },
     async span(point) {
-      // A day or a time spans itself, as on a site; refs are git's (ticket 05 brings tags first).
+      // A ref spans its commit's instant, a tag that looks like a date included;
+      // otherwise a day or a time spans itself, as on a site.
       const own = timeSpan(point);
-      if (own) return { ok: true, span: own };
       const h = await repo();
-      if (!h) return noGit;
-      const sha = await resolvePoint(h.repoRoot, point);
-      if (!sha) return noCommit(point);
-      const at = Date.parse((await commitInfo(h.repoRoot, sha)).date);
+      if (!h) return own ? { ok: true, span: own } : noGit;
+      const resolved = await resolvePoint(h, point);
+      if (own && !(resolved.ok && resolved.ref)) return { ok: true, span: own };
+      if (!resolved.ok) return findFailure(point, resolved);
+      const at = Date.parse((await commitInfo(h.repoRoot, resolved.sha)).date);
       return { ok: true, span: { start: at, end: at + 1 } };
     },
   };

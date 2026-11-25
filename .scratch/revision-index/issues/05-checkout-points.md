@@ -1,6 +1,6 @@
 # 05: Points on a checkout
 
-Status: ready-for-agent
+Status: done
 Blocked by: 02, workspace-checkout 03, workspace-checkout 04
 Spec: [Revision index](../spec.md)
 

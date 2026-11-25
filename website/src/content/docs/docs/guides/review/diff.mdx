@@ -51,7 +51,7 @@ Changes from origin/main (83d7816) to HEAD (783c53a): 2 added, 0 removed, 0 chan
 + Relationship payments:payments-service -> payments:payments-cache
 ```
 
-A point can also be a date. It means the last commit on the default branch at or before that date:
+A point can also be a date or a time. It means the last Revision at or before that date, so a commit that changed no Workspace file is never picked. A time without a zone is UTC. A date before the first Revision names nothing:
 
 ```bash
 archidocs diff 2026-01-01 2026-06-30
@@ -87,7 +87,7 @@ The first line names both points and their short commits, and counts the Changes
 `diff` stops when a point isn't a commit, tag, branch or date in the repo:
 
 ```text
-archidocs: Unknown ref or date "origin/develop"; a date resolves to the last default-branch commit at or before it.
+archidocs: Unknown ref or date "origin/develop"; a date names the last Revision at or before it.
 ```
 
 Check the name. For a branch in CI, fetch it first, or check out with `fetch-depth: 0`.
