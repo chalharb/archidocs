@@ -22,7 +22,7 @@ const WORKSPACE_HEADING = "How the Workspace is found";
 export const WORKSPACE_SECTION = `/${BASE}/#${WORKSPACE_HEADING.toLowerCase().replace(/ /g, "-")}`;
 
 /**
- * Where each command starts the search for its Workspace, as `src/cli/main.ts`
+ * Where each command starts the search for its Workspace, as `src/cli/run.ts`
  * calls `findWorkspaceRoot` (`src/core/load.ts`); `undefined` for a command
  * that reads no Workspace. Keyed by command, so a new one must say.
  */

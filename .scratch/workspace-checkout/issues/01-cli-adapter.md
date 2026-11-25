@@ -1,6 +1,6 @@
 # 01: CLI adapter: `run(argv, io)`
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Workspace checkout](../spec.md)
 
@@ -32,11 +32,11 @@ Make the CLI callable in-process, with no behaviour change. The command bodies m
 
 ## Acceptance criteria
 
-- [ ] `src/cli/main.ts` holds the shebang and the call to `run`, and nothing else of substance.
-- [ ] `grep -n "process\." src/cli/run.ts` finds only the stdio `mcp` branch.
-- [ ] `test/support/cli.ts` doesn't spawn for `archidocs()`; every existing test using it passes unchanged.
-- [ ] `test/cli/binary.test.ts` exists, with the three spawn tests.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
-- [ ] `node dist/cli/main.js version` works after `pnpm build`.
-- [ ] `grep -rn "src/cli/main.ts" website/src/reference website/test` finds only `website/test/reference.test.ts` and `samples.test.ts`, which spawn the CLI until ticket 05.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `src/cli/main.ts` holds the shebang and the call to `run`, and nothing else of substance.
+- [x] `grep -n "process\." src/cli/run.ts` finds only the stdio `mcp` branch.
+- [x] `test/support/cli.ts` doesn't spawn for `archidocs()`; every existing test using it passes unchanged.
+- [x] `test/cli/binary.test.ts` exists, with the three spawn tests.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
+- [x] `node dist/cli/main.js version` works after `pnpm build`.
+- [x] `grep -rn "src/cli/main.ts" website/src/reference website/test` finds only `website/test/reference.test.ts` and `samples.test.ts`, which spawn the CLI until ticket 05.
+- [x] This ticket's `Status:` is set to `done` in the same PR.

@@ -42,6 +42,8 @@ CI runs all of these on every pull request.
 | `pnpm build` | Builds the CLI into `dist/` and the viewer. |
 | `pnpm test:e2e` | Opens the viewer and the docs site in a browser, with Playwright. Run `pnpm exec playwright install chromium` once first. |
 
+CLI tests call the CLI in-process, through `archidocs()` in `test/support/cli.ts`. Only `test/cli/binary.test.ts` and `test/cli/mcp.test.ts` spawn the binary, so a new CLI test should use `archidocs()`.
+
 Some files are generated from the source. Run these after you change it, and commit the result:
 
 | Command | When to run it |
