@@ -223,15 +223,8 @@ archidocs mcp --workspace ./archidocs
 
 ## Development
 
-```bash
-pnpm install
-```
-
-```bash
-pnpm dev
-```
-
-`pnpm test` runs the unit tests, `pnpm test:e2e` the Playwright tests, and `pnpm typecheck` and `pnpm lint` the static checks. Design and product notes are in [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md).
+Run `pnpm install`, then `pnpm dev` to serve the viewer and `pnpm test` to run the tests.
+To run the other checks, work on the docs site or open a pull request, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

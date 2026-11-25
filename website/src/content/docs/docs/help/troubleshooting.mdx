@@ -1,0 +1,118 @@
+---
+title: Troubleshooting
+description: The problems people hit most, each with the message it prints, the cause and the fix.
+sidebar:
+  order: 1
+---
+
+Find the message you see, or the problem you have. Each entry says what causes it and how to fix it, and links the page that covers the fix.
+
+The CLI prints each error after `archidocs: `. It then exits with code 2. The error messages here are copied from the CLI's source, so they match what you see.
+
+## No workspace.yaml found
+
+```text
+archidocs: No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.
+```
+
+**Cause:** the command needs a [Workspace](/docs/reference/glossary/#term-workspace), the folder that holds `workspace.yaml`. It looks in the current folder, in its `archidocs/` folder, and in every folder above. None of them has the file.
+
+**Fix:** run the command from inside the Workspace repo. If the repo has no Workspace yet, create one:
+
+```bash
+archidocs init
+```
+
+```text
+Wrote archidocs/workspace.yaml
+```
+
+`init` prints more lines after this one. In a code repo whose architecture lives in another repo, pass `--workspace <dir>` to [`archidocs dev`](/docs/reference/cli/dev/) instead. The [quick start](/docs/start/quick-start/) creates a Workspace from scratch.
+
+## The viewer is empty after archidocs init
+
+**Symptom:** `archidocs dev` serves the viewer, and the C2 Landscape shows a blank canvas.
+
+**Cause:** `init` writes a `workspace.yaml` with no [Projects](/docs/reference/glossary/#term-project), the folders where each Team keeps its part of the Model. With no Project, the Model has no [Elements](/docs/reference/glossary/#term-element), the boxes a View draws. So there is nothing to draw.
+
+**Fix:** add a Project, then a System and its Services. The viewer reloads as you save. See [Add a Project](/docs/guides/model/add-a-project/) and [Add a Service](/docs/guides/model/add-a-service/).
+
+## The site has no history, or diff can't find a ref
+
+**Symptom:** the published viewer shows only the latest [Revision](/docs/reference/glossary/#term-revision), the Workspace as it was at one commit. Or `archidocs diff` in CI stops on a ref that exists:
+
+```text
+archidocs: Unknown ref or date "HEAD~1"; a date resolves to the last default-branch commit at or before it.
+```
+
+**Cause:** the CI checkout is shallow. `actions/checkout` fetches only the latest commit by default, and GitLab only the latest few. Git then has no older commits to read.
+
+**Fix:** check out the full history. On GitHub, set `fetch-depth: 0` on `actions/checkout`. On GitLab, set the `GIT_DEPTH` variable to `0`. See [Publish to GitHub Pages](/docs/guides/publish/github-pages/) and [Publish to another host](/docs/guides/publish/other-hosts/). For a branch you diff against, see [Review changes with diff](/docs/guides/review/diff/).
+
+## A PR preview has no base to compare against
+
+```text
+archidocs: origin/main is not in this checkout; fetch the base branch before building (archidocs never fetches).
+```
+
+**Cause:** `archidocs build --preview` reads the base branch from `origin/<base>`, and the checkout doesn't have it. Archidocs never fetches on its own.
+
+**Fix:** check out with `fetch-depth: 0`, or fetch the base branch before the build:
+
+```bash
+git fetch origin main
+```
+
+If the base branch isn't `main`, name it with `--base`. See [Preview pull requests](/docs/guides/publish/pr-previews/).
+
+## archidocs dev can't start: the port is in use
+
+```text
+archidocs: Port 4321 is in use; pick another with --port.
+```
+
+**Cause:** another program, or another `archidocs dev`, already listens on the port. `dev` serves on port 4321 unless you pick another.
+
+**Fix:** stop the other server, or serve on another port:
+
+```bash
+archidocs dev --port 4000
+```
+
+See [`archidocs dev`](/docs/reference/cli/dev/).
+
+## The Node.js version is too old
+
+**Symptom:** installing the CLI warns about an unsupported engine, or `archidocs` fails before it runs a command.
+
+**Cause:** Archidocs needs Node.js 22.18 or later.
+
+**Fix:** check your version, then install a newer Node.js if it is older than 22.18:
+
+```bash
+node --version
+```
+
+```text
+v24.14.0
+```
+
+In CI, set the Node.js version on the setup step. The GitHub Action sets up Node.js 24 unless its `node-version` input says otherwise. See the [quick start](/docs/start/quick-start/#1-install-the-cli) and the [GitHub Action reference](/docs/reference/ci/github-action/#inputs).
+
+## check passes locally and fails in CI
+
+**Symptom:** `archidocs check` reports no errors on your machine, and errors in CI. Or the reverse.
+
+**Cause:** the two run different versions of the CLI. A newer version can add a check rule or change one.
+
+**Fix:** compare the versions. Run this in both places:
+
+```bash
+archidocs version
+```
+
+```text
+archidocs 1.2.0 (Bundle schemaVersion 1)
+```
+
+Then run the same version in both. Pin it in CI with the `version` input of the [GitHub Action](/docs/reference/ci/github-action/#inputs) or the [GitLab template](/docs/reference/ci/gitlab-template/#inputs), and install that version locally. The [Changelog](/docs/reference/changelog/) says what changed in each release. Each [check rule's page](/docs/reference/rules/) says how to fix what it reports.

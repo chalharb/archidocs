@@ -1,0 +1,51 @@
+name: Bug report
+description: Something in the CLI, the viewer, the MCP server or the docs doesn't work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Check [Troubleshooting](https://archidocs.dev/docs/help/troubleshooting/) first: it covers the problems people hit most.
+
+        To report a security vulnerability, don't open an issue. Follow [SECURITY.md](https://github.com/chalharb/archidocs/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: CLI version
+      description: What `archidocs version` prints.
+      placeholder: archidocs 1.2.0
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: The command
+      description: The command you ran, or what you did in the viewer or through MCP.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: What it printed
+      description: The output or error, copied in full. For the viewer, a screenshot or its URL.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files to reproduce it
+      description: The smallest YAML that shows the problem, with each file's path. Leave out anything private.
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Your operating system and Node.js version (`node --version`).
+      placeholder: macOS 15, Node.js 22.18.0
