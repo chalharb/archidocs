@@ -55,3 +55,5 @@ export const pastBundlePath = (sha: string): string => `${BUNDLES_DIR}/${pastBun
 export const pastBundleFile = (sha: string): string => `${sha}.json`;
 /** Whether a file name in `bundles/` is a past Bundle's, named by its full sha. */
 export const isPastBundleFile = (name: string): boolean => /^[0-9a-f]{40,64}\.json$/.test(name);
+
+export { find, span, timeSpan, POINT_GRAMMAR, type Dated, type Found, type Span } from "./find.ts";

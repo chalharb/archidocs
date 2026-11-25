@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { checkoutSource, createServer, ERROR_CODES, type ErrorCode } from "../../../src/mcp/index.ts";
+import { POINT_GRAMMAR } from "../../../src/revisions/index.ts";
 import { GITHUB_URL, repoPath } from "../lib/repo.ts";
 import { fieldSections, fieldTable, type FieldSection, type JsonSchema } from "./json-schema.ts";
 import { blocks, fence, table, text, type GeneratedPage } from "./page.ts";
@@ -237,7 +238,7 @@ export function mcpPages({ tools: captured, error }: Capture): GeneratedPage[] {
       description: `The ${read.length} MCP tools that query the Model without changing it.`,
       source: "src/mcp/server.ts",
       body: blocks(
-        `\`archidocs mcp\` serves ${all.length} tools. These ${read.length} read the Model and never change it. Each also takes \`at\`, a git ref or a date, to answer from the Model as it was then.`,
+        `\`archidocs mcp\` serves ${all.length} tools. These ${read.length} read the Model and never change it. Each also takes \`at\`, ${POINT_GRAMMAR}, to answer from the Model as it was then. On a checkout, any git ref works too.`,
         `Every result is \`structuredContent\` plus a compact Markdown copy. A call that fails returns \`isError\` with \`{code, message, suggestions?}\`: see [Error codes](${ERRORS_PATH}).`,
         indexTable(read),
         ...read.map(indexSection),
@@ -344,7 +345,7 @@ export function toolErrors(tool: ListedTool): { code: ErrorCode; when: string }[
   const pair = write && ((takes(tool, "from") && takes(tool, "to")) || (takes(tool, "service") && takes(tool, "target")));
   const errors: ({ code: ErrorCode; when: string } | false)[] = [
     { code: "invalid_input", when: "the arguments don't fit the input above." },
-    names && { code: "not_found", when: `${write ? "the Project, or an id it names," : `an id or name${at ? ", or the point in history given as `at`," : ""}`} matches nothing.` },
+    names && { code: "not_found", when: `${write ? "the Project, or an id it names," : `an id or name${at ? ", or the point in history given as `at`," : ""}`} matches nothing${at ? ", or a sha prefix starts more than one Revision, with the candidates" : ""}.` },
     history && { code: "ambiguous", when: "`scope` names both a Project and an Element; pass `scope_kind`." },
     pair && { code: "ambiguous", when: "the arguments match more than one Relationship or Deployment." },
     takes(tool, "dry_run") && { code: "validation_failed", when: "the write would add a check error. Nothing is written." },

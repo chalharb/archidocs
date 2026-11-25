@@ -16,16 +16,26 @@ export interface Times {
 }
 
 /** Why a place's `at` or `vs` can't be shown. */
-export type TimeProblem = { kind: "unknown"; point: string } | { kind: "unavailable"; revision: RevisionEntry; reason: string };
+export type TimeProblem =
+  | { kind: "unknown"; point: string }
+  /** `point` starts several Revisions' shas; `side` says whether it came from `at` or `vs`. */
+  | { kind: "ambiguous"; point: string; side: "at" | "vs"; candidates: RevisionEntry[] }
+  | { kind: "unavailable"; revision: RevisionEntry; reason: string };
 
 export type TimeState = { kind: "ready"; times: Times } | { kind: "problem"; problem: TimeProblem };
 
 async function resolveTimes(latest: Bundle, timeline: Timeline, at: string | null, vs: string | null): Promise<TimeState> {
-  const find = (point: string) => timeline.find(point);
-  const atRevision = at === null ? undefined : find(at);
-  if (at !== null && !atRevision) return { kind: "problem", problem: { kind: "unknown", point: at } };
-  const vsRevision = vs === null ? undefined : find(vs);
-  if (vs !== null && !vsRevision) return { kind: "problem", problem: { kind: "unknown", point: vs } };
+  const find = (point: string | null, side: "at" | "vs"): RevisionEntry | undefined | TimeState => {
+    if (point === null) return undefined;
+    const found = timeline.find(point);
+    if (found.ok) return found.revision;
+    const problem: TimeProblem = found.kind === "ambiguous" ? { kind: "ambiguous", point, side, candidates: found.candidates } : { kind: "unknown", point };
+    return { kind: "problem", problem };
+  };
+  const atRevision = find(at, "at");
+  if (atRevision && "kind" in atRevision) return atRevision;
+  const vsRevision = find(vs, "vs");
+  if (vsRevision && "kind" in vsRevision) return vsRevision;
   const load = async (revision: RevisionEntry | undefined) => (revision === undefined ? latest : loadBundle(revision));
   try {
     const current = await load(atRevision);
@@ -79,6 +89,24 @@ export function Unavailable({ problem, place }: { problem: TimeProblem; place: P
       <div className="arc-unavailable" role="alert">
         <h1>No Revision “{problem.point}”</h1>
         <p>This site's history has no tag, commit or date called {problem.point}.</p>
+        <a href={back}>Back to latest</a>
+      </div>
+    );
+  }
+  if (problem.kind === "ambiguous") {
+    return (
+      <div className="arc-unavailable" role="alert">
+        <h1>More than one Revision “{problem.point}”</h1>
+        <p>The shas of these Revisions all start with {problem.point}. Pick one:</p>
+        <ul>
+          {problem.candidates.map((r) => (
+            <li key={r.sha}>
+              <a href={formatPlace({ ...place, [problem.side]: pointLabel(r) })}>
+                <code>{r.sha.slice(0, 7)}</code> {r.subject} ({shortDate(r)})
+              </a>
+            </li>
+          ))}
+        </ul>
         <a href={back}>Back to latest</a>
       </div>
     );

@@ -26,6 +26,7 @@ import { listAdrs, type ListedAdr } from "../core/adrs.ts";
 import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
+import { POINT_GRAMMAR, type Span } from "../revisions/index.ts";
 import { pastOf, type Past } from "./history.ts";
 import type { ErrorCode } from "./errors.ts";
 import { registerWriteTools } from "./writes.ts";
@@ -671,10 +672,10 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get Changes",
       description:
-        "What changed in the Model between two points in time, each a ref (sha, tag or branch) or a date: a flat list of Changes (added, removed or changed), each with the fields that differ and the whole item before and after. `to` defaults to `at`, else the Workspace the server is reading. `scope` narrows to an Element (with its descendants and the Relationships, Deployments and ADRs touching them), a Team (what it owns at either side) or a Project; pass `scope_kind` when a Team and a Project share the id. `kinds` keeps only some item kinds.",
+        `What changed in the Model between two points in time, each ${POINT_GRAMMAR} (on a checkout, any git ref too): a flat list of Changes (added, removed or changed), each with the fields that differ and the whole item before and after. \`to\` defaults to \`at\`, else the Workspace the server is reading. \`scope\` narrows to an Element (with its descendants and the Relationships, Deployments and ADRs touching them), a Team (what it owns at either side) or a Project; pass \`scope_kind\` when a Team and a Project share the id. \`kinds\` keeps only some item kinds.`,
       input: z.object({
-        from: Point.describe("The point to compare from: a ref or a date"),
-        to: Point.optional().describe("The point to compare to; defaults to `at`, else the current Workspace"),
+        from: Point.describe(`The point to compare from: ${POINT_GRAMMAR}`),
+        to: Point.optional().describe(`The point to compare to: ${POINT_GRAMMAR}. Defaults to \`at\`, else the current Workspace`),
         scope: z.string().min(1).optional().describe("An Element (project:id), a Team id or a Project id"),
         scope_kind: ScopeKind.optional(),
         kinds: z.array(ChangeKindSchema).min(1).optional().describe(`Only these item kinds: ${changeKinds.join(", ")}`),
@@ -733,12 +734,12 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "List history",
       description:
-        "The Revisions (default-branch commits that changed the Workspace), newest first, each with sha, date, subject, author, tags, change counts against the Revision before, and whether its Bundle can be read with `at`. `scope` keeps the Revisions that touched an Element or its descendants, a Team or what it owns, or a Project (as they are at `at`, else now). `since` and `until` are refs or dates, inclusive; with `at`, Revisions after it are left out. Read from the Revision index, so it is cheap.",
+        "The Revisions (default-branch commits that changed the Workspace), newest first, each with sha, date, subject, author, tags, change counts against the Revision before, and whether its Bundle can be read with `at`. `scope` keeps the Revisions that touched an Element or its descendants, a Team or what it owns, or a Project (as they are at `at`, else now). `since` and `until` are points, inclusive: a day covers the whole UTC day. With `at`, Revisions after it are left out. Read from the Revision index, so it is cheap.",
       input: z.object({
         scope: z.string().min(1).optional().describe("An Element (project:id), a Team id or a Project id"),
         scope_kind: ScopeKind.optional(),
-        since: Point.optional().describe("The earliest point: a ref or a date"),
-        until: Point.optional().describe("The latest point: a ref or a date"),
+        since: Point.optional().describe(`The earliest point: ${POINT_GRAMMAR}`),
+        until: Point.optional().describe(`The latest point: ${POINT_GRAMMAR}`),
         limit: Limit,
       }),
       output: z.object({
@@ -752,15 +753,16 @@ export function createServer(options: ServerOptions): McpServer {
       const listed = await past.index();
       if (!listed.ok) return listed;
       let revisions = listed.revisions;
-      for (const [point, edge, keep] of [
-        [since, "start", (t: number, d: number) => d >= t],
-        [until, "end", (t: number, d: number) => d <= t],
-        [at, "end", (t: number, d: number) => d <= t],
+      // A Revision is kept from the start of `since`'s span up to, not including, the end of `until`'s or `at`'s.
+      for (const [point, keep] of [
+        [since, (s: Span, d: number) => d >= s.start],
+        [until, (s: Span, d: number) => d < s.end],
+        [at, (s: Span, d: number) => d < s.end],
       ] as const) {
         if (point === undefined) continue;
-        const time = await past.time(point, edge);
-        if (!time.ok) return time;
-        revisions = revisions.filter((r) => keep(time.time, Date.parse(r.date)));
+        const spanned = await past.span(point);
+        if (!spanned.ok) return spanned;
+        revisions = revisions.filter((r) => keep(spanned.span, Date.parse(r.date)));
       }
       let resolved: HistoryScope | undefined;
       if (scope !== undefined) {
@@ -884,7 +886,7 @@ function scopeFailure(scope: string, found: Extract<ReturnType<typeof resolveSco
   return notFound("Element, Team or Project", scope, found.known);
 }
 
-const At = z.string().min(1).describe("A point in time to answer at: a ref (sha, tag or branch) or a date (YYYY-MM-DD, the last Revision on or before it). Leave out for the current Workspace.");
+const At = z.string().min(1).describe(`A point in time to answer at: ${POINT_GRAMMAR}. On a checkout, any git ref works too. Leave out for the current Workspace.`);
 
 /** Whether a call's raw arguments carry `at`, which write tools never take. */
 export const takesAt = (raw: unknown) => raw !== null && typeof raw === "object" && "at" in raw;
