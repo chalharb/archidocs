@@ -1,6 +1,6 @@
 # Workspace checkout: research
 
-Status: needs-triage
+Status: done
 
 Research for card 2 of the architecture review of 2026-11-24: "A Workspace checkout module, with callable CLI commands". It checks the card's claims against `origin/main` at `6b70992` (after the View module, PR #69, merged), sketches an interface, and lists risks and open questions. No code was changed. Terms follow [GLOSSARY.md](../../GLOSSARY.md); "module", "interface", "seam", "depth" and "leverage" are used as in the codebase-design vocabulary. There is no `docs/adr/` yet, so nothing here contradicts an ADR.
 
@@ -229,3 +229,5 @@ The two cards touch the same files in different halves:
 3. `Checkout` module: open once, with one "which files count" rule; `dev`, `checkoutSource` and `checkoutPast` take a Checkout; `load` is given `repoRoot`.
 4. Commands as functions (`check`, `build`, `exportViews`, `diff`) returning data; the CLI formats.
 5. Website and e2e call the functions in-process; drop the spawns there.
+
+Spec and tickets: [spec.md](spec.md), [issues/](issues/).
