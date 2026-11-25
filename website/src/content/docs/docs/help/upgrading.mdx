@@ -15,7 +15,7 @@ Within a major, such as every 1.x release, these keep working:
 
 - **CLI:** the [commands](/docs/reference/cli/), their flags and their exit codes change only in a major release.
 - **Model YAML:** a [Workspace](/docs/reference/glossary/#term-workspace), the repo that holds the whole architecture, that passes `archidocs check` keeps passing within a major.
-- **New rules:** a new [rule](/docs/reference/rules/) arrives as a warning first, so it can't fail a Workspace that passed before.
+- **New rules:** a new [rule](/docs/reference/rules/) arrives as a warning first.
 - **MCP tools:** tool names, required inputs and existing output fields change only in a major release.
 - **New MCP tools:** new tools and new optional fields can arrive in a minor release.
 - **Rule ids:** a rule's id is never reused.
@@ -32,16 +32,14 @@ Viewer URLs will drop `/#/` in a 1.x release, so the hash form, such as `#/view/
 
 ## What carries no promise
 
-- **The Bundle format:** the `schemaVersion` of the [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one file the viewer and MCP server read, is internal and can change in any release.
-- **Rebuilds:** sites and caches rebuild the Bundle from git, so a new format needs no action from you.
-- **Notice:** the Changelog says when the format changes.
+The [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one file the viewer and MCP server read, has no promise. Its format and its `schemaVersion` are internal, and can change in any release. Sites and caches rebuild the Workspace Bundle from git, so a new format needs no action from you. The Changelog says when the format changes.
 
 ## The Action's tags
 
 - **`@v1`:** a moving tag that each 1.x release moves to itself, so `chalharb/archidocs@v1` always runs the newest 1.x release.
 - **`@v1.2.0`:** a fixed tag that pins one release.
 
-The GitLab template's URL uses the same tags, and picks only the template file. The npm version it runs is its `version` input.
+The GitLab template's URL uses the same tags. There the tag picks only the template file. The template's `version` input picks the CLI it runs.
 
 ## Upgrade the CLI and CI together
 
@@ -78,7 +76,7 @@ include:
       version: 1.2.0
 ```
 
-Without a `version` input, the template runs the newest release on npm. For a new major, change `/v1/` in the URL to the new major. See the [GitLab template reference](/docs/reference/ci/gitlab-template/).
+Without a `version` input, the template runs the newest release on npm, even a new major. Pin `version` to stay on one major. For a new major, change `/v1/` in the URL and the `version` input. See the [GitLab template reference](/docs/reference/ci/gitlab-template/).
 
 </TabItem>
 </Tabs>
@@ -91,7 +89,7 @@ From the Workspace repo's root, run:
 archidocs init
 ```
 
-It refreshes the agent skill files that the new version changed, and adds any setup that is missing. It leaves your Model alone.
+It refreshes the agent skill files that the new version changed, and adds any setup that is missing. It leaves your [Model](/docs/reference/glossary/#term-model), every Element and Relationship of your architecture, alone. [Installation](/docs/start/installation/#upgrade) shows what it prints.
 
 ### 4. Check the Workspace
 
@@ -99,11 +97,15 @@ It refreshes the agent skill files that the new version changed, and adds any se
 archidocs check
 ```
 
-Within a major, a Workspace that passed still passes. Any new warning comes from a new rule. Its line links the rule's page, which says how to fix it.
+```text
+0 errors, 0 warnings
+```
+
+Within a major, a Workspace that passed still has no errors. A new rule can add a warning, and the warning's line links the rule's page. With `archidocs check --strict`, a warning fails the check, so fix it before you upgrade CI.
 
 ## Read the Changelog
 
-The [Changelog](/docs/reference/changelog/) lists every release, newest first. release-please writes it from the type of each commit message, so the type decides the section and the version number:
+The [Changelog](/docs/reference/changelog/) lists every release, newest first. release-please writes it from the type of each commit message. The type decides the section and the version number:
 
 | Commit type | Changelog section | Release |
 | --- | --- | --- |
@@ -111,7 +113,7 @@ The [Changelog](/docs/reference/changelog/) lists every release, newest first. r
 | `feat` | Features | Minor |
 | `fix` | Bug fixes | Patch |
 
-`perf` and `revert` commits get the Performance and Reverts sections. Other types, such as `docs`, `refactor` and `chore`, don't appear in the Changelog. Before a major upgrade, read its ⚠ BREAKING CHANGES section: it lists every promise above that the release breaks.
+`perf` and `revert` commits get the Performance and Reverts sections. Other types, such as `docs`, `refactor` and `chore`, don't appear in the Changelog. Before a major upgrade, read its ⚠ BREAKING CHANGES section, which lists the breaking changes.
 
 ## Related
 
