@@ -106,7 +106,7 @@ export function viewerUrlPages(): GeneratedPage[] {
         ].join("\n"),
         "## See also",
         [
-          "- [The viewer](/docs/concepts/viewer/): the screens these URLs open.",
+          "- [Use the viewer](/docs/guides/viewer/): the screens these URLs open.",
           "- [Views](/docs/concepts/views/): the Views a route names.",
           "- [Big Bank](/docs/examples/big-bank/): the example Workspace the links open.",
         ].join("\n"),

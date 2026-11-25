@@ -1,0 +1,62 @@
+---
+title: Find an Element
+description: Search for an Element, read its Element panel, and see everything a Team owns.
+sidebar:
+  order: 1
+---
+
+import Screenshot from "../../../../../components/Screenshot.astro";
+
+Find any [Element](/docs/reference/glossary/#term-element), a Person, System, Service or Component of the Model, and see everything a [Team](/docs/reference/glossary/#term-team) owns.
+
+## Before you start
+
+- You have a viewer open: the [Big Bank demo ↗](https://big-bank.archidocs.dev), or your own Workspace with `archidocs dev`. See the [Quick start](/docs/start/quick-start/).
+
+## 1. Search for the Element
+
+Press `/`, or select **Find** in the rail on the left. Type part of a name, an id, a Team, a technology or one of a Service's URLs. Select a result to open it on the diagram.
+
+To browse instead, use the other trees in the rail:
+
+- **Model** lists every System, Service and Component, by kind or by Team.
+- **Views** lists the Generated and Saved Views. A [View](/docs/reference/glossary/#term-view) is a diagram drawn from a query over the Model.
+
+## 2. Read its Element panel
+
+Selecting a node opens the Element panel beside the diagram:
+
+<Screenshot id="viewer-element-panel" alt="The Payments System's View with the Payments Service selected. The Element panel shows its Owner, the Payments Team, and buttons for Upstream & downstream, Connect to…, Open its View and Where is it deployed?" />
+
+| Tab | What it shows |
+| --- | --- |
+| **Overview** | The description and technology, the Owner Team, and the questions you can ask about the Element |
+| **URLs** | Each Environment the Service runs in, with its URL |
+| **ADRs** | The decisions that link the Element or anything inside it |
+| **Links** | Its Relationships in and out |
+| **History** | The Revisions that changed it |
+
+To see what is inside a System or Service without leaving the View, select the **+** on its box.
+
+## 3. See what the Team owns
+
+Select **Teams** in the rail, then a Team. Or select the Owner in the Element panel. The Team Lens outlines every Element the Team owns:
+
+<Screenshot id="viewer-team-lens" alt="The Service Landscape with the Team Lens on the Payments Team: the Payments System and the Card Network are outlined." />
+
+A [Lens](/docs/reference/glossary/#term-lens) highlights part of a View without changing what it shows. Clear it with the **×** on its chip.
+
+## Check it worked
+
+The location bar shows a **Team** chip with the Team's name, and the address ends in `team=` and the Team's id. On the demo, [what the Payments Team owns ↗](https://big-bank.archidocs.dev/#/view/c2?team=payments) is the Payments System and the Card Network.
+
+## With an agent
+
+Ask "What does the Payments Team own?". [`list_owned`](/docs/reference/mcp/read-tools/#list_owned) answers it. [`search_elements`](/docs/reference/mcp/read-tools/#search_elements) finds an Element by name, and [`get_element`](/docs/reference/mcp/read-tools/#get_element) returns what its Element panel shows.
+
+## Related
+
+- [Teams and ownership](/docs/concepts/teams-and-ownership/)
+- [Elements](/docs/concepts/elements/)
+- [Viewer URLs](/docs/reference/viewer-urls/)
+- [Trace impact and paths](/docs/guides/viewer/trace-impact-and-paths/)

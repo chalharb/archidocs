@@ -1,0 +1,50 @@
+---
+title: Trace impact and paths
+description: See what is upstream and downstream of an Element, and how two Elements are connected.
+sidebar:
+  order: 2
+---
+
+import Screenshot from "../../../../../components/Screenshot.astro";
+
+See everything an outage reaches, and every path between two Elements, lit on the diagram.
+
+## Before you start
+
+- You have a viewer open. See [Find an Element](/docs/guides/viewer/find-an-element/).
+
+## 1. Turn on the Impact Lens
+
+Select the Element that is down, then select **Upstream & downstream** in its Element panel. The Impact Lens marks every Element that depends on it, or that it depends on, with how many hops away it is.
+
+Choose a direction on the Lens's chip. [Upstream](/docs/reference/glossary/#term-upstream-downstream) is everything that depends on the Element, so it is what an outage reaches. Downstream is what the Element depends on.
+
+<Screenshot id="viewer-impact-lens" alt="The Service Landscape with the Impact Lens upstream of the Mainframe Banking System. Five boxes are marked Upstream 1, and the Personal Banking Customer is marked Upstream 3." />
+
+## 2. Connect two Elements
+
+Select the first Element, then select **Connect to…** in its Element panel. Select the second node on the diagram, or press `/` to find it. Escape cancels.
+
+The Connect to… Lens lights the shortest paths between them, and picks every node on them. Choose **All ≤ 4 hops** on its chip to light every path of four hops or fewer.
+
+<Screenshot id="viewer-connect-lens" alt="The Service Landscape with the Connect to… Lens from the Single-Page Application to the Mainframe: the Internet Banking System and the Mainframe Banking System are lit." />
+
+## 3. Open the Systems on the path
+
+On the Service Landscape, a path between two Services runs through their Systems. Select the **+** on a lit System to see which of its Services the path goes through.
+
+## Check it worked
+
+The location bar shows an **Impact** or **Connect** chip that names the Elements. The address holds the Lens: `impact=` and `way=` for impact, `from=` and `to=` for a path. On the demo, [everything upstream of the Mainframe ↗](https://big-bank.archidocs.dev/#/view/c2?impact=core:mainframe&way=upstream) is what a Mainframe outage reaches.
+
+## With an agent
+
+Ask "What breaks if the Mainframe is down?". [`get_impact`](/docs/reference/mcp/read-tools/#get_impact) answers it, with how far upstream each Element is.
+
+Ask "How does the Single-Page Application reach the Mainframe?". [`find_paths`](/docs/reference/mcp/read-tools/#find_paths) answers it, with each Relationship on the way.
+
+## Related
+
+- [Relationships](/docs/concepts/relationships/)
+- [Viewer URLs](/docs/reference/viewer-urls/)
+- [Share or save what's on screen](/docs/guides/viewer/share-or-save/)

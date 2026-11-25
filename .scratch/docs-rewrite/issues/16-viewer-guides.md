@@ -1,6 +1,6 @@
 # 16: "Use the viewer" guides
 
-Status: ready-for-agent
+Status: done
 Blocked by: 07, 15
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -23,7 +23,7 @@ A new `guides/viewer/` group. Each page answers one of the persona questions in 
 
 ## Acceptance criteria
 
-- [ ] The five pages exist under a "Use the viewer" group and pass the template test.
-- [ ] Each page has at least one `<Screenshot>` and a link that opens the same screen on the demo.
-- [ ] Each of the six persona questions is answered on one of the pages, with its MCP tool.
-- [ ] `/docs/concepts/viewer/` redirects, and no page links the old URL.
+- [x] The five pages exist under a "Use the viewer" group and pass the template test.
+- [x] Each page has at least one `<Screenshot>` and a link that opens the same screen on the demo.
+- [x] Each of the six persona questions is answered on one of the pages, with its MCP tool.
+- [x] `/docs/concepts/viewer/` redirects, and no page links the old URL.
