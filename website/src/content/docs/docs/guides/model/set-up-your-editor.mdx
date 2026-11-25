@@ -1,0 +1,74 @@
+---
+title: Set up your editor
+description: Completion, validation and field descriptions as you type the Model YAML.
+sidebar:
+  order: 9
+---
+
+Point your editor's YAML language server at the Archidocs schemas. It then completes field names, underlines a field that doesn't exist and describes a field on hover.
+
+## Before you start
+
+- The repo holds a [Workspace](/docs/reference/glossary/#term-workspace), the `archidocs/` folder with the whole architecture in it. See the [Quick start](/docs/start/quick-start/).
+- Your editor runs [`yaml-language-server`](https://github.com/redhat-developer/yaml-language-server). In VS Code, that means the [YAML extension by Red Hat](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml).
+
+## 1. Map the schemas to the Workspace's files
+
+The `archidocs` npm package ships three schemas in its `schemas/` folder, one for each kind of file:
+
+| File | Schema |
+| --- | --- |
+| `archidocs/workspace.yaml` | `workspace.schema.json` |
+| `archidocs/<project>/project.yaml` | `project.schema.json` |
+| Every other `.yaml` file in a Project | `model.schema.json` |
+
+In VS Code, add the `yaml.schemas` setting to the repo's `.vscode/settings.json`. Commit it, so everyone who opens the repo gets the same setup:
+
+```json file="examples/editor/.vscode/settings.json" title=".vscode/settings.json"
+```
+
+The editor reads the schemas from jsDelivr, which serves the files of the npm package. `archidocs@1` is the latest 1.x release. If you pin the CLI to an exact version, write that version in the URLs too. `archidocs version` prints the version you run.
+
+The patterns are relative to the folder open in the editor. The `!` pattern keeps `project.yaml` out of the Model schema.
+
+In another editor, pass the same `yaml.schemas` map in the editor's settings for `yaml-language-server`, under the `yaml` key.
+
+## 2. Read the schemas from `node_modules` instead
+
+Skip this step if the URLs work for you. If the repo installs `archidocs` as a dev dependency, or the editor can't reach jsDelivr, point the same setting at the installed package instead:
+
+```bash
+npm install --save-dev archidocs
+```
+
+Then replace `https://cdn.jsdelivr.net/npm/archidocs@1/schemas/` with `./node_modules/archidocs/schemas/` in each of the three entries. The schemas then always match the installed CLI.
+
+## Check it worked
+
+Open `archidocs/<project>/model.yaml` and start a new line inside a Service, at the indent of its `name`. Press <kbd>Ctrl</kbd>+<kbd>Space</kbd>. The editor lists the fields the Service doesn't set yet. For the `spa` Service from the [tutorial](/docs/start/tutorial/), VS Code offers:
+
+```text
+components  external  in  links  owner  tags  type
+```
+
+Type a field that doesn't exist, such as `colour: red`. The editor underlines it:
+
+```text
+Property colour is not allowed.
+```
+
+Hover a field to read its description, the same text as the [Model YAML reference](/docs/reference/model/model-yaml/).
+
+## If it didn't
+
+If nothing completes and nothing is underlined, the file matched no pattern. Open the repo's root folder in the editor, not `archidocs/`. If the Workspace is in a subfolder of the repo, add that folder to each pattern, such as `infra/archidocs/*/*.yaml`.
+
+If the editor reports that it can't load the schema, it can't reach jsDelivr. Read the schemas from `node_modules`, as in step 2.
+
+The schemas check each file's shape, one file at a time. They can't know which ids exist in the other files. A misspelt id in `to` is only reported by `archidocs check`, as [`unknown-element`](/docs/reference/rules/unknown-element/).
+
+## Related
+
+- [Model YAML reference](/docs/reference/model/), generated from the same schemas
+- [`archidocs check`](/docs/reference/cli/check/), which checks what the schemas can't
+- [Check a Workspace in CI](/docs/guides/publish/check-in-ci/)

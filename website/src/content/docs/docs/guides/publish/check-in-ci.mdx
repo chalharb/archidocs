@@ -1,0 +1,89 @@
+---
+title: Check a Workspace in CI
+description: Run archidocs check on every pull request, without publishing.
+sidebar:
+  order: 6
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+Run `archidocs check` on every pull request, so a change that breaks the Model fails before it merges. Nothing is built or published.
+
+## Before you start
+
+- The Workspace is in a GitHub or GitLab repo, and `archidocs check` passes on the default branch. See the [Quick start](/docs/start/quick-start/).
+- The repo doesn't build [pull request previews](/docs/guides/publish/pr-previews/) yet. A preview job already checks every pull request.
+
+## 1. Add the job
+
+<Tabs syncKey="ci">
+<TabItem label="GitHub">
+
+Add this workflow to the repo:
+
+```yaml file="examples/ci/.github/workflows/check.yml" title=".github/workflows/check.yml"
+```
+
+`--format github` prints each issue as a GitHub Actions annotation. The pull request then shows the issue on the line it is about.
+
+</TabItem>
+<TabItem label="GitLab">
+
+Add this job to the repo's `.gitlab-ci.yml`:
+
+```yaml file="examples/ci/.gitlab-ci.yml" title=".gitlab-ci.yml"
+```
+
+GitLab has no annotations for this. The job's log lists each issue with its file, line and rule.
+
+</TabItem>
+</Tabs>
+
+`--strict` fails the job on warnings as well as errors, so warnings don't pile up. Drop it to fail on errors only.
+
+## 2. Pin the CLI version
+
+The job installs `archidocs@1`, the latest 1.x release. A later release can report something new, which `--strict` turns into a failure on a pull request that changed nothing. To upgrade only when you choose, write the exact version you run locally:
+
+```bash
+archidocs version
+```
+
+```text
+archidocs 1.2.0 (Bundle schemaVersion 1)
+```
+
+Then replace `archidocs@1` in the job with that version, such as `archidocs@1.2.0`.
+
+## 3. Require the check
+
+So that a failing check blocks the merge:
+
+- **GitHub:** add a branch ruleset for the default branch that requires the `check` status check.
+- **GitLab:** turn on **Settings › Merge requests › Pipelines must succeed**.
+
+## Check it worked
+
+Open a pull request that adds a field that doesn't exist, such as `colour: red` under a System. The job fails. On GitHub, its log shows the annotation it printed:
+
+```text
+::error file=archidocs/digital/model.yaml,line=15,col=5,title=unknown-field::Unknown field "colour" See https://archidocs.dev/docs/reference/rules/unknown-field/
+```
+
+The pull request's **Files changed** tab shows the message on line 15. Remove the field and push: the job passes.
+
+## If it didn't
+
+If the job fails with `No workspace.yaml found`, the Workspace isn't at the repo's root. Run the check from its folder: on GitHub, set `working-directory` on the step. On GitLab, add `cd <folder>` before `archidocs check`.
+
+If the job fails on a warning that you can't fix yet, drop `--strict` until you can. Each rule's page says how to fix what it reports: follow the link in the message.
+
+## With an agent
+
+The [`check`](/docs/reference/mcp/write-tools/#check) tool runs the same check over MCP. An agent that edits the Model can run it before it opens the pull request, so CI finds nothing new.
+
+## Related
+
+- [Preview pull requests](/docs/guides/publish/pr-previews/), the next step: a site and a comment for every pull request
+- [`archidocs check` reference](/docs/reference/cli/check/)
+- [Set up your editor](/docs/guides/model/set-up-your-editor/), to catch the same mistakes before you commit

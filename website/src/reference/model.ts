@@ -207,7 +207,7 @@ export function modelPages(): GeneratedPage[] {
       source,
       body: blocks(
         page.lead,
-        `Generated from [\`${source}\`](https://github.com/chalharb/archidocs/blob/main/${source}), which editors use for completion, validation and these descriptions on hover.${notation.length > 0 ? ` In the Field column, ${notation.join(" and ")}.` : ""} A key that isn't listed here is an error: [\`${rule}\`](/docs/reference/rules/${rule}/).`,
+        `Generated from [\`${source}\`](https://github.com/chalharb/archidocs/blob/main/${source}), which [editors use](/docs/guides/model/set-up-your-editor/) for completion, validation and these descriptions on hover.${notation.length > 0 ? ` In the Field column, ${notation.join(" and ")}.` : ""} A key that isn't listed here is an error: [\`${rule}\`](/docs/reference/rules/${rule}/).`,
         legend.length > 0 && `In the Type column:\n\n${legend.join("\n")}`,
         ...sections,
       ),
