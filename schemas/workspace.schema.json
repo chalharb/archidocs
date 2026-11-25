@@ -4,6 +4,7 @@
   "type": "object",
   "properties": {
     "teams": {
+      "description": "The Teams of the Workspace, keyed by id. Every `owner` in every Project names one of these ids.",
       "type": "object",
       "propertyNames": {
         "type": "string",
@@ -13,39 +14,30 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The Team's display name."
           },
           "description": {
+            "description": "A short description of the Team.",
             "type": "string"
           },
           "links": {
+            "description": "Links to pages about the Team.",
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string"
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "required": [
-                "label",
-                "url"
-              ],
-              "additionalProperties": false
+              "$ref": "#/$defs/Link"
             }
           }
         },
         "required": [
           "name"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "A Team: a group that can own Elements and Deployment Targets. Its key is the Team's id."
       }
     },
     "environments": {
+      "description": "The Environments of the Workspace, keyed by id. Every Deployment in every Project names one of these ids.",
       "type": "object",
       "propertyNames": {
         "type": "string",
@@ -55,18 +47,45 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The Environment's display name, such as `Production`."
           },
           "description": {
+            "description": "A short description of the Environment.",
             "type": "string"
           }
         },
         "required": [
           "name"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "An Environment: a named stage that Services run in, such as prod or staging. Its key is the Environment's id."
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "`workspace.yaml`: the Teams and Environments that every Project in the Workspace shares.",
+  "$defs": {
+    "Link": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "The text of the link, such as `Runbook`."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "The page the link opens. A full URL, such as `https://wiki.example.com/runbooks/web`."
+        }
+      },
+      "required": [
+        "label",
+        "url"
+      ],
+      "additionalProperties": false,
+      "title": "Link",
+      "description": "A link to a page about the thing it is declared on, such as a runbook or a dashboard."
+    }
+  }
 }
