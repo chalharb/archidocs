@@ -104,6 +104,10 @@ _Avoid_: Export, snapshot (unless meaning a specific historical bundle)
 A commit on the Workspace's default branch that changed the Model; the points in time that history is told in.
 _Avoid_: Version, snapshot, release
 
+**Revision index**:
+The list of a Workspace's Revisions, newest first, each with its commit, tags and Change counts, that a published site and a checkout's cache keep beside the past Workspace Bundles.
+_Avoid_: History file, manifest
+
 **Change**:
 One item of the Model added, removed or changed between two Revisions.
 _Avoid_: Delta, diff entry

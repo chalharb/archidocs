@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { load, nodeFileSystem, type Issue } from "../core/index.ts";
 import { gitHead } from "../git.ts";
 import { Bundle } from "../schema/bundle.ts";
+import { LATEST_BUNDLE_PATH } from "../revisions/index.ts";
 
 /** The Bundle the server answers from, with the issues Load found building it. */
 export interface Snapshot {
@@ -61,7 +62,7 @@ export function checkoutSource({ root }: { root: string }): CheckoutSource {
 /** How long a fetched Bundle is trusted before the source is asked again. */
 const RECHECK_MS = 60_000;
 
-const BUNDLE_FILE = "workspace.bundle.json";
+const BUNDLE_FILE = LATEST_BUNDLE_PATH;
 
 /**
  * A published Workspace Bundle, read-only. `location` is a URL or a path,
