@@ -27,6 +27,7 @@ import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
 import { pastOf, type Past } from "./history.ts";
+import type { ErrorCode } from "./errors.ts";
 import { registerWriteTools } from "./writes.ts";
 import { authoringGuide, topics } from "../guide/index.ts";
 
@@ -42,8 +43,6 @@ export interface ServerOptions {
   allowWrites?: boolean;
 }
 
-/** The typed error codes a tool result can carry in `structuredContent.code`. */
-export type ErrorCode = "not_found" | "ambiguous" | "invalid_input" | "validation_failed" | "read_only" | "source_unavailable" | "history_unavailable";
 
 export type ToolOutcome =
   | { ok: true; data: Record<string, unknown>; text: string }
