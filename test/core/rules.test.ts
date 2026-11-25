@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { removed, ruleDocsUrl, rules } from "../../src/core/index.ts";
+import { removed, ruleDocsUrl, rules, type RuleDefinition } from "../../src/core/index.ts";
+import { ruleAreas } from "../../src/core/rules.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
 // The rules tickets 01, 03, 04 and 05 introduce; later tickets add to the registry.
@@ -49,6 +50,46 @@ describe("rule registry", () => {
       const { issues } = await loadWorkspace(rule.example.passing);
       expect(issues).toEqual([]);
     });
+  });
+});
+
+describe("what a rule says about itself", () => {
+  it("can't leave out `why`, `area` or `since`: the type requires them", () => {
+    const { why, area, since, ...rest } = rules[0]!;
+    // @ts-expect-error a rule with no `why` doesn't type-check
+    const noWhy: RuleDefinition = { ...rest, area, since };
+    // @ts-expect-error a rule with no `area` doesn't type-check
+    const noArea: RuleDefinition = { ...rest, why, since };
+    // @ts-expect-error a rule with no `since` doesn't type-check
+    const noSince: RuleDefinition = { ...rest, why, area };
+    // @ts-expect-error an area outside the list doesn't type-check
+    const badArea: RuleDefinition = { ...rest, why, since, area: "parsing" };
+    expect([noWhy, noArea, noSince, badArea]).toHaveLength(4);
+  });
+
+  it.each(rules.map((r) => [r.id, r] as const))("%s says why it exists, in sentences of its own", (_id, rule) => {
+    expect(rule.why).toMatch(/^[A-Z`].*\.$/);
+    expect(rule.why).not.toBe(rule.summary);
+  });
+
+  it("puts every rule in exactly one area, and leaves no area empty", () => {
+    const byArea = ruleAreas.map((area) => rules.filter((r) => r.area === area));
+    expect(byArea.flat().map((r) => r.id).sort()).toEqual(rules.map((r) => r.id).sort());
+    for (const [i, inArea] of byArea.entries()) expect(inArea.length, ruleAreas[i]).toBeGreaterThan(0);
+  });
+
+  it("names the release each rule first shipped in", () => {
+    for (const rule of rules) expect(rule.since, rule.id).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+
+  it("lists only current rules as related, each once and never the rule itself", () => {
+    const live = new Set(rules.map((r) => r.id));
+    for (const rule of rules) {
+      const related = rule.related ?? [];
+      expect(related.filter((id) => !live.has(id)), rule.id).toEqual([]);
+      expect(related, rule.id).not.toContain(rule.id);
+      expect(new Set(related).size, rule.id).toBe(related.length);
+    }
   });
 });
 
