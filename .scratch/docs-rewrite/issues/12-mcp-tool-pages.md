@@ -27,4 +27,4 @@ The 31 tools sit on two long pages with no example call, and outputs that are un
 ## Notes
 
 - `toolPath`, the landing page, the reference index, the concept pages and the introduction link the tool pages. The guides' `read-tools/#<tool>` and `write-tools/#<tool>` links still resolve; they move to `/docs/reference/mcp/<tool>/` once ticket 08's rewrite of the guides lands.
-- CI's `docs` and `e2e` jobs check out the full history (`fetch-depth: 0`), since the `get_changes` and `list_history` examples read it.
+- CI's `test`, `docs` and `e2e` jobs, and the publish job, check out the full history (`fetch-depth: 0`): the `get_changes` and `list_history` examples read it, and `pnpm typecheck` builds the pages through `astro check`.
