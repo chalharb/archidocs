@@ -1,8 +1,10 @@
 # Revision index and site layout: research
 
-Status: needs-triage
+Status: done
 
 Research for card 3 of the architecture review of 2026-11-24: "One Revision index, one owner of the published-site layout." It checks the card's claims against `origin/main` at `6b70992`, shows the divergences with a script, sketches an interface, lines this card up with card 2 ([Workspace checkout](../workspace-checkout/research.md), on branch `claude/workspace-checkout-research-fa4e89`), and lists risks and open questions. No source code was changed. Terms follow [GLOSSARY.md](../../GLOSSARY.md); "module", "interface", "seam", "adapter", "depth" and "leverage" are used as in the codebase-design vocabulary. There is no `docs/adr/` yet, so nothing here contradicts an ADR.
+
+Spec and tickets: [spec.md](spec.md), [issues/](issues/).
 
 **Verdict:** the card holds, with one correction. Turning a point into a Revision really is written three times and gives different answers for 9 of the 14 points tried below. But the card's first example, "where a date ends", makes no observable difference: commit dates have whole seconds, so `23:59:59Z` and `23:59:59.999Z` pick the same Revision, and git's `--before` is fed the same `23:59:59Z`. The real date divergence is elsewhere: git picks any first-parent commit, while the site and the viewer pick only Revisions. The site layout has no owner (6 write sites, 1 virtual server, 6 readers, 1 test fake), and the latest Bundle is never migrated. The refactor is worth a spec. One question needs grilling first: should a point on a checkout keep git's full ref grammar?
 
