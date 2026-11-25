@@ -1,7 +1,7 @@
 people:
   customer-service-staff:
     name: Customer Service Staff
-    description: Staff in the call centre who help customers.
+    description: Staff in the call center who help customers.
     relationships:
       - to: mainframe
         description: Looks up customer accounts in
@@ -38,7 +38,7 @@ systems:
         technology: Java
         relationships:
           - to: mainframe
-            description: Authorises withdrawals with
+            description: Authorizes withdrawals with
             technology: ISO 8583
 
 services:

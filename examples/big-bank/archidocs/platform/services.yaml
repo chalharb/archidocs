@@ -9,5 +9,5 @@ services:
     type: broker
     technology: Apache Kafka (Amazon MSK)
     links:
-      - label: Topic catalogue
+      - label: Topic catalog
         url: https://wiki.bigbank.example/platform/topics

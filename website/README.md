@@ -311,9 +311,9 @@ Pages written before these rules may still break them. Fix a page when you rewri
 | A guide has the two headings | Every page under `guides/`, except an `index.mdx` | No `## Before you start` heading, or no `## Check it worked` heading. Both are second-level, with exactly this text. |
 | A concept page follows the concept template | Every page under `concepts/`, except an `index.mdx` | No `## Why it works this way` heading, or no `## Related` heading. Or a heading of any level that starts with a number, or with "Step" and a number: `## 1. Add the file`, `### Step 2` |
 | At most two links in a sentence | Every page under `concepts/`, except an `index.mdx` | A sentence with three or more Markdown links. A line break ends a sentence, so each list item and table row counts on its own. |
-| No banned word | Every page under `website/src/content/docs/`, and every intro in `website/src/intros/` | A banned word in prose. The list is `BANNED_WORDS` in the test, and today holds "harness". |
+| No banned word | Every page under `website/src/content/docs/`, every intro in `website/src/intros/`, the repo's `README.md` and `GLOSSARY.md`, and the agent guide in `guide/` | A banned word in prose. The list is `BANNED_WORDS` in the test. It holds "harness" and a short list of British spellings, such as "colour", "centre" and "organis". |
 
-The banned-word check reads prose: the frontmatter and the text, not code blocks, inline code or link targets. It matches the start of a word in any case, so "harness" also finds "Harnesses".
+The banned-word check reads prose: the frontmatter and the text, not code blocks, inline code or link targets. It matches the start of a word in any case, so "harness" also finds "Harnesses", and "organis" finds both "organise" and "organisation".
 
 **Not-yet-migrated lists.** Each rule has a list of the pages that were written before it and still break it. The lists are in the test file. The test fails in two cases:
 

@@ -13,7 +13,7 @@ Load the topic for the task before you write: `get_authoring_guide(topic)`, or `
 
 - **Elements**: Person, System, Service, Component. Nesting is strict: System › Service › Component; a Service may sit outside any System; Persons are top-level. Every Element has `name`, and optionally `description`, `owner`, `tags`, `links`.
   - Service adds `type` (`app` by default, `datastore`, `broker`), `technology`, `external`. System adds `external`. Component adds `technology`.
-  - An External System or Service runs outside the organisation and has no declared Components.
+  - An External System or Service runs outside the organization and has no declared Components.
 - **Relationships** sit under their consumer and point `to` the provider it depends on. Edges between higher-level Elements are derived, never declared.
 - **Ownership**: one Owner Team per Element, defaulting to the Project's `owner`. Set `owner` only when it differs.
 - **Deployment Targets** nest to any depth, have a `kind`, and are not Elements. A **Deployment** is one Service in one Environment on one Target, and carries the `url` and `endpoints`. URLs live only on Deployments.

@@ -516,7 +516,7 @@ export const rules: RuleDefinition[] = [
     since: "1.0.0",
     summary: "An External System or Service declares Components.",
     why: "An External System or Service runs outside the organization, and you can't see inside it. Components declared there would describe software that its Owner, the Team accountable for the integration, doesn't run and can't check.",
-    fix: "Remove the Components, or drop `external` if the organisation runs the Element itself.",
+    fix: "Remove the Components, or drop `external` if the organization runs the Element itself.",
     related: ["invalid-nesting"],
     example: {
       failing: withServices("services:\n  stripe:\n    name: Stripe\n    external: true\n    components:\n      stripe-sdk:\n        name: Stripe SDK\n"),

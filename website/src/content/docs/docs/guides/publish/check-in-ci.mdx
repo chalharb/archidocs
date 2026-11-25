@@ -64,10 +64,10 @@ So that a failing check blocks the merge:
 
 ## Check it worked
 
-Open a pull request that adds a field that doesn't exist, such as `colour: red` under a [System](/docs/reference/glossary/#term-system). The job fails. On GitHub, its log shows the annotation it printed:
+Open a pull request that adds a field that doesn't exist, such as `color: red` under a [System](/docs/reference/glossary/#term-system). The job fails. On GitHub, its log shows the annotation it printed:
 
 ```text
-::error file=archidocs/digital/model.yaml,line=15,col=5,title=unknown-field::Unknown field "colour" See https://archidocs.dev/docs/reference/rules/unknown-field/
+::error file=archidocs/digital/model.yaml,line=15,col=5,title=unknown-field::Unknown field "color" See https://archidocs.dev/docs/reference/rules/unknown-field/
 ```
 
 The pull request's **Files changed** tab shows the message on line 15. Remove the field and push: the job passes.

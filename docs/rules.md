@@ -418,7 +418,7 @@ services:
         name: Stripe SDK
 ```
 
-**Fix:** Remove the Components, or drop `external` if the organisation runs the Element itself.
+**Fix:** Remove the Components, or drop `external` if the organization runs the Element itself.
 
 **Fixed**
 

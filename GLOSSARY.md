@@ -41,7 +41,7 @@ A named grouping of Services that together deliver a business capability; System
 _Avoid_: Platform, domain, product (unless meaning the business product)
 
 **External**:
-Said of a System or Service run outside the organisation, such as a payment provider; its Owner is the Team accountable for the integration.
+Said of a System or Service run outside the organization, such as a payment provider; its Owner is the Team accountable for the integration.
 _Avoid_: Third-party, vendor (as a kind)
 
 **Model**:
