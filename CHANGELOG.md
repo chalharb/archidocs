@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.3.0](https://github.com/chalharb/archidocs/compare/v1.2.0...v1.3.0) (2026-11-25)
+
+
+### Features
+
+* **check:** say why each rule exists and what check prints ([#64](https://github.com/chalharb/archidocs/issues/64)) ([9355bfe](https://github.com/chalharb/archidocs/commit/9355bfeb4c3dcd5e18dd8b253226f8f49ea4c091))
+* **cli:** examples and exit codes for every command ([#66](https://github.com/chalharb/archidocs/issues/66)) ([8522d45](https://github.com/chalharb/archidocs/commit/8522d45dbebe9b53826354e55c1102f102178fb0))
+* **schema:** describe every Model YAML field ([#68](https://github.com/chalharb/archidocs/issues/68)) ([bc02bab](https://github.com/chalharb/archidocs/commit/bc02bab2b41fcb8b0d483fe91581d07857ba652f))
+* **viewer:** one list of URL parameters, and a generated viewer URL reference ([#73](https://github.com/chalharb/archidocs/issues/73)) ([d1af7a1](https://github.com/chalharb/archidocs/commit/d1af7a1ebff47d09bc0058c170c5756ade37c224))
+* **viewer:** size boxes to their names, add a visible way in, reflow the plate ([#57](https://github.com/chalharb/archidocs/issues/57)) ([14092f1](https://github.com/chalharb/archidocs/commit/14092f1e3fc128c710834ce22ca16a7406dd2753))
+* **website:** a page per MCP tool, with a real example ([#74](https://github.com/chalharb/archidocs/issues/74)) ([2a491fc](https://github.com/chalharb/archidocs/commit/2a491fcabcc17d02e8978ada20074e053bc728e4))
+* **website:** a quick start that reaches a result ([#67](https://github.com/chalharb/archidocs/issues/67)) ([c1c8299](https://github.com/chalharb/archidocs/commit/c1c829954366e7e25bd32c2ad512b499adbef59e))
+* **website:** docs home cards, group index pages and last-updated dates ([#65](https://github.com/chalharb/archidocs/issues/65)) ([86c5e21](https://github.com/chalharb/archidocs/commit/86c5e2178fa3c70bc470ffcb091a21c2524aa2cf))
+* **website:** generated screenshots of the viewer ([#71](https://github.com/chalharb/archidocs/issues/71)) ([7a5a07f](https://github.com/chalharb/archidocs/commit/7a5a07f2fae4b6eec71a30a316de1fd906097f0f))
+
+
+### Bug fixes
+
+* **views:** direction always set, explicit Lens option, one Lens wording; viewer uses the View module ([#69](https://github.com/chalharb/archidocs/issues/69)) ([c2dade8](https://github.com/chalharb/archidocs/commit/c2dade86b2019fc570109299773966cea50baa27))
+
 ## [1.2.0](https://github.com/chalharb/archidocs/compare/v1.1.0...v1.2.0) (2026-11-24)
 
 
