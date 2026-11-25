@@ -1,6 +1,6 @@
 # 02: One git runner
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Workspace checkout](../spec.md)
 
@@ -23,7 +23,7 @@ If ticket 01 merges first, rebase: both tickets edit the import lines in `src/cl
 
 ## Acceptance criteria
 
-- [ ] `grep -rn "execFile" src` finds only `src/git.ts`'s runner.
-- [ ] `src/git.ts` exports `git`, `gitHead` and `gitTopLevel`; `src/history/git.ts` no longer defines a runner.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm test:e2e` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `grep -rn "execFile" src` finds only `src/git.ts`'s runner.
+- [x] `src/git.ts` exports `git`, `gitHead` and `gitTopLevel`; `src/history/git.ts` no longer defines a runner.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm test:e2e` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.
