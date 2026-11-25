@@ -1,10 +1,11 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { serveDev, type DevServer } from "../../src/cli/dev.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
 import { writeWorkspace } from "../support/workspace.ts";
+import { checkoutAt } from "../../src/workspace/index.ts";
 
 // Serves the prebuilt viewer, which test/support/viewer-build.ts builds once per run.
 const viewerDir = fileURLToPath(new URL("../../dist/viewer/", import.meta.url));
@@ -31,19 +32,19 @@ describe("archidocs dev", () => {
   afterEach(async () => dev?.close());
 
   async function start() {
-    const { root } = await writeWorkspace(landscapeWorkspace);
-    dev = await serveDev({ root, viewerDir, workspace: "fixture", port: 0 });
-    return { root, url: dev.url };
+    const { repoRoot, root } = await writeWorkspace(landscapeWorkspace);
+    dev = await serveDev({ checkout: checkoutAt(root), viewerDir, port: 0 });
+    return { repoRoot, root, url: dev.url };
   }
 
   it("serves the viewer with a live-reload client, the Workspace's Bundle, its name and no history", async () => {
-    const { url } = await start();
+    const { repoRoot, url } = await start();
 
     const html = await (await fetch(url)).text();
     expect(html).toContain("__archidocs/events");
     const bundle = await (await fetch(new URL("workspace.bundle.json", url))).json();
     expect(bundle.elements.map((e: { id: string }) => e.id)).toContain("shop:checkout");
-    expect(await (await fetch(new URL("site.json", url))).json()).toEqual({ workspace: "fixture" });
+    expect(await (await fetch(new URL("site.json", url))).json()).toEqual({ workspace: basename(repoRoot) });
     expect((await (await fetch(new URL("bundles/index.json", url))).json()).revisions).toEqual([]);
     expect((await fetch(new URL("../../package.json", url))).status).toBe(404);
   });

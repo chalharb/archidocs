@@ -18,6 +18,10 @@ _Avoid_: Repo (when meaning the model slice), module, package
 An id written with its Project, as `project:id`, so it names one thing across the whole Workspace; within its own Project the bare id is used.
 _Avoid_: Full id, global id, path
 
+**Checkout**:
+A Workspace root on disk, possibly inside a git repository; what the CLI, `archidocs dev` and the MCP server read a Workspace from, as opposed to a published Workspace Bundle.
+_Avoid_: Working copy, clone, local Workspace
+
 ### Elements
 
 **Element**:
