@@ -26,5 +26,5 @@ The 31 tools sit on two long pages with no example call, and outputs that are un
 
 ## Notes
 
-- `toolPath`, the landing page, the reference index and the e2e tests link the tool pages. The hand-written `read-tools/#<tool>` and `write-tools/#<tool>` links in `guides/`, `concepts/` and `start/introduction.mdx` still resolve, and were left for tickets 08 and 09, which rewrite those pages in parallel, to point at `/docs/reference/mcp/<tool>/`.
+- `toolPath`, the landing page, the reference index, the concept pages and the introduction link the tool pages. The guides' `read-tools/#<tool>` and `write-tools/#<tool>` links still resolve; they move to `/docs/reference/mcp/<tool>/` once ticket 08's rewrite of the guides lands.
 - CI's `docs` and `e2e` jobs check out the full history (`fetch-depth: 0`), since the `get_changes` and `list_history` examples read it.
