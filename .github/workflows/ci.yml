@@ -2,10 +2,15 @@ name: CI
 
 # Pushes to main, plus every PR (which covers pushes to its branch).
 # Triggering on all pushes too would run CI twice for each PR push.
+# Changes only to agent and planning folders (specs, tickets, design notes) skip CI:
+# nothing in the build, tests or docs reads them. No status check is required on main,
+# so a PR that touches only these never waits on a check that didn't run.
 on:
   push:
     branches: [main]
+    paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**"]
   pull_request:
+    paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**"]
 
 permissions:
   contents: read
