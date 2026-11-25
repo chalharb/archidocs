@@ -21,7 +21,7 @@ Declare an existing codebase's Services, Components, Relationships, Deployment T
 - Declare only this Project's **outbound** Relationships; each provider declares its own.
 - Resolve each provider with `search_elements` by name, URL or host to its `project:id`.
 - No match: leave the Relationship out and list it in the report as a gap. Create Elements only in this Project.
-- A provider clearly outside the organisation (a payment provider, an email API) may be declared in this Project as an External Service owned by this Project's Team.
+- A provider clearly outside the organization (a payment provider, an email API) may be declared in this Project as an External Service owned by this Project's Team.
 
 ## Evidence
 

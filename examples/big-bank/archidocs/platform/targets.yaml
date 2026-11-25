@@ -13,7 +13,7 @@ targets:
         name: MSK prod
         kind: platform
   london-dc:
-    name: London data centre
+    name: London data center
     kind: region
     owner: core-banking
     targets:

@@ -11,7 +11,7 @@ supersedes: ["0001"]
 
 ## Context and Problem Statement
 
-The mobile app, the web app and the call centre each needed customer sign-in,
+The mobile app, the web app and the call center each needed customer sign-in,
 and credentials in the API database could not be shared safely.
 
 ## Considered Options

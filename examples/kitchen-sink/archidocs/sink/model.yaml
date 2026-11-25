@@ -44,7 +44,7 @@ systems:
                 description: Charges cards through
                 technology: HTTPS
           catalogue:
-            name: Catalogue
+            name: Catalog
             technology: TypeScript module
             relationships:
               - to: search

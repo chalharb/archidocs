@@ -36,4 +36,4 @@ Impact and path queries count the broker as a hop and as a dependency of both si
 
 ## Cross-Project
 
-Declare only this Project's outbound Relationships. When the provider isn't in the Model, leave the Relationship out and tell the user it is a gap for the provider's Team; create Elements only in this Project. A provider outside the organisation may be added here as an External Service.
+Declare only this Project's outbound Relationships. When the provider isn't in the Model, leave the Relationship out and tell the user it is a gap for the provider's Team; create Elements only in this Project. A provider outside the organization may be added here as an External Service.

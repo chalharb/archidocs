@@ -41,6 +41,12 @@ const concepts = pagesUnder(`${DOCS}/concepts`).filter((p) => !isIndex(p));
 /** The same set `samples.test.ts` reads: every docs page, and every intro of a generated reference page. */
 const handWritten = [...pagesUnder("website/src/content/docs"), ...pagesUnder(INTROS)];
 
+/** One Markdown file (from the repo root). */
+const repoPage = (path: string): Page => ({ path, text: readFileSync(repoPath(path), "utf8") });
+
+/** What the wording rules cover: the docs pages and intros, the repo's README and Glossary, and the agent guide the MCP server serves. */
+const proseChecked = [...handWritten, repoPage("README.md"), repoPage("GLOSSARY.md"), ...pagesUnder("guide")];
+
 // ── Reading a page ───────────────────────────────────────────────────────────
 
 /** Blanks whatever `pattern` matches, keeping the line breaks so line numbers still hold. */
@@ -127,12 +133,38 @@ interface BannedWord {
 /**
  * Words the style rules ban from hand-written pages. To ban another, add one
  * line: `{ word: "…", instead: "…" },`.
+ *
+ * US spelling is the house spelling, so the list ends with British spellings.
+ * Each is the stem that the British forms share and the US forms don't, so
+ * "colour" finds "Colours" and "coloured", and "organis" finds "organise" and
+ * "organisation".
  */
 const BANNED_WORDS: BannedWord[] = [
-  {
-    word: "harness",
-    instead: "coding agent",
-  },
+  { word: "harness", instead: "coding agent" },
+  { word: "artefact", instead: "artifact" },
+  { word: "authoris", instead: "authoriz…" },
+  { word: "behaviour", instead: "behavior" },
+  { word: "catalogue", instead: "catalog" },
+  { word: "centre", instead: "center" },
+  { word: "colour", instead: "color" },
+  { word: "customis", instead: "customiz…" },
+  { word: "favour", instead: "favor" },
+  { word: "grey", instead: "gray" },
+  { word: "honour", instead: "honor" },
+  { word: "initialis", instead: "initializ…" },
+  { word: "labelled", instead: "labeled" },
+  { word: "licence", instead: "license" },
+  { word: "modelled", instead: "modeled" },
+  { word: "modelling", instead: "modeling" },
+  { word: "neighbour", instead: "neighbor" },
+  { word: "normalis", instead: "normaliz…" },
+  { word: "optimis", instead: "optimiz…" },
+  { word: "organis", instead: "organiz…" },
+  { word: "prioritis", instead: "prioritiz…" },
+  { word: "recognis", instead: "recogniz…" },
+  { word: "serialis", instead: "serializ…" },
+  { word: "summaris", instead: "summariz…" },
+  { word: "visualis", instead: "visualiz…" },
 ];
 
 /** Each line of a page whose prose uses the banned word. */
@@ -201,8 +233,14 @@ describe("no sentence on a concept page has more than two links", () => {
   itHolds(concepts, linkProblems, LINKS_NOT_YET_MIGRATED);
 });
 
-describe.each(BANNED_WORDS)('no hand-written page says "$word"', (banned) => {
-  itHolds(handWritten, (page) => bannedWordProblems(page, banned), banned.notYetMigrated ?? []);
+describe("the banned-word check", () => {
+  it("reads the README, the Glossary and the guide topics", () => {
+    expect(proseChecked.map((p) => p.path)).toEqual(expect.arrayContaining(["README.md", "GLOSSARY.md", "guide/SKILL.md", "guide/topics/bootstrap.md"]));
+  });
+});
+
+describe.each(BANNED_WORDS)('no hand-written page, README, Glossary or guide topic says "$word"', (banned) => {
+  itHolds(proseChecked, (page) => bannedWordProblems(page, banned), banned.notYetMigrated ?? []);
 });
 
 describe("the template checks", () => {
@@ -252,6 +290,15 @@ describe("the template checks", () => {
       text: ["---", "title: Views", "---", "", "See [a](/a/) and [b](/b/). Then [c](/c/), [d](/d/) and [e](/e/).", "", "- [f](/f/), [g](/g/)", "", "```md", "[h](/h/) [i](/i/) [j](/j/)", "```"].join("\n"),
     };
     expect(linkProblems(page)).toEqual(['concepts/views.mdx: 3 links in "Then [c](/c/), [d](/d/) and [e](/e/).…"']);
+  });
+
+  it("ban the British spellings in any form, and not their US forms or words that only start alike", () => {
+    const flagged = (text: string): string[] =>
+      BANNED_WORDS.flatMap((banned) => bannedWordProblems({ path: "concepts/teams.mdx", text }, banned)).map((p) => p.replace(/^[^"]*"([^"]+)".*$/, "$1"));
+    const british = "The organisation's Colours. A data centre. The Catalogue. Its licence. Neighbouring behaviour. Grey. Modelling, modelled and labelled. Authorises, summarised, recognise, normalise, customised, prioritise. Initialise, optimised, serialise, visualising. An artefact in favour, with honours.";
+    expect(flagged(british).sort()).toEqual(["artefact", "authoris", "behaviour", "catalogue", "centre", "colour", "customis", "favour", "grey", "honour", "initialis", "labelled", "licence", "modelled", "modelling", "neighbour", "normalis", "optimis", "organis", "prioritis", "recognis", "serialis", "summaris", "visualis"]);
+    const american = "The organization's colors. A data center, centered. The catalog. Its license. Neighboring behavior. Gray. Modeling, modeled and labeled. Authorizes, summarized, recognize, a realistic analysis, a license for a customer's priority. Initialize, optimized, serialize, visualizing. An artifact in favor, with honors.";
+    expect(flagged(american)).toEqual([]);
   });
 
   it("find a banned word in prose, with its line, and not in code or a link target", () => {
