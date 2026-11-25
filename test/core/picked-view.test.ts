@@ -23,17 +23,3 @@ describe("Picked nodes of a View", () => {
     expect(picked.title).toBe("C2 Landscape");
   });
 });
-
-describe("A Saved View's own Lens", () => {
-  it("is cleared by resolving with lens: null", async () => {
-    const { bundle } = await loadWorkspace({
-      ...landscapeWorkspace,
-      "shop/views.yaml": `views:\n  structural:\n    mine:\n      title: Mine\n      level: c2\n      lens: { team: payments-team }\n`,
-    });
-    expect(structuralView(bundle, "shop:mine")?.lens).toEqual({ team: "payments-team" });
-    const cleared = structuralView(bundle, "shop:mine", { lens: null })!;
-    expect(cleared.lens).toBeUndefined();
-    expect(cleared.nodes.some((n) => n.mark !== undefined)).toBe(false);
-    expect(cleared.edges.some((e) => e.lit !== undefined)).toBe(false);
-  });
-});

@@ -53,6 +53,7 @@ describe("get_view", () => {
       id: "c3/payments:payments-api",
       kind: "c3",
       title: "Payments API (C3)",
+      direction: "LR",
       nodes: [
         { id: "payments:charges", kind: "component", name: "Charges", parent: "payments:payments-api", collapsed: false, external: false },
         { id: "payments:payments-api", kind: "service", name: "Payments API", parent: null, collapsed: false, external: false },

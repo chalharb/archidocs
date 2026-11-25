@@ -12,7 +12,7 @@ import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
 import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
-import { defaultDirection, HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
+import { HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
 import { loadTimeline, pointLabel, type Revision, type Timeline } from "./revisions.ts";
@@ -102,13 +102,13 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   const place = usePlace();
   const openKey = place.open.join(",");
   const view = useMemo(
-    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open }) : workspace.resolve(place.view, place.open)),
+    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open }) : workspace.resolve(place.view, place.open, "none")),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
     [workspace, comparison, place.view, openKey],
   );
   const dynamic = useMemo(() => plain.dynamic(place.view), [plain, place.view]);
-  const ownDirection = plain.ownDirection(place.view) ?? defaultDirection(place.view);
-  const direction = place.direction ?? ownDirection;
+  /** The direction on screen: the one the viewer turned it to, else the View's own. */
+  const direction = place.direction ?? view?.direction;
   const { laidOut, error } = useLayout(view, direction);
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
@@ -215,7 +215,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
     [place, workspace],
   );
 
-  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === ownDirection ? null : d }), [place, ownDirection]);
+  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === view?.direction ? null : d }), [place, view]);
 
   /** Opens a View from the rail: a Saved View with its own Lens, any other keeping the current Lens. */
   const pickView = useCallback((v: string) => go(viewPlace(v, null, workspace.ownLens(v) ?? place.lens, place)), [workspace, place]);
@@ -237,7 +237,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       const ends = [step.relationship.from, step.relationship.to];
       let open: string[] = [];
       for (const id of ends) open = opening(workspace, { ...viewPlace(target), open }, id) ?? open;
-      const shown = new Set(workspace.resolve(target, open)?.nodes.map((n) => n.id) ?? []);
+      const shown = new Set(workspace.resolve(target, open, "none")?.nodes.map((n) => n.id) ?? []);
       const selected = [ends[0]!, ...workspace.ancestors(ends[0]!).reverse()].find((id) => shown.has(id)) ?? null;
       go({ ...viewPlace(target, null, null, place), open, selected });
     },
@@ -307,7 +307,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
         <LocationBar
           workspace={workspace}
           place={place}
-          direction={direction}
+          direction={place.direction ?? view.direction}
           compare={comparison?.label}
           timeline={timeline}
           onCollapse={collapse}
@@ -395,7 +395,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
 function opening(workspace: Workspace, place: Place, id: string): string[] | undefined {
   const open = [...place.open];
   for (const a of [...workspace.ancestors(id), id]) {
-    const nodes = workspace.resolve(place.view, open)?.nodes ?? [];
+    const nodes = workspace.resolve(place.view, open, "none")?.nodes ?? [];
     if (nodes.some((n) => n.id === id)) return open;
     if (a !== id && !open.includes(a) && nodes.some((n) => n.id === a)) open.push(a);
   }

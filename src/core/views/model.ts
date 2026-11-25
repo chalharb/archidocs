@@ -41,7 +41,8 @@ export class ModelIndex {
  * Builds a View from the set of Elements it shows: each Relationship's ends
  * are lifted to their nearest shown ancestor-or-self, and the Relationships
  * landing on one pair form one edge. An edge is kept when `keep` accepts the
- * declared Relationship and its ends are two different nodes.
+ * declared Relationship and its ends are two different nodes. It draws
+ * left to right.
  */
 export function build(
   model: ModelIndex,
@@ -73,5 +74,5 @@ export function build(
       external: "external" in e && e.external,
     }))
     .sort((a, b) => cmp(a.id, b.id));
-  return { ...head, nodes, edges: [...edges.values()].sort((a, b) => cmp(a.from, b.from) || cmp(a.to, b.to)) };
+  return { ...head, direction: "LR", nodes, edges: [...edges.values()].sort((a, b) => cmp(a.from, b.from) || cmp(a.to, b.to)) };
 }

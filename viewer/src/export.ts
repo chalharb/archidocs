@@ -10,7 +10,7 @@ export type ExportFormat = "svg" | "png";
  * `layoutView`, then drawn by the shared `renderSvg` (and rasterised by the
  * shared `renderPng`), with the Workspace, commit and date in its source line.
  */
-export async function picture(workspace: Workspace, view: ResolvedView, direction: Direction, format: ExportFormat): Promise<Blob> {
+export async function picture(workspace: Workspace, view: ResolvedView, direction: Direction | undefined, format: ExportFormat): Promise<Blob> {
   const [reply, { renderSvg }] = await Promise.all([layoutInWorker(view, direction), import("../../src/render/svg.ts")]);
   if ("error" in reply) throw new Error(reply.error);
   const { bundle } = workspace;

@@ -309,7 +309,8 @@ owner: platform-team
 /**
  * The landscape the viewer's Playwright suite serves: the landscape Workspace
  * with a staging Environment and URLs on Cart's Deployments, so a URL can be
- * found and copied, and a Saved View carrying an Impact Lens.
+ * found and copied, a Saved View carrying an Impact Lens, and a Saved
+ * Deployment View of staging with no direction of its own.
  */
 export const viewerWorkspace: Files = {
   ...landscapeWorkspace,
@@ -362,6 +363,10 @@ deployments:
       level: c2
       include: [shopper, web, { element: checkout, with: children }]
       lens: { impact: cart, direction: upstream }
+    staging-deployment:
+      title: Staging deployment
+      level: deployment
+      environment: staging
 `,
 };
 

@@ -13,7 +13,7 @@ const elk = new (ElkBundled as unknown as new () => ELK)();
 self.onmessage = async (event: MessageEvent<LayoutRequest>) => {
   const { request, view, direction } = event.data;
   try {
-    const layout: Layout = await layoutView(view, { direction, elk });
+    const layout: Layout = await layoutView(view, direction === undefined ? { elk } : { direction, elk });
     self.postMessage({ request, layout } satisfies LayoutReply);
   } catch (error) {
     self.postMessage({ request, error: error instanceof Error ? error.message : String(error) } satisfies LayoutReply);

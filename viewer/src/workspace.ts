@@ -5,6 +5,7 @@ import {
   resolveView,
   saveAsView,
   stepViews,
+  type LensChoice,
   type ResolvedDynamicView,
   type ResolvedStep,
   type ResolvedView,
@@ -82,11 +83,11 @@ export class Workspace {
   }
 
   /**
-   * Resolves a View with its open boxes and, if given, a Lens marking its
-   * nodes; the same resolver MCP's `get_view` uses. Without a Lens a Saved
-   * View is resolved plain too: its own Lens is applied by opening it.
+   * Resolves a View with its open boxes and the Lens chosen for it; the same
+   * resolver MCP's `get_view` uses. The viewer asks for no Lens to draw a
+   * Saved View plain: its own Lens is applied by opening it.
    */
-  resolve(view: string, open: readonly string[], lens: BundleLens | null = null): ResolvedView | undefined {
+  resolve(view: string, open: readonly string[], lens: LensChoice): ResolvedView | undefined {
     const resolved = resolveView(this.bundle, view, { expand: open, lens });
     return resolved?.kind === "dynamic" ? undefined : resolved;
   }
@@ -100,12 +101,6 @@ export class Workspace {
   ownLens(view: string): BundleLens | null {
     const def = this.bundle.views.find((v) => v.id === view);
     return def?.kind === "structural" ? def.lens : null;
-  }
-
-  /** A Saved View's own direction, if it sets one. */
-  ownDirection(view: string): "TB" | "BT" | "LR" | "RL" | null {
-    const def = this.bundle.views.find((v) => v.id === view);
-    return def?.kind === "structural" ? def.direction : null;
   }
 
   /** Save as View: the screen as Saved View YAML and the matching `upsert_view` call, from the core engine. */
@@ -137,13 +132,6 @@ export class Workspace {
 
   name(id: string): string {
     return this.byId.get(id)?.name ?? [...this.bundle.teams, ...this.bundle.environments].find((t) => t.id === id)?.name ?? id;
-  }
-
-  /** A Lens in words, for its chip. */
-  describeLens(lens: BundleLens): string {
-    if ("impact" in lens) return `Impact of ${this.name(lens.impact)}, ${lens.direction === "both" ? "both ways" : lens.direction}`;
-    if ("team" in lens) return `Team ${this.name(lens.team)}`;
-    return `Paths from ${this.name(lens.path.from)} to ${this.name(lens.path.to)}`;
   }
 
   /** A box's own Generated View: C3 for a Service with Components, else its System's C2. */
@@ -183,7 +171,7 @@ export class Workspace {
   deployedIn(service: string): { environment: string; label: string; view: string; nodes: string[] }[] {
     return this.bundle.environments
       .map((env) => ({ environment: env.id, label: env.name, view: `deployment/${env.id}` }))
-      .map((e) => ({ ...e, nodes: this.resolve(e.view, [])?.nodes.filter((n) => n.kind === "deployment" && n.element === service).map((n) => n.id) ?? [] }))
+      .map((e) => ({ ...e, nodes: this.resolve(e.view, [], "none")?.nodes.filter((n) => n.kind === "deployment" && n.element === service).map((n) => n.id) ?? [] }))
       .filter((e) => e.nodes.length > 0);
   }
 
@@ -274,7 +262,7 @@ export class Workspace {
     const owner = new Map(this.bundle.projects.map((p) => [p.id, p.owner]));
     return this.bundle.views
       .filter((v) => v.kind === "structural" && (project === undefined || v.project === project) && keep(owner.get(v.project) ?? ""))
-      .filter((v) => this.resolve(v.id, []) !== undefined)
+      .filter((v) => this.resolve(v.id, [], "none") !== undefined)
       .sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
       .map((v) => ({ key: v.id, label: v.title, view: v.id, glyph: "◇", team: team ? this.teams.get(team) : undefined, children: [] }));
   }

@@ -75,4 +75,13 @@ test.describe("Solutions Architect: where is a Service deployed?", () => {
     await settled(page);
     expect(hash(page)).toBe("#/view/deployment/prod");
   });
+
+  test("a Saved Deployment View with no direction of its own lays out top to bottom, as `archidocs export` draws it", async ({ page }) => {
+    await open(page, "#/view/shop:staging-deployment");
+    await expect(page.getByLabel("Direction")).toHaveValue("TB");
+    // Web calls Cart: top to bottom puts the caller above the Deployment it calls.
+    const boxes = new Map((await renderedGeometry(page)).nodes.map((n) => [n.id, n]));
+    const [web, cart] = [boxes.get("shop:web")!, boxes.get("shop:cart@platform:eks-staging")!];
+    expect(web.y + web.height).toBeLessThan(cart.y);
+  });
 });

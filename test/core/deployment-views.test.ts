@@ -146,6 +146,38 @@ describe("a Saved Deployment View", () => {
   });
 });
 
+describe("a Deployment View's facts", () => {
+  it("a Generated Deployment View carries its Environment, and each Deployment node its Deployment Target", async () => {
+    const view = structuralView(await load(), "deployment/prod")!;
+    expect(view.environment).toBe("prod");
+    expect(view.nodes.filter((n) => n.kind === "deployment").map((n) => [n.element, n.target])).toEqual([
+      ["payments:payments-api", "platform:eks-us"],
+      ["payments:payments-api", "platform:ns-pay"],
+      ["shop:analytics", "platform:dc"],
+      ["shop:cart", "platform:eks-us"],
+      ["shop:cart", "platform:ns-shop"],
+      ["shop:web", "platform:eks-us"],
+      ["shop:web", "platform:ns-shop"],
+    ]);
+  });
+
+  it("a Saved Deployment View carries its Environment, and each Deployment node its Deployment Target", async () => {
+    const { bundle } = await loadWorkspace({
+      ...deploymentViewWorkspace,
+      "shop/views.yaml": `views:\n  structural:\n    staging:\n      title: Staging\n      level: deployment\n      environment: staging\n`,
+    });
+    const view = structuralView(bundle, "shop:staging")!;
+    expect(view.environment).toBe("staging");
+    expect(view.nodes.filter((n) => n.kind === "deployment").map((n) => [n.element, n.target])).toEqual([["shop:web", "platform:eks-eu"]]);
+  });
+
+  it("a View of any other kind has no Environment, and its nodes no Deployment Target", async () => {
+    const view = structuralView(await load(), "c2")!;
+    expect(view.environment).toBeUndefined();
+    expect(view.nodes.some((n) => n.target !== undefined)).toBe(false);
+  });
+});
+
 describe("a Lens over a Deployment View", () => {
   it("marks every Deployment of a Service the Lens reaches, and lights edges as on any View", async () => {
     const bundle = await load();

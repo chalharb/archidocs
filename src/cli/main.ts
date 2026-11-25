@@ -160,17 +160,15 @@ async function main(argv: string[]): Promise<number> {
     }
     const workspace = await workspaceName(root);
     const fileName = (id: string) => `${id.replace(/[/:]/g, "-")}.${format}`;
-    /** Lays out and draws one View; `--direction` wins over a Saved View's own. */
     const source = { workspace, commit: bundle.commit, date: bundle.builtAt };
     const write = async (svg: string, out: string) => {
       await writeFile(resolve(out), format === "svg" ? svg : await renderPngInNode(svg));
       process.stdout.write(`Wrote ${out}\n`);
     };
-    /** Lays out and draws one View: a Dynamic View as a sequence chart, any other as a diagram. */
+    /** Lays out and draws one View: a Dynamic View as a sequence chart, any other as a diagram; `--direction` wins over the View's own. */
     const draw = async (view: AnyView, out: string) => {
       if (view.kind === "dynamic") return write(renderSequenceSvg({ bundle, view, source, theme, label }), out);
-      const chosen = direction ?? view.direction;
-      const layout = await layoutView(view, chosen === undefined ? {} : { direction: chosen });
+      const layout = await layoutView(view, direction === undefined ? {} : { direction });
       await write(renderSvg({ bundle, view, layout, source, theme, label }), out);
     };
 

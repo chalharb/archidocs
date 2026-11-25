@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { describeLens } from "../../src/core/views/index.ts";
 import type { ExportFormat } from "./export.ts";
 import { directions, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { readRecent, type RecentPlace } from "./recent.ts";
@@ -243,7 +244,7 @@ function LensChip({ workspace, lens, onLens }: { workspace: Workspace; lens: Len
     <section className="arc-chips arc-lens" role="region" aria-label="Lens">
       <span className="arc-chip arc-chip-lens">
         <span className="arc-lens-kind">{"impact" in lens ? "Impact" : "team" in lens ? "Team" : "Connect"}</span>
-        {workspace.describeLens(lens)}
+        {describeLens(workspace.bundle, lens)}
         <button type="button" className="arc-chip-clear" aria-label="Clear lens" onClick={() => onLens(null)}>
           <span className="arc-chip-x" aria-hidden="true" />
         </button>

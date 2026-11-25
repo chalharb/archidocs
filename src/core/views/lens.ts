@@ -4,9 +4,20 @@ import { pathsBetween, type Path } from "../paths.ts";
 import type { ModelIndex } from "./model.ts";
 import type { ImpactSide, NodeMark, ResolvedView } from "./types.ts";
 
-/** A Lens in words, for tool text and a picture's key. */
-export const describeLens = (lens: BundleLens): string =>
-  "impact" in lens ? `impact of ${lens.impact}, ${lens.direction}` : "team" in lens ? `Team ${lens.team}` : `paths from ${lens.path.from} to ${lens.path.to} (${lens.path.paths ?? "shortest"})`;
+/**
+ * A Lens in words, as the viewer's Lens chip, MCP's `get_view` and a
+ * picture's key say it: `Impact of <name>, <upstream | downstream | both
+ * ways>`, `Team <name>` or `Paths from <name> to <name>`, adding `, all up to
+ * <n> hops` when a path Lens doesn't keep the shortest. Elements, Teams and
+ * Environments go by name, or by id when the Bundle doesn't know it.
+ */
+export function describeLens(bundle: Bundle, lens: BundleLens): string {
+  const name = (id: string) => [...bundle.elements, ...bundle.teams, ...bundle.environments].find((x) => x.id === id)?.name ?? id;
+  if ("impact" in lens) return `Impact of ${name(lens.impact)}, ${lens.direction === "both" ? "both ways" : lens.direction}`;
+  if ("team" in lens) return `Team ${name(lens.team)}`;
+  const { from, to, paths = "shortest" } = lens.path;
+  return `Paths from ${name(from)} to ${name(to)}${paths === "shortest" ? "" : `, all up to ${paths} hops`}`;
+}
 
 /** Every Element on any of the paths. */
 export const nodesOn = (paths: Path[]) => new Set(paths.flatMap((p) => p.hops.flatMap((h) => [h.from, h.to])));

@@ -396,10 +396,11 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get View",
       description:
-        "One View by id (c1, c2, c2/<system>, c3/<service>, deployment/<environment>, or a Saved View's project:view-id) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it. A Deployment View nests Deployment Targets (kind `target`), a System box per System inside each Target (id `<system>@<target>`) and the Deployments (kind `deployment`, id `<service>@<target>`, `element` the Service); a consumer Deployment connects to the provider's Deployments under their deepest shared Target, else to all of them, and a related Service with no Deployment there is a node outside every Target. A Saved View with a Lens also returns the Lens, a `mark` ({hit, distance?, side?}, `side` being origin, upstream or downstream for an impact Lens) per node and `lit` per edge; the Lens never changes which nodes the View holds. A Dynamic View instead returns `participants` in drawing order and `steps` [{n, kind: call|return|event, from, to, relationship, interaction, via?, channel?, description, note?}]: an event is drawn publisher → subscriber while `relationship` is the stored subscriber → publisher subscription; a return replies over the sync `relationship` the other way. Steps that don't resolve are left out (`check` reports them).",
+        "One View by id (c1, c2, c2/<system>, c3/<service>, deployment/<environment>, or a Saved View's project:view-id) as nodes and edges. Neighbours outside the focus are collapsed to the highest level that still separates them; each edge carries the declared Relationships beneath it, and `direction` is the way the View draws (a Saved View's own, else TB for a Deployment View, else LR). A Deployment View nests Deployment Targets (kind `target`), a System box per System inside each Target (id `<system>@<target>`) and the Deployments (kind `deployment`, id `<service>@<target>`, `element` the Service, `target` the Deployment Target), and returns its `environment`; a consumer Deployment connects to the provider's Deployments under their deepest shared Target, else to all of them, and a related Service with no Deployment there is a node outside every Target. A Saved View with a Lens also returns the Lens, a `mark` ({hit, distance?, side?}, `side` being origin, upstream or downstream for an impact Lens) per node and `lit` per edge; the Lens never changes which nodes the View holds. A Dynamic View instead returns `participants` in drawing order and `steps` [{n, kind: call|return|event, from, to, relationship, interaction, via?, channel?, description, note?}]: an event is drawn publisher → subscriber while `relationship` is the stored subscriber → publisher subscription; a return replies over the sync `relationship` the other way. Steps that don't resolve are left out (`check` reports them).",
       input: z.object({ id: z.string().min(1).describe("A View id, such as c1, c2/shop:checkout, c3/shop:cart or architecture:purchase") }),
       output: ViewSummary.extend({
         direction: z.enum(["TB", "BT", "LR", "RL"]).optional(),
+        environment: z.string().optional(),
         lens: BundleLens.optional(),
         nodes: z
           .array(
@@ -408,6 +409,7 @@ export function createServer(options: ServerOptions): McpServer {
               kind: z.enum([...ElementKind.options, "target", "deployment"]),
               name: z.string(),
               element: z.string().optional(),
+              target: z.string().optional(),
               parent: z.string().nullable(),
               collapsed: z.boolean(),
               external: z.boolean(),
@@ -454,7 +456,7 @@ export function createServer(options: ServerOptions): McpServer {
         { ...view },
         [
           `${view.title} (${view.id}): ${view.nodes.length} node${view.nodes.length === 1 ? "" : "s"}, ${edgeCount}.`,
-          ...(view.lens ? [`Lens: ${describeLens(view.lens)}.`] : []),
+          ...(view.lens ? [`Lens: ${describeLens(bundle, view.lens)}.`] : []),
           "Nodes:",
           ...view.nodes.map(nodeLine),
           ...(view.edges.length ? ["Edges:", ...view.edges.map((e) => `- ${e.from} → ${e.to}: ${e.relationships.map(relationshipLabel).join("; ")}${e.lit ? " (lit)" : ""}`)] : []),

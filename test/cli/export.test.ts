@@ -98,7 +98,7 @@ describe("archidocs export", () => {
     expect(code).toBe(0);
     expect(stdout).toBe("Wrote architecture-purchase.svg\n");
     const svg = await readFile(join(repoRoot, "architecture-purchase.svg"), "utf8");
-    expect(texts(svg)).toContain("Lens: impact of shop:cart, upstream");
+    expect(texts(svg)).toContain("Lens: Impact of Cart, upstream");
     const [tb, lr] = [svgSize(svg), svgSize(await readFile(join(repoRoot, "lr.svg"), "utf8"))];
     expect(tb[0]! / tb[1]!).toBeLessThan(lr[0]! / lr[1]!);
   });

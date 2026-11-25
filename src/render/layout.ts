@@ -34,7 +34,7 @@ export interface Layout {
 }
 
 export interface LayoutOptionsInput {
-  /** Defaults to `LR`. */
+  /** Overrides the View's own direction, as `archidocs export --direction` and the viewer's direction control do. */
   direction?: Direction;
   /** The ELK instance to run, such as one backed by a web worker in the browser; defaults to the bundled, in-thread one. */
   elk?: ELK;
@@ -119,7 +119,7 @@ let sharedElk: ELK | undefined;
  * sorted by id, which, with fixed node sizes, makes the Layout deterministic.
  */
 export async function layoutView(view: ResolvedView, options: LayoutOptionsInput = {}): Promise<Layout> {
-  const direction = options.direction ?? "LR";
+  const direction = options.direction ?? view.direction;
   const elk = options.elk ?? (sharedElk ??= new ElkConstructor());
   const graph = new ViewGraph(view);
   const { root, routes } = toElk(graph, direction);

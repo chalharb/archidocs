@@ -22,6 +22,7 @@ export {
   type AnyView,
   type ViewRef,
   type ViewSummary,
+  type LensChoice,
   type ResolveOptions,
   type ResolvedView,
   type ViewKind,

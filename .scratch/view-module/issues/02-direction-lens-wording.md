@@ -1,6 +1,6 @@
 # 02: Direction, Lens option and Lens wording
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01
 Spec: [View module](../spec.md)
 
@@ -43,11 +43,11 @@ The user-visible changes to the View module, in one PR. PR title: `fix(views): .
 
 ## Acceptance criteria
 
-- [ ] A Structural View's `direction` is never undefined; `render/layout.ts` and `viewer/src/place.ts` hold no default direction.
-- [ ] A Saved Deployment View with no `direction` draws `TB` in both `archidocs export` and the viewer.
-- [ ] No caller passes `undefined` or `null` to mean "own Lens" or "no Lens".
-- [ ] One function produces a Lens in words; `grep -rn "Impact of\|impact of" src viewer/src website/src` finds it only in the module.
-- [ ] Golden SVG changes are confined to the `Lens:` line.
-- [ ] The MCP `get_view` text and exported SVG wording changes are named in the PR description, for the changelog.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] A Structural View's `direction` is never undefined; `render/layout.ts` and `viewer/src/place.ts` hold no default direction.
+- [x] A Saved Deployment View with no `direction` draws `TB` in both `archidocs export` and the viewer.
+- [x] No caller passes `undefined` or `null` to mean "own Lens" or "no Lens".
+- [x] One function produces a Lens in words; `grep -rn "Impact of\|impact of" src viewer/src website/src` finds it only in the module.
+- [x] Golden SVG changes are confined to the `Lens:` line.
+- [x] The MCP `get_view` text and exported SVG wording changes are named in the PR description, for the changelog.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.

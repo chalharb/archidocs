@@ -62,7 +62,7 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
 
   const title = view.title;
   const subtitle = sourceLine(source, label);
-  const key = drawKey(c, view.lens);
+  const key = drawKey(c, bundle, view.lens);
   const width = Math.ceil(Math.max(layout.width, key.width, textWidth(title, 20, 700), textWidth(subtitle, 12)) + 2 * PAD);
   const height = Math.ceil(HEADER + layout.height + PAD + KEY);
 
@@ -224,7 +224,7 @@ function drawEdge(c: Palette, points: { x: number; y: number }[], edge: ViewEdge
 }
 
 /** The key, in the canvas's own vocabulary: the Team tile, External, broker, and the Lens if there is one. */
-function drawKey(c: Palette, lens: BundleLens | undefined): { parts: string[]; width: number } {
+function drawKey(c: Palette, bundle: Bundle, lens: BundleLens | undefined): { parts: string[]; width: number } {
   const parts: string[] = [];
   let x = 0;
   const label = (s: string) => {
@@ -253,7 +253,7 @@ function drawKey(c: Palette, lens: BundleLens | undefined): { parts: string[]; w
       label("Downstream");
     } else if ("team" in lens) swatch(`fill="${c.paper}" stroke="${c.muted}" stroke-width="3"`);
     else swatch(`fill="${c.pathbg}" stroke="${c.path}" stroke-width="${FRAME}"`);
-    label(`Lens: ${describeLens(lens)}`);
+    label(`Lens: ${describeLens(bundle, lens)}`);
   }
   return { parts, width: x - 24 };
 }
