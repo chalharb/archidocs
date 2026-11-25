@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
@@ -33,9 +33,16 @@ describe("archidocs dev", () => {
 
   async function start() {
     const { repoRoot, root } = await writeWorkspace(landscapeWorkspace);
-    dev = await serveDev({ checkout: checkoutAt(root), viewerDir, port: 0 });
-    return { repoRoot, root, url: dev.url };
+    let loads = 0;
+    let loaded = () => {};
+    dev = await serveDev({ checkout: checkoutAt(root), viewerDir, port: 0, onLoad: () => (loads++, loaded()) });
+    /** Resolves on the next rebuild after the first load. */
+    const nextLoad = () => new Promise<void>((done) => (loaded = done));
+    return { repoRoot, root, url: dev.url, loads: () => loads, nextLoad };
   }
+
+  /** Longer than the watcher's 80 ms debounce, so a rebuild it started would have run. */
+  const settle = () => new Promise((done) => setTimeout(done, 400));
 
   it("serves the viewer with a live-reload client, the Workspace's Bundle, its name and no history", async () => {
     const { repoRoot, url } = await start();
@@ -68,5 +75,29 @@ describe("archidocs dev", () => {
     expect(await errors).toContain("nowhere");
     const bundle = await (await fetch(new URL("workspace.bundle.json", url))).json();
     expect(bundle.elements.map((e: { id: string }) => e.id)).toContain("shop:shopper");
+  });
+
+  it("does not rebuild when a file that is not a Workspace file changes", async () => {
+    const { root, loads } = await start();
+    await mkdir(join(root, ".drafts"));
+    await mkdir(join(root, "node_modules/pkg"), { recursive: true });
+    await writeFile(join(root, "notes.txt"), "todo\n");
+    await writeFile(join(root, "package.json"), "{}\n");
+    await writeFile(join(root, ".drafts/systems.yaml"), "systems: {}\n");
+    await writeFile(join(root, "node_modules/pkg/systems.yaml"), "systems: {}\n");
+
+    await settle();
+    expect(loads()).toBe(1);
+  });
+
+  it("rebuilds when a .yaml or .md file anywhere in the Workspace changes", async () => {
+    const { root, nextLoad } = await start();
+    const yaml = nextLoad();
+    await writeFile(join(root, "shop/extra.yaml"), "systems: {}\n");
+    await yaml;
+
+    const md = nextLoad();
+    await writeFile(join(root, "shop/notes.md"), "# Notes\n");
+    await md;
   });
 });
