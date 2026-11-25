@@ -1,6 +1,6 @@
 # Workspace checkout
 
-Status: needs-triage
+Status: ready-for-agent
 
 One module that opens a Workspace on disk once, and the CLI's commands as functions over it. This spec turns card 2 of the architecture review of 2026-11-24 into tickets, from the findings in [research.md](research.md) (checked against `origin/main` at `6b70992`). Terms follow [GLOSSARY.md](../../GLOSSARY.md); "module", "interface", "seam", "depth" and "leverage" are used as in the codebase-design vocabulary.
 

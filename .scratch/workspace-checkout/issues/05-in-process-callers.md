@@ -1,6 +1,6 @@
 # 05: Website and tests call commands in-process
 
-Status: needs-triage
+Status: ready-for-agent
 Blocked by: 04
 Spec: [Workspace checkout](../spec.md)
 

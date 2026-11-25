@@ -1,6 +1,6 @@
 # 06: `dev` reloads only on Workspace files, and the docs say which files those are
 
-Status: needs-triage
+Status: ready-for-agent
 Blocked by: 03
 Spec: [Workspace checkout](../spec.md)
 

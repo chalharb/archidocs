@@ -1,6 +1,6 @@
 # 03: Checkout module
 
-Status: needs-triage
+Status: needs-info
 Blocked by: 01, 02
 Spec: [Workspace checkout](../spec.md)
 
@@ -67,3 +67,16 @@ Open a Workspace on disk in one place, with one "which files count" rule. The on
 - [ ] `GLOSSARY.md` defines Checkout, and the pages listed under Docs link it.
 - [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
 - [ ] This ticket's `Status:` is set to `done` in the same PR.
+
+## Comments
+
+**Triage, 2026-11-25:** `needs-info`. The spec's "Decisions taken here" were settled without a grilling session, and this is the ticket that sets them in code. Before an agent starts, the maintainer confirms or changes:
+
+1. The name **Checkout** and its `GLOSSARY.md` entry, which is published on the site's Glossary page.
+2. `root` shown as given, with the realpath kept inside the Checkout.
+3. `checkoutSource({ root })` keeping its signature.
+4. `load` keeping its `.git` walk as a fallback.
+
+This doesn't hold anything up: the ticket is blocked by 01 and 02 anyway. Once confirmed, set `Status: ready-for-agent`.
+
+Card 3 (Revision index and site layout) is being worked on in parallel. If it merges first, recheck the line references here into `src/mcp/history.ts`, `src/cli/dev.ts` and `writeSiteHistory`.

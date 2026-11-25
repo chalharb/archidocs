@@ -1,6 +1,6 @@
 # 04: Commands as functions
 
-Status: needs-triage
+Status: ready-for-agent
 Blocked by: 03
 Spec: [Workspace checkout](../spec.md)
 
@@ -35,3 +35,7 @@ Move the work of `check`, `build`, `export`, `diff` and `history build` out of `
 - [ ] Importing `src/commands/index.ts` and exporting an SVG doesn't load `@resvg/resvg-wasm` (assert in a test, or show it in the PR).
 - [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
 - [ ] This ticket's `Status:` is set to `done` in the same PR.
+
+## Comments
+
+**Triage, 2026-11-25:** `ready-for-agent`, once 03 is done. If card 3 (Revision index and site layout) merges first, the empty-index writer this ticket moves out of `writeSiteHistory` may already be gone; take it from wherever card 3 left it.

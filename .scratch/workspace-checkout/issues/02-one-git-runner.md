@@ -1,6 +1,6 @@
 # 02: One git runner
 
-Status: needs-triage
+Status: ready-for-agent
 Blocked by: None (can start immediately)
 Spec: [Workspace checkout](../spec.md)
 
