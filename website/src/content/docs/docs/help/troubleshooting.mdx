@@ -7,7 +7,7 @@ sidebar:
 
 Find the message you see, or the problem you have. Each entry says what causes it and how to fix it, and links the page that covers the fix.
 
-The CLI prints its errors to the terminal, after `archidocs: `, and exits with code 2. The messages here are copied from the CLI's source, so they match what you see.
+The CLI prints each error after `archidocs: `. It then exits with code 2. The error messages here are copied from the CLI's source, so they match what you see.
 
 ## No workspace.yaml found
 
@@ -33,13 +33,13 @@ Wrote archidocs/workspace.yaml
 
 **Symptom:** `archidocs dev` serves the viewer, and the C2 Landscape shows a blank canvas.
 
-**Cause:** `init` writes a `workspace.yaml` with no Teams and no [Projects](/docs/reference/glossary/#term-project). The Model has no Elements yet, so there is nothing to draw.
+**Cause:** `init` writes a `workspace.yaml` with no [Projects](/docs/reference/glossary/#term-project), the folders where each Team keeps its part of the Model. With no Project, the Model has no [Elements](/docs/reference/glossary/#term-element), the boxes a View draws. So there is nothing to draw.
 
 **Fix:** add a Project, then a System and its Services. The viewer reloads as you save. See [Add a Project](/docs/guides/model/add-a-project/) and [Add a Service](/docs/guides/model/add-a-service/).
 
 ## The site has no history, or diff can't find a ref
 
-**Symptom:** the published viewer shows only the latest [Revision](/docs/reference/glossary/#term-revision). Or `archidocs diff` in CI stops on a ref that exists:
+**Symptom:** the published viewer shows only the latest [Revision](/docs/reference/glossary/#term-revision), the Workspace as it was at one commit. Or `archidocs diff` in CI stops on a ref that exists:
 
 ```text
 archidocs: Unknown ref or date "HEAD~1"; a date resolves to the last default-branch commit at or before it.

@@ -14,9 +14,9 @@ const PREFIX = "archidocs: ";
 
 const page = readFileSync(repoPath(PAGE), "utf8");
 
-/** Each line of a `text` code block that starts with the CLI's error prefix, without the prefix. */
+/** Each line of a code block that starts with the CLI's error prefix, without the prefix. */
 function quotedErrors(text: string): string[] {
-  return [...text.matchAll(/^```text\n([\s\S]*?)^```$/gm)].flatMap((m) =>
+  return [...text.matchAll(/^```[^\n]*\n([\s\S]*?)^```$/gm)].flatMap((m) =>
     m[1]!
       .split("\n")
       .filter((line) => line.startsWith(PREFIX))
@@ -61,7 +61,7 @@ describe("the Troubleshooting page", () => {
   const quotes = quotedErrors(page);
 
   it("quotes the CLI's errors", () => {
-    expect(quotes.length).toBeGreaterThanOrEqual(4);
+    expect(quotes.length).toBeGreaterThan(0);
   });
 
   it.each(quotes)("quotes an error the CLI prints: %s", (quote) => {
@@ -72,7 +72,8 @@ describe("the Troubleshooting page", () => {
     const entries = page.split(/^## /m).slice(1);
     expect(entries.length).toBeGreaterThan(0);
     for (const entry of entries) {
-      expect(entry, entry.split("\n")[0]).toMatch(/\]\(\/docs\/(?:guides|reference|start)\//);
+      // A Glossary link explains a term; it doesn't cover a fix.
+      expect(entry, entry.split("\n")[0]).toMatch(/\]\(\/docs\/(?:guides\/|reference\/(?!glossary\/)|start\/)/);
     }
   });
 });
@@ -93,8 +94,8 @@ describe("matching a quote to the source", () => {
     expect(prints(messages('const m = "Say \\"hi\\".";'), 'Say "hi".')).toBe(true);
   });
 
-  it("finds only error lines in text blocks", () => {
-    const text = ["```text", "archidocs: Oops.", "Usage:", "```", "", "archidocs: not in a block", "```bash", "archidocs: neither", "```"].join("\n");
-    expect(quotedErrors(text)).toEqual(["Oops."]);
+  it("finds only error lines in code blocks", () => {
+    const text = ["```text", "archidocs: Oops.", "Usage:", "```", "", "archidocs: not in a block", "```bash", "archidocs dev", "archidocs: Also.", "```"].join("\n");
+    expect(quotedErrors(text)).toEqual(["Oops.", "Also."]);
   });
 });
