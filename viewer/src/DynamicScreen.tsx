@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import type { ResolvedDynamicView, ResolvedStep } from "../../src/core/views/index.ts";
+import { dynamicViewsUsing, stepViews, type ResolvedDynamicView, type ResolvedStep } from "../../src/core/views/index.ts";
 import { layoutSequence, type MessageStyle } from "../../src/render/sequence.ts";
 import { go } from "./history.ts";
 import { CopyLink, RecentMenu } from "./LocationBar.tsx";
@@ -196,7 +196,7 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
   const r = step.relationship;
   const owner = workspace.byId.get(r.from)?.owner;
   const team = owner ? workspace.teams.get(owner) : undefined;
-  const others = workspace.otherDynamicViews(step, view.id);
+  const others = dynamicViewsUsing(workspace.bundle, step.relationship).filter((v) => v.id !== view.id);
   return (
     <div className="arc-panel-body">
       <h2>Step {step.n}</h2>
@@ -249,7 +249,7 @@ function StepDetail({ workspace, view, step, onOpenStepView, onOpenView }: { wor
       </dl>
       <h3 id="arc-open-in">Open in</h3>
       <ul className="arc-view-links" aria-labelledby="arc-open-in">
-        {workspace.stepViews(step).map((v) => (
+        {stepViews(workspace.bundle, step).map((v) => (
           <li key={v}>
             <button type="button" className="arc-link" onClick={() => onOpenStepView(v, step)}>
               {workspace.title(v) ?? v}

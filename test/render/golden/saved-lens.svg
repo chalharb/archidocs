@@ -28,6 +28,6 @@
 <text x="503.06" y="16" font-size="11" fill="#4f5966">Upstream</text>
 <rect x="575.47" y="4" width="28" height="16" fill="#1d5fa8"/>
 <text x="611.47" y="16" font-size="11" fill="#4f5966">Downstream</text>
-<text x="697.78" y="16" font-size="11" fill="#4f5966">Lens: impact of shop:cart, upstream</text>
+<text x="697.78" y="16" font-size="11" fill="#4f5966">Lens: Impact of Cart, upstream</text>
 </g>
 </svg>

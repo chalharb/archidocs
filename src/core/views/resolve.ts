@@ -4,7 +4,7 @@ import { generatedViewIds, resolveGenerated, summarise } from "./generated.ts";
 import { applyLens } from "./lens.ts";
 import { ModelIndex } from "./model.ts";
 import { resolveSaved, type SavedResolution } from "./saved.ts";
-import type { ListedKind, ResolvedView, ResolveOptions, ViewSummary } from "./types.ts";
+import type { LensChoice, ListedKind, ResolvedView, ResolveOptions, ViewSummary } from "./types.ts";
 
 /** Any View resolved: a Structural View, or a Dynamic View (`kind: "dynamic"`). */
 export type AnyView = ResolvedView | ResolvedDynamicView;
@@ -24,15 +24,17 @@ export function resolveView(bundle: Bundle, id: string, options: ResolveOptions 
 
 /** Resolves a Structural View by id over an index of its Bundle; undefined for an unknown id or a Dynamic View's. */
 export function resolveStructural(bundle: Bundle, model: ModelIndex, id: string, options: ResolveOptions = {}): ResolvedView | undefined {
-  const view = unlensed(bundle, model, id, options);
-  if (view && options.lens) applyLens(bundle, model, view, options.lens);
+  const lens = options.lens ?? "own";
+  const view = unlensed(bundle, model, id, options.expand ?? [], lens);
+  if (view && typeof lens === "object") applyLens(bundle, model, view, lens);
   return view;
 }
 
-function unlensed(bundle: Bundle, model: ModelIndex, id: string, options: ResolveOptions): ResolvedView | undefined {
+/** A Structural View with no Lens, except a Saved View's own when the choice is `"own"`. */
+function unlensed(bundle: Bundle, model: ModelIndex, id: string, expand: readonly string[], lens: LensChoice): ResolvedView | undefined {
   const saved = bundle.views.find((v) => v.id === id);
-  if (saved) return saved.kind === "structural" ? resolveSaved(bundle, model, options.lens === undefined ? saved : { ...saved, lens: null }).view : undefined;
-  return resolveGenerated(bundle, model, id, options.expand ?? []);
+  if (saved) return saved.kind === "structural" ? resolveSaved(bundle, model, lens === "own" ? saved : { ...saved, lens: null }).view : undefined;
+  return resolveGenerated(bundle, model, id, expand);
 }
 
 /**

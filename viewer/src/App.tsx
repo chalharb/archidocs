@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { unionBundle } from "../../src/core/compare.ts";
 import { diff, type Change } from "../../src/core/diff.ts";
-import { compareView, type ResolvedStep } from "../../src/core/views/index.ts";
+import { compareView, ownViewId, pickedView, resolveView, type ResolvedStep } from "../../src/core/views/index.ts";
 import { AdrReader } from "./AdrReader.tsx";
 import { Canvas } from "./Canvas.tsx";
 import { DynamicScreen } from "./DynamicScreen.tsx";
@@ -12,13 +12,13 @@ import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
 import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
-import { defaultDirection, HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
+import { HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
 import { loadTimeline, pointLabel, type Revision, type Timeline } from "./revisions.ts";
 import { remember } from "./recent.ts";
 import { SaveAsView } from "./SaveAsView.tsx";
-import { Workspace } from "./workspace.ts";
+import { structuralView, Workspace } from "./workspace.ts";
 
 /**
  * Loads the latest Bundle and the Revision index next to index.html;
@@ -102,13 +102,16 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   const place = usePlace();
   const openKey = place.open.join(",");
   const view = useMemo(
-    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open }) : workspace.resolve(place.view, place.open)),
+    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open, lens: "none" }) : structuralView(workspace.bundle, place.view, { expand: place.open, lens: "none" })),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
     [workspace, comparison, place.view, openKey],
   );
-  const dynamic = useMemo(() => plain.dynamic(place.view), [plain, place.view]);
-  const ownDirection = plain.ownDirection(place.view) ?? defaultDirection(place.view);
-  const direction = place.direction ?? ownDirection;
+  const dynamic = useMemo(() => {
+    const resolved = resolveView(plain.bundle, place.view);
+    return resolved?.kind === "dynamic" ? resolved : undefined;
+  }, [plain, place.view]);
+  /** The direction on screen: the one the viewer turned it to, else the View's own. */
+  const direction = place.direction ?? view?.direction;
   const { laidOut, error } = useLayout(view, direction);
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
@@ -117,7 +120,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   const lensKey = place.lens ? JSON.stringify(place.lens) : "";
   // The Lens is drawn over the Layout of the plain View, so turning it on never moves a node.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey and lensKey stand for place.open and place.lens.
-  const lensed = useMemo(() => (place.lens ? workspace.resolve(place.view, place.open, place.lens) : undefined), [workspace, place.view, openKey, lensKey]);
+  const lensed = useMemo(() => (place.lens ? structuralView(workspace.bundle, place.view, { expand: place.open, lens: place.lens }) : undefined), [workspace, place.view, openKey, lensKey]);
   const [finding, setFinding] = useState(false);
   /** The start of a Connect to… waiting for its end node. */
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
@@ -132,7 +135,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   /** Turns a Lens on, off or to another; a path Lens picks the nodes on its paths. */
   const setLens = useCallback(
     (lens: Lens | null) => {
-      const picks = lens && "path" in lens ? (workspace.resolve(place.view, place.open, lens)?.nodes.filter((n) => n.mark?.hit).map((n) => n.id) ?? []) : place.picks;
+      const picks = lens && "path" in lens ? (structuralView(workspace.bundle, place.view, { expand: place.open, lens })?.nodes.filter((n) => n.mark?.hit).map((n) => n.id) ?? []) : place.picks;
       go({ ...place, lens, picks });
     },
     [place, workspace],
@@ -197,7 +200,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
     (node: string) => {
       // A Deployment or a Target's System box opens the View of the Element it draws.
       const id = view?.nodes.find((n) => n.id === node)?.element ?? node;
-      const target = workspace.ownView(id);
+      const target = ownViewId(workspace.bundle, id);
       if (target !== undefined && target !== place.view) go(viewPlace(target, null, place.lens, place));
     },
     [place, workspace, view],
@@ -209,23 +212,23 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       const open = opening(workspace, place, id);
       if (open) return go({ ...place, open, selected: id, adr: null }, { replace: open.length === place.open.length });
       const element = workspace.byId.get(id);
-      const home = element?.kind === "component" ? workspace.ownView(element.parent!) : element?.kind === "person" ? "c1" : workspace.ownView(id);
+      const home = element?.kind === "component" ? ownViewId(workspace.bundle, element.parent!) : element?.kind === "person" ? "c1" : ownViewId(workspace.bundle, id);
       go(viewPlace(home ?? "c2", id, place.lens, place));
     },
     [place, workspace],
   );
 
-  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === ownDirection ? null : d }), [place, ownDirection]);
+  const setDirection = useCallback((d: Direction) => go({ ...place, direction: d === view?.direction ? null : d }), [place, view]);
 
   /** Opens a View from the rail: a Saved View with its own Lens, any other keeping the current Lens. */
-  const pickView = useCallback((v: string) => go(viewPlace(v, null, workspace.ownLens(v) ?? place.lens, place)), [workspace, place]);
+  const pickView = useCallback((v: string) => go(viewPlace(v, null, structuralView(workspace.bundle, v, { lens: "own" })?.lens ?? place.lens, place)), [workspace, place]);
 
   const [saving, setSaving] = useState(false);
   const exportPicture = useCallback(
     (what: "view" | "picks", format: ExportFormat) => {
       const shown = lensed ?? view;
       if (!shown) return;
-      const drawn = what === "picks" ? workspace.picked(shown, place.picks) : shown;
+      const drawn = what === "picks" ? pickedView(shown, place.picks) : shown;
       void picture(workspace, drawn, direction, format).then((blob) => save(blob, fileName(place.view, format, what === "picks")));
     },
     [workspace, lensed, view, place.picks, place.view, direction],
@@ -237,7 +240,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       const ends = [step.relationship.from, step.relationship.to];
       let open: string[] = [];
       for (const id of ends) open = opening(workspace, { ...viewPlace(target), open }, id) ?? open;
-      const shown = new Set(workspace.resolve(target, open)?.nodes.map((n) => n.id) ?? []);
+      const shown = new Set(structuralView(workspace.bundle, target, { expand: open, lens: "none" })?.nodes.map((n) => n.id) ?? []);
       const selected = [ends[0]!, ...workspace.ancestors(ends[0]!).reverse()].find((id) => shown.has(id)) ?? null;
       go({ ...viewPlace(target, null, null, place), open, selected });
     },
@@ -307,7 +310,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
         <LocationBar
           workspace={workspace}
           place={place}
-          direction={direction}
+          direction={place.direction ?? view.direction}
           compare={comparison?.label}
           timeline={timeline}
           onCollapse={collapse}
@@ -395,7 +398,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
 function opening(workspace: Workspace, place: Place, id: string): string[] | undefined {
   const open = [...place.open];
   for (const a of [...workspace.ancestors(id), id]) {
-    const nodes = workspace.resolve(place.view, open)?.nodes ?? [];
+    const nodes = structuralView(workspace.bundle, place.view, { expand: open, lens: "none" })?.nodes ?? [];
     if (nodes.some((n) => n.id === id)) return open;
     if (a !== id && !open.includes(a) && nodes.some((n) => n.id === a)) open.push(a);
   }

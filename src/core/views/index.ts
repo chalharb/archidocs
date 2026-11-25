@@ -14,6 +14,7 @@ export {
   MAX_VIEW_NODES,
   type CompareMark,
   type ImpactSide,
+  type LensChoice,
   type ListedKind,
   type NodeMark,
   type ResolveOptions,

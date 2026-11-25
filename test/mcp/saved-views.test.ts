@@ -68,7 +68,7 @@ describe("get_view", () => {
       ["shop:shopper", "shop:web", true],
       ["shop:web", "shop:cart", true],
     ]);
-    expect(text(result)).toContain("Lens: impact of shop:cart, upstream.");
+    expect(text(result)).toContain("Lens: Impact of Cart, upstream.");
     expect(text(result)).toContain("- shop:web (Web): Service, hit at distance 1");
   });
 

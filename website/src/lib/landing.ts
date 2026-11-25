@@ -9,6 +9,7 @@
 import { readFile } from "node:fs/promises";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
+import { describeLens } from "../../../src/core/views/index.ts";
 import { checkoutSource, createServer } from "../../../src/mcp/index.ts";
 import { teamStyles } from "../../../src/render/index.ts";
 import type { ListedTool } from "../reference/mcp.ts";
@@ -60,7 +61,7 @@ export interface Landing {
     title: string;
     /** The viewer's breadcrumb for a Saved View: "Saved", the Project's name, then the title. */
     crumbs: string[];
-    /** The lens chip as the viewer words it: "Impact of Mainframe, upstream". */
+    /** The Lens chip as the viewer words it, from the View module's `describeLens`. */
     lens: string;
     /** How many nodes the lens marks upstream. */
     hits: number;
@@ -119,7 +120,7 @@ async function capture(): Promise<Landing> {
         id: view.id,
         title: view.title,
         crumbs: ["Saved", projectName, view.title],
-        lens: `Impact of ${subject}, ${QUESTION.arguments.direction}`,
+        lens: describeLens(bundle, { impact: QUESTION.arguments.id, direction: QUESTION.arguments.direction }),
         hits: viewer.size,
       },
       tools,

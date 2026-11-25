@@ -134,7 +134,7 @@ describe("renderSvg with a Lens", () => {
   it("badges each hit node with its distance and names the Lens in the key", async () => {
     const svg = await render(lensed, "shop:cart-impact");
 
-    expect(texts(svg)).toEqual(expect.arrayContaining(["ORIGIN", "UPSTREAM 1", "UPSTREAM 2", "Origin", "Upstream", "Lens: impact of shop:cart, upstream"]));
+    expect(texts(svg)).toEqual(expect.arrayContaining(["ORIGIN", "UPSTREAM 1", "UPSTREAM 2", "Origin", "Upstream", "Lens: Impact of Cart, upstream"]));
   });
 
   it("steps back what the Lens misses in solid faint colours, never fading it, and lights what it hits", async () => {

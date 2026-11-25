@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { parseViewId } from "../../src/core/views/index.ts";
 import { GLYPH_ICON, Icon, type IconName } from "./Icon.tsx";
-import type { TreeRow, Workspace } from "./workspace.ts";
+import { focusOf, type TreeRow, type Workspace } from "./workspace.ts";
 
 type Panel = "Model" | "Views" | "Teams";
 
@@ -48,7 +49,7 @@ export function Rail({ workspace, view, selected, home, onPickElement, onPickVie
     return [];
   }, [panel, grouping, workspace]);
 
-  const current = (row: TreeRow) => (panel === "Views" ? row.view === view : row.element !== undefined && row.element === (selected ?? view.slice(3)));
+  const current = (row: TreeRow) => (panel === "Views" ? row.view === view : row.element !== undefined && row.element === (selected ?? focusOf(view)));
 
   return (
     <>
@@ -222,10 +223,9 @@ function viewTag(row: TreeRow): string | undefined {
   if (row.view === undefined) return undefined;
   if (row.glyph === "▶") return "Dyn";
   if (row.glyph === "◇") return "Saved";
-  if (row.glyph === "⛁" || row.view.startsWith("deployment/")) return "Env";
-  if (row.view === "c1") return "C1";
-  if (row.view === "c2" || row.view.startsWith("c2/")) return "C2";
-  if (row.view.startsWith("c3/")) return "C3";
+  const ref = parseViewId(row.view);
+  if (row.glyph === "⛁" || ref?.form === "deployment") return "Env";
+  if (ref?.form === "landscape" || ref?.form === "focused") return ref.level.toUpperCase();
   return undefined;
 }
 

@@ -75,4 +75,21 @@ test.describe("Solutions Architect: where is a Service deployed?", () => {
     await settled(page);
     expect(hash(page)).toBe("#/view/deployment/prod");
   });
+
+  test("a Saved Deployment View with no direction of its own lays out top to bottom, as `archidocs export` draws it", async ({ page }) => {
+    await open(page, "#/view/shop:staging-deployment");
+    await expect(page.getByLabel("Direction")).toHaveValue("TB");
+    // Web calls Cart: top to bottom puts the caller above the Deployment it calls.
+    const boxes = new Map((await renderedGeometry(page)).nodes.map((n) => [n.id, n]));
+    const [web, cart] = [boxes.get("shop:web")!, boxes.get("shop:cart@platform:eks-staging")!];
+    expect(web.y + web.height).toBeLessThan(cart.y);
+  });
+
+  test("a Deployment in a Saved Deployment View shows the URL of that View's Environment", async ({ page }) => {
+    // Payments API runs on EKS prod in both Environments; only its staging Deployment has a URL.
+    await open(page, "#/view/shop:staging-deployment");
+    await expect(node(page, "payments:payments-api@platform:eks-prod")).toContainText("payments.staging.example.com");
+    await open(page, "#/view/deployment/prod");
+    await expect(node(page, "payments:payments-api@platform:eks-prod")).toContainText("EKS prod");
+  });
 });

@@ -21,6 +21,8 @@ export interface ViewNode {
   name: string;
   /** The Element a Deployment or a Target's System box draws, when the node's id is not that Element's. */
   element?: string;
+  /** A Deployment's Deployment Target. */
+  target?: string;
   /** The nearest ancestor that is itself a node of this View, else null. */
   parent: string | null;
   /** True when the Element has children in the Model that this View hides inside it. */
@@ -43,7 +45,7 @@ export interface NodeMark {
 
 export type ImpactSide = "origin" | "upstream" | "downstream";
 
-/** A Saved View's drawing direction. */
+/** The way a View draws: top to bottom, bottom to top, left to right or right to left. */
 export type ViewDirection = "TB" | "BT" | "LR" | "RL";
 
 /** An edge between two nodes, with the declared Relationships beneath it. */
@@ -62,8 +64,10 @@ export interface ResolvedView {
   id: string;
   kind: ViewKind;
   title: string;
-  /** A Saved View's own direction, if it sets one. */
-  direction?: ViewDirection;
+  /** The way the View draws: a Saved View's own, else `TB` for a Deployment View, else `LR`. */
+  direction: ViewDirection;
+  /** A Deployment View's Environment. */
+  environment?: string;
   /** A Saved View's Lens, if it carries one. */
   lens?: BundleLens;
   nodes: ViewNode[];
@@ -78,12 +82,16 @@ export interface ResolveOptions {
    */
   expand?: readonly string[];
   /**
-   * A Lens over the View, as the viewer holds it: marks nodes and lights
-   * edges without changing which nodes the View holds. It replaces a Saved
-   * View's own Lens; null clears a Saved View's own Lens.
+   * The Lens over the View, which marks nodes and lights edges without
+   * changing which nodes the View holds: `"own"` (the default) is a Saved
+   * View's own Lens and none on any other View, `"none"` is no Lens, and a
+   * given Lens replaces the View's own.
    */
-  lens?: BundleLens | null;
+  lens?: LensChoice;
 }
+
+/** Which Lens a View is resolved with: its own, none, or this one. */
+export type LensChoice = "own" | "none" | BundleLens;
 
 /** The kinds a View is listed under: a Saved Structural View's is its `level`. */
 export type ListedKind = ViewKind | "dynamic";

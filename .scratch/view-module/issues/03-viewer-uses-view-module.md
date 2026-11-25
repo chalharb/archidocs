@@ -1,6 +1,6 @@
 # 03: Viewer uses the View module
 
-Status: ready-for-agent
+Status: done
 Blocked by: 02
 Spec: [View module](../spec.md)
 
@@ -43,8 +43,8 @@ Replace every `startsWith("c2/")`, `startsWith("c3/")`, `startsWith("deployment/
 
 ## Acceptance criteria
 
-- [ ] `Workspace` has none of the methods listed above.
-- [ ] `grep -rnE "startsWith\(\"(c2|c3|deployment)/\"\)|slice\(3\)|lastIndexOf\(\"@\"\)" viewer/src` finds nothing.
-- [ ] The viewer imports the View module only through its index.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm test:e2e` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `Workspace` has none of the methods listed above.
+- [x] `grep -rnE "startsWith\(\"(c2|c3|deployment)/\"\)|slice\(3\)|lastIndexOf\(\"@\"\)" viewer/src` finds nothing.
+- [x] The viewer imports the View module only through its index.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm test:e2e` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.

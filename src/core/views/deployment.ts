@@ -49,7 +49,7 @@ export function resolveDeployment(bundle: Bundle, model: ModelIndex, head: { id:
       nodes.set(parent, { id: parent, kind: "system", name: s.name, parent: d.target, element: system, collapsed: false, external: "external" in s && s.external });
     }
     const service = model.byId.get(d.service)!;
-    nodes.set(deploymentNodeId(d), { id: deploymentNodeId(d), kind: "deployment", name: service.name, parent, element: d.service, collapsed: false, external: "external" in service && service.external });
+    nodes.set(deploymentNodeId(d), { id: deploymentNodeId(d), kind: "deployment", name: service.name, parent, element: d.service, target: d.target, collapsed: false, external: "external" in service && service.external });
     byService.set(d.service, [...(byService.get(d.service) ?? []), { d, chain }]);
   }
 
@@ -94,6 +94,7 @@ export function resolveDeployment(bundle: Bundle, model: ModelIndex, head: { id:
     ...head,
     kind: "deployment",
     direction: "TB",
+    environment,
     nodes: [...nodes.values()].sort((a, b) => cmp(a.id, b.id)),
     edges: [...edges.values()].sort((a, b) => cmp(a.from, b.from) || cmp(a.to, b.to)),
   };

@@ -38,12 +38,10 @@ function describe(node: ViewNode, element: BundleElement | undefined, technology
 }
 
 /** A Deployment's sub-label, as the prototype writes it: its URL's host and path, else the Deployment Target it runs on. */
-function deployedAt(workspace: Workspace, viewId: string, node: ViewNode): string | undefined {
-  const target = node.id.slice(node.id.lastIndexOf("@") + 1);
-  const environment = viewId.startsWith("deployment/") ? viewId.slice("deployment/".length) : undefined;
-  const deployment = workspace.bundle.deployments.find((d) => d.service === node.element && d.target === target && (environment === undefined || d.environment === environment));
+function deployedAt(workspace: Workspace, environment: string | undefined, node: ViewNode): string | undefined {
+  const deployment = workspace.bundle.deployments.find((d) => d.service === node.element && d.target === node.target && d.environment === environment);
   if (deployment?.url) return deployment.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  return workspace.targets.get(target)?.name;
+  return node.target === undefined ? undefined : workspace.targets.get(node.target)?.name;
 }
 
 /** Each kind's pictogram, and a Service's type when it isn't a plain app. */
@@ -182,7 +180,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         data: {
           node,
           type: element?.kind === "service" && element.type !== "app" ? element.type : undefined,
-          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.id, node) : undefined),
+          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.environment, node) : undefined),
           team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
           twoLine: !containers.has(box.id) && box.height > NODE_SIZES[node.kind].height,

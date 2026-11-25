@@ -42,7 +42,7 @@ export function stepGraph(workspace: Workspace, view: ResolvedDynamicView, broke
     return { id, kind: element?.kind ?? "service", name: workspace.name(id), parent: null, collapsed: false, external: element !== undefined && "external" in element && element.external };
   });
   const edges: ViewEdge[] = [...pairs.values()].map((p) => ({ from: p.from, to: p.to, relationships: [...new Set(p.messages.map((m) => m.step.relationship))] }));
-  return { graph: { id: view.id, kind: "c2", title: view.title, nodes, edges }, pairs: [...pairs.values()] };
+  return { graph: { id: view.id, kind: "c2", title: view.title, direction: "LR", nodes, edges }, pairs: [...pairs.values()] };
 }
 
 interface GraphNodeData extends Record<string, unknown> {
@@ -66,7 +66,7 @@ export function StepGraph(props: StepGraphProps) {
 
 function Graph({ workspace, view, brokers, fitKey, selected, onSelect, onSettled }: StepGraphProps) {
   const { graph, pairs } = useMemo(() => stepGraph(workspace, view, brokers), [workspace, view, brokers]);
-  const { laidOut, error } = useLayout(graph, "LR");
+  const { laidOut, error } = useLayout(graph);
   const layout = laidOut?.view === graph ? laidOut.layout : undefined;
 
   const nodes = useMemo<Node<GraphNodeData>[]>(

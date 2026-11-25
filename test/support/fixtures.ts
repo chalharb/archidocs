@@ -309,7 +309,9 @@ owner: platform-team
 /**
  * The landscape the viewer's Playwright suite serves: the landscape Workspace
  * with a staging Environment and URLs on Cart's Deployments, so a URL can be
- * found and copied, and a Saved View carrying an Impact Lens.
+ * found and copied, a Saved View carrying an Impact Lens, and a Saved
+ * Deployment View of staging with no direction of its own. Payments API
+ * runs on one Target in both Environments, with a URL only in staging.
  */
 export const viewerWorkspace: Files = {
   ...landscapeWorkspace,
@@ -343,6 +345,10 @@ deployments:
       - { name: health, url: https://cart.shop.example.com/healthz }
   - { service: cart, environment: staging, target: platform:eks-staging, url: https://cart.staging.shop.example.com }
 `,
+  "payments/deployments.yaml": `deployments:
+  - { service: payments-api, environment: prod, target: platform:eks-prod }
+  - { service: payments-api, environment: staging, target: platform:eks-prod, url: https://payments.staging.example.com }
+`,
   "platform/targets.yaml": `targets:
   aws-eu:
     name: AWS eu-west-1
@@ -362,6 +368,10 @@ deployments:
       level: c2
       include: [shopper, web, { element: checkout, with: children }]
       lens: { impact: cart, direction: upstream }
+    staging-deployment:
+      title: Staging deployment
+      level: deployment
+      environment: staging
 `,
 };
 

@@ -38,9 +38,6 @@ export interface Place {
 /** Where an empty or unreadable hash lands: the C2 Landscape, every System collapsed. */
 export const HOME: Place = { view: "c2", open: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
 
-/** A View's direction until the viewer turns it: `TB` for Deployment Views, else `LR`. */
-export const defaultDirection = (view: string): Direction => (view.startsWith("deployment/") ? "TB" : "LR");
-
 /**
  * Reads a place from a hash such as `#/view/c2?open=shop:checkout&sel=shop:cart&dir=TB`.
  * A Lens is `impact=<id>&way=upstream|downstream|both`, `team=<id>` or

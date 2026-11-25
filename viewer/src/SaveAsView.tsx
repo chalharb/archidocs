@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Screen } from "../../src/core/views/index.ts";
+import { saveAsView, type Screen } from "../../src/core/views/index.ts";
 import type { Workspace } from "./workspace.ts";
 
 export interface SaveAsViewProps {
@@ -31,7 +31,7 @@ export function SaveAsView({ workspace, screen, title: initialTitle, onClose }: 
   const saved = useMemo(() => {
     if (!project) return undefined;
     try {
-      return workspace.saveAsView(screen, { project, id: id || "view", title: title || "View" });
+      return saveAsView(workspace.bundle, screen, { project, id: id || "view", title: title || "View" });
     } catch (e) {
       return { problem: e instanceof Error ? e.message : String(e) };
     }
