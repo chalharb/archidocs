@@ -6,7 +6,7 @@ import { git } from "../git.ts";
 import { BUNDLES_DIR, INDEX_PATH, INDEX_VERSION, isPastBundleFile, pastBundleFile, type PreviewMark, type RevisionEntry, type RevisionIndex } from "../revisions/index.ts";
 import { commitInfo, defaultBranch, firstParentCommitsTouching, gitFileSystem, isDate, joinRepo, resolvePoint, tagsByCommit, type CommitInfo } from "./git.ts";
 
-export { migrateBundle, migrations, type Migration } from "./migrate.ts";
+export { migrateBundle, migrations, type Migration } from "../revisions/index.ts";
 export { resolvePoint, isDate, type CommitInfo } from "./git.ts";
 
 /** The cache a checkout keeps past Bundles and their index entries in, under the repo root. */

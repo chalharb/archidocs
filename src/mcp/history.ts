@@ -1,9 +1,6 @@
-import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { bundleAt, buildHistory, migrateBundle, readIndex, resolvePoint, type History } from "../history/index.ts";
-import { find, INDEX_PATH, pastBundlePath, span, timeSpan, type Found, type RevisionEntry, type Span } from "../revisions/index.ts";
+import { bundleAt, buildHistory, readIndex, resolvePoint, type History } from "../history/index.ts";
+import { find, INDEX_PATH, span, timeSpan, type Found, type RevisionEntry, type Span } from "../revisions/index.ts";
 import { commitInfo } from "../history/git.ts";
-import type { Bundle } from "../schema/bundle.ts";
 import type { BundleSource, CheckoutSource, Snapshot, Source } from "./source.ts";
 
 /** Why a point in time can't be answered: it names no commit, or its Bundle can't be had. */
@@ -90,58 +87,14 @@ function checkoutPast(source: CheckoutSource): Past {
   };
 }
 
-/** How long a fetched index is trusted before the site is asked again, as for the Bundle. */
-const RECHECK_MS = 60_000;
-
 function bundlePast(source: BundleSource): Past {
-  // Past Bundles are immutable, so each is fetched once.
-  const bundles = new Map<string, Promise<Bundle | PastFailure>>();
-  let cached: { revisions: RevisionEntry[]; checkedAt: number } | undefined;
-
-  const sibling = (path: string) => {
-    const location = source.location;
-    return /^https?:\/\//i.test(location) ? new URL(path, location).href : join(dirname(location), path);
-  };
-  const read = async (path: string): Promise<string> => {
-    const where = sibling(path);
-    if (!/^https?:\/\//i.test(where)) return readFile(where, "utf8");
-    const response = await fetch(where, { headers: { accept: "application/json" }, cache: "no-store" });
-    if (!response.ok) throw new Error(`${where} answered ${response.status} ${response.statusText}`.trim());
-    return response.text();
-  };
+  const { site } = source;
 
   const index: Past["index"] = async () => {
-    const now = Date.now();
-    if (cached && now - cached.checkedAt < RECHECK_MS) return { ok: true, revisions: cached.revisions };
-    let raw: unknown;
-    try {
-      raw = JSON.parse(await read(INDEX_PATH));
-    } catch (error) {
-      return unavailable(`The site has no readable Revision index (${INDEX_PATH}): ${reason(error)}`);
-    }
-    const revisions = (raw as { revisions?: unknown } | null)?.revisions;
-    if (!Array.isArray(revisions)) return unavailable(`The site's ${INDEX_PATH} holds no Revisions.`);
-    cached = { revisions: revisions as RevisionEntry[], checkedAt: now };
-    return { ok: true, revisions: cached.revisions };
-  };
-
-  const fetchBundle = (sha: string) => {
-    let pending = bundles.get(sha);
-    if (!pending) {
-      pending = (async () => {
-        let raw: unknown;
-        try {
-          raw = JSON.parse(await read(pastBundlePath(sha)));
-        } catch (error) {
-          return unavailable(`The Bundle at ${sha.slice(0, 7)} can't be read from the site: ${reason(error)}`);
-        }
-        return migrateBundle(raw) ?? unavailable(`The Bundle at ${sha.slice(0, 7)} has a schema this Archidocs can't read or migrate.`);
-      })();
-      bundles.set(sha, pending);
-      // A failure may be a host's hiccup; ask again next time.
-      void pending.then((b) => "ok" in b && bundles.delete(sha));
-    }
-    return pending;
+    const read = await site.index();
+    if (!read.ok) return unavailable(read.message);
+    if (!read.index) return unavailable(`The site has no Revision index (${INDEX_PATH}), so it has no history.`);
+    return { ok: true, revisions: read.index.revisions };
   };
 
   return {
@@ -157,10 +110,9 @@ function bundlePast(source: BundleSource): Past {
       if (!found.ok) return found.kind === "not_found" && startsCommit ? { ok: true, commit: commit!, snapshot: current } : findFailure(point, found);
       const entry = found.revision;
       if (entry.sha === commit) return { ok: true, commit, snapshot: current };
-      if (entry.bundle === false) return unavailable(`The Bundle at ${entry.sha.slice(0, 7)} (${entry.date}) was not kept on this site.`);
-      const bundle = await fetchBundle(entry.sha);
-      if ("ok" in bundle) return bundle;
-      return { ok: true, commit: entry.sha, snapshot: { bundle, issues: [] } };
+      const past = await site.bundle(entry);
+      if (!past.ok) return unavailable(past.message);
+      return { ok: true, commit: entry.sha, snapshot: { bundle: past.bundle, issues: [] } };
     },
     async span(point) {
       // Tags come first, so read the index; a day or a time still spans itself without one.

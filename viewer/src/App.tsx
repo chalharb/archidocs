@@ -15,15 +15,16 @@ import { LocationBar } from "./LocationBar.tsx";
 import { HOME, formatPlace, isPlaceHash, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
-import { LATEST_BUNDLE_PATH, SITE_FILE_PATH, type RevisionEntry } from "../../src/revisions/index.ts";
-import { loadTimeline, pointLabel, type Timeline } from "./revisions.ts";
+import { SITE_FILE_PATH, type RevisionEntry } from "../../src/revisions/index.ts";
+import { loadTimeline, pointLabel, site, type Timeline } from "./revisions.ts";
 import { remember } from "./recent.ts";
 import { SaveAsView } from "./SaveAsView.tsx";
 import { structuralView, Workspace } from "./workspace.ts";
 
 /**
- * Loads the latest Bundle and the Revision index next to index.html;
- * relative URLs, so the site works under any base path.
+ * Loads the latest Bundle (migrated and parsed, so a malformed one shows
+ * "Couldn't load the Workspace") and the Revision index through the site's
+ * reader, and `site.json` beside them.
  */
 function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error?: string } {
   const [state, setState] = useState<{ latest?: Bundle; timeline?: Timeline; name?: string; error?: string }>({});
@@ -33,8 +34,7 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error
       .then((r): Promise<{ workspace?: string }> | { workspace?: string } => (r.ok ? r.json() : {}))
       .then((site) => site.workspace)
       .catch(() => undefined);
-    const latest = fetch(`./${LATEST_BUNDLE_PATH}`).then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`${LATEST_BUNDLE_PATH}: HTTP ${r.status}`))));
-    Promise.all([latest, loadTimeline(), name])
+    Promise.all([site.latest(), loadTimeline(), name])
       .then(([bundle, timeline, workspaceName]) => {
         openPreview(timeline);
         setState({ latest: bundle, timeline, name: workspaceName });

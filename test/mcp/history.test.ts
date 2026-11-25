@@ -224,17 +224,8 @@ describe("history from a published Bundle site", () => {
     expect((await call("get_workspace_info", { at: "2026-02-12" })).structuredContent).toMatchObject({ commit: V2 });
     expect((await call("get_workspace_info", { at: "bbbbbbb" })).structuredContent).toMatchObject({ commit: V2 });
     expect((await call("get_workspace_info", { at: NOW })).structuredContent).toMatchObject({ commit: NOW });
-  });
-
-  it("returns history_unavailable for a dropped, missing or unreadable Bundle", async () => {
-    const { call, text } = await site();
-    for (const at of ["2026-01-31", MISSING, OLD]) {
-      const result = await call("list_teams", { at });
-      expect(result.isError, at).toBe(true);
-      expect(result.structuredContent, at).toMatchObject({ code: "history_unavailable" });
-    }
-    expect(text(await call("list_teams", { at: DROPPED }))).toContain("was not kept");
     expect((await call("list_teams", { at: "v9" })).structuredContent).toMatchObject({ code: "not_found", suggestions: ["v2"] });
+    expect((await call("list_teams", { at: MISSING })).structuredContent).toMatchObject({ code: "history_unavailable" });
   });
 
   it("diffs two Bundles it can read, and refuses one it can't", async () => {

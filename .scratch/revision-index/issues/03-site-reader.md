@@ -1,6 +1,6 @@
 # 03: One site reader
 
-Status: ready-for-agent
+Status: done
 Blocked by: 02
 Spec: [Revision index](../spec.md)
 
