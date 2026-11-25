@@ -25,6 +25,8 @@ Not named by the card:
 
 - **The index's `schemaVersion` is checked only by the checkout.** `readIndex` (`history/index.ts:95-103`) drops an index of another version. `bundlePast.index` (`mcp/history.ts:113-126`) and `loadTimeline` (`revisions.ts:80-89`) read `revisions` whatever the version says.
 - **The checkout cache is a second copy of the same layout.** `.archidocs/cache/bundles/index.json` and `<sha>.json` (`history/index.ts:44-46`), which `publishHistory` copies from (`:195`).
+- **The CLI resolves points too.** `archidocs diff` (`cli/main.ts:199-200`) and `history build --since` (`history/index.ts:160-166`) go through `resolvePoint`, so any change to how a checkout reads a date changes the CLI as well, and the docs that quote it (see "Documentation").
+- **The docs already disagree with the code on the index re-check.** `docs/publishing.md:180` says MCP re-checks `index.json` with `If-None-Match` or `If-Modified-Since`. Only `workspace.bundle.json` gets conditional requests (`mcp/source.ts:80-82`). The index is fetched with `cache: "no-store"` and no validators (`mcp/history.ts:108`).
 - **"Latest" is assumed to be `revisions[0]`.** `Timeline.isLatest` (`revisions.ts:65-67`) treats the newest Revision as what `workspace.bundle.json` shows. A site built from a branch other than the default branch, or from a commit that didn't change the Model, breaks that assumption. `build --preview` handles it on purpose (`history/index.ts:255-256`); a plain `build` doesn't.
 
 ## Evidence
@@ -176,7 +178,7 @@ export function siteFiles(input: { latest: Bundle; name: string; index: Revision
 ### How a checkout resolves a point (needs a decision)
 
 - **A. Index only.** The checkout builds the index, then calls `find` like everyone else. Every source gives the same Revision for the same point. Lost: `main`, `HEAD~1`, `origin/x`, tags on non-Revisions, shas off the default branch. Today `get_view at=<feature-branch sha>` works on a checkout.
-- **B. git first, then snap to a Revision.** Refs go through `rev-parse`. A day or a time goes through `find` on the index, which drops `rev-list --before`. A commit that isn't a Revision is answered from its own Bundle, as now, but the result also names the Revision whose Model it shows. Sites and the viewer get the same `find`; the checkout accepts a superset.
+- **B. git first, then snap to a Revision.** Refs go through `rev-parse`. A day or a time goes through `find` on the index, which drops `rev-list --before`. A commit that isn't a Revision is answered from its own Bundle, as now, but the result also names the Revision whose Model it shows. Sites and the viewer get the same `find`; the checkout accepts a superset. This covers `archidocs diff` and `history build --since` too, not only MCP. A checkout can then only date-resolve once its index is built, so `diff 2026-01-01` would first backfill `.archidocs/cache/` (or `find` would run over `firstParentCommitsTouching`, which needs no Bundles).
 - **C. Keep git as it is.** Only the site and the viewer are unified.
 
 Recommendation: **B**. Dates mean the same thing everywhere, which is the divergence users would notice. Refs keep working where only a checkout can answer them. An ambiguous prefix gets the same "give more of it" message, since `rev-parse`'s failure can be retried as a prefix search over the index.
@@ -209,6 +211,20 @@ Recommendation: **B**. Dates mean the same thing everywhere, which is the diverg
 5. **Should `scopeMatcher` move,** or stay in `core/history-scope.ts` with the module re-exporting it? It is about Bundles as much as Revisions.
 6. **Should a plain `build` off the default branch mark its index** (as `preview` does) so the viewer knows the latest Bundle isn't `revisions[0]`? It's a separate bug, maybe its own ticket.
 
+## Documentation
+
+The docs site is built from `website/`. Its generated reference comes from source: the CLI pages from `src/cli/commands.ts`, the MCP pages from the tool schemas in `src/mcp/server.ts` (through `website/src/reference/mcp.ts`), and the viewer URL page from `URL_PARAMETERS` in `viewer/src/place.ts` (through `website/src/reference/viewer-urls.ts`). `GLOSSARY.md` and `CHANGELOG.md` are published as pages too. As in card 2's spec, each ticket updates the docs it changes in the same PR. Paths below are under `website/src/content/docs/docs/` unless they start with `src/`, `viewer/`, `docs/` or `website/`.
+
+| Ticket | Docs to update |
+|---|---|
+| 1 index shape | None. Internal move, no behaviour change. |
+| 2 one `find` | **Viewer URL reference**: `at` and `vs` in `viewer/src/place.ts:56-57` say "A tag, commit sha or date". Make that "a tag, a commit sha or its first 4+ characters, or a date (`YYYY-MM-DD`) or time". **MCP reference**: the `at` description (`src/mcp/server.ts:887`) says "a date (YYYY-MM-DD…)", though times are accepted. Give the same grammar as the viewer, in one sentence the module exports, so the two references can't drift. Also the `not_found` row (`website/src/reference/mcp.ts:347`): name "a sha prefix that starts more than one Revision", with suggestions. **`guides/viewer/compare-two-revisions.mdx`** "If it didn't": a link whose `at` or `vs` is too short a sha now shows a problem naming the candidates, so say so. |
+| 3 one site reader | **`help/upgrading.mdx:35`** says "Sites and caches rebuild the Workspace Bundle from git, so a new format needs no action". Add what reading means: the viewer and `mcp --bundle` read a site built by an older Archidocs by migrating its Bundles, latest and past, but not one built by a newer Archidocs. **`docs/publishing.md:180`** is wrong today (see "Not named by the card"). Either the reader adds conditional requests for the index, or the line says only the Bundle uses them. `guides/agents/connect-mcp.mdx:154` ("re-reads the site's Revision index at most once a minute") stays true. **`compare-two-revisions.mdx:46`** (`history_unavailable`) gains the third reason the viewer already has: a Bundle from a schema it can't read. |
+| 4 one site writer | Output must be byte-identical, so the layout pages stay as they are: `guides/publish/other-hosts.mdx:55-117`, `docs/publishing.md:3, :175-223`, the "Bundles" section of `concepts/revisions-and-history.mdx`. The ticket checks that the cache-header table still lists every file the writer produces. `site.json` isn't in that table today; decide whether it belongs (`no-cache`, like `index.html`). |
+| 5 checkout points | Under option B, every page that says a date is "the last default-branch commit" changes to "the last Revision": `concepts/revisions-and-history.mdx:35` and the "Only the default branch" bullet (`:52`), and `guides/review/diff.mdx:54`. The error string `cli/main.ts:200` ("a date resolves to the last default-branch commit at or before it") is quoted verbatim in `guides/review/diff.mdx:90` and `help/troubleshooting.mdx:45`; change all three together. The `diff` `<from>` description (`src/cli/commands.ts:232`) feeds the generated CLI reference. Say what happens to a date before the first Revision (`not_found`, not an empty Model). `concepts/agents-and-mcp.mdx:60` ("Same answers for people and agents") becomes true for points in time; no edit needed, but it is the line this ticket makes honest. |
+| 6 Element history | None. The History tab (`compare-two-revisions.mdx:30`) behaves the same. |
+| Any | If `/domain-modeling` makes **Revision index** a term (open question 2), add it to `GLOSSARY.md`. It must pass the wording rules (`pnpm docs:test`, `website/test/templates.test.ts`). Link its first use on `guides/agents/connect-mcp.mdx:154` and in `docs/publishing.md:3`, which already use the phrase. Each `fix(…)` ticket (2, 3, 5) gets its changelog line from release-please, which the Changelog page publishes. |
+
 ## Lined up with card 2 (Workspace checkout)
 
 Card 2's spec is on `claude/workspace-checkout-research-fa4e89` (`.scratch/workspace-checkout/spec.md`, tickets 01-06). It already leaves the `bundles/` paths to this card (its "Card 3" section). The two specs split cleanly if both keep to this table:
@@ -222,6 +238,7 @@ Card 2's spec is on `claude/workspace-checkout-research-fa4e89` (`.scratch/works
 | `src/mcp/source.ts` `bundleSource`, `parse` (`:74-145`) | untouched (card 2 touches `checkoutSource` only) | `parse` calls `readBundle`; `BUNDLE_FILE` becomes `site.bundle` |
 | empty index outside git (`main.ts:277-280`) | moved unchanged into `src/commands/` `build` (ticket 04) | replaced by `siteFiles` with an empty index |
 | `site.json` / `workspace.bundle.json` writes (`main.ts:98-103`) | move into `build` (ticket 04) | written through `siteFiles` |
+| `diff` point resolution (`main.ts:199-200`) | moves into `src/commands/` `diff` with its message unchanged (ticket 04) | under option B, resolves dates through `find`; the message and its two quoting docs pages change (ticket 5) |
 | `cli/dev.ts:120, :138-141` | `rebuild` onto the Checkout (ticket 03); reload rule (ticket 06) | serves `siteFiles` |
 | `website/src/lib/screenshots.ts:99` | the `build` call becomes in-process (ticket 05) | passes `name` instead of rewriting `site.json` |
 | `history/index.ts` `publishHistory`/`publishPreview` | untouched | build a `RevisionIndex`; `siteFiles` writes it |
@@ -234,5 +251,7 @@ Card 2's spec is on `claude/workspace-checkout-research-fa4e89` (`.scratch/works
 2. **One `find` over the index.** `parsePoint`, `find` and `timeOf`, with the table tests. `bundlePast` and `Timeline.find` use them. The viewer takes full times and reports an ambiguous prefix. (`fix(viewer)`)
 3. **One site reader.** `openSite` over a `SiteReader`, with fetch, file/HTTP and memory adapters. `readBundle` is used for the latest Bundle too (`App.tsx:35`, `source.ts:140`), and `readIndex` checks `schemaVersion` everywhere. (`fix(mcp)`, since the latest Bundle is now migrated)
 4. **One site writer.** `siteFiles` feeds `build`, `publishHistory`, `publishPreview`, the empty index, `dev`'s virtual server and the test fake. `screenshots.ts` stops rewriting `site.json`. Byte-identical output on every existing test. After card 2's ticket 04. (`refactor`)
-5. **Points on a checkout** (after grilling, and after card 2's ticket 03). Option B: dates through `find`, refs through `rev-parse`, with the Revision named. (`fix(mcp)`)
+5. **Points on a checkout** (after grilling, and after card 2's tickets 03 and 04). Option B: dates through `find`, refs through `rev-parse`, with the Revision named, for MCP, `diff` and `history build --since`. (`fix(history)`)
+
+Each ticket carries its rows of the "Documentation" table as acceptance criteria.
 6. **The viewer's Element history through `scopeMatcher`.** `ElementPanel.tsx:283-292` and `Timeline.touching` give way to the module's `touching`. No behaviour change for Elements. (`refactor(viewer)`)
