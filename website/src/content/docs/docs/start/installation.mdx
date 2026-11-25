@@ -12,7 +12,7 @@ Archidocs is one command-line tool, `archidocs`, published to npm. The same pack
 ## Requirements
 
 - **Node.js 22.18 or later.** Run `node --version` to see yours.
-- **git.** A [Workspace](/docs/reference/glossary/#term-workspace), the repo that holds the whole architecture, is a git repo. Archidocs reads its history to show past Revisions.
+- **git.** A [Workspace](/docs/reference/glossary/#term-workspace), the repo that holds the whole architecture, is a git repo. Archidocs reads its history to show past [Revisions](/docs/reference/glossary/#term-revision), the Workspace as it was at a commit.
 
 ## Install
 
@@ -55,7 +55,7 @@ Run a dev dependency with `pnpm exec`, as in `pnpm exec archidocs check`.
 </TabItem>
 <TabItem label="npx">
 
-There is nothing to install. Put `npx` before each command, as in `npx archidocs check`. npx downloads the latest version the first time and caches it.
+There is nothing to install. Put `npx` before each command, as in `npx archidocs check`. The first time, npx downloads the latest version. It then runs that copy from its cache.
 
 To run one version, name it:
 
@@ -76,7 +76,7 @@ archidocs version
 archidocs 1.2.0 (Bundle schemaVersion 1)
 ```
 
-The first number is the CLI's version. The Bundle `schemaVersion` is the version of the format that `archidocs build` writes. For scripts, add `--format json`:
+The first number is the CLI's version. The Bundle `schemaVersion` is the version of the [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle) format. That is the JSON file that `archidocs build` writes for the viewer. For scripts, add `--format json`:
 
 ```bash
 archidocs version --format json
@@ -111,7 +111,7 @@ For a dev dependency, drop `--global` and run it from the Workspace repo's root.
 </TabItem>
 <TabItem label="npx">
 
-npx runs the latest version it has cached. To fetch the newest one, name it:
+npx keeps running the copy in its cache, even after a new release. To fetch the newest release, name it:
 
 ```bash
 npx archidocs@latest version
@@ -126,10 +126,16 @@ Then run `archidocs init` again from the Workspace repo's root:
 archidocs init
 ```
 
-It rewrites the agent skill files that the new version changed, and leaves everything else alone. It prints a line for each file it rewrote, such as:
+It rewrites the agent skill files that the new version changed, and adds any setup that is missing. It leaves your Model alone. When the skill changed, it prints:
 
 ```text
 Updated .agents/skills/archidocs-authoring/SKILL.md
+Updated .claude/skills/archidocs-authoring/SKILL.md
+Updated .github/skills/archidocs-authoring/SKILL.md
+
+Register the Archidocs MCP server with your agent harness, started from the repo root:
+
+  archidocs mcp --workspace archidocs
 ```
 
 The [Changelog](/docs/reference/changelog/) lists what changed in each version.
@@ -187,7 +193,7 @@ For a dev dependency, drop `--global`.
 </TabItem>
 <TabItem label="npx">
 
-Nothing is installed. npx keeps its download in the npm cache, which `npm cache clean --force` empties.
+Nothing is installed. npx keeps its copy in the npm cache, and npm clears old entries on its own.
 
 </TabItem>
 </Tabs>
