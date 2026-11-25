@@ -1,13 +1,8 @@
 import { countChanges, type Change, type ChangeKind } from "../core/index.ts";
+import type { DiffSide } from "../commands/index.ts";
 
 export const diffFormats = ["text", "json", "markdown"] as const;
 export type DiffFormat = (typeof diffFormats)[number];
-
-/** One side of a diff: the point as given and the commit it resolved to (null for the working tree). */
-export interface DiffSide {
-  point: string;
-  commit: string | null;
-}
 
 export function formatDiff(changes: Change[], from: DiffSide, to: DiffSide, format: DiffFormat): string {
   if (format === "json") return JSON.stringify({ from, to, counts: countChanges(changes), changes }, null, 2) + "\n";

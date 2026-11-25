@@ -1,6 +1,6 @@
 # 04: Commands as functions
 
-Status: ready-for-agent
+Status: done
 Blocked by: 03
 Spec: [Workspace checkout](../spec.md)
 
@@ -30,11 +30,11 @@ Move the work of `check`, `build`, `export`, `diff` and `history build` out of `
 
 ## Acceptance criteria
 
-- [ ] `src/cli/run.ts` contains no `load(`, `layoutView`, `renderSvg`, `publishHistory` or `resolveView` call.
-- [ ] `grep -rn "process\.\|stdout\|stderr" src/commands` finds nothing.
-- [ ] Importing `src/commands/index.ts` and exporting an SVG doesn't load `@resvg/resvg-wasm` (assert in a test, or show it in the PR).
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `src/cli/run.ts` contains no `load(`, `layoutView`, `renderSvg`, `publishHistory` or `resolveView` call.
+- [x] `grep -rn "process\.\|stdout\|stderr" src/commands` finds nothing.
+- [x] Importing `src/commands/index.ts` and exporting an SVG doesn't load `@resvg/resvg-wasm` (assert in a test, or show it in the PR).
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.
 
 ## Comments
 
