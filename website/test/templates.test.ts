@@ -42,10 +42,10 @@ const concepts = pagesUnder(`${DOCS}/concepts`).filter((p) => !isIndex(p));
 const handWritten = [...pagesUnder("website/src/content/docs"), ...pagesUnder(INTROS)];
 
 /** One Markdown file (from the repo root). */
-const file = (path: string): Page => ({ path, text: readFileSync(repoPath(path), "utf8") });
+const repoPage = (path: string): Page => ({ path, text: readFileSync(repoPath(path), "utf8") });
 
 /** What the wording rules cover: the docs pages and intros, the repo's README and Glossary, and the agent guide the MCP server serves. */
-const worded = [...handWritten, file("README.md"), file("GLOSSARY.md"), ...pagesUnder("guide")];
+const proseChecked = [...handWritten, repoPage("README.md"), repoPage("GLOSSARY.md"), ...pagesUnder("guide")];
 
 // ── Reading a page ───────────────────────────────────────────────────────────
 
@@ -141,23 +141,30 @@ interface BannedWord {
  */
 const BANNED_WORDS: BannedWord[] = [
   { word: "harness", instead: "coding agent" },
+  { word: "artefact", instead: "artifact" },
   { word: "authoris", instead: "authoriz…" },
   { word: "behaviour", instead: "behavior" },
   { word: "catalogue", instead: "catalog" },
   { word: "centre", instead: "center" },
   { word: "colour", instead: "color" },
   { word: "customis", instead: "customiz…" },
+  { word: "favour", instead: "favor" },
   { word: "grey", instead: "gray" },
+  { word: "honour", instead: "honor" },
+  { word: "initialis", instead: "initializ…" },
   { word: "labelled", instead: "labeled" },
   { word: "licence", instead: "license" },
   { word: "modelled", instead: "modeled" },
   { word: "modelling", instead: "modeling" },
   { word: "neighbour", instead: "neighbor" },
   { word: "normalis", instead: "normaliz…" },
+  { word: "optimis", instead: "optimiz…" },
   { word: "organis", instead: "organiz…" },
   { word: "prioritis", instead: "prioritiz…" },
   { word: "recognis", instead: "recogniz…" },
+  { word: "serialis", instead: "serializ…" },
   { word: "summaris", instead: "summariz…" },
+  { word: "visualis", instead: "visualiz…" },
 ];
 
 /** Each line of a page whose prose uses the banned word. */
@@ -226,12 +233,14 @@ describe("no sentence on a concept page has more than two links", () => {
   itHolds(concepts, linkProblems, LINKS_NOT_YET_MIGRATED);
 });
 
-describe.each(BANNED_WORDS)('no hand-written page, README, Glossary or guide topic says "$word"', (banned) => {
+describe("the banned-word check", () => {
   it("reads the README, the Glossary and the guide topics", () => {
-    expect(worded.map((p) => p.path)).toEqual(expect.arrayContaining(["README.md", "GLOSSARY.md", "guide/SKILL.md", "guide/topics/bootstrap.md"]));
+    expect(proseChecked.map((p) => p.path)).toEqual(expect.arrayContaining(["README.md", "GLOSSARY.md", "guide/SKILL.md", "guide/topics/bootstrap.md"]));
   });
+});
 
-  itHolds(worded, (page) => bannedWordProblems(page, banned), banned.notYetMigrated ?? []);
+describe.each(BANNED_WORDS)('no hand-written page, README, Glossary or guide topic says "$word"', (banned) => {
+  itHolds(proseChecked, (page) => bannedWordProblems(page, banned), banned.notYetMigrated ?? []);
 });
 
 describe("the template checks", () => {
@@ -286,9 +295,9 @@ describe("the template checks", () => {
   it("ban the British spellings in any form, and not their US forms or words that only start alike", () => {
     const flagged = (text: string): string[] =>
       BANNED_WORDS.flatMap((banned) => bannedWordProblems({ path: "concepts/teams.mdx", text }, banned)).map((p) => p.replace(/^[^"]*"([^"]+)".*$/, "$1"));
-    const british = "The organisation's Colours. A data centre. The Catalogue. Its licence. Neighbouring behaviour. Grey. Modelling, modelled and labelled. Authorises, summarised, recognise, normalise, customised, prioritise.";
-    expect(flagged(british).sort()).toEqual(["authoris", "behaviour", "catalogue", "centre", "colour", "customis", "grey", "labelled", "licence", "modelled", "modelling", "neighbour", "normalis", "organis", "prioritis", "recognis", "summaris"]);
-    const american = "The organization's colors. A data center, centered. The catalog. Its license. Neighboring behavior. Gray. Modeling, modeled and labeled. Authorizes, summarized, recognize, a realistic analysis, a license for a customer's priority.";
+    const british = "The organisation's Colours. A data centre. The Catalogue. Its licence. Neighbouring behaviour. Grey. Modelling, modelled and labelled. Authorises, summarised, recognise, normalise, customised, prioritise. Initialise, optimised, serialise, visualising. An artefact in favour, with honours.";
+    expect(flagged(british).sort()).toEqual(["artefact", "authoris", "behaviour", "catalogue", "centre", "colour", "customis", "favour", "grey", "honour", "initialis", "labelled", "licence", "modelled", "modelling", "neighbour", "normalis", "optimis", "organis", "prioritis", "recognis", "serialis", "summaris", "visualis"]);
+    const american = "The organization's colors. A data center, centered. The catalog. Its license. Neighboring behavior. Gray. Modeling, modeled and labeled. Authorizes, summarized, recognize, a realistic analysis, a license for a customer's priority. Initialize, optimized, serialize, visualizing. An artifact in favor, with honors.";
     expect(flagged(american)).toEqual([]);
   });
 

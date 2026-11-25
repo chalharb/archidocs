@@ -37,4 +37,6 @@ The CLI's printed messages and the viewer's UI text aren't in this ticket. If th
 - Files outside this ticket's list: `DESIGN.md`, `PRODUCT.md`, `.impeccable/`, `assets/brand/README.md` and `.scratch/`. They say "colour", "organisation", "grey", "behaviour" and "labelled". A later pass could convert them; the banned-word check doesn't read them.
 - `CHANGELOG.md` past entries.
 
-**The check:** `BANNED_WORDS` in `website/test/templates.test.ts` now holds 17 British stems after "harness", and the banned-word check also reads `README.md`, `GLOSSARY.md` and `guide/`.
+**The check:** `BANNED_WORDS` in `website/test/templates.test.ts` now holds 23 British stems after "harness", and the banned-word check also reads `README.md`, `GLOSSARY.md` and `guide/`.
+
+The check reads prose only, so a British spelling inside a code block, such as a YAML sample's `description:`, isn't caught. The samples in `examples/` and `website/samples/` were converted by hand.
