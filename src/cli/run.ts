@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Bundle } from "../schema/bundle.ts";
 import { resolveView, serializeBundle, type AnyView } from "../core/index.ts";
@@ -17,6 +17,7 @@ import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 import { diff } from "../core/index.ts";
 import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, previewSides, publishHistory, publishPreview, resolvePoint, type History, type PreviewSides } from "../history/index.ts";
+import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
 
@@ -121,17 +122,17 @@ async function main(argv: string[], io: Io): Promise<number> {
       if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
       await cp(VIEWER_DIR, out, { recursive: true });
       // The viewer's exports name the Workspace as `archidocs export` does: by its repo's folder.
-      await writeFile(join(out, "site.json"), JSON.stringify({ workspace: await checkout.name() }) + "\n");
+      await writeFile(join(out, SITE_FILE_PATH), JSON.stringify({ workspace: await checkout.name() }) + "\n");
     }
     await mkdir(out, { recursive: true });
-    await writeFile(join(out, "workspace.bundle.json"), serializeBundle(bundle));
+    await writeFile(join(out, LATEST_BUNDLE_PATH), serializeBundle(bundle));
     if (preview) {
       const { base, baseSha, headSha } = await publishPreview(preview.h, out, preview.sides, bundle);
       io.stdout.write(`Wrote the preview site to ${values.out}: Compare origin/${base} (${baseSha.slice(0, 7)}) → PR (${headSha.slice(0, 7)})\n`);
       return OK;
     }
     if (!values["bundle-only"]) await writeSiteHistory(checkout, out, keep);
-    io.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, "workspace.bundle.json")}\n` : `Wrote the site to ${values.out}\n`);
+    io.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, LATEST_BUNDLE_PATH)}\n` : `Wrote the site to ${values.out}\n`);
     return OK;
   }
   if (command === "dev") {
@@ -293,7 +294,7 @@ async function writeSiteHistory(checkout: Checkout, out: string, keep: number | 
   const repo = await checkout.repo();
   if (repo) await publishHistory(repo.history, out, { keep });
   else {
-    await mkdir(join(out, "bundles"), { recursive: true });
-    await writeFile(join(out, "bundles", "index.json"), JSON.stringify({ schemaVersion: SCHEMA_VERSION, revisions: [] }, null, 2) + "\n");
+    await mkdir(dirname(join(out, INDEX_PATH)), { recursive: true });
+    await writeFile(join(out, INDEX_PATH), JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: [] }, null, 2) + "\n");
   }
 }

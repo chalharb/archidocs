@@ -1,6 +1,6 @@
 # 01: The Revision index module
 
-Status: ready-for-agent
+Status: done
 Spec: [Revision index](../spec.md)
 
 ## What to build

@@ -6,7 +6,7 @@ import { extname, join, normalize, sep } from "node:path";
 import { serializeBundle, type Issue } from "../core/index.ts";
 import { formatText } from "./format.ts";
 import { isWorkspaceFile, type Checkout } from "../workspace/index.ts";
-import { SCHEMA_VERSION } from "../schema/bundle.ts";
+import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
 
 export const DEFAULT_DEV_PORT = 4321;
 
@@ -114,7 +114,7 @@ export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port =
   await rebuild();
   const index = (await readFile(join(viewerDir, "index.html"), "utf8")).replace("</body>", `${CLIENT}</body>`);
   const site = JSON.stringify({ workspace: await checkout.name() }) + "\n";
-  const noHistory = JSON.stringify({ schemaVersion: SCHEMA_VERSION, revisions: [] }) + "\n";
+  const noHistory = JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: [] }) + "\n";
 
   const server = createServer((req, res) => {
     void (async () => {
@@ -132,10 +132,10 @@ export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port =
         return;
       }
       if (path === "/" || path === "/index.html") return send(index, TYPES[".html"]!);
-      if (path === "/workspace.bundle.json") return send(bundleJson!, TYPES[".json"]!);
-      if (path === "/site.json") return send(site, TYPES[".json"]!);
+      if (path === `/${LATEST_BUNDLE_PATH}`) return send(bundleJson!, TYPES[".json"]!);
+      if (path === `/${SITE_FILE_PATH}`) return send(site, TYPES[".json"]!);
       // Dev mode shows the working tree only; the viewer reads an empty index as no history.
-      if (path === "/bundles/index.json") return send(noHistory, TYPES[".json"]!);
+      if (path === `/${INDEX_PATH}`) return send(noHistory, TYPES[".json"]!);
       const file = normalize(join(viewerDir, path));
       if (!file.startsWith(normalize(viewerDir + sep)) || !(await stat(file).catch(() => undefined))?.isFile()) {
         res.writeHead(404).end("Not found");

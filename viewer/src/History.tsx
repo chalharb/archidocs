@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Change } from "../../src/core/diff.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
 import { formatPlace, type Place } from "./place.ts";
-import { HistoryUnavailable, loadBundle, pointLabel, shortDate, type Revision, type Timeline } from "./revisions.ts";
+import { HistoryUnavailable, loadBundle, pointLabel, shortDate, type Timeline } from "./revisions.ts";
+import type { RevisionEntry } from "../../src/revisions/index.ts";
 import { Icon } from "./Icon.tsx";
 
 /** The Bundles a place's `at` and `vs` name, once loaded; `before` only while Comparing. */
@@ -10,12 +11,12 @@ export interface Times {
   current: Bundle;
   before?: Bundle;
   /** The Revision `at` names; undefined for the latest. */
-  at?: Revision;
-  vs?: Revision;
+  at?: RevisionEntry;
+  vs?: RevisionEntry;
 }
 
 /** Why a place's `at` or `vs` can't be shown. */
-export type TimeProblem = { kind: "unknown"; point: string } | { kind: "unavailable"; revision: Revision; reason: string };
+export type TimeProblem = { kind: "unknown"; point: string } | { kind: "unavailable"; revision: RevisionEntry; reason: string };
 
 export type TimeState = { kind: "ready"; times: Times } | { kind: "problem"; problem: TimeProblem };
 
@@ -25,7 +26,7 @@ async function resolveTimes(latest: Bundle, timeline: Timeline, at: string | nul
   if (at !== null && !atRevision) return { kind: "problem", problem: { kind: "unknown", point: at } };
   const vsRevision = vs === null ? undefined : find(vs);
   if (vs !== null && !vsRevision) return { kind: "problem", problem: { kind: "unknown", point: vs } };
-  const load = async (revision: Revision | undefined) => (revision === undefined ? latest : loadBundle(revision));
+  const load = async (revision: RevisionEntry | undefined) => (revision === undefined ? latest : loadBundle(revision));
   try {
     const current = await load(atRevision);
     try {
@@ -39,7 +40,7 @@ async function resolveTimes(latest: Bundle, timeline: Timeline, at: string | nul
   }
 }
 
-function unavailable(revision: Revision, e: unknown): TimeState {
+function unavailable(revision: RevisionEntry, e: unknown): TimeState {
   if (!(e instanceof HistoryUnavailable)) throw e;
   return { kind: "problem", problem: { kind: "unavailable", revision, reason: e.message } };
 }
@@ -101,7 +102,7 @@ export function Unavailable({ problem, place }: { problem: TimeProblem; place: P
 }
 
 /** The banner over a past Revision, with a way back to the latest. */
-export function AtBanner({ revision, place }: { revision: Revision; place: Place }) {
+export function AtBanner({ revision, place }: { revision: RevisionEntry; place: Place }) {
   return (
     <p className="arc-at" role="status" aria-label="Past Revision">
       <span>
@@ -188,7 +189,7 @@ export function ChangesList({ changes, label, onElement, onView }: { changes: Ch
 }
 
 /** One Revision in words: tags, short sha, date and subject. */
-export function RevisionSummary({ revision }: { revision: Revision }) {
+export function RevisionSummary({ revision }: { revision: RevisionEntry }) {
   return (
     <span>
       {revision.tags.map((t) => (
@@ -207,7 +208,7 @@ export function RevisionSummary({ revision }: { revision: Revision }) {
 }
 
 /** The Revision timeline: every Revision, newest first, tags marked; open one with `at`, or Compare from it with `vs`. */
-export function RevisionsMenu({ timeline, onAt, onVs }: { timeline: Timeline; onAt: (revision: Revision) => void; onVs: (revision: Revision) => void }) {
+export function RevisionsMenu({ timeline, onAt, onVs }: { timeline: Timeline; onAt: (revision: RevisionEntry) => void; onVs: (revision: RevisionEntry) => void }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
