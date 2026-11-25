@@ -4,771 +4,51 @@
   "type": "object",
   "properties": {
     "people": {
+      "description": "Persons, keyed by id. An id is unique in the Project across all its Elements and Deployment Targets.",
       "type": "object",
       "propertyNames": {
         "type": "string",
         "pattern": "^[a-z0-9][a-z0-9-]*$"
       },
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "owner": {
-            "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*$"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string"
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "required": [
-                "label",
-                "url"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "relationships": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "to": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "id": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "technology": {
-                  "type": "string"
-                },
-                "interaction": {
-                  "type": "string",
-                  "enum": [
-                    "sync",
-                    "async"
-                  ]
-                },
-                "via": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "channel": {
-                  "type": "string"
-                },
-                "tags": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              },
-              "required": [
-                "to"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/Person"
       }
     },
     "systems": {
+      "description": "Systems, keyed by id, each with its Services nested under `services`.",
       "type": "object",
       "propertyNames": {
         "type": "string",
         "pattern": "^[a-z0-9][a-z0-9-]*$"
       },
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "owner": {
-            "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*$"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string"
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "required": [
-                "label",
-                "url"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "relationships": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "to": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "id": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "technology": {
-                  "type": "string"
-                },
-                "interaction": {
-                  "type": "string",
-                  "enum": [
-                    "sync",
-                    "async"
-                  ]
-                },
-                "via": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "channel": {
-                  "type": "string"
-                },
-                "tags": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              },
-              "required": [
-                "to"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "external": {
-            "type": "boolean"
-          },
-          "services": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string",
-              "pattern": "^[a-z0-9][a-z0-9-]*$"
-            },
-            "additionalProperties": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "owner": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$"
-                },
-                "tags": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "links": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "label": {
-                        "type": "string"
-                      },
-                      "url": {
-                        "type": "string",
-                        "format": "uri"
-                      }
-                    },
-                    "required": [
-                      "label",
-                      "url"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "relationships": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "to": {
-                        "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                        "description": "An id in this Project, or `project:id` for one in another Project"
-                      },
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9][a-z0-9-]*$"
-                      },
-                      "description": {
-                        "type": "string"
-                      },
-                      "technology": {
-                        "type": "string"
-                      },
-                      "interaction": {
-                        "type": "string",
-                        "enum": [
-                          "sync",
-                          "async"
-                        ]
-                      },
-                      "via": {
-                        "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                        "description": "An id in this Project, or `project:id` for one in another Project"
-                      },
-                      "channel": {
-                        "type": "string"
-                      },
-                      "tags": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "required": [
-                      "to"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "app",
-                    "datastore",
-                    "broker"
-                  ]
-                },
-                "technology": {
-                  "type": "string"
-                },
-                "external": {
-                  "type": "boolean"
-                },
-                "in": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$",
-                  "description": "Id of the parent declared in another file of this Project"
-                },
-                "components": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9][a-z0-9-]*$"
-                  },
-                  "additionalProperties": {
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "type": "string"
-                      },
-                      "description": {
-                        "type": "string"
-                      },
-                      "owner": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9][a-z0-9-]*$"
-                      },
-                      "tags": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "links": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "label": {
-                              "type": "string"
-                            },
-                            "url": {
-                              "type": "string",
-                              "format": "uri"
-                            }
-                          },
-                          "required": [
-                            "label",
-                            "url"
-                          ],
-                          "additionalProperties": false
-                        }
-                      },
-                      "relationships": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "to": {
-                              "type": "string",
-                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                              "description": "An id in this Project, or `project:id` for one in another Project"
-                            },
-                            "id": {
-                              "type": "string",
-                              "pattern": "^[a-z0-9][a-z0-9-]*$"
-                            },
-                            "description": {
-                              "type": "string"
-                            },
-                            "technology": {
-                              "type": "string"
-                            },
-                            "interaction": {
-                              "type": "string",
-                              "enum": [
-                                "sync",
-                                "async"
-                              ]
-                            },
-                            "via": {
-                              "type": "string",
-                              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                              "description": "An id in this Project, or `project:id` for one in another Project"
-                            },
-                            "channel": {
-                              "type": "string"
-                            },
-                            "tags": {
-                              "type": "array",
-                              "items": {
-                                "type": "string"
-                              }
-                            }
-                          },
-                          "required": [
-                            "to"
-                          ],
-                          "additionalProperties": false
-                        }
-                      },
-                      "technology": {
-                        "type": "string"
-                      },
-                      "in": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9][a-z0-9-]*$",
-                        "description": "Id of the parent declared in another file of this Project"
-                      }
-                    },
-                    "required": [
-                      "name"
-                    ],
-                    "additionalProperties": false
-                  }
-                }
-              },
-              "required": [
-                "name"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/System"
       }
     },
     "services": {
+      "description": "Services declared at the top level, keyed by id: those outside any System, and those that join a System with `in`.",
       "type": "object",
       "propertyNames": {
         "type": "string",
         "pattern": "^[a-z0-9][a-z0-9-]*$"
       },
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "owner": {
-            "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*$"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string"
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "required": [
-                "label",
-                "url"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "relationships": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "to": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "id": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "technology": {
-                  "type": "string"
-                },
-                "interaction": {
-                  "type": "string",
-                  "enum": [
-                    "sync",
-                    "async"
-                  ]
-                },
-                "via": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "channel": {
-                  "type": "string"
-                },
-                "tags": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              },
-              "required": [
-                "to"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "app",
-              "datastore",
-              "broker"
-            ]
-          },
-          "technology": {
-            "type": "string"
-          },
-          "external": {
-            "type": "boolean"
-          },
-          "in": {
-            "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*$",
-            "description": "Id of the parent declared in another file of this Project"
-          },
-          "components": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string",
-              "pattern": "^[a-z0-9][a-z0-9-]*$"
-            },
-            "additionalProperties": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "owner": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$"
-                },
-                "tags": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "links": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "label": {
-                        "type": "string"
-                      },
-                      "url": {
-                        "type": "string",
-                        "format": "uri"
-                      }
-                    },
-                    "required": [
-                      "label",
-                      "url"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "relationships": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "to": {
-                        "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                        "description": "An id in this Project, or `project:id` for one in another Project"
-                      },
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9][a-z0-9-]*$"
-                      },
-                      "description": {
-                        "type": "string"
-                      },
-                      "technology": {
-                        "type": "string"
-                      },
-                      "interaction": {
-                        "type": "string",
-                        "enum": [
-                          "sync",
-                          "async"
-                        ]
-                      },
-                      "via": {
-                        "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                        "description": "An id in this Project, or `project:id` for one in another Project"
-                      },
-                      "channel": {
-                        "type": "string"
-                      },
-                      "tags": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "required": [
-                      "to"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "technology": {
-                  "type": "string"
-                },
-                "in": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$",
-                  "description": "Id of the parent declared in another file of this Project"
-                }
-              },
-              "required": [
-                "name"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/Service"
       }
     },
     "components": {
+      "description": "Components declared at the top level, keyed by id. Each names its Service with `in`.",
       "type": "object",
       "propertyNames": {
         "type": "string",
         "pattern": "^[a-z0-9][a-z0-9-]*$"
       },
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "owner": {
-            "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*$"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string"
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "required": [
-                "label",
-                "url"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "relationships": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "to": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "id": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9][a-z0-9-]*$"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "technology": {
-                  "type": "string"
-                },
-                "interaction": {
-                  "type": "string",
-                  "enum": [
-                    "sync",
-                    "async"
-                  ]
-                },
-                "via": {
-                  "type": "string",
-                  "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
-                },
-                "channel": {
-                  "type": "string"
-                },
-                "tags": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              },
-              "required": [
-                "to"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "technology": {
-            "type": "string"
-          },
-          "in": {
-            "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*$",
-            "description": "Id of the parent declared in another file of this Project"
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/Component"
       }
     },
     "targets": {
+      "description": "Deployment Targets, keyed by id and nested as they nest. Their ids share the Project's ids with its Elements.",
       "type": "object",
       "propertyNames": {
         "type": "string",
@@ -779,6 +59,7 @@
       }
     },
     "deployments": {
+      "description": "Deployments: which Service runs in which Environment on which Deployment Target, with its URLs.",
       "type": "array",
       "items": {
         "type": "object",
@@ -786,39 +67,45 @@
           "service": {
             "type": "string",
             "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-            "description": "An id in this Project, or `project:id` for one in another Project"
+            "description": "The Service that runs: an id in this Project, or `project:id`. It must name a Service, not a System or a Component."
           },
           "environment": {
             "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*$"
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "The Environment it runs in: the id of an Environment in `workspace.yaml`."
           },
           "target": {
             "type": "string",
             "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-            "description": "An id in this Project, or `project:id` for one in another Project"
+            "description": "The Deployment Target it runs on: an id in this Project, or `project:id` for one another Project declares."
           },
           "url": {
+            "description": "The Service's main URL in this Environment. A full URL, such as `https://cart.example.com`.",
             "type": "string",
             "format": "uri"
           },
           "endpoints": {
+            "description": "Further named URLs of the Service in this Environment, such as a health check or an admin console.",
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "What the endpoint is, such as `health` or `admin`."
                 },
                 "url": {
                   "type": "string",
-                  "format": "uri"
+                  "format": "uri",
+                  "description": "The endpoint's address. A full URL."
                 }
               },
               "required": [
                 "name",
                 "url"
               ],
-              "additionalProperties": false
+              "additionalProperties": false,
+              "description": "A further named URL of the Service in this Environment."
             }
           }
         },
@@ -827,13 +114,15 @@
           "environment",
           "target"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "A Deployment: one Service running in one Environment on one Deployment Target. The three together name it, so the same three can appear only once."
       }
     },
     "views": {
       "type": "object",
       "properties": {
         "structural": {
+          "description": "Structural Views and Deployment Views, keyed by id. Other Projects name a View as `project:id`.",
           "type": "object",
           "propertyNames": {
             "type": "string",
@@ -843,12 +132,15 @@
             "type": "object",
             "properties": {
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "The View's display title."
               },
               "description": {
+                "description": "What the View shows, or the question it answers.",
                 "type": "string"
               },
               "tags": {
+                "description": "Free-form labels for the View.",
                 "type": "array",
                 "items": {
                   "type": "string"
@@ -861,27 +153,29 @@
                   "c2",
                   "c3",
                   "deployment"
-                ]
+                ],
+                "description": "The level every selected Element is collapsed to. `c1`: Persons and Systems. `c2`: Services, grouped in their Systems. `c3`: Components, inside their Services. `deployment`: a Deployment View, which places Deployments on their Deployment Targets in one Environment and needs `environment`."
               },
               "expand": {
-                "description": "Elements opened one level deeper than `level`",
+                "description": "Elements to open one level deeper than `level`, showing their children. Each is an id in this Project, or `project:id`, and must be a node of the View that has children. A Deployment View ignores it.",
                 "type": "array",
                 "items": {
                   "type": "string",
                   "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
+                  "description": "An id in this Project, or `project:id` for one in another Project."
                 }
               },
               "collapse": {
-                "description": "Elements closed, hiding everything inside them",
+                "description": "Elements to close, hiding everything inside them. Each is an id in this Project, or `project:id`, and must be a node of the View that has children. A Deployment View ignores it.",
                 "type": "array",
                 "items": {
                   "type": "string",
                   "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
+                  "description": "An id in this Project, or `project:id` for one in another Project."
                 }
               },
               "direction": {
+                "description": "The way the diagram runs. `TB`: top to bottom. `BT`: bottom to top. `LR`: left to right. `RL`: right to left. Default: `LR`, or `TB` for a Deployment View.",
                 "type": "string",
                 "enum": [
                   "TB",
@@ -891,351 +185,47 @@
                 ]
               },
               "environment": {
-                "description": "For `level: deployment`: the Environment shown",
+                "description": "For a Deployment View (`level: deployment`), which must have it, and for no other View: the Environment shown, as the id of an Environment in `workspace.yaml`.",
                 "type": "string",
                 "pattern": "^[a-z0-9][a-z0-9-]*$"
               },
               "targets": {
-                "description": "For `level: deployment`: only these Deployment Target subtrees",
+                "description": "For a Deployment View (`level: deployment`) only: shows only the Deployments on these Deployment Targets and on the Targets inside them. Each is an id in this Project, or `project:id`. Default: every Deployment Target.",
                 "type": "array",
                 "items": {
                   "type": "string",
                   "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
+                  "description": "An id in this Project, or `project:id` for one in another Project."
                 }
               },
               "include": {
-                "description": "Selectors to show; every Element when absent",
+                "description": "Selectors for the Elements to show. Default: every Element in the Workspace.",
                 "type": "array",
                 "items": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                      "description": "An id in this Project, or `project:id` for one in another Project"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "element": {
-                          "type": "string",
-                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                          "description": "An id in this Project, or `project:id` for one in another Project"
-                        },
-                        "with": {
-                          "type": "string",
-                          "enum": [
-                            "children",
-                            "descendants"
-                          ]
-                        },
-                        "upstream": {
-                          "anyOf": [
-                            {
-                              "type": "integer",
-                              "minimum": 0,
-                              "maximum": 9007199254740991
-                            },
-                            {
-                              "type": "string",
-                              "const": "all"
-                            }
-                          ],
-                          "description": "A number of hops, or `all`"
-                        },
-                        "downstream": {
-                          "anyOf": [
-                            {
-                              "type": "integer",
-                              "minimum": 0,
-                              "maximum": 9007199254740991
-                            },
-                            {
-                              "type": "string",
-                              "const": "all"
-                            }
-                          ],
-                          "description": "A number of hops, or `all`"
-                        }
-                      },
-                      "required": [
-                        "element"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "team": {
-                          "type": "string",
-                          "pattern": "^[a-z0-9][a-z0-9-]*$"
-                        }
-                      },
-                      "required": [
-                        "team"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "tag": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "tag"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "from": {
-                          "type": "string",
-                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                          "description": "An id in this Project, or `project:id` for one in another Project"
-                        },
-                        "to": {
-                          "type": "string",
-                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                          "description": "An id in this Project, or `project:id` for one in another Project"
-                        },
-                        "paths": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "shortest"
-                            },
-                            {
-                              "type": "integer",
-                              "minimum": 1,
-                              "maximum": 9007199254740991
-                            }
-                          ],
-                          "description": "`shortest` (the default), or n for every path of at most n hops"
-                        }
-                      },
-                      "required": [
-                        "from",
-                        "to"
-                      ],
-                      "additionalProperties": false
-                    }
-                  ]
+                  "$ref": "#/$defs/Selector"
                 }
               },
               "exclude": {
+                "description": "Selectors for the Elements to leave out of what `include` picked. An excluded Element takes everything inside it with it.",
                 "type": "array",
                 "items": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                      "description": "An id in this Project, or `project:id` for one in another Project"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "element": {
-                          "type": "string",
-                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                          "description": "An id in this Project, or `project:id` for one in another Project"
-                        },
-                        "with": {
-                          "type": "string",
-                          "enum": [
-                            "children",
-                            "descendants"
-                          ]
-                        },
-                        "upstream": {
-                          "anyOf": [
-                            {
-                              "type": "integer",
-                              "minimum": 0,
-                              "maximum": 9007199254740991
-                            },
-                            {
-                              "type": "string",
-                              "const": "all"
-                            }
-                          ],
-                          "description": "A number of hops, or `all`"
-                        },
-                        "downstream": {
-                          "anyOf": [
-                            {
-                              "type": "integer",
-                              "minimum": 0,
-                              "maximum": 9007199254740991
-                            },
-                            {
-                              "type": "string",
-                              "const": "all"
-                            }
-                          ],
-                          "description": "A number of hops, or `all`"
-                        }
-                      },
-                      "required": [
-                        "element"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "team": {
-                          "type": "string",
-                          "pattern": "^[a-z0-9][a-z0-9-]*$"
-                        }
-                      },
-                      "required": [
-                        "team"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "tag": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "tag"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "from": {
-                          "type": "string",
-                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                          "description": "An id in this Project, or `project:id` for one in another Project"
-                        },
-                        "to": {
-                          "type": "string",
-                          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                          "description": "An id in this Project, or `project:id` for one in another Project"
-                        },
-                        "paths": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "shortest"
-                            },
-                            {
-                              "type": "integer",
-                              "minimum": 1,
-                              "maximum": 9007199254740991
-                            }
-                          ],
-                          "description": "`shortest` (the default), or n for every path of at most n hops"
-                        }
-                      },
-                      "required": [
-                        "from",
-                        "to"
-                      ],
-                      "additionalProperties": false
-                    }
-                  ]
+                  "$ref": "#/$defs/Selector"
                 }
               },
               "lens": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "impact": {
-                        "type": "string",
-                        "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                        "description": "An id in this Project, or `project:id` for one in another Project"
-                      },
-                      "direction": {
-                        "type": "string",
-                        "enum": [
-                          "upstream",
-                          "downstream",
-                          "both"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "impact"
-                    ],
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "team": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9][a-z0-9-]*$"
-                      }
-                    },
-                    "required": [
-                      "team"
-                    ],
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "path": {
-                        "type": "object",
-                        "properties": {
-                          "from": {
-                            "type": "string",
-                            "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                            "description": "An id in this Project, or `project:id` for one in another Project"
-                          },
-                          "to": {
-                            "type": "string",
-                            "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                            "description": "An id in this Project, or `project:id` for one in another Project"
-                          },
-                          "paths": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "const": "shortest"
-                              },
-                              {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 9007199254740991
-                              }
-                            ],
-                            "description": "`shortest` (the default), or n for every path of at most n hops"
-                          }
-                        },
-                        "required": [
-                          "from",
-                          "to"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "required": [
-                      "path"
-                    ],
-                    "additionalProperties": false
-                  }
-                ]
+                "$ref": "#/$defs/Lens"
               }
             },
             "required": [
               "title",
               "level"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "A structural Saved View: the Elements its selectors pick, drawn at one `level`. With `level: deployment` it is a Deployment View. Its key is the View's id, unique among the Project's Saved Views."
           }
         },
         "dynamic": {
+          "description": "Dynamic Views, keyed by id. Other Projects name a View as `project:id`.",
           "type": "object",
           "propertyNames": {
             "type": "string",
@@ -1245,24 +235,27 @@
             "type": "object",
             "properties": {
               "title": {
-                "type": "string"
+                "type": "string",
+                "description": "The View's display title."
               },
               "description": {
+                "description": "What the scenario is.",
                 "type": "string"
               },
               "tags": {
+                "description": "Free-form labels for the View.",
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               },
               "participants": {
-                "description": "Fixes the participants' order; otherwise they are ordered by first appearance",
+                "description": "Elements that take part, in the order to draw them, each as an id in this Project or `project:id`. Participants not listed follow, in the order the Steps first use them. An Element and its own ancestor can't both take part. Default: the order the Steps first use them.",
                 "type": "array",
                 "items": {
                   "type": "string",
                   "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                  "description": "An id in this Project, or `project:id` for one in another Project"
+                  "description": "An id in this Project, or `project:id` for one in another Project."
                 }
               },
               "steps": {
@@ -1273,26 +266,28 @@
                     "from": {
                       "type": "string",
                       "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                      "description": "An id in this Project, or `project:id` for one in another Project"
+                      "description": "The Element the Step starts at: the consumer of a call, the Publisher of an event, or the sender of a reply. An id in this Project, or `project:id`."
                     },
                     "to": {
                       "type": "string",
                       "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
-                      "description": "An id in this Project, or `project:id` for one in another Project"
+                      "description": "The Element the Step reaches: the provider of a call, the Subscriber of an event, or the receiver of a reply. An id in this Project, or `project:id`."
                     },
                     "relationship": {
-                      "description": "The id of the Relationship the Step takes, when several connect the pair",
+                      "description": "The `id` of the Relationship the Step takes, as an id in this Project or `project:id`. Needed only when several Relationships match the two Elements.",
                       "type": "string",
                       "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
                     },
                     "description": {
+                      "description": "The text on the Step's arrow. Default: the Relationship's `description`, or its `channel` for an event.",
                       "type": "string"
                     },
                     "note": {
+                      "description": "A note shown under the Step.",
                       "type": "string"
                     },
                     "return": {
-                      "description": "The reply to a sync Relationship from `to` to `from`",
+                      "description": "`true` makes the Step the reply to a sync Relationship declared from `to` to `from`. An async Relationship has no reply. Default: `false`.",
                       "type": "boolean"
                     }
                   },
@@ -1300,67 +295,375 @@
                     "from",
                     "to"
                   ],
-                  "additionalProperties": false
-                }
+                  "additionalProperties": false,
+                  "description": "A Step: one interaction of the scenario, which must follow a Relationship in the Model. It is a call from a consumer to its provider, an event from a Publisher to a Subscriber, or with `return: true` a reply."
+                },
+                "description": "The Steps of the scenario, in order."
               }
             },
             "required": [
               "title",
               "steps"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "A Dynamic View: one scenario as an ordered list of Steps, shown as a sequence chart. Its key is the View's id, unique among the Project's Saved Views."
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "The Project's Saved Views: `structural` ones, which include Deployment Views, and `dynamic` ones."
     }
   },
   "additionalProperties": false,
+  "description": "A Project file: any `.yaml` file in a Project folder other than `project.yaml`.",
   "$defs": {
-    "Target": {
+    "Person": {
       "type": "object",
       "properties": {
         "name": {
-          "type": "string"
-        },
-        "kind": {
           "type": "string",
-          "description": "What the Target is, such as region, cluster, namespace or platform"
+          "description": "The Element's display name."
         },
         "description": {
+          "description": "What the Element is or does, in a sentence or two.",
           "type": "string"
         },
         "owner": {
+          "description": "The Team that owns the Element: the id of a Team in `workspace.yaml`. Set it only when it differs from the Project's; nothing is inherited from the parent Element. Default: the Project's `owner`.",
           "type": "string",
           "pattern": "^[a-z0-9][a-z0-9-]*$"
         },
         "tags": {
+          "description": "Free-form labels. A Saved View's `{tag}` selector picks Elements by them.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "links": {
+          "description": "Links to pages about the Element, such as a runbook or a dashboard.",
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string"
-              },
-              "url": {
-                "type": "string",
-                "format": "uri"
-              }
-            },
-            "required": [
-              "label",
-              "url"
-            ],
-            "additionalProperties": false
+            "$ref": "#/$defs/Link"
+          }
+        },
+        "relationships": {
+          "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "title": "Person",
+      "description": "A Person: a human or role that uses a System, such as a shopper or a support agent. A Person is only ever the consumer in a Relationship."
+    },
+    "Link": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "The text of the link, such as `Runbook`."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "The page the link opens. A full URL, such as `https://wiki.example.com/runbooks/web`."
+        }
+      },
+      "required": [
+        "label",
+        "url"
+      ],
+      "additionalProperties": false,
+      "title": "Link",
+      "description": "A link to a page about the thing it is declared on, such as a runbook or a dashboard."
+    },
+    "Relationship": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "type": "string",
+          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+          "description": "The provider: the Element this one depends on. An id in this Project, or `project:id` for an Element in another Project. It can't be a Person, this Element itself, or an ancestor or descendant of this Element."
+        },
+        "id": {
+          "description": "An id for the Relationship, unique among the Project's Relationships. Needed only when several Relationships connect the same two Elements, so that a Dynamic View Step can name one.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "description": {
+          "description": "What the consumer uses the provider for, as a verb phrase that reads from consumer to provider, such as `Reads prices from`.",
+          "type": "string"
+        },
+        "technology": {
+          "description": "How the consumer reaches the provider: a protocol, a driver or a format, such as `JSON/HTTPS`, `gRPC` or `SQL`.",
+          "type": "string"
+        },
+        "interaction": {
+          "description": "`sync`: a call that waits for an answer. `async`: an event or message that gets no reply, such as an event through a broker or a webhook. Default: `sync`.",
+          "type": "string",
+          "enum": [
+            "sync",
+            "async"
+          ]
+        },
+        "via": {
+          "description": "For an `async` Relationship only: the broker the events travel through. A Service with `type: broker`, as an id in this Project or `project:id`. Leave it out when there is no broker, as with a webhook.",
+          "type": "string",
+          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$"
+        },
+        "channel": {
+          "description": "For an `async` Relationship only: the topic or queue the events travel on, such as `orders.placed`.",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Free-form labels for the Relationship.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "to"
+      ],
+      "additionalProperties": false,
+      "title": "Relationship",
+      "description": "A Relationship: a dependency of the Element it is declared under (the consumer) on the Element `to` names (the provider). Declare it once, under the consumer."
+    },
+    "System": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The Element's display name."
+        },
+        "description": {
+          "description": "What the Element is or does, in a sentence or two.",
+          "type": "string"
+        },
+        "owner": {
+          "description": "The Team that owns the Element: the id of a Team in `workspace.yaml`. Set it only when it differs from the Project's; nothing is inherited from the parent Element. Default: the Project's `owner`.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "tags": {
+          "description": "Free-form labels. A Saved View's `{tag}` selector picks Elements by them.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "links": {
+          "description": "Links to pages about the Element, such as a runbook or a dashboard.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Link"
+          }
+        },
+        "relationships": {
+          "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          }
+        },
+        "external": {
+          "description": "`true` for a System run outside the organization, such as a payment provider. Nothing inside an External System can declare Components. Default: `false`.",
+          "type": "boolean"
+        },
+        "services": {
+          "description": "The Services in the System, keyed by id.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Service"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "title": "System",
+      "description": "A System: a named grouping of Services that together deliver a business capability. Systems do not nest."
+    },
+    "Service": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The Element's display name."
+        },
+        "description": {
+          "description": "What the Element is or does, in a sentence or two.",
+          "type": "string"
+        },
+        "owner": {
+          "description": "The Team that owns the Element: the id of a Team in `workspace.yaml`. Set it only when it differs from the Project's; nothing is inherited from the parent Element. Default: the Project's `owner`.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "tags": {
+          "description": "Free-form labels. A Saved View's `{tag}` selector picks Elements by them.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "links": {
+          "description": "Links to pages about the Element, such as a runbook or a dashboard.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Link"
+          }
+        },
+        "relationships": {
+          "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          }
+        },
+        "type": {
+          "description": "What the Service is; each type is drawn differently. `app`: an application, the usual case. `datastore`: a database or other store. `broker`: a message broker that async Relationships run through, named by their `via`. Default: `app`.",
+          "type": "string",
+          "enum": [
+            "app",
+            "datastore",
+            "broker"
+          ]
+        },
+        "technology": {
+          "description": "What the Service is built with, such as `Go` or `PostgreSQL`. Shown under its name.",
+          "type": "string"
+        },
+        "external": {
+          "description": "`true` for a Service run outside the organization, such as a payment provider's API. An External Service can't declare Components. Default: `false`.",
+          "type": "boolean"
+        },
+        "in": {
+          "description": "The System this Service belongs to, as an id in this Project. Only for a Service under the top-level `services` key, and not allowed for one nested under a System's `services`. Without it, a top-level Service stands outside any System.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "components": {
+          "description": "The Components inside the Service, keyed by id.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Component"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "title": "Service",
+      "description": "A Service: a deployable, addressable unit of software; the thing that has a URL and a Deployment."
+    },
+    "Component": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The Element's display name."
+        },
+        "description": {
+          "description": "What the Element is or does, in a sentence or two.",
+          "type": "string"
+        },
+        "owner": {
+          "description": "The Team that owns the Element: the id of a Team in `workspace.yaml`. Set it only when it differs from the Project's; nothing is inherited from the parent Element. Default: the Project's `owner`.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "tags": {
+          "description": "Free-form labels. A Saved View's `{tag}` selector picks Elements by them.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "links": {
+          "description": "Links to pages about the Element, such as a runbook or a dashboard.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Link"
+          }
+        },
+        "relationships": {
+          "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          }
+        },
+        "technology": {
+          "description": "What the Component is built with, such as `TypeScript module`. Shown under its name.",
+          "type": "string"
+        },
+        "in": {
+          "description": "The Service this Component belongs to, as an id in this Project. Required for a Component under the top-level `components` key, and not allowed for one nested under a Service's `components`.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "title": "Component",
+      "description": "A Component: a part inside a Service that is not deployed on its own."
+    },
+    "Target": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The Deployment Target's display name."
+        },
+        "kind": {
+          "type": "string",
+          "description": "What the Deployment Target is, in a word you choose, such as `region`, `cluster`, `namespace` or `platform`."
+        },
+        "description": {
+          "description": "What the Deployment Target is, in a sentence or two.",
+          "type": "string"
+        },
+        "owner": {
+          "description": "The Team that owns the Deployment Target: the id of a Team in `workspace.yaml`. Default: the Project's `owner`.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "tags": {
+          "description": "Free-form labels for the Deployment Target.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "links": {
+          "description": "Links to pages about the Deployment Target, such as a dashboard.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Link"
           }
         },
         "targets": {
+          "description": "The Deployment Targets inside this one, keyed by id, such as the clusters in a region.",
           "type": "object",
           "propertyNames": {
             "type": "string",
@@ -1375,7 +678,197 @@
         "name",
         "kind"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "title": "Deployment Target",
+      "description": "A Deployment Target: a place Services run, such as a region, a cluster in it or a platform. Deployment Targets nest to any depth and are not Elements."
+    },
+    "Selector": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+          "description": "One Element, by its id: an id in this Project, or `project:id`."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "element": {
+              "type": "string",
+              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+              "description": "The Element to start from: an id in this Project, or `project:id`."
+            },
+            "with": {
+              "description": "Also selects what is inside the Element. `children`: the Elements directly inside it. `descendants`: everything inside it, at any depth.",
+              "type": "string",
+              "enum": [
+                "children",
+                "descendants"
+              ]
+            },
+            "upstream": {
+              "description": "Also selects the Elements upstream of it, those that depend on it: a number of hops, or `all` for every one of them.",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "string",
+                  "const": "all"
+                }
+              ]
+            },
+            "downstream": {
+              "description": "Also selects the Elements downstream of it, those it depends on: a number of hops, or `all` for every one of them.",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "string",
+                  "const": "all"
+                }
+              ]
+            }
+          },
+          "required": [
+            "element"
+          ],
+          "additionalProperties": false,
+          "description": "One Element, and optionally what is inside it and what is upstream or downstream of it."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "team": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]*$",
+              "description": "The Team: the id of a Team in `workspace.yaml`."
+            }
+          },
+          "required": [
+            "team"
+          ],
+          "additionalProperties": false,
+          "description": "Every Element a Team owns."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "type": "string",
+              "description": "The tag, as written in the Elements' `tags`."
+            }
+          },
+          "required": [
+            "tag"
+          ],
+          "additionalProperties": false,
+          "description": "Every Element that carries a tag."
+        },
+        {
+          "$ref": "#/$defs/PathSelector"
+        }
+      ],
+      "title": "Selector",
+      "description": "One entry of a Saved View's `include` or `exclude`: an id, or a map that picks several Elements at once."
+    },
+    "PathSelector": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+          "description": "One end of the paths: an id in this Project, or `project:id`."
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+          "description": "The other end of the paths: an id in this Project, or `project:id`."
+        },
+        "paths": {
+          "description": "Which paths to take. `shortest`: the shortest paths, however long. A number n: every path of at most n hops. Default: `shortest`.",
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "shortest"
+            },
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "additionalProperties": false,
+      "title": "Path selector",
+      "description": "The paths between two Elements, followed in both directions. As a selector it picks every Element on them; as a Lens it highlights them."
+    },
+    "Lens": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "impact": {
+              "type": "string",
+              "pattern": "^([a-z0-9][a-z0-9-]*:)?[a-z0-9][a-z0-9-]*$",
+              "description": "The Element whose impact is highlighted: an id in this Project, or `project:id`."
+            },
+            "direction": {
+              "description": "Which side to highlight. `upstream`: what depends on the Element. `downstream`: what it depends on. `both`: both sides. Default: `both`.",
+              "type": "string",
+              "enum": [
+                "upstream",
+                "downstream",
+                "both"
+              ]
+            }
+          },
+          "required": [
+            "impact"
+          ],
+          "additionalProperties": false,
+          "description": "The Impact Lens: what is upstream or downstream of one Element, each node marked with how many hops away it is."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "team": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]*$",
+              "description": "The Team: the id of a Team in `workspace.yaml`."
+            }
+          },
+          "required": [
+            "team"
+          ],
+          "additionalProperties": false,
+          "description": "The Team Lens: what one Team owns."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/PathSelector"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false,
+          "description": "The Path Lens: the paths between two Elements."
+        }
+      ],
+      "title": "Lens",
+      "description": "The Lens the View opens with. A Lens highlights nodes and never changes which nodes the View shows."
     }
   }
 }

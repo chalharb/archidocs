@@ -5,14 +5,17 @@
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9-]*$"
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "The Project's id, unique in the Workspace. Other Projects write it as the prefix of a Qualified id, such as `payments:ledger`."
     },
     "name": {
-      "type": "string"
+      "type": "string",
+      "description": "The Project's display name."
     },
     "owner": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9-]*$"
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "The Team that owns the Project: the id of a Team in `workspace.yaml`. It is the Owner of every Element and Deployment Target in the Project that sets no `owner` of its own."
     }
   },
   "required": [
@@ -20,5 +23,6 @@
     "name",
     "owner"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "`project.yaml`: marks its folder as a Project."
 }
