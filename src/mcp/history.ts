@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { bundleAt, buildHistory, isDate, migrateBundle, readIndex, resolvePoint, type History } from "../history/index.ts";
-import { INDEX_PATH, pastBundlePath, type RevisionEntry } from "../revisions/index.ts";
+import { bundleAt, buildHistory, migrateBundle, readIndex, resolvePoint, type History } from "../history/index.ts";
+import { find, INDEX_PATH, pastBundlePath, span, timeSpan, type Found, type RevisionEntry, type Span } from "../revisions/index.ts";
 import { commitInfo } from "../history/git.ts";
 import type { Bundle } from "../schema/bundle.ts";
 import type { BundleSource, CheckoutSource, Snapshot, Source } from "./source.ts";
@@ -23,8 +23,8 @@ export interface Past {
   at(point: string, current: Snapshot): Promise<PastSnapshot | PastFailure>;
   /** The Revisions, newest first, as the index records them. */
   index(): Promise<{ ok: true; revisions: RevisionEntry[] } | PastFailure>;
-  /** The time a ref or a date stands for: a commit's date, or the start (or end) of a day. */
-  time(point: string, edge: "start" | "end"): Promise<{ ok: true; time: number } | PastFailure>;
+  /** The time a point spans: a commit's one instant, a whole UTC day, or a time's instant. */
+  span(point: string): Promise<{ ok: true; span: Span } | PastFailure>;
 }
 
 export function pastOf(source: Source): Past {
@@ -40,10 +40,13 @@ const noCommit = (point: string, suggestions?: string[]): PastFailure => ({
 });
 const reason = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-/** A bare date's start or end (UTC); a full time as given. */
-function dateTime(point: string, edge: "start" | "end"): number {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(point)) return Date.parse(`${point}T${edge === "start" ? "00:00:00" : "23:59:59"}Z`);
-  return Date.parse(point);
+/** `find`'s failure in MCP's words: no Revision (naming the first one for a date before it), or a prefix of several. */
+function findFailure(point: string, failure: Exclude<Found<RevisionEntry>, { ok: true }>): PastFailure {
+  if (failure.kind === "ambiguous") {
+    return { ok: false, code: "not_found", message: `"${point}" is the start of ${failure.count} Revisions' shas; give more of it.`, suggestions: failure.candidates.map((r) => r.sha) };
+  }
+  const missing = noCommit(point, failure.tags);
+  return failure.first ? { ...missing, message: `${missing.message} The first Revision is ${failure.first.sha.slice(0, 7)}, ${failure.first.date}.` } : missing;
 }
 
 function checkoutPast(source: CheckoutSource): Past {
@@ -73,13 +76,16 @@ function checkoutPast(source: CheckoutSource): Past {
         return unavailable(`Could not read the history of ${h.repoRoot}: ${reason(error)}`);
       }
     },
-    async time(point, edge) {
-      if (isDate(point)) return { ok: true, time: dateTime(point, edge) };
+    async span(point) {
+      // A day or a time spans itself, as on a site; refs are git's (ticket 05 brings tags first).
+      const own = timeSpan(point);
+      if (own) return { ok: true, span: own };
       const h = await repo();
       if (!h) return noGit;
       const sha = await resolvePoint(h.repoRoot, point);
       if (!sha) return noCommit(point);
-      return { ok: true, time: Date.parse((await commitInfo(h.repoRoot, sha)).date) };
+      const at = Date.parse((await commitInfo(h.repoRoot, sha)).date);
+      return { ok: true, span: { start: at, end: at + 1 } };
     },
   };
 }
@@ -119,25 +125,6 @@ function bundlePast(source: BundleSource): Past {
     return { ok: true, revisions: cached.revisions };
   };
 
-  /** A point as a Revision of the index: the last at or before a date, a tag, or a sha (or its prefix). */
-  const entryAt = async (point: string): Promise<RevisionEntry | PastFailure> => {
-    const listed = await index();
-    if (!listed.ok) return listed;
-    const { revisions } = listed;
-    if (isDate(point)) {
-      const time = dateTime(point, "end");
-      return revisions.find((r) => Date.parse(r.date) <= time) ?? noCommit(point);
-    }
-    const tagged = revisions.find((r) => r.tags.includes(point));
-    if (tagged) return tagged;
-    if (/^[0-9a-f]{4,40}$/i.test(point)) {
-      const matches = revisions.filter((r) => r.sha.startsWith(point.toLowerCase()));
-      if (matches.length === 1) return matches[0]!;
-      if (matches.length > 1) return { ok: false, code: "not_found", message: `"${point}" is the start of ${matches.length} Revisions' shas; give more of it.`, suggestions: matches.map((m) => m.sha).slice(0, 5) };
-    }
-    return noCommit(point, revisions.flatMap((r) => r.tags).slice(0, 5));
-  };
-
   const fetchBundle = (sha: string) => {
     let pending = bundles.get(sha);
     if (!pending) {
@@ -161,21 +148,29 @@ function bundlePast(source: BundleSource): Past {
     index,
     async at(point, current) {
       const commit = current.bundle.commit;
-      if (commit && (point === commit || (/^[0-9a-f]{4,40}$/i.test(point) && commit.startsWith(point.toLowerCase())))) {
-        return { ok: true, commit, snapshot: current };
-      }
-      const entry = await entryAt(point);
-      if ("ok" in entry) return entry;
+      // The current commit answers without the index; a prefix of it does unless the index says it starts other shas too.
+      if (commit && point === commit) return { ok: true, commit, snapshot: current };
+      const startsCommit = !!commit && /^[0-9a-f]{4,64}$/i.test(point) && commit.startsWith(point.toLowerCase());
+      const listed = await index();
+      if (!listed.ok) return startsCommit ? { ok: true, commit: commit!, snapshot: current } : listed;
+      const found = find(listed.revisions, point);
+      if (!found.ok) return found.kind === "not_found" && startsCommit ? { ok: true, commit: commit!, snapshot: current } : findFailure(point, found);
+      const entry = found.revision;
       if (entry.sha === commit) return { ok: true, commit, snapshot: current };
       if (entry.bundle === false) return unavailable(`The Bundle at ${entry.sha.slice(0, 7)} (${entry.date}) was not kept on this site.`);
       const bundle = await fetchBundle(entry.sha);
       if ("ok" in bundle) return bundle;
       return { ok: true, commit: entry.sha, snapshot: { bundle, issues: [] } };
     },
-    async time(point, edge) {
-      if (isDate(point)) return { ok: true, time: dateTime(point, edge) };
-      const entry = await entryAt(point);
-      return "ok" in entry ? entry : { ok: true, time: Date.parse(entry.date) };
+    async span(point) {
+      // Tags come first, so read the index; a day or a time still spans itself without one.
+      const listed = await index();
+      if (!listed.ok) {
+        const own = timeSpan(point);
+        return own ? { ok: true, span: own } : listed;
+      }
+      const spanned = span(listed.revisions, point);
+      return spanned.ok ? spanned : findFailure(point, spanned);
     },
   };
 }

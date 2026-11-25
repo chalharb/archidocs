@@ -266,6 +266,33 @@ describe("history from a published Bundle site", () => {
     expect((await call("get_workspace_info", { at: NOW.slice(0, 7) })).structuredContent).toMatchObject({ commit: NOW });
   });
 
+  it("reports a sha prefix that starts several Revisions, even the current commit's, with the candidates", async () => {
+    const { current, files } = await siteFiles();
+    const index = JSON.parse(files["bundles/index.json"]!);
+    // Shares its first 7 characters with NOW, the current commit.
+    const twin = `ccccccc${"1".repeat(33)}`;
+    index.revisions.splice(1, 0, entry(twin, "2026-04-01T12:00:00Z", []));
+    const served = await serveBundleSite(current, { files: { ...files, "bundles/index.json": JSON.stringify(index) } });
+    const { call, text } = await connectTo(bundleSource({ location: served.url }));
+    const result = await call("get_workspace_info", { at: "ccccccc" });
+    expect(result.structuredContent).toMatchObject({ code: "not_found", suggestions: [NOW, twin] });
+    expect(text(result)).toContain(`"ccccccc" is the start of 2 Revisions' shas; give more of it.`);
+    expect((await call("get_workspace_info", { at: "cccccccc" })).structuredContent).toMatchObject({ commit: NOW });
+    expect((await call("list_history", { until: "CCCCCCC" })).structuredContent).toMatchObject({ code: "not_found" });
+  });
+
+  it("reads a time without a zone as UTC, and names the first Revision for a date before it", async () => {
+    const { call, text } = await site();
+    // 12:00 UTC is V2's own time; a minute before it is DROPPED's, whose Bundle was not kept.
+    expect((await call("get_workspace_info", { at: "2026-02-10 12:00" })).structuredContent).toMatchObject({ commit: V2 });
+    expect((await call("get_workspace_info", { at: "2026-02-10T11:59" })).structuredContent).toMatchObject({ code: "history_unavailable" });
+    const before = await call("get_workspace_info", { at: "2025-12-31" });
+    expect(before.structuredContent).toMatchObject({ code: "not_found" });
+    expect(text(before)).toContain(`The first Revision is ${DROPPED.slice(0, 7)}, 2026-01-10T12:00:00Z.`);
+    expect(shas(await call("list_history", { since: "2025-12-31", until: "2026-02-10" }))).toEqual([V2, DROPPED]);
+    expect(shas(await call("list_history", { until: "2026-02-10T12:00:00+01:00" }))).toEqual([DROPPED]);
+  });
+
   it("reads a site folder on disk the same way", async () => {
     const { current, files } = await siteFiles();
     const dir = await mkdtemp(join(tmpdir(), "archidocs-site-"));

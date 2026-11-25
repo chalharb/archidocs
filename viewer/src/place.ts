@@ -1,5 +1,6 @@
 import type { Direction } from "../../src/render/layout.ts";
 import type { BundleLens } from "../../src/schema/bundle.ts";
+import { POINT_GRAMMAR } from "../../src/revisions/index.ts";
 
 export type { Direction };
 export type Lens = BundleLens;
@@ -39,6 +40,9 @@ export interface UrlParameter {
  * `parsePlace` and `formatPlace` read and write only these names, and the
  * docs' viewer URL reference is generated from this list.
  */
+/** The point grammar as a values cell. */
+const POINT = POINT_GRAMMAR.charAt(0).toUpperCase() + POINT_GRAMMAR.slice(1);
+
 export const URL_PARAMETERS = [
   { name: "open", values: "Element ids, separated by commas", does: "Opens these boxes to show what is inside them, in the order they were opened." },
   { name: "sel", values: "An Element id", does: "Selects this node and shows it in the Element panel." },
@@ -53,8 +57,8 @@ export const URL_PARAMETERS = [
   { name: "step", values: "A whole number from 1", does: "Selects this Step of a Dynamic View." },
   { name: "mode", values: oneOf([GRAPH]), does: "Draws a Dynamic View as the graph of numbered Steps instead of the sequence chart." },
   { name: "brokers", values: oneOf([BROKERS_ON]), does: "Draws a Dynamic View's event Steps as publish and deliver legs through their broker." },
-  { name: "at", values: "A tag, commit sha or date", does: "Shows the whole viewer at this past Revision." },
-  { name: "vs", values: "A tag, commit sha or date", does: "Compares against this Revision: what changed from it to `at`, or to the latest." },
+  { name: "at", values: POINT, does: "Shows the whole viewer at this past Revision." },
+  { name: "vs", values: POINT, does: "Compares against this Revision: what changed from it to `at`, or to the latest." },
   { name: "adr", values: "An ADR's qualified id, such as `payments:0001`", does: "Opens this ADR in the reader." },
 ] as const satisfies readonly UrlParameter[];
 

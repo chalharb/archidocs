@@ -1,6 +1,6 @@
 # 02: One way to name a Revision
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01
 Spec: [Revision index](../spec.md)
 

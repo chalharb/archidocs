@@ -100,6 +100,25 @@ test.describe("A past Revision", () => {
     await expect(page.getByRole("link", { name: "Back to latest" })).toBeVisible();
   });
 
+  test("`at` with a short sha that starts two Revisions lists both, and each opens its Revision", async ({ page }) => {
+    const index = await (await page.request.get("bundles/index.json")).json();
+    const v1 = (index.revisions as { sha: string; tags: string[] }[]).find((r) => r.tags.includes("v1"))!;
+    const prefix = v1.sha.slice(0, 4);
+    // No two of the fixture's shas share a prefix, so the index gains a twin of v1's.
+    const twin = { ...v1, sha: `${prefix}${v1.sha.slice(4).replace(/./g, (c) => (c === "0" ? "1" : "0"))}`, tags: [], subject: "A twin" };
+    await page.route("**/bundles/index.json", (route) => route.fulfill({ json: { ...index, revisions: [twin, ...index.revisions] } }));
+
+    await page.goto(`./#/view/c2?at=${prefix}`);
+
+    const message = page.getByRole("alert");
+    await expect(message).toContainText(`More than one Revision “${prefix}”`);
+    await expect(message.getByRole("link", { name: /A twin/ })).toHaveAttribute("href", `#/view/c2?at=${twin.sha.slice(0, 7)}`);
+    await message.getByRole("link", { name: /Add the Legacy shop/ }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2?at=v1");
+    await expect(page.getByRole("status", { name: "Past Revision" })).toContainText("Add the Legacy shop");
+  });
+
   test("the Revision timeline marks tags and starts Compare from a Revision", async ({ page }) => {
     await open(page, "#/view/c2");
 

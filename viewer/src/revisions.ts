@@ -1,6 +1,6 @@
 import { migrateBundle } from "../../src/history/migrate.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
-import { INDEX_PATH, pastBundlePath, type PreviewMark, type RevisionEntry } from "../../src/revisions/index.ts";
+import { find, INDEX_PATH, pastBundlePath, type Found, type PreviewMark, type RevisionEntry } from "../../src/revisions/index.ts";
 
 /** The site's Revisions, newest first; empty when the site has no history. */
 export class Timeline {
@@ -25,17 +25,9 @@ export class Timeline {
     return `${pointLabel(vs)} → ${at ? pointLabel(at) : "latest"}`;
   }
 
-  /**
-   * The Revision a point names: a tag, a sha or its prefix (at least 4
-   * characters), or a date (`YYYY-MM-DD`), which is the last Revision at or
-   * before the end of that day (UTC).
-   */
-  find(point: string): RevisionEntry | undefined {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(point)) {
-      const end = Date.parse(`${point}T23:59:59.999Z`);
-      return this.revisions.find((r) => Date.parse(r.date) <= end);
-    }
-    return this.revisions.find((r) => r.tags.includes(point)) ?? (point.length >= 4 ? this.revisions.find((r) => r.sha.startsWith(point.toLowerCase())) : undefined);
+  /** The Revision a point names, by the module's point grammar, or why it names none. */
+  find(point: string): Found<RevisionEntry> {
+    return find(this.revisions, point);
   }
 
   /** The Revision before this one, if any. */
