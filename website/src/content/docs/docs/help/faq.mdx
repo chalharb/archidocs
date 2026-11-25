@@ -1,0 +1,26 @@
+---
+title: FAQ
+description: Short answers to common questions about Archidocs, each with a link to the page that says more.
+sidebar:
+  order: 2
+---
+
+## Does Archidocs host anything?
+
+No. Archidocs is a CLI. `archidocs build` writes the viewer as a static site, and you publish it to a host you choose, from your own CI. The MCP server runs on your machine, or wherever you start it. See [the viewer](/docs/concepts/viewer/) and [Publish to another host](/docs/guides/publish/other-hosts/).
+
+## Can I edit the Model in the viewer?
+
+No. The viewer is read-only. You change the [Model](/docs/reference/glossary/#term-model) by editing its YAML, by hand or through an agent's MCP write tools, and review the change in a pull request. The viewer's **Save as View** writes YAML for you to paste into a Project. See [Save a View](/docs/guides/model/save-a-view/).
+
+## One repo or many?
+
+One repo holds the whole [Workspace](/docs/reference/glossary/#term-workspace), and each Team edits its own Project folder in it. Code repos stay where they are. `archidocs init --skill` sets up a code repo to point its agents at the Workspace repo. See [Workspace and Projects](/docs/concepts/workspace-and-projects/) and [Install the agent skill](/docs/guides/agents/install-skill/).
+
+## Does Archidocs read my code?
+
+No. Archidocs reads only the Workspace's YAML and ADRs, and the git history of the Workspace. A coding agent can read your code to draft a Project, but that agent does the reading, not Archidocs. See [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/).
+
+## Where do diagrams' positions come from?
+
+The viewer computes them each time it draws a View. Positions are never stored. A View says only which way it runs, such as top to bottom or left to right. See [Views](/docs/concepts/views/).

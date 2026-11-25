@@ -74,6 +74,8 @@ export default defineConfig({
           ],
         },
         group("Examples", "docs/examples"),
+        // Last in the sidebar. Its pages are ordered by `sidebar.order`, and its index lists them, so a new Help page needs no entry here.
+        group("Help", "docs/help"),
       ],
       plugins: [
         samples(),
@@ -98,6 +100,7 @@ export default defineConfig({
             { label: "Check rules", paths: ["docs/reference/rules/**", "docs/reference/rules"], description: "every check rule with a failing example and the fix" },
             { label: "Authoring guide for agents", paths: ["docs/reference/agent-guide/**", "docs/reference/agent-guide"], description: "the skill and task topics agents follow to edit the Model" },
             { label: "Examples", paths: ["docs/examples", "docs/examples/**"], description: "the Big Bank and Kitchen sink example Workspaces" },
+            { label: "Help", paths: ["docs/help", "docs/help/**"], description: "troubleshooting and answers to common questions" },
           ],
           // llms-small.txt leaves out the Examples and the Changelog.
           exclude: ["docs/examples", "docs/examples/**", "docs/reference/changelog"],
