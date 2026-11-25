@@ -1,4 +1,4 @@
-import type { ResolvedDynamicView } from "../core/dynamic-views.ts";
+import type { ResolvedDynamicView } from "../core/views/index.ts";
 import type { Bundle, BundleElement } from "../schema/bundle.ts";
 import { layoutSequence, SEQUENCE, viaLine, type MessageStyle, type SequenceLayout, type SequenceRow } from "./sequence.ts";
 import { codeTile, opening, sourceLine, type RenderSource } from "./svg.ts";

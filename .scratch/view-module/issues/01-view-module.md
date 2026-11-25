@@ -1,6 +1,6 @@
 # 01: View module behind one entry
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [View module](../spec.md)
 
@@ -38,11 +38,11 @@ The viewer's `Workspace` keeps its methods in this ticket; they call the new ent
 
 ## Acceptance criteria
 
-- [ ] `src/core/views/` exists, and nothing outside it imports any file in it other than its index.
-- [ ] No import cycle remains among the View files or with `src/core/compare.ts`.
-- [ ] No caller tries a dynamic resolver before a structural one; `grep -rn "resolveDynamicView" src viewer website e2e` finds nothing outside the module.
-- [ ] No file in `src/` outside the module slices or builds a View id by hand.
-- [ ] `build`, `ModelIndex`, `applyLens`, `resolveSaved` and `resolveDynamic` are not exported from the module.
-- [ ] The golden SVGs in `test/render/golden/` are byte-identical to before.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm test:e2e` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `src/core/views/` exists, and nothing outside it imports any file in it other than its index.
+- [x] No import cycle remains among the View files or with `src/core/compare.ts`.
+- [x] No caller tries a dynamic resolver before a structural one; `grep -rn "resolveDynamicView" src viewer website e2e` finds nothing outside the module.
+- [x] No file in `src/` outside the module slices or builds a View id by hand.
+- [x] `build`, `ModelIndex`, `applyLens`, `resolveSaved` and `resolveDynamic` are not exported from the module.
+- [x] The golden SVGs in `test/render/golden/` are byte-identical to before.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm test:e2e` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.

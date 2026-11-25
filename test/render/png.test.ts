@@ -1,6 +1,6 @@
 import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
-import { resolveView } from "../../src/core/index.ts";
+import { structuralView } from "../support/views.ts";
 import { layoutView, renderSvg } from "../../src/render/index.ts";
 import { renderPngInNode } from "../../src/render/node.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
@@ -8,7 +8,7 @@ import { loadWorkspace } from "../support/workspace.ts";
 
 async function svgOf(viewId: string) {
   const { bundle } = await loadWorkspace(landscapeWorkspace);
-  const view = resolveView(bundle, viewId)!;
+  const view = structuralView(bundle, viewId)!;
   return renderSvg({ bundle, view, layout: await layoutView(view), source: { workspace: "acme", commit: null, date: null } });
 }
 

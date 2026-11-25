@@ -1,7 +1,10 @@
 import { stringify } from "yaml";
-import type { Bundle, BundleLens, BundleSelector, BundleStructuralView } from "../schema/bundle.ts";
-import { resolveSaved } from "./saved-views.ts";
-import { ModelIndex, pickedView, resolveView, type ViewDirection, type ViewKind } from "./views.ts";
+import type { Bundle, BundleLens, BundleSelector, BundleStructuralView } from "../../schema/bundle.ts";
+import { parseViewId } from "./ids.ts";
+import { ModelIndex } from "./model.ts";
+import { pickedView, resolveStructural } from "./resolve.ts";
+import { resolveSaved } from "./saved.ts";
+import type { ViewDirection, ViewKind } from "./types.ts";
 
 /** What the viewer shows, as its URL holds it: the View, its open boxes, the Lens, the picks and a turned direction. */
 export interface Screen {
@@ -39,7 +42,8 @@ const levelDepth: Record<Level, number> = { c1: 1, c2: 2, c3: 3 };
  * A Deployment View is saved whole, over its Environment, its Lens as `lens:`.
  */
 export function saveAsView(bundle: Bundle, screen: Screen, target: { project: string; id: string; title: string }): SavedScreen {
-  const view = resolveView(bundle, screen.view, { expand: screen.open });
+  const model = new ModelIndex(bundle);
+  const view = resolveStructural(bundle, model, screen.view, { expand: screen.open });
   if (!view) throw new Error(`No View ${screen.view} to save.`);
   const own = bundle.views.find((v): v is BundleStructuralView => v.id === screen.view && v.kind === "structural");
   const direction = screen.direction ?? own?.direction ?? null;
@@ -48,7 +52,8 @@ export function saveAsView(bundle: Bundle, screen: Screen, target: { project: st
   let body: Record<string, unknown>;
   if (view.kind === "deployment" && screen.picks.length > 0) throw new Error("Save as View keeps a whole Deployment View; clear the picks first.");
   if (view.kind === "deployment" && !own) {
-    body = { level: "deployment", environment: screen.view.slice("deployment/".length) };
+    const ref = parseViewId(screen.view);
+    body = { level: "deployment", environment: ref?.form === "deployment" ? ref.environment : "" };
   } else if (own && screen.picks.length === 0) {
     body = {
       level: own.level,
@@ -57,7 +62,6 @@ export function saveAsView(bundle: Bundle, screen: Screen, target: { project: st
       ...(own.environment === null ? {} : { environment: own.environment }),
     };
   } else {
-    const model = new ModelIndex(bundle);
     const kept = new Set((screen.picks.length === 0 ? view : pickedView(view, screen.picks)).nodes.map((n) => n.id));
 
     const depthOf = (id: string) => model.ancestry(id).length;
@@ -73,11 +77,11 @@ export function saveAsView(bundle: Bundle, screen: Screen, target: { project: st
     const selector = screen.lens ? lensSelector(screen.lens) : undefined;
     body = plain;
     if (selector) {
-      const reached = nodesOf(bundle, { level, include: [selector] });
+      const reached = nodesOf(bundle, model, { level, include: [selector] });
       const include = [selector, ...ids.filter((id) => !reached.has(id))];
-      const extra = [...nodesOf(bundle, { level, include, expand })].filter((id) => !kept.has(id)).sort();
+      const extra = [...nodesOf(bundle, model, { level, include, expand })].filter((id) => !kept.has(id)).sort();
       const withLens = { level, include, ...nonEmpty({ exclude: extra, expand }) };
-      if (sameSet(nodesOf(bundle, withLens), kept)) body = withLens;
+      if (sameSet(nodesOf(bundle, model, withLens), kept)) body = withLens;
     }
   }
 
@@ -115,8 +119,8 @@ function writtenLens(lens: BundleLens): Record<string, unknown> {
 }
 
 /** The node ids the core engine resolves a definition to. */
-function nodesOf(bundle: Bundle, def: { level: Level; include: BundleSelector[]; exclude?: BundleSelector[]; expand?: string[] }): Set<string> {
-  const resolved = resolveSaved(bundle, {
+function nodesOf(bundle: Bundle, model: ModelIndex, def: { level: Level; include: BundleSelector[]; exclude?: BundleSelector[]; expand?: string[] }): Set<string> {
+  const resolved = resolveSaved(bundle, model, {
     id: "screen:saved",
     project: "screen",
     kind: "structural",

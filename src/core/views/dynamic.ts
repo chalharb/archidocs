@@ -1,5 +1,6 @@
-import type { Bundle, BundleDynamicView, BundleElement, BundleRelationship, BundleStep } from "../schema/bundle.ts";
-import { within } from "./query.ts";
+import type { Bundle, BundleDynamicView, BundleElement, BundleRelationship, BundleStep } from "../../schema/bundle.ts";
+import { within } from "../query.ts";
+import { formatViewId } from "./ids.ts";
 
 /** How a Step reads: a consumer calling its provider, the provider's reply, or an event a publisher sends one subscriber. */
 export type StepKind = "call" | "return" | "event";
@@ -102,12 +103,6 @@ export function resolveDynamic(bundle: Bundle, def: BundleDynamicView): DynamicR
   return { view: { id: def.id, kind: "dynamic", title: def.title, participants, steps }, problems };
 }
 
-/** Resolves a Saved Dynamic View by id; undefined for any other id. */
-export function resolveDynamicView(bundle: Bundle, id: string): ResolvedDynamicView | undefined {
-  const def = bundle.views.find((v) => v.id === id);
-  return def?.kind === "dynamic" ? resolveDynamic(bundle, def).view : undefined;
-}
-
 /** Whether an Element takes part in a Dynamic View: as a participant, or as the broker an event Step runs via. */
 export function takesPart(view: ResolvedDynamicView, element: string): boolean {
   return view.participants.includes(element) || view.steps.some((s) => s.via === element);
@@ -195,10 +190,10 @@ export function stepViews(bundle: Bundle, step: ResolvedStep): string[] {
   const { from, to } = step.relationship;
   const [a, b] = [byId.get(from), byId.get(to)];
   const views: string[] = [];
-  if (a?.kind === "component" && b?.kind === "component" && a.parent === b.parent && a.parent !== null) views.push(`c3/${a.parent}`);
+  if (a?.kind === "component" && b?.kind === "component" && a.parent === b.parent && a.parent !== null) views.push(formatViewId({ form: "focused", level: "c3", element: a.parent }));
   for (const id of [from, to, ...(step.via === undefined ? [] : [step.via])]) {
     const s = system(id);
-    if (s) views.push(`c2/${s.id}`);
+    if (s) views.push(formatViewId({ form: "focused", level: "c2", element: s.id }));
   }
   views.push("c2");
   if (ancestry(from)[0] !== ancestry(to)[0]) views.push("c1");

@@ -1,12 +1,10 @@
 import type { Bundle } from "../schema/bundle.ts";
 import type { Files } from "./files.ts";
-import { generatedViews, MAX_VIEW_NODES } from "./views.ts";
-import { resolveSaved, type SavedResolution } from "./saved-views.ts";
+import { checkView, generatedViews, MAX_VIEW_NODES, parseViewId, type DynamicProblem, type DynamicResolution, type SavedResolution } from "./views/index.ts";
 import { Id, parentKindOf, type ElementKind } from "../schema/workspace.ts";
 import type { ElementDecl, Finding, IssueDraft, LoadedWorkspace, Project, RelationshipDecl, Severity, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
 import { qualified, qualify, referenceResolver, type Resolved } from "./refs.ts";
 import type { BundleDynamicView, BundleStructuralView } from "../schema/bundle.ts";
-import { resolveDynamic, type DynamicProblem, type DynamicResolution } from "./dynamic-views.ts";
 import { didYouMean } from "./suggest.ts";
 import type { AdrDecl } from "./model.ts";
 import { AdrFrontmatter } from "../schema/adr.ts";
@@ -193,7 +191,7 @@ const resolvedSavedViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDe
     const def = bundledView(decl, bundle);
     if (def?.kind !== "structural") return [];
     if (def.level === "deployment" && !bundle.environments.some((e) => e.id === def.environment)) return [];
-    return [{ decl, def, resolution: resolveSaved(bundle, def) }];
+    return [{ decl, def, resolution: checkView(bundle, def) }];
   });
 
 /** The Bundle definition a View declaration became, if it made it into the Bundle (the first of a repeated id). */
@@ -204,7 +202,7 @@ const bundledView = (decl: ViewDecl, bundle: Bundle) =>
 const resolvedDynamicViews = (ws: LoadedWorkspace, bundle: Bundle): { decl: ViewDecl; def: BundleDynamicView; resolution: DynamicResolution }[] =>
   ws.views.flatMap((decl) => {
     const def = bundledView(decl, bundle);
-    return def?.kind === "dynamic" ? [{ decl, def, resolution: resolveDynamic(bundle, def) }] : [];
+    return def?.kind === "dynamic" ? [{ decl, def, resolution: checkView(bundle, def) }] : [];
   });
 
 /** A rule reporting one kind of Dynamic View problem, at the Step or participant it is about. */
@@ -874,7 +872,8 @@ export const rules: RuleDefinition[] = [
       const generated = generatedViews(bundle)
         .filter((v) => v.nodes.length > MAX_VIEW_NODES)
         .flatMap((v) => {
-          const focus = bundle.elements.find((e) => e.id === v.id.slice(v.id.indexOf("/") + 1));
+          const ref = parseViewId(v.id);
+          const focus = ref?.form === "focused" ? bundle.elements.find((e) => e.id === ref.element) : undefined;
           const where = focus ? focus.source : workspaceFile ? { file: workspaceFile.path, line: 1 } : undefined;
           if (!where) return [];
           return [{ file: where.file, line: where.line, message: `Generated View "${v.id}" has ${v.nodes.length} nodes, more than the ${MAX_VIEW_NODES} a diagram stays readable at` }];

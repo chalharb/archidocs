@@ -1,6 +1,17 @@
-import { dynamicViewsUsing, resolveDynamicView, stepViews, type ResolvedDynamicView, type ResolvedStep } from "../../src/core/dynamic-views.ts";
-import { saveAsView, type SavedScreen, type Screen } from "../../src/core/save-as-view.ts";
-import { listViews, pickedView, resolveView, type ResolvedView, type ViewSummary } from "../../src/core/views.ts";
+import {
+  dynamicViewsUsing,
+  listViews,
+  pickedView,
+  resolveView,
+  saveAsView,
+  stepViews,
+  type ResolvedDynamicView,
+  type ResolvedStep,
+  type ResolvedView,
+  type SavedScreen,
+  type Screen,
+  type ViewSummary,
+} from "../../src/core/views/index.ts";
 import { teamStyles, type TeamStyle } from "../../src/render/teams.ts";
 import type { Bundle, BundleElement, BundleLens, BundleTarget } from "../../src/schema/bundle.ts";
 
@@ -76,7 +87,8 @@ export class Workspace {
    * View is resolved plain too: its own Lens is applied by opening it.
    */
   resolve(view: string, open: readonly string[], lens: BundleLens | null = null): ResolvedView | undefined {
-    return resolveView(this.bundle, view, { expand: open, lens });
+    const resolved = resolveView(this.bundle, view, { expand: open, lens });
+    return resolved?.kind === "dynamic" ? undefined : resolved;
   }
 
   /** A View with only the picked nodes and their open containers, for export. */
@@ -103,7 +115,8 @@ export class Workspace {
 
   /** Resolves a Dynamic View with the core engine's Step resolution; undefined for any other id. */
   dynamic(view: string): ResolvedDynamicView | undefined {
-    return resolveDynamicView(this.bundle, view);
+    const resolved = resolveView(this.bundle, view);
+    return resolved?.kind === "dynamic" ? resolved : undefined;
   }
 
   /** A Dynamic View's description as written, if it has one. */
