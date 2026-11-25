@@ -1,0 +1,20 @@
+people:
+  shopper:
+    name: Shopper
+    relationships:
+      - to: web
+        description: Browses and buys using
+systems:
+  online-shop:
+    name: Online Shop
+    services:
+      web:
+        name: Web
+        technology: TypeScript, React
+        relationships:
+          - to: api
+            description: Places orders through
+            technology: JSON/HTTPS
+      api:
+        name: API
+        technology: Node.js

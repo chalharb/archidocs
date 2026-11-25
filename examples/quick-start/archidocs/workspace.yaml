@@ -1,0 +1,6 @@
+teams:
+  storefront:
+    name: Storefront
+environments:
+  prod:
+    name: Production
