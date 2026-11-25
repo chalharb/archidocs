@@ -23,7 +23,7 @@ A banner names the Revision. Select **Back to latest** to leave it.
 
 In **Revisions**, select **Compare** beside the older Revision. The diagram marks what was added, removed and changed since, and the Changes list beside it names each one:
 
-<Screenshot id="viewer-compare" alt="The Service Landscape in Compare from fd11cd1 to the latest. The Changes list shows 35 Changes, and the Payments System and the Event Bus are marked as added." />
+<Screenshot id="viewer-compare" alt="The Service Landscape in Compare from fd11cd1 to the latest. The Changes list shows 35 Changes, and the Payments System, the Card Network and the Event Bus are marked as added." />
 
 Select a Change to find it on the diagram. To compare two past Revisions, open the newer one first, then compare it with the older one.
 
@@ -31,7 +31,7 @@ The **History** tab of an Element panel lists only the Revisions that changed th
 
 ## 3. Read the decisions behind an Element
 
-Select the Element, then the **ADRs** tab of its Element panel. It lists the [ADRs](/docs/reference/glossary/#term-adr), the decision records, that link it or anything inside it. Select one to open it in the ADR reader:
+Select the [Element](/docs/reference/glossary/#term-element), then the **ADRs** tab of its Element panel. It lists the [ADRs](/docs/reference/glossary/#term-adr), the decision records, that link it or anything inside it. Select one to open it in the ADR reader:
 
 <Screenshot id="viewer-adr-reader" alt="The ADR reader open on digital:0002, Delegate sign-in to the Identity Platform: Accepted on 2025-07-21, linked to the Security Component and the Auth Service, and superseding digital:0001." />
 
@@ -43,7 +43,7 @@ The location bar shows a **Compare** chip with both Revisions, and the address e
 
 The **History** tab says "This site has no history." The site was built from a clone without the git history. Build it from a full clone: see [Revisions and history](/docs/concepts/revisions-and-history/).
 
-The viewer shows `history_unavailable`. The site keeps whole Bundles only for its latest Revisions and every tag. Compare the two commits on a checkout with [diff](/docs/guides/review/diff/), or ask the MCP server.
+The viewer shows `history_unavailable`. The site keeps a whole [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle) only for its latest Revisions and every tag. Compare the two commits on a checkout with [diff](/docs/guides/review/diff/), or ask the MCP server.
 
 ## With an agent
 
