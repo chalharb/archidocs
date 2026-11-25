@@ -1,0 +1,8 @@
+# Check the Workspace on every merge request, without building or publishing.
+archidocs-check:
+  image: node:24
+  script:
+    - npm install --global archidocs@1
+    - archidocs check --strict
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"

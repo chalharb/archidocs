@@ -1,6 +1,6 @@
 # 18: "Set up your editor" and "Check a Workspace in CI"
 
-Status: ready-for-agent
+Status: done
 Blocked by: 07
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -23,7 +23,7 @@ Two guides, to the how-to template.
 
 ## Acceptance criteria
 
-- [ ] Both pages exist and pass the template test.
-- [ ] The editor setup was tried in VS Code, and the page shows a field completing.
-- [ ] The CI workflow on the page is included from a file, not typed inline.
-- [ ] Every `archidocs …` line passes the CLI-line check.
+- [x] Both pages exist and pass the template test.
+- [x] The editor setup was tried in VS Code, and the page shows a field completing.
+- [x] The CI workflow on the page is included from a file, not typed inline.
+- [x] Every `archidocs …` line passes the CLI-line check.
