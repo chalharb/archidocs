@@ -7,11 +7,11 @@ sidebar:
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Run `archidocs check` on every pull request, so a change that breaks the Model fails before it merges. Nothing is built or published.
+Every pull request runs `archidocs check`, without building or publishing, so a change that breaks the Model fails before it merges.
 
 ## Before you start
 
-- The Workspace is in a GitHub or GitLab repo, and `archidocs check` passes on the default branch. See the [Quick start](/docs/start/quick-start/).
+- The [Workspace](/docs/reference/glossary/#term-workspace), the whole architecture kept in one repo, is in a GitHub or GitLab repo, and `archidocs check` passes on the default branch. See the [Quick start](/docs/start/quick-start/).
 - The repo doesn't build [pull request previews](/docs/guides/publish/pr-previews/) yet. A preview job already checks every pull request.
 
 ## 1. Add the job
@@ -43,7 +43,7 @@ GitLab has no annotations for this. The job's log lists each issue with its file
 
 ## 2. Pin the CLI version
 
-The job installs `archidocs@1`, the latest 1.x release. A later release can report something new, which `--strict` turns into a failure on a pull request that changed nothing. To upgrade only when you choose, write the exact version you run locally:
+The job installs `archidocs@1`, the latest 1.x release. To upgrade only when you choose, write the exact version you run locally:
 
 ```bash
 archidocs version
@@ -64,7 +64,7 @@ So that a failing check blocks the merge:
 
 ## Check it worked
 
-Open a pull request that adds a field that doesn't exist, such as `colour: red` under a System. The job fails. On GitHub, its log shows the annotation it printed:
+Open a pull request that adds a field that doesn't exist, such as `colour: red` under a [System](/docs/reference/glossary/#term-system). The job fails. On GitHub, its log shows the annotation it printed:
 
 ```text
 ::error file=archidocs/digital/model.yaml,line=15,col=5,title=unknown-field::Unknown field "colour" See https://archidocs.dev/docs/reference/rules/unknown-field/
@@ -74,9 +74,11 @@ The pull request's **Files changed** tab shows the message on line 15. Remove th
 
 ## If it didn't
 
-If the job fails with `No workspace.yaml found`, the Workspace isn't at the repo's root. Run the check from its folder: on GitHub, set `working-directory` on the step. On GitLab, add `cd <folder>` before `archidocs check`.
+If the job fails with `No workspace.yaml found`, the Workspace is in another folder of the repo. On GitHub, set `working-directory` to its folder on the `check` step. On GitLab, add `cd <folder>` before `archidocs check`.
 
-If the job fails on a warning that you can't fix yet, drop `--strict` until you can. Each rule's page says how to fix what it reports: follow the link in the message.
+If the job fails on an issue, the message links the rule's page, such as [`unknown-field`](/docs/reference/rules/unknown-field/). The page says how to fix it.
+
+If a new release fails the job on a warning that you can't fix yet, pin the version you ran before, as in step 2.
 
 ## With an agent
 
