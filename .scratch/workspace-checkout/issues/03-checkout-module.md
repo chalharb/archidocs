@@ -1,6 +1,6 @@
 # 03: Checkout module
 
-Status: needs-info
+Status: ready-for-agent
 Blocked by: 01, 02
 Spec: [Workspace checkout](../spec.md)
 
@@ -80,3 +80,5 @@ Open a Workspace on disk in one place, with one "which files count" rule. The on
 This doesn't hold anything up: the ticket is blocked by 01 and 02 anyway. Once confirmed, set `Status: ready-for-agent`.
 
 Card 3 (Revision index and site layout) is being worked on in parallel. If it merges first, recheck the line references here into `src/mcp/history.ts`, `src/cli/dev.ts` and `writeSiteHistory`.
+
+**2026-11-25:** The maintainer confirmed all four decisions as written. `ready-for-agent`, once 01 and 02 are done.

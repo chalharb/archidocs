@@ -78,7 +78,7 @@ There are no other user-visible changes: same output, same messages, same exit c
 
 ### Decisions taken here
 
-These were the research's open questions. Each was settled for the smaller change; challenge any of them before ticket 03.
+These were the research's open questions. Each was settled for the smaller change, and the maintainer confirmed them on 2026-11-25.
 
 1. **Name and place**: `src/workspace/`, its type `Checkout`. Ticket 03 adds **Checkout** to `GLOSSARY.md`.
 2. **`load` keeps its `.git` walk** as a fallback; a Checkout passes `repoRoot` explicitly.
