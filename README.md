@@ -32,29 +32,85 @@ The questions it's built to answer:
 
 ## Quick start
 
-Requires Node.js 22.18 or later.
+From an empty repo to your first System in the viewer, in about five minutes. Archidocs needs Node.js 22.18 or later.
+
+**1. Install the CLI.** With pnpm, use `pnpm add --global archidocs`. To install nothing, put `npx` before each command, as in `npx archidocs check`.
 
 ```bash
 npm install --global archidocs
 ```
 
-In the repo that will hold your Workspace:
+**2. Create a Workspace.** In the repo that will hold it (a new, empty one is fine):
 
 ```bash
 archidocs init
 ```
 
-This writes `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. Add a Project folder, then check it and open the viewer:
+This writes a starter `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents.
+
+**3. Add three files.** Replace `archidocs/workspace.yaml`, which defines Teams and Environments, with:
+
+```yaml
+teams:
+  storefront:
+    name: Storefront
+environments:
+  prod:
+    name: Production
+```
+
+Give the Team a Project folder, marked by `archidocs/shop/project.yaml`:
+
+```yaml
+id: shop
+name: Shop
+owner: storefront
+```
+
+Declare a Person, and a System that holds two Services, in `archidocs/shop/model.yaml`:
+
+```yaml
+people:
+  shopper:
+    name: Shopper
+    relationships:
+      - to: web
+        description: Browses and buys using
+systems:
+  online-shop:
+    name: Online Shop
+    services:
+      web:
+        name: Web
+        technology: TypeScript, React
+        relationships:
+          - to: api
+            description: Places orders through
+            technology: JSON/HTTPS
+      api:
+        name: API
+        technology: Node.js
+```
+
+**4. Check it.**
 
 ```bash
 archidocs check
 ```
 
+```text
+0 errors, 0 warnings
+```
+
+**5. Open the viewer.**
+
 ```bash
 archidocs dev
 ```
 
-`archidocs dev` serves the viewer on <http://localhost:4321> and reloads as you edit.
+Open <http://localhost:4321>. The viewer starts on the C2 Landscape, which shows the Shopper and the Online Shop; select the arrow button on the Online Shop box to see the two Services inside it. The viewer reloads as you edit the files.
+
+The finished Workspace is in [examples/quick-start](examples/quick-start).
 
 ## The Model
 

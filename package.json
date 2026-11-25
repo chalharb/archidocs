@@ -40,6 +40,7 @@
     "docs:build": "pnpm --dir website build",
     "docs:test": "pnpm --dir website test",
     "docs:tutorial": "pnpm build:viewer && node website/scripts/tutorial.ts",
+    "docs:quick-start": "pnpm build:viewer && node website/scripts/quick-start.ts",
     "demo:kitchen-sink": "pnpm build:viewer && cd examples/kitchen-sink && node ../../src/cli/main.ts build --out site"
   },
   "dependencies": {

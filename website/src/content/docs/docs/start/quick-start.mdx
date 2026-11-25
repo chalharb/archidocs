@@ -1,46 +1,102 @@
 ---
 title: Quick start
-description: From an empty repo to the viewer in a few commands.
+description: From an empty repo to your first System in the viewer, in about five minutes.
 sidebar:
   order: 2
 ---
 
-Archidocs needs Node.js 22.18 or later. Install the CLI:
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+import Diagram from "../../../../components/Diagram.astro";
+
+In about five minutes you go from an empty repo to the viewer showing a small Model: a Shopper who uses an Online Shop made of two Services. Every file you need is on this page.
+
+## 1. Install the CLI
+
+Archidocs needs Node.js 22.18 or later.
+
+<Tabs syncKey="package-manager">
+<TabItem label="npm">
 
 ```bash
 npm install --global archidocs
 ```
 
-Or run any command without installing it, as in `npx archidocs check`.
+</TabItem>
+<TabItem label="pnpm">
 
-## Set up a Workspace
+```bash
+pnpm add --global archidocs
+```
 
-In the repo that will hold your Workspace:
+</TabItem>
+<TabItem label="npx">
+
+There is nothing to install. Put `npx` before each command on this page, as in `npx archidocs check`.
+
+</TabItem>
+</Tabs>
+
+## 2. Create a Workspace
+
+A [Workspace](/docs/reference/glossary/#term-workspace) is one git repo that holds the whole architecture. In the repo that will hold yours (a new, empty one is fine), run:
 
 ```bash
 archidocs init
 ```
 
-This writes `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. Run it again at any time: it leaves what's there alone.
+This writes a starter `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. Everything Archidocs reads lives under `archidocs/`.
 
-## Add a Project
+## 3. Add three files
 
-Define a Team and an Environment in `archidocs/workspace.yaml`, then give the Team a Project folder with a `project.yaml` and a file of Elements, such as `archidocs/shop/model.yaml`. The [tutorial](/docs/start/tutorial/) walks through each file, and [Add a Project](/docs/guides/model/add-a-project/) is the short version.
+Save each file at the path in its title.
 
-## Check it and open the viewer
+`workspace.yaml` defines the Teams that own things and the Environments that Services run in. Replace the starter file with:
+
+```yaml file="examples/quick-start/archidocs/workspace.yaml" title="archidocs/workspace.yaml"
+```
+
+A [Project](/docs/reference/glossary/#term-project) is one Team's folder in the Workspace. Its `project.yaml` names the Team that owns everything in the folder:
+
+```yaml file="examples/quick-start/archidocs/shop/project.yaml" title="archidocs/shop/project.yaml"
+```
+
+Every other `.yaml` file in the folder declares Elements and their Relationships. This one declares a Person, and a System that holds two Services:
+
+```yaml file="examples/quick-start/archidocs/shop/model.yaml" title="archidocs/shop/model.yaml"
+```
+
+Each Relationship sits under the Element that depends on the other one, and its `description` reads as a sentence: "Web places orders through API".
+
+## 4. Check it
 
 ```bash
 archidocs check
 ```
 
+```text
+0 errors, 0 warnings
+```
+
+`archidocs check` validates every file and every reference between them. When something is wrong, it names the file, the line and the [rule](/docs/reference/rules/) that was broken.
+
+## 5. Open the viewer
+
 ```bash
 archidocs dev
 ```
 
-`archidocs check` validates the Workspace and explains each problem, with a link to its [rule](/docs/reference/rules/). `archidocs dev` serves the viewer on `http://localhost:4321` and reloads it as you edit.
+Open `http://localhost:4321`. The viewer starts on the C2 Landscape, which shows the Shopper and the Online Shop:
+
+<Diagram view="quick-start/c2" alt="The C2 Landscape of the quick start's Workspace: the Shopper, with an arrow to the Online Shop System." />
+
+In the viewer, the Online Shop box has an arrow button. Select it to open the System's own View, with the two Services inside it:
+
+<Diagram view="quick-start/c2/shop:online-shop" alt="The Online Shop System opened: the Shopper uses Web, and Web places orders through API. Both Services sit inside Online Shop." />
+
+That is the Model you wrote, drawn. The viewer reloads as you edit the files; stop it with Ctrl+C.
 
 ## Next
 
+- [Model your first system](/docs/start/tutorial/): the twenty-minute tutorial adds Deployments and publishes the viewer.
 - [Publish the viewer](/docs/guides/publish/github-pages/) from CI.
 - [Connect an agent](/docs/guides/agents/connect-mcp/) to the Model over MCP.
-- Look up any command in the [CLI reference](/docs/reference/cli/).
