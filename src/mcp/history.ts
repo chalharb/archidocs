@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { bundleAt, buildHistory, isDate, migrateBundle, readIndex, resolvePoint, type History, type RevisionEntry } from "../history/index.ts";
+import { bundleAt, buildHistory, isDate, migrateBundle, readIndex, resolvePoint, type History } from "../history/index.ts";
+import { INDEX_PATH, pastBundlePath, type RevisionEntry } from "../revisions/index.ts";
 import { commitInfo } from "../history/git.ts";
 import type { Bundle } from "../schema/bundle.ts";
 import type { BundleSource, CheckoutSource, Snapshot, Source } from "./source.ts";
@@ -108,12 +109,12 @@ function bundlePast(source: BundleSource): Past {
     if (cached && now - cached.checkedAt < RECHECK_MS) return { ok: true, revisions: cached.revisions };
     let raw: unknown;
     try {
-      raw = JSON.parse(await read("bundles/index.json"));
+      raw = JSON.parse(await read(INDEX_PATH));
     } catch (error) {
-      return unavailable(`The site has no readable Revision index (bundles/index.json): ${reason(error)}`);
+      return unavailable(`The site has no readable Revision index (${INDEX_PATH}): ${reason(error)}`);
     }
     const revisions = (raw as { revisions?: unknown } | null)?.revisions;
-    if (!Array.isArray(revisions)) return unavailable("The site's bundles/index.json holds no Revisions.");
+    if (!Array.isArray(revisions)) return unavailable(`The site's ${INDEX_PATH} holds no Revisions.`);
     cached = { revisions: revisions as RevisionEntry[], checkedAt: now };
     return { ok: true, revisions: cached.revisions };
   };
@@ -143,7 +144,7 @@ function bundlePast(source: BundleSource): Past {
       pending = (async () => {
         let raw: unknown;
         try {
-          raw = JSON.parse(await read(`bundles/${sha}.json`));
+          raw = JSON.parse(await read(pastBundlePath(sha)));
         } catch (error) {
           return unavailable(`The Bundle at ${sha.slice(0, 7)} can't be read from the site: ${reason(error)}`);
         }

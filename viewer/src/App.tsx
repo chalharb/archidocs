@@ -15,7 +15,8 @@ import { LocationBar } from "./LocationBar.tsx";
 import { HOME, formatPlace, isPlaceHash, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
-import { loadTimeline, pointLabel, type Revision, type Timeline } from "./revisions.ts";
+import { LATEST_BUNDLE_PATH, SITE_FILE_PATH, type RevisionEntry } from "../../src/revisions/index.ts";
+import { loadTimeline, pointLabel, type Timeline } from "./revisions.ts";
 import { remember } from "./recent.ts";
 import { SaveAsView } from "./SaveAsView.tsx";
 import { structuralView, Workspace } from "./workspace.ts";
@@ -28,11 +29,11 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error
   const [state, setState] = useState<{ latest?: Bundle; timeline?: Timeline; name?: string; error?: string }>({});
   useEffect(() => {
     // site.json names the Workspace for exports; a site without it still opens.
-    const name = fetch("./site.json")
+    const name = fetch(`./${SITE_FILE_PATH}`)
       .then((r): Promise<{ workspace?: string }> | { workspace?: string } => (r.ok ? r.json() : {}))
       .then((site) => site.workspace)
       .catch(() => undefined);
-    const latest = fetch("./workspace.bundle.json").then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`workspace.bundle.json: HTTP ${r.status}`))));
+    const latest = fetch(`./${LATEST_BUNDLE_PATH}`).then((r) => (r.ok ? (r.json() as Promise<Bundle>) : Promise.reject(new Error(`${LATEST_BUNDLE_PATH}: HTTP ${r.status}`))));
     Promise.all([latest, loadTimeline(), name])
       .then(([bundle, timeline, workspaceName]) => {
         openPreview(timeline);
@@ -93,7 +94,7 @@ interface ScreenProps {
   plain: Workspace;
   comparison: Comparison | undefined;
   timeline: Timeline;
-  at: Revision | undefined;
+  at: RevisionEntry | undefined;
   /** New `at` or `vs` Bundles are loading; the screen shows the last ones meanwhile. */
   loading: boolean;
 }

@@ -1,8 +1,9 @@
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
-import { changedIds, countChanges, diff, load, serializeBundle, type ChangeCounts } from "../core/index.ts";
+import { changedIds, countChanges, diff, load, serializeBundle } from "../core/index.ts";
 import { Bundle, SCHEMA_VERSION } from "../schema/bundle.ts";
 import { git } from "../git.ts";
+import { BUNDLES_DIR, INDEX_PATH, INDEX_VERSION, isPastBundleFile, pastBundleFile, type PreviewMark, type RevisionEntry, type RevisionIndex } from "../revisions/index.ts";
 import { commitInfo, defaultBranch, firstParentCommitsTouching, gitFileSystem, isDate, joinRepo, resolvePoint, tagsByCommit, type CommitInfo } from "./git.ts";
 
 export { migrateBundle, migrations, type Migration } from "./migrate.ts";
@@ -18,33 +19,14 @@ export interface History {
   workspacePath: string;
 }
 
-/** One Revision as the index records it; `bundle: false` marks a Revision whose Bundle was dropped. */
-export interface RevisionEntry {
-  sha: string;
-  date: string;
-  subject: string;
-  author: string;
-  tags: string[];
-  /** Changes against the previous Revision (or an empty Model for the first). */
-  counts: ChangeCounts;
-  changedIds: string[];
-  bundle: boolean;
-}
-
-export interface RevisionIndex {
-  schemaVersion: number;
-  /** Newest first. */
-  revisions: RevisionEntry[];
-}
-
 export const history = (repoRoot: string, workspaceRoot: string): History => ({
   repoRoot,
   workspacePath: relative(repoRoot, workspaceRoot).split(sep).join("/"),
 });
 
-const bundlesDir = (h: History) => join(h.repoRoot, CACHE_DIR, "bundles");
-const bundleFile = (h: History, sha: string) => join(bundlesDir(h), `${sha}.json`);
-const indexFile = (h: History) => join(bundlesDir(h), "index.json");
+const bundlesDir = (h: History) => join(h.repoRoot, CACHE_DIR, BUNDLES_DIR);
+const bundleFile = (h: History, sha: string) => join(bundlesDir(h), pastBundleFile(sha));
+const indexFile = (h: History) => join(h.repoRoot, CACHE_DIR, INDEX_PATH);
 
 /**
  * The Revisions: first-parent default-branch commits that changed something
@@ -96,11 +78,11 @@ async function readCached(h: History, sha: string): Promise<Bundle | undefined> 
 export async function readIndex(h: History): Promise<RevisionIndex> {
   try {
     const index = JSON.parse(await readFile(indexFile(h), "utf8")) as RevisionIndex;
-    if (index.schemaVersion === SCHEMA_VERSION && Array.isArray(index.revisions)) return index;
+    if (index.schemaVersion === INDEX_VERSION && Array.isArray(index.revisions)) return index;
   } catch {
     // No index yet, or an unreadable one: start again.
   }
-  return { schemaVersion: SCHEMA_VERSION, revisions: [] };
+  return { schemaVersion: INDEX_VERSION, revisions: [] };
 }
 
 export interface BuildResult {
@@ -153,7 +135,7 @@ export async function buildHistory(h: History, options: { since?: string } = {})
       .sort((a, b) => order.get(a.sha)! - order.get(b.sha)!)
       .map(({ sha, date, subject, author, tags: t, counts, changedIds: ids, bundle }) => ({ sha, date, subject, author, tags: t, counts, changedIds: ids, bundle }));
     await mkdir(dirname(indexFile(h)), { recursive: true });
-    await writeFile(indexFile(h), JSON.stringify({ schemaVersion: SCHEMA_VERSION, revisions: revisionsOut }, null, 2) + "\n");
+    await writeFile(indexFile(h), JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: revisionsOut }, null, 2) + "\n");
   }
   return { revisions: inScope.length, built };
 }
@@ -183,18 +165,18 @@ export interface PublishResult {
  * the folder by an earlier build is removed once its Revision is dropped.
  */
 export async function publishHistory(h: History, out: string, { keep = DEFAULT_KEEP }: { keep?: number | "all" } = {}): Promise<PublishResult> {
-  const dir = join(out, "bundles");
+  const dir = join(out, BUNDLES_DIR);
   const hasCommits = await gitHasCommits(h.repoRoot);
   if (hasCommits) await buildHistory(h);
-  const index = hasCommits ? await readIndex(h) : { schemaVersion: SCHEMA_VERSION, revisions: [] };
+  const index = hasCommits ? await readIndex(h) : { schemaVersion: INDEX_VERSION, revisions: [] };
   const revisionsOut = index.revisions.map((entry, i) => ({ ...entry, bundle: keep === "all" || i < keep || entry.tags.length > 0 }));
   await mkdir(dir, { recursive: true });
-  const keptFiles = new Set(revisionsOut.filter((e) => e.bundle).map((e) => `${e.sha}.json`));
+  const keptFiles = new Set(revisionsOut.filter((e) => e.bundle).map((e) => pastBundleFile(e.sha)));
   for (const file of await readdir(dir)) {
-    if (/^[0-9a-f]{40,64}\.json$/.test(file) && !keptFiles.has(file)) await rm(join(dir, file));
+    if (isPastBundleFile(file) && !keptFiles.has(file)) await rm(join(dir, file));
   }
   for (const file of keptFiles) await copyFile(join(bundlesDir(h), file), join(dir, file));
-  await writeFile(join(dir, "index.json"), JSON.stringify({ schemaVersion: SCHEMA_VERSION, revisions: revisionsOut }, null, 2) + "\n");
+  await writeFile(join(out, INDEX_PATH), JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: revisionsOut }, null, 2) + "\n");
   return { revisions: revisionsOut.length, kept: keptFiles.size };
 }
 
@@ -232,20 +214,13 @@ export async function previewSides(h: History, base: string): Promise<PreviewSid
   };
 }
 
-/** What a preview site's `bundles/index.json` adds: the base branch and both sides' shas, so the viewer opens with Compare "base → PR". */
-export interface PreviewMark {
-  base: string;
-  baseSha: string;
-  headSha: string;
-}
-
 /**
  * Writes a preview site's `bundles/`: the base's Bundle, the head's (the
  * checkout as built) and an index of the two, newest first, marked with
  * `preview`. The head's counts are against the base.
  */
 export async function publishPreview(h: History, out: string, sides: PreviewSides, head: Bundle): Promise<PreviewMark> {
-  const dir = join(out, "bundles");
+  const dir = join(out, BUNDLES_DIR);
   const tags = await tagsByCommit(h.repoRoot);
   const entry = (rev: CommitInfo, before: Bundle, after: Bundle): RevisionEntry => {
     const changes = diff(before, after);
@@ -258,9 +233,9 @@ export async function publishPreview(h: History, out: string, sides: PreviewSide
   const preview = { base: sides.base, baseSha: baseRevision.sha, headSha: sides.head.sha };
   await rm(dir, { recursive: true, force: true });
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, `${baseRevision.sha}.json`), serializeBundle(baseBundle));
-  await writeFile(join(dir, `${sides.head.sha}.json`), serializeBundle(head));
-  await writeFile(join(dir, "index.json"), JSON.stringify({ schemaVersion: SCHEMA_VERSION, preview, revisions: revisionsOut }, null, 2) + "\n");
+  await writeFile(join(dir, pastBundleFile(baseRevision.sha)), serializeBundle(baseBundle));
+  await writeFile(join(dir, pastBundleFile(sides.head.sha)), serializeBundle(head));
+  await writeFile(join(out, INDEX_PATH), JSON.stringify({ schemaVersion: INDEX_VERSION, preview, revisions: revisionsOut }, null, 2) + "\n");
   return preview;
 }
 
