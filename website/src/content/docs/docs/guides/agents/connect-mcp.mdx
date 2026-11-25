@@ -5,7 +5,12 @@ sidebar:
   order: 1
 ---
 
-`archidocs mcp` is an MCP server that agent harnesses start themselves, over stdio. Register it once and the agent can answer architecture questions and edit the Model. See [Agents and MCP](/docs/concepts/agents-and-mcp/) for what it offers.
+Register the Archidocs MCP server with a coding agent, so it can answer architecture questions and edit the Model.
+
+## Before you start
+
+- The Archidocs CLI is installed. See the [Quick start](/docs/start/quick-start/).
+- You know what the server offers. See [Agents and MCP](/docs/concepts/agents-and-mcp/).
 
 ## In the Workspace repo
 
@@ -60,7 +65,7 @@ archidocs mcp --http --port 3737 --workspace archidocs
 
 It listens on a loopback address only, at `/mcp`, and leaves the write tools off unless you add `--allow-writes`.
 
-## Try it
+## Check it worked
 
 Ask the agent something the Model knows, such as "what breaks if the Orders DB goes down?". It should call [`get_impact`](/docs/reference/mcp/read-tools/#get_impact) and answer from the Model, with the Elements' Owners. Then ask it to load the authoring guide before an edit: it calls [`get_authoring_guide`](/docs/reference/mcp/read-tools/#get_authoring_guide).
 

@@ -5,62 +5,87 @@ sidebar:
   order: 1
 ---
 
-A Project is one Team's slice of the Workspace. Add one when a Team starts modelling what it owns. See [Workspace and Projects](/docs/concepts/workspace-and-projects/) for the idea.
+Add a [Project](/docs/reference/glossary/#term-project), one Team's folder in the Workspace, so the Team can declare what it owns.
 
 :::note[For agents]
 The agent topic for this task is [`bootstrap`](/docs/reference/agent-guide/bootstrap/), which also declares the Project's contents from its code.
 :::
 
-## 1. Make sure the Team exists
+## Before you start
 
-The Team that will own the Project must be defined in `workspace.yaml`. Add it if it is new:
+- You have a Workspace. See the [Quick start](/docs/start/quick-start/).
+- You know which Team will own the Project. See [Workspace and Projects](/docs/concepts/workspace-and-projects/) for how Projects split the Workspace.
+
+## 1. Define the Team
+
+The Team must be defined in `workspace.yaml`. Add it under `teams` if it is new:
 
 ```yaml file="examples/big-bank/archidocs/workspace.yaml"
 ```
 
-## 2. Create the folder and `project.yaml`
+## 2. Create `project.yaml`
 
-Create a folder under the Workspace folder, usually named after the Project's id, with a `project.yaml`:
+Create a folder under the Workspace folder, named after the Project's id. Add a `project.yaml` to it:
 
 ```yaml file="examples/big-bank/archidocs/identity/project.yaml"
 ```
 
-- `id` is how other Projects name this one's Elements, as `identity:auth-service`. Choose it with care: changing it later means changing every reference.
-- `name` is shown in the viewer.
-- `owner` is the Team that owns everything declared here, unless an Element says otherwise.
-
-Projects don't nest: a Project folder can't sit inside another.
+Other Projects name this one's Elements by the `id`, as `identity:auth-service`, so choose it with care. Every field is in the [`project.yaml` reference](/docs/reference/model/project-yaml/).
 
 ## 3. Declare its Elements
 
-Add a file such as `model.yaml` beside `project.yaml`. Any name works, and you can split a Project across as many files as you like. Big Bank's Identity Project is one System with two Services:
+Add a file such as `model.yaml` beside `project.yaml`. Big Bank's Identity Project is one System with two Services:
 
 ```yaml file="examples/big-bank/archidocs/identity/model.yaml"
 ```
 
-The Auth Service depends on `platform:email-system`, an Element of another Team's Project. Declare only this Project's outbound Relationships; the Teams that depend on this one declare theirs.
+To fill it in, [add Services](/docs/guides/model/add-a-service/) and [connect them](/docs/guides/model/connect-services/).
 
-Then [add Services](/docs/guides/model/add-a-service/) and [Deployments](/docs/guides/model/add-deployments/) as the Project grows.
+## 4. Route its reviews
 
-## 4. Check it
+Add a line per Project to `CODEOWNERS`, so each change goes to the Team that owns it:
+
+```text title="CODEOWNERS"
+/archidocs/identity/  @bigbank/identity
+```
+
+## 5. Check the Workspace
 
 ```bash
 archidocs check
 ```
 
-## 5. Route its reviews
+```text
+0 errors, 0 warnings
+```
 
-Each Team changes only its own folder, so a `CODEOWNERS` line per Project sends every change to the Team that owns it:
+## Check it worked
+
+Run `archidocs dev` and open the C2 Landscape. The new Project's Systems are on it, with the Team as their Owner in the Element panel.
+
+## If it didn't
+
+`check` reports [`unknown-team`](/docs/reference/rules/unknown-team/) when an `owner` names a Team that `workspace.yaml` doesn't define:
 
 ```text
-/archidocs/identity/  @bigbank/identity
+archidocs/shop/model.yaml:6:12  error  unknown-team  Unknown Team "paymnets"; did you mean "payments"?
+
+1 error, 0 warnings
+
+Rule docs:
+  unknown-team  https://archidocs.dev/docs/reference/rules/unknown-team/
 ```
+
+Correct the name, or add the Team to `workspace.yaml`.
+
+`check` reports [`nested-project`](/docs/reference/rules/nested-project/) when a Project folder sits inside another. Move it up a level.
 
 ## With an agent
 
-Over MCP, [`create_project`](/docs/reference/mcp/write-tools/#create_project) writes the folder and `project.yaml`, and [`upsert_team`](/docs/reference/mcp/write-tools/#upsert_team) adds a missing Team. To model an existing codebase in one go, see [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/).
+[`create_project`](/docs/reference/mcp/write-tools/#create_project) writes the folder and `project.yaml`. [`upsert_team`](/docs/reference/mcp/write-tools/#upsert_team) adds a missing Team. To model an existing codebase in one go, see [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/).
 
 ## Related
 
-- [`project.yaml` reference](/docs/reference/model/project-yaml/)
-- [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/)
+- [Workspace and Projects](/docs/concepts/workspace-and-projects/)
+- [`project.yaml` reference](/docs/reference/model/project-yaml/) and [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/)
+- [Add a Service](/docs/guides/model/add-a-service/)

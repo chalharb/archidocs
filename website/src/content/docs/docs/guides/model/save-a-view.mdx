@@ -7,49 +7,60 @@ sidebar:
 
 import Diagram from "../../../../../components/Diagram.astro";
 
-A Saved View is a diagram written into a Project's files as a query over the Model. Save one when a question comes up often enough to deserve a link, and the Generated Views don't answer it at a glance. See [Views](/docs/concepts/views/).
+Write a [Saved View](/docs/reference/glossary/#term-saved-view), a View a Project keeps as a query over the Model, so a question that comes up often has a link that stays current.
 
 :::note[For agents]
 The agent topic for this task is [`saved-view`](/docs/reference/agent-guide/saved-view/).
 :::
 
-## 1. Start from the question
+## Before you start
 
-Write down who the View is for and what it answers: "what does an Orders DB outage affect?". That decides its level and selectors. Check first that a Generated View (`c1`, `c2`, `c2/<system>`, `c3/<service>`, `deployment/<environment>`) doesn't already show it.
+- The Elements the View shows are in the Model. See [Add a Service](/docs/guides/model/add-a-service/).
+- No Generated View answers the question already: `c1`, `c2`, `c2/<system>`, `c3/<service>` or `deployment/<environment>`. See [Views](/docs/concepts/views/).
 
-## 2. Build it in the viewer
+## 1. Build it in the viewer
 
-Open the viewer (`archidocs dev`), get the screen to answer the question (open what needs opening, turn on a Lens), then use **Save as View**. It gives you the View as YAML. Or write it by hand.
+Run `archidocs dev`. Get the screen to answer the question: open what needs opening and turn on a Lens. Then use **Save as View**, which gives you the View as YAML.
 
-## 3. Add it to the Project
+## 2. Add it to the Project
 
 Paste it under `views` › `structural` in the Project's `views.yaml`, keyed by an id unique among the Project's Views:
 
 ```yaml file="examples/kitchen-sink/archidocs/sink/views.yaml" region="structural"
 ```
 
-<Diagram view="kitchen-sink/sink:orders-db-outage" alt="The Kitchen sink Services that depend on Orders DB, marked by how far upstream they are." />
+`title` and `level` are required. The selectors that `include` and `exclude` take, and the Lenses, are in the [Saved Views reference](/docs/reference/model/views-yaml/#selector).
 
-- `title` and `level` are required.
-- `include` selects Elements: an id, `{element, with, upstream, downstream}`, `{team}`, `{tag}` or `{from, to, paths}`. Without it, the View starts from every Element.
-- `exclude` takes the same selectors and drops what they match.
-- `lens` opens the View with a Lens on: `{impact, direction}`, `{team}` or `{path: {from, to}}`.
-
-Prefer selectors that follow the Model, such as `upstream: all`, over lists of ids: a Service added later then joins the View on its own.
-
-## 4. Check it and share it
+## 3. Check the Workspace
 
 ```bash
 archidocs check
 ```
 
-A View that resolves to no nodes is reported ([`empty-view`](/docs/reference/rules/empty-view/)), and so is a View too big to read ([`oversized-view`](/docs/reference/rules/oversized-view/)). Once published, the View's link is `#/view/<project>:<id>` in the viewer, and [`archidocs export`](/docs/guides/review/export/) draws it as a picture.
+```text
+0 errors, 0 warnings
+```
+
+## Check it worked
+
+In the viewer, open the View from the **Views** tree. It draws the same diagram you saved:
+
+<Diagram view="kitchen-sink/sink:orders-db-outage" alt="The Kitchen sink Services that depend on Orders DB, marked by how far upstream they are." />
+
+Once published, its link is `#/view/<project>:<id>` in the viewer.
+
+## If it didn't
+
+`check` reports [`empty-view`](/docs/reference/rules/empty-view/) when the View's selectors match nothing. Check the ids it names.
+
+`check` reports [`oversized-view`](/docs/reference/rules/oversized-view/) when the View is too big to read. Narrow its `include`, or split it in two.
 
 ## With an agent
 
-[`upsert_view`](/docs/reference/mcp/write-tools/#upsert_view) writes a View, and [`get_view`](/docs/reference/mcp/read-tools/#get_view) shows what it resolves to.
+[`upsert_view`](/docs/reference/mcp/write-tools/#upsert_view) writes a View. [`get_view`](/docs/reference/mcp/read-tools/#get_view) shows what it resolves to.
 
 ## Related
 
-- [Views reference](/docs/reference/model/views-yaml/)
-- [Dynamic Views](/docs/guides/model/dynamic-views/)
+- [Views](/docs/concepts/views/)
+- [Saved Views reference](/docs/reference/model/views-yaml/)
+- [Export diagrams](/docs/guides/review/export/), to draw the View as a picture

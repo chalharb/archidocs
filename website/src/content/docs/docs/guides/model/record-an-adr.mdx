@@ -5,50 +5,74 @@ sidebar:
   order: 7
 ---
 
-An ADR records one decision in the Project that owns it, linked to the Elements, Deployment Targets and Saved Views it affects. See [Decisions](/docs/concepts/decisions/).
+Record an [ADR](/docs/reference/glossary/#term-adr), one architecture decision in the Project that owns it, so the reasoning shows beside the Elements it affects.
 
 :::note[For agents]
 The agent topic for this task is [`propose-adr`](/docs/reference/agent-guide/propose-adr/).
 :::
 
+## Before you start
+
+- The Elements and Saved Views the decision affects are in the Model. See [Add a Service](/docs/guides/model/add-a-service/).
+- You know how ADRs are numbered and superseded. See [Decisions](/docs/concepts/decisions/).
+
 ## 1. Write it as proposed
 
-Add `<project>/adr/NNNN-slug.md`, numbered one past the Project's last ADR, with `status: proposed` and today's `date`. Link what it affects in `elements` and `views`:
+Add `<project>/adr/NNNN-slug.md`, numbered one past the Project's last ADR. Set `status: proposed` and today's `date`, and link what it affects in `elements` and `views`:
 
 ```markdown file="examples/big-bank/archidocs/payments/adr/0002-hold-payments-on-a-high-fraud-score.md"
 ```
 
-The body is yours, under one `#` title. A common shape is [MADR](https://adr.github.io/madr/)'s: Context and Problem Statement, Considered Options, Decision Outcome, Consequences. A Project can keep its own template in `adr/template.md`, and the Workspace one in `adr-template.md`, for `propose_adr` to fill in.
+The body is yours, under one `#` title. To start from a template, keep one in the Project's `adr/template.md`, or the Workspace's `adr-template.md`. Every frontmatter field is in the [ADR frontmatter reference](/docs/reference/model/adr-frontmatter/).
 
-## 2. Open a pull request
+## 2. Supersede an earlier decision
 
-Commit the ADR with any Model changes it brings, and open a pull request. Reviewers discuss the decision there, next to the change.
-
-## 3. Accept it
-
-Before merging, set `status: accepted` and the `date`. If the decision is turned down, set `rejected` and merge it anyway, so the reasoning is kept.
-
-## Superseding a decision
-
-To replace an earlier decision, list it in the new ADR's `supersedes` (`"0001"` in this Project, or `"project:0001"` in another), as Big Bank's Digital Banking Team did when it moved sign-in to the Identity Platform:
+Skip this step unless the ADR replaces one. List the earlier ADR in `supersedes`: `"0001"` in this Project, or `"project:0001"` in another:
 
 ```markdown file="examples/big-bank/archidocs/digital/adr/0002-delegate-sign-in-to-the-identity-platform.md"
 ```
 
-Leave the old ADR's `status` as it is: Archidocs derives that it is superseded once the new one is accepted. Writing it by hand is refused:
+Leave the old ADR's `status` as it is. Archidocs marks it superseded once the new one is accepted.
 
-```markdown file="website/samples/hand-written-superseded/archidocs/shop/adr/0001-use-rabbitmq.md" fails="hand-written-superseded"
-```
+## 3. Open a pull request
 
-That is [`hand-written-superseded`](/docs/reference/rules/hand-written-superseded/): put back `status: accepted`, and add `supersedes: ["0001"]` to the new ADR.
+Commit the ADR with any Model changes it brings, and open a pull request. Reviewers discuss the decision there.
 
-## Check it
+## 4. Accept it
+
+Before merging, set `status: accepted` and the `date`. If the decision is turned down, set `status: rejected` and merge it anyway, so the reasoning is kept.
+
+## Check it worked
 
 ```bash
 archidocs check
 ```
 
-The ADR then shows in the Element panel of each Element it links, and opens in the viewer's ADR reader.
+```text
+0 errors, 0 warnings
+```
+
+Run `archidocs dev` and select an Element the ADR links. The Element panel lists the ADR, and opens it in the ADR reader.
+
+## If it didn't
+
+Writing `superseded` by hand is refused:
+
+```markdown file="website/samples/hand-written-superseded/archidocs/shop/adr/0001-use-rabbitmq.md" fails="hand-written-superseded"
+```
+
+```text
+archidocs/shop/adr/0001-use-rabbitmq.md:2:9  error  hand-written-superseded  `superseded` is derived, never written: give this ADR the status it had, and list it in the new ADR's `supersedes`
+
+1 error, 0 warnings
+
+Rule docs:
+  hand-written-superseded  https://archidocs.dev/docs/reference/rules/hand-written-superseded/
+```
+
+That is [`hand-written-superseded`](/docs/reference/rules/hand-written-superseded/). Put back `status: accepted`, and add `supersedes: ["0001"]` to the new ADR.
+
+`check` reports [`duplicate-adr-number`](/docs/reference/rules/duplicate-adr-number/) when two ADRs in a Project share a number. Renumber yours one past the last.
 
 ## With an agent
 
@@ -56,4 +80,5 @@ The ADR then shows in the Element panel of each Element it links, and opens in t
 
 ## Related
 
+- [Decisions](/docs/concepts/decisions/)
 - [ADR frontmatter reference](/docs/reference/model/adr-frontmatter/)

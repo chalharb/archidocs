@@ -7,6 +7,6 @@ The [Kitchen sink](/docs/examples/kitchen-sink/)'s: a structural View that opens
 ```yaml file="examples/kitchen-sink/archidocs/sink/views.yaml"
 ```
 
-See [Save a View](/docs/guides/model/save-a-view/) and [Dynamic Views](/docs/guides/model/dynamic-views/).
+See [Save a View](/docs/guides/model/save-a-view/) and [Write a Dynamic View](/docs/guides/model/write-a-dynamic-view/).
 
 ## Fields

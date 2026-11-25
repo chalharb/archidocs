@@ -7,45 +7,85 @@ sidebar:
 
 import Diagram from "../../../../../components/Diagram.astro";
 
-`archidocs export` draws a View as a picture, styled like the viewer: SVG for docs and wikis, PNG for slides and chat. Every diagram on this site is drawn this way.
+Draw a View as a picture, styled like the viewer: SVG for docs and wikis, PNG for slides and chat.
 
-<Diagram view="kitchen-sink/sink:place-order" alt="The Kitchen sink's Customer places an order: a sequence chart with a call, a derived edge, an event through the broker and a reply." />
+## Before you start
 
-## One View
+- `archidocs check` passes on the Workspace. See the [Quick start](/docs/start/quick-start/).
+- You know the View's id: a Generated View such as `c2`, or a Saved View's Qualified id. See [Views](/docs/concepts/views/).
 
-Name the View: a Generated View (`c1`, `c2`, `c2/<system>`, `c3/<service>`, `deployment/<environment>`) or a Saved View by its Qualified id:
+## 1. Export one View
+
+Name the View:
 
 ```bash
 archidocs export c2
 ```
 
+```text
+Wrote c2.svg
+```
+
+Add `--format png` for a PNG, and `--out` to choose the file:
+
 ```bash
 archidocs export payments:make-a-payment --format png --out make-a-payment.png
 ```
 
-Without `--out`, the picture is written to `<view-id>.<format>` in the current folder.
+```text
+Wrote make-a-payment.png
+```
 
-## Every Saved View
+The viewer also downloads the View on screen as SVG or PNG. Use `export` when the picture should be rebuilt from the Model, in CI or a docs build.
+
+## 2. Export every Saved View
 
 ```bash
 archidocs export --all-saved --out views
 ```
 
-writes one picture per Saved View into `views/`, named by its id with `:` and `/` turned into `-`. This is what the Action's `images` input publishes. See [Saved View images](/docs/guides/publish/saved-view-images/).
+```text
+Wrote views/digital-mainframe-outage.svg
+Wrote views/digital-prod-deployment.svg
+Wrote views/digital-sign-in.svg
+Wrote views/digital-sign-in-path.svg
+Wrote views/payments-make-a-payment.svg
+```
 
-## Options
+Each file is named by the View id, with `:` and `/` turned into `-`. The Action's `images` input publishes the same files. See [Publish Saved View images](/docs/guides/publish/saved-view-images/).
 
-- `--theme dark` draws it in the viewer's dark Night shift palette, for dark slides and pages.
-- `--direction LR` lays a structural View out left to right; `TB`, `BT` and `RL` are the others. Dynamic Views ignore it.
-- `--label "Big Bank · v1.2.0"` replaces the line under the title, which otherwise names the Workspace, the short commit and the date.
+## 3. Style it
 
-Each is in the [`archidocs export` reference](/docs/reference/cli/export/).
+Add the flags the picture needs. For a dark slide, draw it in the viewer's dark palette, laid out left to right:
 
-## From the viewer
+```bash
+archidocs export c2 --theme dark --direction LR --out c2-dark.svg
+```
 
-The viewer downloads the View on screen as SVG or PNG too, with what is open and the Lens as they are. Use `export` when a picture should be rebuilt from the Model, in CI or a docs build.
+```text
+Wrote c2-dark.svg
+```
+
+Every flag, such as `--label` for the line under the title, is in the [`archidocs export` reference](/docs/reference/cli/export/).
+
+## Check it worked
+
+Open the file. It shows the View as the viewer draws it, such as this Dynamic View of the Kitchen sink:
+
+<Diagram view="kitchen-sink/sink:place-order" alt="The Kitchen sink's Customer places an order: a sequence chart with a call, a derived edge, an event through the broker and a reply." />
+
+## If it didn't
+
+`export` stops when the id names no View:
+
+```text
+archidocs: Unknown View "nope"; Views are c1, c2, c2/<system>, c3/<service with Components>, deployment/<environment> and Saved Views (project:view-id).
+```
+
+Check the id. A Saved View needs its Project, as `payments:make-a-payment`.
 
 ## Related
 
 - [Views](/docs/concepts/views/)
+- [`archidocs export` reference](/docs/reference/cli/export/)
 - [Save a View](/docs/guides/model/save-a-view/)

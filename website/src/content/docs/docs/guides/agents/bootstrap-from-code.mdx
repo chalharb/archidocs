@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-An existing system has its architecture in its code: Dockerfiles, Kubernetes manifests, Terraform, HTTP clients, connection strings and topic names. A coding agent connected over MCP can read it and declare a whole Project in one pass, with you approving what it found before it writes anything.
+Have a coding agent read an existing codebase and declare its whole Project in one pass, with you approving what it found before it writes anything.
 
 :::note[For agents]
 The agent topic for this task is [`bootstrap`](/docs/reference/agent-guide/bootstrap/).
@@ -14,41 +14,57 @@ The agent topic for this task is [`bootstrap`](/docs/reference/agent-guide/boots
 ## Before you start
 
 - The agent can read the code, and has the Archidocs MCP server over a writable Workspace checkout. See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/).
-- The Team that will own the Project and the Environments it runs in exist in `workspace.yaml`, or you are ready to add them.
+- The skill is installed in the code repo. See [Install the agent skill](/docs/guides/agents/install-skill/).
+- The Team that will own the Project, and the Environments it runs in, are in `workspace.yaml`. Or you are ready to add them.
 
 ## 1. Ask for it
 
-Start the agent in the code repo and name the Project:
+Start the agent in the code repo and name the Project and its Team:
 
 ```text
 Bootstrap the Archidocs Project "orders" for the Orders Team from this repo.
 ```
 
-The skill sends it to the `bootstrap` topic, which it follows from here.
+The skill sends the agent to the `bootstrap` topic, which it follows from here.
 
 ## 2. Review the inventory
 
-The agent reads the code and shows a table of what it found, each row with its evidence (file and line) and its confidence:
-
-- Services and datastores, from Dockerfiles, compose files, manifests and CI deploy steps;
-- Components, the parts of a Service people talk about by name;
-- outbound Relationships, from HTTP and gRPC clients, connection strings and broker topics;
-- Deployment Targets and Deployments, with their URLs per Environment.
+The agent reads Dockerfiles, manifests, Terraform, HTTP clients, connection strings and topic names. It shows a table of the Services, Components, Relationships, Deployment Targets and Deployments it found, each with its evidence (file and line) and its confidence.
 
 It asks only what code can't tell: how Services group into Systems, which are External, the business descriptions, and Owners other than the Project's. Edit the table until it is right, then approve it. That one approval covers the writes.
 
 ## 3. Let it write
 
-The agent creates the Project and writes in dependency order, through the MCP write tools: Systems, Services, Components, Deployment Targets, Deployments, then Relationships. Each write is checked as it is made, so the Model is valid at every step.
+The agent creates the Project and writes through the MCP write tools, in dependency order. Each write is checked as it is made, so the Model is valid at every step.
 
-Relationships to other Teams' Services are resolved by name, URL or host to their Qualified ids. When the provider isn't in the Model yet, the agent leaves the Relationship out and lists it as a gap for that Team, rather than declaring their Elements in your Project.
+A Relationship to another Team's Service is resolved by name, URL or host to its Qualified id. When the provider isn't in the Model yet, the agent leaves the Relationship out and lists it as a gap for that Team.
 
 ## 4. Review the pull request
 
-The agent finishes with `check` and a report of what it wrote and skipped, with evidence, ready for the pull request description. Commit, push, and review it like code: [`archidocs diff`](/docs/guides/review/diff/) and a [PR preview](/docs/guides/publish/pr-previews/) show the new Project on the diagrams.
+The agent finishes with `check` and a report of what it wrote and skipped, with evidence, ready for the pull request description. Commit, push, and review it like code.
 
-Evidence stays in the report and the pull request. The Model holds only the architecture.
+## Check it worked
 
-## Afterwards
+In the Workspace checkout:
 
-Bootstrap runs once. Later changes go through the everyday guides: [Add a Service](/docs/guides/model/add-a-service/), [Connect Services](/docs/guides/model/connect-services/) and [Add Deployments](/docs/guides/model/add-deployments/).
+```bash
+archidocs check
+```
+
+```text
+0 errors, 0 warnings
+```
+
+Then run `archidocs diff main` to list every Element and Relationship the agent added. A [PR preview](/docs/guides/publish/pr-previews/) shows them on the diagrams.
+
+## If it didn't
+
+If the agent writes YAML files by hand instead of calling the write tools, it isn't connected to the MCP server. Check the server is registered, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/) shows.
+
+If a write is refused, the agent gets the rule and the file and line. It fixes the input or asks you, then writes again.
+
+## Related
+
+- [Agents and MCP](/docs/concepts/agents-and-mcp/)
+- [The `bootstrap` topic](/docs/reference/agent-guide/bootstrap/)
+- [Add a Service](/docs/guides/model/add-a-service/), for changes after the bootstrap

@@ -1,6 +1,6 @@
 # 08: Guides rewritten to the how-to template
 
-Status: ready-for-agent
+Status: done
 Blocked by: 07
 Spec: [Docs rewrite proposal](../spec.md)
 

@@ -1,27 +1,35 @@
 ---
-title: PR previews
+title: Preview pull requests
 description: Show every pull request's architecture changes as a site and a comment.
 sidebar:
   order: 3
 ---
 
-A PR preview is a viewer site built from a pull request that opens on Compare, from the base branch to the pull request, so reviewers see what the change does to the architecture on the diagrams.
+Build a viewer site per pull request, opened on Compare from the base branch to the pull request, and comment the Changes on it.
 
-## Build one
+## Before you start
 
-`archidocs build --preview` builds a site that holds two Bundles: the pull request's head (the checkout as it is) and the base branch's latest Revision. It opens with Compare "base → PR" applied on the C2 Landscape.
+- The Workspace publishes from CI. See [Publish to GitHub Pages](/docs/guides/publish/github-pages/) or [Publish to GitLab Pages](/docs/guides/publish/gitlab-pages/).
+- You know what Compare shows. See [Revisions and history](/docs/concepts/revisions-and-history/).
 
-```sh
+## 1. Build the preview locally
+
+To see what CI will build, fetch the base branch, then build the preview from your pull request's branch:
+
+```bash
+git fetch origin main
 archidocs build --preview --base main --out preview
 ```
 
-- The base is read from `origin/<base>` in the checkout. Archidocs never fetches it, so fetch it first; with GitHub's `actions/checkout` and `fetch-depth: 0` it is already there.
-- Without `--base`, the base is the branch that `origin/HEAD` names, else `main`.
-- A base with no Workspace yet Compares against an empty Model, so everything in the pull request shows as added.
+```text
+Wrote the preview site to preview: Compare origin/main (83d7816) → PR (783c53a)
+```
 
-## On GitHub
+Archidocs reads the base from `origin/<base>` and never fetches it. The flags are in the [`archidocs build` reference](/docs/reference/cli/build/#--preview).
 
-Archidocs hosts nothing. With `preview: true`, the Action builds the preview and uploads it as the `archidocs-preview` workflow artifact:
+## 2. Build it on every pull request
+
+On GitHub, add a workflow that runs the Action with `preview: true`. It uploads the preview as the `archidocs-preview` workflow artifact:
 
 ```yaml title=".github/workflows/architecture-preview.yml"
 name: Architecture preview
@@ -43,19 +51,19 @@ jobs:
           preview: true
 ```
 
-GitHub Pages can't host a site per pull request. To browse previews, deploy the Action's `site` output somewhere that can:
+On GitLab, skip this step: the [template](/docs/guides/publish/gitlab-pages/)'s `archidocs-preview` job builds a preview on every merge request.
+
+## 3. Deploy it where reviewers can browse it
+
+Skip this step if reviewers download the artifact. GitHub Pages can't host a site per pull request, so deploy the Action's `site` output to a host that can:
 
 - **Netlify:** `netlify deploy --dir "$SITE" --alias "pr-$PR_NUMBER"`.
 - **Cloudflare Pages:** `wrangler pages deploy "$SITE" --project-name <project> --branch "pr-$PR_NUMBER"`.
-- **An S3-style bucket:** sync it under a prefix, such as `s3://<bucket>/pr/<n>/`. The site works under any base path.
+- **An S3-style bucket:** sync it under a prefix, such as `s3://<bucket>/pr/<n>/`.
 
-## On GitLab
+## 4. Comment the Changes
 
-The [GitLab template](/docs/guides/publish/gitlab-pages/)'s `archidocs-preview` job builds the preview on every merge request and keeps it as a merge request artifact, "Archidocs preview".
-
-## Comment the changes
-
-`archidocs diff --format markdown` writes the Changes between two points as Markdown. Archidocs posts no comments itself; post it as your CI user. On GitHub, add this job to the preview workflow:
+`archidocs diff --format markdown` writes the Changes as a table. Archidocs posts nothing itself, so post it as your CI user. On GitHub, add this job to the preview workflow:
 
 ```yaml title=".github/workflows/architecture-preview.yml"
   comment:
@@ -77,17 +85,48 @@ The [GitLab template](/docs/guides/publish/gitlab-pages/)'s `archidocs-preview` 
           BASE: ${{ github.base_ref }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          {
-            echo "### Architecture changes"
-            archidocs diff "origin/$BASE" HEAD --format markdown
-          } > architecture.md
+          archidocs diff "origin/$BASE" HEAD --format markdown > architecture.md
           # Edit the comment this job posted before, or post one.
           gh pr comment "$PR" --body-file architecture.md --edit-last --create-if-none
 ```
 
-Run it on `pull_request`, not `pull_request_target`, so a pull request from a fork never runs with a write token. On GitLab, post `architecture.md` with the Notes API and a project access token.
+:::caution
+Run it on `pull_request`, not `pull_request_target`, so a pull request from a fork never runs with a write token.
+:::
+
+On GitLab, post `architecture.md` with the Notes API and a project access token.
+
+## Check it worked
+
+Open a pull request that changes the Model. The comment lists each Change:
+
+```text
+### Model changes `origin/main (83d7816)` → `HEAD (783c53a)`
+
+2 added, 0 removed, 0 changed.
+
+| Change | Kind | Id | Fields |
+| --- | --- | --- | --- |
+| added | Element | `payments:payments-cache` |  |
+| added | Relationship | `payments:payments-service -> payments:payments-cache` |  |
+```
+
+Open the preview: it starts on the C2 Landscape with Compare "base → PR" on, and the added Elements marked.
+
+## If it didn't
+
+The build stops when the base branch isn't in the checkout:
+
+```text
+archidocs: origin/develop is not in this checkout; fetch the base branch before building (archidocs never fetches).
+```
+
+Check out with `fetch-depth: 0`, or run `git fetch origin <base>` first.
+
+If everything shows as added, the base branch has no Workspace yet. Compare then starts from an empty Model, which is expected for the first pull request.
 
 ## Related
 
 - [Review changes with diff](/docs/guides/review/diff/)
-- [`archidocs build`](/docs/reference/cli/build/#--preview)
+- [`archidocs build` reference](/docs/reference/cli/build/#--preview)
+- [GitHub Action reference](/docs/reference/ci/github-action/)

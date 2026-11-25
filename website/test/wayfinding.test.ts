@@ -25,6 +25,8 @@ const REFERENCE_SECTIONS = ["cli", "model", "mcp", "ci", "rules", "viewer-urls",
 const hrefs = (html: string): string[] => [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g)].map((m) => m[1]!);
 /** The page's own content: `<main>` without the footer's previous and next links. */
 const content = (html: string): string => html.slice(html.indexOf("<main"), html.indexOf("<footer"));
+/** A page Astro writes for a renamed page's old URL, which forwards to the new one and has no Starlight chrome. */
+const isRedirect = (html: string): boolean => /<meta http-equiv="refresh"/.test(html);
 const sidebar = (html: string): string => html.slice(html.indexOf('<nav class="sidebar'), html.indexOf("</nav>", html.indexOf('<nav class="sidebar')));
 
 /** The hand-written pages in a docs folder, as URLs, without the folder's index. */
@@ -93,6 +95,14 @@ describe("the group index pages", () => {
   });
 });
 
+describe("renamed pages", () => {
+  it("forward the old URL to the new one", () => {
+    const html = read("docs/guides/model/dynamic-views/index.html");
+    expect(isRedirect(html)).toBe(true);
+    expect(html).toContain('content="0;url=/docs/guides/model/write-a-dynamic-view/"');
+  });
+});
+
 describe("every docs page's footer", () => {
   const version = (JSON.parse(readFileSync(repoPath("package.json"), "utf8")) as { version: string }).version;
 
@@ -100,6 +110,7 @@ describe("every docs page's footer", () => {
     const pages = readdirSync(file("docs"), { recursive: true, encoding: "utf8" }).filter((path) => path.endsWith("index.html"));
     expect(pages.length).toBeGreaterThan(100);
     for (const page of pages) {
+      if (isRedirect(read(`docs/${page}`))) continue;
       const releases = [...read(`docs/${page}`).matchAll(/<p class="release"[^>]*>([^<]*)<\/p>/g)].map((m) => m[1]);
       expect(releases, page).toEqual([`Documents Archidocs v${version}, the latest release.`]);
     }

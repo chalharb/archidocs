@@ -1,11 +1,20 @@
 ---
-title: GitLab Pages
+title: Publish to GitLab Pages
 description: Publish the viewer from GitLab CI with the Archidocs template.
 sidebar:
   order: 2
 ---
 
-The Archidocs GitLab CI template checks the Workspace, builds the viewer and publishes it to GitLab Pages. Include it in `.gitlab-ci.yml`:
+Publish the viewer to GitLab Pages from GitLab CI, checked and rebuilt on every push to the default branch.
+
+## Before you start
+
+- The Workspace is in a GitLab project, and `archidocs check` passes. See the [Quick start](/docs/start/quick-start/).
+- GitLab Pages is available on the project.
+
+## 1. Include the template
+
+Add the Archidocs GitLab CI template to `.gitlab-ci.yml`:
 
 ```yaml title=".gitlab-ci.yml"
 include:
@@ -14,27 +23,24 @@ include:
       images: true
 ```
 
-It adds two jobs:
+It adds a `pages` job, for pushes to the default branch and tags, and an `archidocs-preview` job for merge requests. Every input, such as `working-directory`, `keep` and `version`, is in the [GitLab template reference](/docs/reference/ci/gitlab-template/#inputs).
 
-- **`pages`**, on pushes to the default branch and on tags: `archidocs check`, then `archidocs build` into `public/`, published to GitLab Pages. A failed check publishes nothing, so the last good site stays up.
-- **`archidocs-preview`**, on merge requests: a [PR preview](/docs/guides/publish/pr-previews/) kept as a merge request artifact, "Archidocs preview".
+## 2. Push
 
-## Inputs
+Commit `.gitlab-ci.yml` and push it to the default branch.
 
-- `working-directory`: where to run Archidocs.
-- `keep`: how many past Revisions the site keeps, or `all`.
-- `images`: also publish each Saved View as an SVG. See [Saved View images](/docs/guides/publish/saved-view-images/).
-- `preview`: the merge request job, on by default.
-- `version`: the archidocs npm version to run.
-- `image`: the Node.js image, `node:24` by default.
+## Check it worked
 
-Each is described in the [GitLab template reference](/docs/reference/ci/gitlab-template/#inputs).
+Open the pipeline in the project's **Build › Pipelines**. When the `pages` job succeeds, **Deploy › Pages** shows the site's URL. Open it: the viewer starts on the C2 Landscape.
 
-## History
+## If it didn't
 
-The template sets `GIT_DEPTH: 0`, because the site shows past Revisions and needs the full history. It keeps `.archidocs/cache/` in the GitLab cache with a key that names the Bundle `schemaVersion`, so a template for a new schema starts a new cache and rebuilds every kept Revision once.
+If `archidocs check` fails, the `pages` job stops and publishes nothing, so the last good site stays up. The job's log shows the file, the line and the rule, with a link to the [rule's page](/docs/reference/rules/). Fix it and push again.
+
+If the viewer shows only the latest Revision, the job's clone is shallow. The template sets `GIT_DEPTH: 0`; check that your `.gitlab-ci.yml` doesn't override it.
 
 ## Related
 
-- [Revisions and history](/docs/concepts/revisions-and-history/)
-- [Other hosts](/docs/guides/publish/other-hosts/)
+- [Revisions and history](/docs/concepts/revisions-and-history/), including the history cache the template keeps
+- [GitLab template reference](/docs/reference/ci/gitlab-template/)
+- [Preview pull requests](/docs/guides/publish/pr-previews/)
