@@ -44,3 +44,13 @@ describe("the build fails on a sample fence that is wrong", () => {
     expect(result.output).toContain("has no #region no-such-region");
   });
 });
+
+describe("the build fails on a screenshot that is wrong", () => {
+  it("fails on a screenshot id that isn't in the shot list", async () => {
+    const result = await buildSite({
+      pages: { "fixture/unknown-shot.mdx": page("Unknown shot", 'import Screenshot from "../../../../components/Screenshot.astro";\n\n<Screenshot id="no-such-shot" alt="Nothing" />') },
+    });
+    expect(result.ok, result.output).toBe(false);
+    expect(result.output).toContain('Unknown screenshot "no-such-shot"');
+  });
+});
