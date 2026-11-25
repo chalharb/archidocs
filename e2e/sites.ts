@@ -13,4 +13,6 @@ export const SITES = {
   preview: "/team/preview/",
   /** The landscape plus a Saved View and ADRs linked to Cart, Cart DB and Checkout. */
   decisions: "/team/decisions/",
+  /** The Big Bank demo, built by `examples/big-bank/build-demo.mjs` with its history: the docs' viewer URL reference links into it. */
+  bigBank: "/team/big-bank/",
 } as const;

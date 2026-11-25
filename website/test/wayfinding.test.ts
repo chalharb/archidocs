@@ -20,7 +20,7 @@ const GROUPS = [
 ];
 
 /** The Reference's sections, which are generated, so its index names them by hand. */
-const REFERENCE_SECTIONS = ["cli", "model", "mcp", "ci", "rules", "agent-guide", "glossary", "changelog"];
+const REFERENCE_SECTIONS = ["cli", "model", "mcp", "ci", "rules", "viewer-urls", "agent-guide", "glossary", "changelog"];
 
 const hrefs = (html: string): string[] => [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g)].map((m) => m[1]!);
 /** The page's own content: `<main>` without the footer's previous and next links. */
