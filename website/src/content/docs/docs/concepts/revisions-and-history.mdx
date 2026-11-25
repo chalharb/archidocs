@@ -2,18 +2,28 @@
 title: Revisions and history
 description: The Model at every commit, and what changed between two of them.
 sidebar:
-  order: 7
+  order: 8
 ---
 
-The Model lives in git, so its history is git's history. Archidocs tells that history in [Revisions](/docs/reference/glossary/#term-revision): commits on the Workspace's default branch that changed the Model. A commit that only touched code or the README isn't one.
+import Flow from "../../../../components/Flow.astro";
+
+A [Revision](/docs/reference/glossary/#term-revision) is a commit on the Workspace's default branch that changed the Model. The Model lives in git, so its history is git's history, and Archidocs tells it in Revisions.
+
+<Flow>
+1. **Commits** on the default branch. Those that changed the Model are Revisions.
+2. **`archidocs build`** writes a Bundle of the Model at each kept Revision.
+3. **History and Compare:**
+   - in the **viewer**
+   - over **MCP**
+</Flow>
 
 ## Bundles
 
-A [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle) is the combined Model of the Workspace at one commit, as one JSON file. The viewer and the MCP server read Bundles, never the YAML, and a Bundle can be rebuilt for any past commit from git.
+A [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle) is the combined Model at one commit, as one JSON file. The viewer and the MCP server read Bundles, never the YAML.
 
-`archidocs build` writes the latest Bundle, `workspace.bundle.json`, beside the viewer, and one Bundle per past Revision in `bundles/`, with an index in `bundles/index.json`. It keeps the latest 200 Revisions and every tagged one; `--keep` changes how many.
+`archidocs build` writes the latest Bundle beside the viewer, and one Bundle for each past Revision it keeps. It keeps the latest 200 Revisions and every tagged one. The [`archidocs build` reference](/docs/reference/cli/build/) says how to keep more or fewer.
 
-Building a past Bundle means checking that commit's Model, so Archidocs keeps the ones it has built in `.archidocs/cache/` at the repo root, which `archidocs init` adds to `.gitignore`. In CI, keep that folder in the CI cache: a lost cache only costs build time, because any Revision missing from it is rebuilt from git. `archidocs history build` fills the cache ahead of time. CI also needs the full git history: check out with `fetch-depth: 0`.
+Building a past Bundle means checking that commit's Model, which takes time. So Archidocs caches the Bundles it has built in `.archidocs/cache/` at the repo root, which `archidocs init` adds to `.gitignore`. In CI, keep that folder in the CI cache, and check out the full git history.
 
 ## Changes
 
@@ -23,18 +33,25 @@ A [Change](/docs/reference/glossary/#term-change) is one item of the Model added
 archidocs diff v1.0.0 main
 ```
 
-With one point, it compares against the working tree, so you can see what an edit changes before you commit. A date means the last default-branch commit at or before it. See [Review changes with diff](/docs/guides/review/diff/).
+With one point, it compares that point with your working tree, so you can see what an edit changes before you commit. A date means the last default-branch commit at or before it. See [Review changes with diff](/docs/guides/review/diff/).
 
-## History in the viewer
+## History in the viewer and MCP
 
-A published viewer shows the Model at any kept Revision: pick one from the history, and every View, Lens and panel shows the architecture as it was. **Compare** shows what changed between two Revisions on the diagram itself, with added, removed and changed Elements marked. The URL holds both points (`at` and `vs`), so a comparison can be shared as a link.
+A published viewer shows the Model at any kept Revision. Pick one from the history, and every View, Lens and panel shows the architecture as it was then.
 
-A PR preview built with `archidocs build --preview` opens on Compare, from the base branch to the pull request. See [PR previews](/docs/guides/publish/pr-previews/).
+**Compare** shows what changed between two Revisions on the diagram itself, with added, removed and changed Elements marked. The URL holds both points, so a comparison can be shared as a link. A pull request preview opens on Compare, from the base branch to the pull request. See [Preview pull requests](/docs/guides/publish/pr-previews/).
 
-Over MCP, [`list_history`](/docs/reference/mcp/read-tools/#list_history) lists the Revisions and [`get_changes`](/docs/reference/mcp/read-tools/#get_changes) lists the Changes between two.
+Over MCP, [`list_history`](/docs/reference/mcp/read-tools/#list_history) lists the Revisions. [`get_changes`](/docs/reference/mcp/read-tools/#get_changes) lists the Changes between two.
+
+## Why it works this way
+
+- **Git is the history.** The Model is already in git, so Archidocs keeps no database of its own to back up or keep in step. Any past commit can be read again.
+- **Bundles are build outputs, not archives.** A Bundle can always be rebuilt from git. Losing the cache costs only build time: any Revision missing from it is built again.
+- **Only the default branch.** A date picks the last commit on the default branch at or before it, following first parents. Commits on merged pull request branches aren't points of their own, so the history reads as the architecture people actually had.
+- **A kept number of Revisions.** One Bundle per Revision grows with every commit. Keeping the latest 200 and every tag bounds the published site, while tagged releases stay comparable for good.
 
 ## Related
 
-- [`archidocs build`](/docs/reference/cli/build/)
+- [Review changes with diff](/docs/guides/review/diff/)
 - [`archidocs history build`](/docs/reference/cli/history-build/)
 - [The Big Bank demo](https://big-bank.archidocs.dev), which has a history of four Revisions to browse and compare

@@ -1,56 +1,52 @@
 ---
 title: Relationships
-description: Dependencies, declared once under the consumer, and the edges derived from them.
+description: What depends on what, declared once under the consumer, and the edges derived from them.
 sidebar:
-  order: 3
+  order: 4
 ---
 
-A [Relationship](/docs/reference/glossary/#term-relationship) is a directed edge from a **consumer** to the **provider** it depends on. It is declared under the consumer, with `to` naming the provider:
+A [Relationship](/docs/reference/glossary/#term-relationship) is a directed edge from a consumer Element to the provider it depends on. It is declared once, under the consumer, with `to` naming the provider.
 
 ```yaml file="examples/big-bank/archidocs/payments/model.yaml" region="payments-service"
 ```
 
-The `description` reads as a sentence from consumer to provider: "Payments Service posts payments to the ledger in Mainframe". `technology` says how: a protocol, a driver, a format.
+The `description` reads as a sentence from consumer to provider: "Payments Service posts payments to the ledger in Mainframe". The `technology` says how: a protocol, a driver or a format. The [Elements and Relationships reference](/docs/reference/model/model-yaml/) lists every field.
 
 ## One direction
 
-A Relationship always points from what depends to what is depended on. That is what makes impact questions answerable: everything [upstream](/docs/reference/glossary/#term-upstream-downstream) of the mainframe depends on it, and an outage there reaches all of it.
+A Relationship always points from what depends to what is depended on. Everything [upstream](/docs/reference/glossary/#term-upstream-downstream) of an Element depends on it, directly or through others. Everything downstream is what it depends on.
 
-A Person is only ever a consumer: it uses Systems, and nothing depends on it. Pointing a Relationship at a Person is an error:
-
-```yaml file="website/samples/person-provider/archidocs/shop/model.yaml" fails="person-as-provider"
-```
-
-`archidocs check` reports [`person-as-provider`](/docs/reference/rules/person-as-provider/). Declare it the other way round, under the Person. An Element also can't depend on itself, its parent or its child ([`ancestor-descendant-relationship`](/docs/reference/rules/ancestor-descendant-relationship/)).
+A Person is only ever a consumer: it uses Systems, and nothing depends on it. `archidocs check` reports a Relationship to a Person as [`person-as-provider`](/docs/reference/rules/person-as-provider/). An Element also can't depend on itself, its parent or its child.
 
 ## Declared once, derived above
 
-Declare a Relationship at the most detailed level you know. If the code shows which Component calls which, declare it between those Components; if not, between the Services. Big Bank's API Application declares its dependencies on its Components:
+Declare a Relationship at the most detailed level you know. If you know which Component calls which, declare it between those Components. If not, declare it between the Services.
 
-```yaml file="examples/big-bank/archidocs/digital/model.yaml" region="api"
-```
-
-Edges between higher-level Elements are derived from these and never declared: because the Mainframe Banking System Facade calls `core:mainframe`, the C2 Landscape draws an edge from API Application to Mainframe, and the C1 Landscape one from Internet Banking System to Mainframe Banking System. Declaring the same edge again at a higher level would only let the two drift apart.
+Edges between higher-level Elements are derived from these, never declared. Because the Payments Service calls `core:mainframe`, the C2 landscape draws an edge from Payments Service to Mainframe. The C1 landscape draws one from the Payments System to the Mainframe Banking System.
 
 ## Between Projects
 
-Each Project declares only its own outbound Relationships, so each Team writes down what it depends on and nobody edits another Team's files to add an inbound one. Name a provider in another Project by its Qualified id, as `core:mainframe` above.
+Each Project declares only its own outbound Relationships. To name a provider in another Project, write its [Qualified id](/docs/reference/glossary/#term-qualified-id), the id with its Project in front, as `core:mainframe` above.
 
-## Async Relationships and brokers
+## Events and brokers
 
-A Relationship is `interaction: sync` by default: a call that waits for an answer. An event that goes through a message broker is `async`, and is declared by the [Subscriber](/docs/reference/glossary/#term-subscriber), pointing `to` the [Publisher](/docs/reference/glossary/#term-publisher) whose events it depends on, with `via` naming the broker Service and `channel` the topic or queue:
+A Relationship is a call by default: `interaction: sync`, which waits for an answer. An event that goes through a message broker is `async`. The [Subscriber](/docs/reference/glossary/#term-subscriber), the Element that receives the events, declares it. It points `to` the [Publisher](/docs/reference/glossary/#term-publisher) that sends them, with `via` naming the broker Service and `channel` the topic or queue.
 
-```yaml file="examples/big-bank/archidocs/payments/model.yaml" region="fraud-detection"
-```
-
-Fraud Detection depends on Payments Service's `payments.initiated` events, carried by the Platform Team's Kafka. Impact and path questions count the broker as a hop, and as a dependency of both sides. An async Relationship with no broker, such as a webhook, leaves out `via`.
+Impact and path questions count the broker as a hop, and as something both sides depend on. An async Relationship with no broker, such as a webhook, leaves out `via`.
 
 ## Several Relationships on one pair
 
-When a consumer depends on the same provider in two ways, such as reading over HTTPS and subscribing to events, give each Relationship an `id`, unique in the Project ([`duplicate-relationship-id`](/docs/reference/rules/duplicate-relationship-id/)), so Dynamic View Steps and agents can tell them apart.
+A consumer can depend on the same provider in two ways, such as reading over HTTPS and subscribing to events. Give each Relationship an `id` then, so Dynamic View Steps and agents can tell them apart.
+
+## Why it works this way
+
+- **Consumer to provider, so impact questions have an answer.** Every edge points the same way, so "what breaks if the mainframe is down?" is everything upstream of it. A model that mixed directions couldn't say.
+- **The consumer declares it, because the consumer knows.** A Team knows what its Service calls, but rarely everything that calls it. Declaring under the consumer means each Team writes down what it depends on, in its own Project. Nobody edits another Team's files to add a Relationship that points at them, and a Relationship belongs to its consumer's Owner.
+- **The Subscriber declares an event for the same reason.** The Subscriber depends on the events, so the edge points from it to the Publisher, like any other Relationship. A Publisher doesn't need to know who listens.
+- **Higher-level edges are derived, so they can't drift.** Each derived edge carries every Relationship beneath it. If the C2 edge were declared separately, it could say something the Components don't, and nothing would catch it.
 
 ## Related
 
 - [Connect Services](/docs/guides/model/connect-services/)
 - [Elements and Relationships reference](/docs/reference/model/model-yaml/)
-- [Dynamic Views](/docs/guides/model/dynamic-views/), which walk a scenario over Relationships
+- [Views](/docs/concepts/views/), including Dynamic Views, which walk a scenario over Relationships

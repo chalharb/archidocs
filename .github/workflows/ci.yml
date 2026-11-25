@@ -37,7 +37,8 @@ jobs:
 
   docs:
     # The docs site in website/: its build (links validated, every `archidocs` line parsed),
-    # and its tests, which include fixture builds that must fail.
+    # and its tests, which include fixture builds that must fail. The build takes its screenshots
+    # of the viewer in Chromium (website/src/lib/screenshots.ts).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +51,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm docs:build
       - run: pnpm docs:test
 

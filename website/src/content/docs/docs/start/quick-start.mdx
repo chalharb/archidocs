@@ -6,7 +6,7 @@ sidebar:
 ---
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
-import Diagram from "../../../../components/Diagram.astro";
+import Screenshot from "../../../../components/Screenshot.astro";
 
 In about five minutes you go from an empty repo to the viewer showing a small Model: a Shopper who uses an Online Shop made of two Services. Every file you need is on this page.
 
@@ -87,11 +87,11 @@ archidocs dev
 
 Open `http://localhost:4321`. The viewer starts on the C2 Landscape, which shows the Shopper and the Online Shop:
 
-<Diagram view="quick-start/c2" alt="The C2 Landscape of the quick start's Workspace: the Shopper, with an arrow to the Online Shop System." />
+<Screenshot id="quick-start-landscape" alt="The viewer on the C2 Landscape of the quick start's Workspace: the Shopper, with an arrow to the Online Shop System." />
 
 In the viewer, the Online Shop box has an arrow button. Select it to open the System's own View, with the two Services inside it:
 
-<Diagram view="quick-start/c2/shop:online-shop" alt="The Online Shop System opened: the Shopper uses Web, and Web places orders through API. Both Services sit inside Online Shop." />
+<Screenshot id="quick-start-online-shop" alt="The viewer with the Online Shop System opened: the Shopper uses Web, and Web places orders through API. Both Services sit inside Online Shop." />
 
 That is the Model you wrote, drawn. The viewer reloads as you edit the files; stop it with Ctrl+C.
 

@@ -2,12 +2,14 @@
  * The Markdown copy of each page (`<page>.md`, and "Copy as Markdown"), for
  * starlight-llm-actions: the page's source with its sample fences filled from
  * their files, its Diagrams as images (with a link to the live viewer when
- * the example has one), each tab under its label, its link cards and page
+ * the example has one), its Screenshots as images (with a link to the same
+ * screen on the live demo when there is one), each tab under its label, its link cards and page
  * lists as Markdown lists, and the MDX imports and layout-only component tags
  * taken out.
  */
 import type { MarkdownRenderer } from "starlight-llm-actions";
 import { diagramFile, findDiagramSource, isDemo, liveViewerUrl } from "./lib/examples.ts";
+import { findShot, liveShotUrl, screenshotUrl } from "./lib/screenshots.ts";
 import { listPages, pageListMarkdown, type ListableEntry } from "./lib/page-list.ts";
 import { fillSamples } from "./lib/samples.ts";
 
@@ -22,6 +24,14 @@ function diagramMarkdown(tag: string): string {
   const viewId = view.slice(view.indexOf("/") + 1);
   const image = `![${alt}](/diagrams/${example.slug}/light/${diagramFile(viewId)}.svg)`;
   return isDemo(example) ? `${image}\n\n[Open in the live viewer](${liveViewerUrl(example, viewId)})` : image;
+}
+
+/** `<Screenshot id="quick-start-landscape" alt="…" />` as a Markdown image of the light picture and, for a demo, a link to the same screen. */
+function screenshotMarkdown(tag: string): string {
+  const shot = findShot(attribute(tag, "id") ?? "");
+  const image = `![${attribute(tag, "alt") ?? ""}](${screenshotUrl("light", shot.id)})`;
+  const live = liveShotUrl(shot);
+  return live ? `${image}\n\n[Open in the live viewer](${live})` : image;
 }
 
 /** `<LinkCard title="…" href="…" description="…" />` as a list item, so a card grid reads as a list of links. */
@@ -40,6 +50,7 @@ export function pageMarkdown(body: string, entries: readonly ListableEntry[] = [
     fillSamples(body)
       .replace(/^import\s.*?from\s+["'][^"']+["'];?\n/gm, "")
       .replace(/<Diagram\b[^>]*\/>/g, diagramMarkdown)
+      .replace(/<Screenshot\b[^>]*\/>/g, screenshotMarkdown)
       .replace(/^[ \t]*<LinkCard\b[^>]*\/>/gm, linkCardMarkdown)
       .replace(/<PageList\b[^>]*\/>/g, (tag) => pageListMarkdown(listPages(entries, attribute(tag, "directory") ?? "")))
       // A tab reads as its label in bold, then what it holds: `<TabItem label="pnpm">` → `**pnpm**`.
