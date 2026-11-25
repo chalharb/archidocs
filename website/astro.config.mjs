@@ -42,16 +42,24 @@ export default defineConfig({
       head: shareHead(new URL(site)).map(({ tag, attrs }) => ({ tag, attrs: { ...attrs } })),
       customCss: ["./src/styles/brand.css", "./src/styles/diagram.css"],
       pagefind: { ranking: PAGEFIND_RANKING },
+      // The date of each hand-written page's last commit, so the workflows that deploy the site check out
+      // the full git history (`fetch-depth: 0`). A generated page has no file, so it shows no date.
+      lastUpdated: true,
+      // Starlight's page footer, with the release the site documents added.
+      components: { Footer: "./src/components/Footer.astro" },
+      // Each group opens with its index page: `index.mdx` in the group's folder, with `sidebar.order: 0`.
+      // Guides and Reference are made of sub-groups, so their index pages are named here.
       sidebar: [
         group("Start here", "docs/start"),
         group("Concepts", "docs/concepts"),
         {
           label: "Guides",
-          items: [group("Model", "docs/guides/model"), group("Publish", "docs/guides/publish"), group("Agents", "docs/guides/agents"), group("Review", "docs/guides/review")],
+          items: ["docs/guides", group("Model", "docs/guides/model"), group("Publish", "docs/guides/publish"), group("Agents", "docs/guides/agents"), group("Review", "docs/guides/review")],
         },
         {
           label: "Reference",
           items: [
+            "docs/reference",
             group("CLI", "docs/reference/cli", { collapsed: true }),
             group("Model YAML", "docs/reference/model", { collapsed: true }),
             group("MCP tools", "docs/reference/mcp"),
@@ -75,21 +83,23 @@ export default defineConfig({
             "If you can run Archidocs, prefer its own guide: `archidocs guide` (or the MCP `get_authoring_guide` tool) serves the authoring guide that matches the installed version. This site documents the latest release only.",
             "Every page is also available as Markdown at its URL with `.md` appended, such as https://archidocs.dev/docs/reference/cli/check.md.",
           ].join("\n\n"),
-          // One set per part of the docs, so llms.txt indexes them all.
+          // One set per part of the docs, so llms.txt indexes them all. A group's index page has its folder's
+          // own id (`docs/start`), which `docs/start/**` doesn't match, so it is named beside the folder.
           customSets: [
-            { label: "Start here", paths: ["docs", "docs/start/**"], description: "what Archidocs is, a quick start and a tutorial" },
-            { label: "Concepts", paths: ["docs/concepts/**"], description: "the Model and how its parts fit together" },
-            { label: "Guides", paths: ["docs/guides/**"], description: "how to model, publish, connect agents and review changes" },
+            { label: "Start here", paths: ["docs", "docs/start", "docs/start/**"], description: "what Archidocs is, a quick start and a tutorial" },
+            { label: "Concepts", paths: ["docs/concepts", "docs/concepts/**"], description: "the Model and how its parts fit together" },
+            { label: "Guides", paths: ["docs/guides", "docs/guides/**"], description: "how to model, publish, connect agents and review changes" },
             { label: "CLI reference", paths: ["docs/reference/cli/**", "docs/reference/cli"], description: "every archidocs command and flag" },
             { label: "Model YAML reference", paths: ["docs/reference/model/**"], description: "every field of every Workspace and Project file" },
             { label: "MCP tools", paths: ["docs/reference/mcp/**"], description: "every MCP tool with its input and output" },
             { label: "Check rules", paths: ["docs/reference/rules/**", "docs/reference/rules"], description: "every check rule with a failing example and the fix" },
             { label: "Authoring guide for agents", paths: ["docs/reference/agent-guide/**", "docs/reference/agent-guide"], description: "the skill and task topics agents follow to edit the Model" },
+            { label: "Examples", paths: ["docs/examples", "docs/examples/**"], description: "the Big Bank and Kitchen sink example Workspaces" },
           ],
           // llms-small.txt leaves out the Examples and the Changelog.
-          exclude: ["docs/examples/**", "docs/reference/changelog"],
+          exclude: ["docs/examples", "docs/examples/**", "docs/reference/changelog"],
         }),
-        // The .md copies: sample fences filled in, Diagrams as images (src/render-markdown.ts).
+        // The .md copies: sample fences filled in, Diagrams as images, cards and page lists as lists (src/render-markdown.ts).
         starlightLlmActions({ renderMarkdown: { module: "./src/render-markdown.ts" } }),
       ],
     }),

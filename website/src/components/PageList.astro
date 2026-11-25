@@ -1,0 +1,30 @@
+---
+/**
+ * The pages in one docs folder as a list of links, each with its
+ * description: what a group's index page shows. Read from the docs
+ * collection (`src/lib/page-list.ts`), so the list follows the sidebar.
+ *
+ *   <PageList directory="docs/concepts" />
+ */
+import { getCollection } from "astro:content";
+import { listPages } from "../lib/page-list.ts";
+
+interface Props {
+  /** The folder's docs id, such as `docs/guides/model`. */
+  directory: string;
+}
+
+const pages = listPages(await getCollection("docs"), Astro.props.directory);
+// A description is plain text that may hold code spans, as in "from `archidocs init` to …".
+const spans = (text: string) => text.split("`").map((part, i) => ({ part, code: i % 2 === 1 }));
+---
+
+<ul>
+  {
+    pages.map((page) => (
+      <li>
+        <a href={page.href}>{page.title}</a>: {spans(page.description).map(({ part, code }) => (code ? <code>{part}</code> : part))}
+      </li>
+    ))
+  }
+</ul>
