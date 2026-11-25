@@ -7,7 +7,7 @@
  * `/screenshots/<theme>/<id>.png`, and never committed.
  *
  * Capturing is the slow part, so each picture is cached on a hash of the
- * built site (the viewer and the example's Bundles), the shot and the
+ * built site (the viewer and the example's Workspace Bundles), the shot and the
  * browser: an unchanged viewer and example aren't captured again.
  */
 import { execFile } from "node:child_process";
@@ -60,10 +60,12 @@ export function liveShotUrl(shot: Shot): string | undefined {
 
 const run = promisify(execFile);
 
-/** `dist/viewer/`, which `archidocs build` copies into each site, built first if it's missing. */
-async function ensureViewer(): Promise<void> {
-  if (existsSync(repoPath("dist/viewer/index.html"))) return;
-  await run("pnpm", ["build:viewer"], { cwd: repoPath(".") });
+let viewer: Promise<unknown> | undefined;
+
+/** `dist/viewer/`, which `archidocs build` copies into each site, built first if it's missing: once, however many examples ask. */
+function ensureViewer(): Promise<unknown> {
+  viewer ??= existsSync(repoPath("dist/viewer/index.html")) ? Promise.resolve() : run("pnpm", ["build:viewer"], { cwd: repoPath(".") });
+  return viewer;
 }
 
 /**
@@ -78,14 +80,19 @@ export async function buildExampleSite(example: Shot["example"], { without = [] 
   const cli = repoPath("src/cli/main.ts");
   const tmp = await mkdtemp(join(tmpdir(), `archidocs-shots-${example}-`));
   const site = join(tmp, "site");
-  if (example === "big-bank" && without.length === 0) {
-    await run(process.execPath, [repoPath("examples/big-bank/build-demo.mjs"), site]);
-  } else {
-    const copy = join(tmp, "workspace");
-    cpSync(repoPath(`examples/${example}`), copy, { recursive: true, filter: (path) => !/[/\\]site$/.test(path) });
-    for (const path of without) await rm(join(copy, path), { force: true, recursive: true });
-    await run(process.execPath, [cli, "build", "--out", site], { cwd: copy });
-    await rm(copy, { recursive: true, force: true });
+  try {
+    if (example === "big-bank" && without.length === 0) {
+      await run(process.execPath, [repoPath("examples/big-bank/build-demo.mjs"), site]);
+    } else {
+      const copy = join(tmp, "workspace");
+      cpSync(repoPath(`examples/${example}`), copy, { recursive: true, filter: (path) => !/[/\\]site$/.test(path) });
+      for (const path of without) await rm(join(copy, path), { force: true, recursive: true });
+      await run(process.execPath, [cli, "build", "--out", site], { cwd: copy });
+      await rm(copy, { recursive: true, force: true });
+    }
+  } catch (error) {
+    await rm(tmp, { recursive: true, force: true });
+    throw error;
   }
   // site.json names the Workspace for the viewer's downloads. The demo build names it after its temp folder,
   // so it is named here instead: the site, and so its hash, is then the same on every build.
@@ -229,13 +236,14 @@ export async function captureShots(shots: readonly Shot[], { cacheDir = DEFAULT_
             }
           }
         } finally {
-          await (await server)?.close();
+          // A server or browser that failed to start has already failed the capture; closing it can't add to that.
+          await (await server?.catch(() => undefined))?.close();
           await rm(join(dir, ".."), { recursive: true, force: true });
         }
       }),
     );
   } finally {
-    await (await browser)?.close();
+    await (await browser?.catch(() => undefined))?.close();
   }
   return { images, captured };
 }
