@@ -1,0 +1,58 @@
+---
+title: Share or save what's on screen
+description: Copy a link to the screen, download it as a picture, or save it as a View.
+sidebar:
+  order: 5
+---
+
+import Screenshot from "../../../../../components/Screenshot.astro";
+
+Send someone the exact screen you see, as a link, a picture or a [Saved View](/docs/reference/glossary/#term-saved-view) the Project keeps.
+
+:::note[For agents]
+The agent topic for saving a View is [`saved-view`](/docs/reference/agent-guide/saved-view/).
+:::
+
+## Before you start
+
+- The screen answers your question. See [Find an Element](/docs/guides/viewer/find-an-element/) and [Trace impact and paths](/docs/guides/viewer/trace-impact-and-paths/).
+
+## 1. Copy the link
+
+Select **Copy link** in the location bar. The link holds everything on screen: the [View](/docs/reference/glossary/#term-view), the open boxes, the selection, the [Lens](/docs/reference/glossary/#term-lens), the direction, the [Revision](/docs/reference/glossary/#term-revision) and the open ADR. Anyone who opens it sees the same screen.
+
+## 2. Pick the nodes you want
+
+To share part of a View, hold Shift and select each node. A chip counts the picks:
+
+<Screenshot id="viewer-picks" alt="The Payments System's View with the Payments Service and Fraud Detection picked, and a chip that says 2 picked." />
+
+Picks are in the link too. Clear them with the **×** on the chip.
+
+## 3. Download a picture
+
+Open **Export** in the location bar. Choose **View as SVG** or **View as PNG**, or once you have picks, **Picks as SVG** or **Picks as PNG**. The picture is styled as it is on screen.
+
+## 4. Save it as a View
+
+Select **Save as View**. Choose the [Project](/docs/reference/glossary/#term-project), the Team's folder of YAML, an id and a title. The dialog gives the screen as Saved View YAML, and as the MCP call that writes it.
+
+Copy the YAML into the Project's `views.yaml` and open a pull request. The viewer doesn't store it anywhere. See [Save a View](/docs/guides/model/save-a-view/) for the rest.
+
+## Check it worked
+
+Open the copied link in a private window. It opens the same screen. On the demo, [these two picks ↗](https://big-bank.archidocs.dev/#/view/c2/payments:payments?picks=payments:payments-service,payments:fraud-detection) open as shown above.
+
+## If it didn't
+
+**Save as View** can't save picks on a [Deployment View](/docs/reference/glossary/#term-deployment-view), and the dialog says so. Clear the picks, or save from a [Structural View](/docs/reference/glossary/#term-structural-view).
+
+## With an agent
+
+Paste the **Save as View** call to an agent. [`upsert_view`](/docs/reference/mcp/upsert_view/) writes the View into the Project's YAML. [`get_view`](/docs/reference/mcp/get_view/) shows what a View resolves to.
+
+## Related
+
+- [Views](/docs/concepts/views/)
+- [Viewer URLs](/docs/reference/viewer-urls/)
+- [Export diagrams](/docs/guides/review/export/), for pictures in CI

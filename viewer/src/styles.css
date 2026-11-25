@@ -202,11 +202,13 @@ pre {
 
 .arc-main {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   /* One column no wider than the screen: a wide location bar wraps instead of widening the canvas,
      so fitting centres the drawing on the visible canvas. */
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
+  /* No taller than the screen: a long Changes list scrolls in place instead of pushing the canvas off it. */
+  min-height: 0;
   position: relative;
 }
 
@@ -2241,7 +2243,7 @@ select.arc-tool option {
 
 /* History: the `at` banner, Compare marks, the Changes list and the Revision timeline */
 .arc-main.arc-has-time {
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .arc-stage {

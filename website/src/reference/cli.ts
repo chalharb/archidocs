@@ -75,7 +75,7 @@ export const SEE_ALSO: Readonly<Record<CommandName, readonly SeeAlso[]>> = {
   dev: [
     { href: "/docs/start/quick-start/", why: "opens a new Workspace in the viewer with it" },
     { href: "/docs/guides/model/save-a-view/", why: "uses the viewer it serves to write a Saved View" },
-    { href: "/docs/concepts/viewer/", why: "what the viewer shows" },
+    { href: "/docs/guides/viewer/", why: "what the viewer shows" },
   ],
   export: [
     { href: "/docs/guides/review/export/", why: "exports one View or every Saved View, with each option shown" },

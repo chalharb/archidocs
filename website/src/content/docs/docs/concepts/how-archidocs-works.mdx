@@ -40,7 +40,7 @@ Archidocs turns YAML files in one git repo into one [Model](/docs/reference/glos
 
 - **View.** A diagram defined by a query over the Model. Archidocs generates one for every scope, and Teams save their own. See [Views](/docs/concepts/views/).
 - **Revision.** A commit that changed the Model. The viewer and the MCP server can show the Model at any Revision and compare two. See [Revisions and history](/docs/concepts/revisions-and-history/).
-- **The viewer.** A static site that shows the Model as diagrams, where every screen is a link. See [The viewer](/docs/concepts/viewer/).
+- **The viewer.** A static site that shows the Model as diagrams, where every screen is a link. See [Use the viewer](/docs/guides/viewer/).
 - **The MCP server.** Answers the viewer's questions for agents, and lets them edit the YAML safely. See [Agents and MCP](/docs/concepts/agents-and-mcp/).
 
 ## One Model, read the same way everywhere
@@ -49,15 +49,27 @@ Archidocs turns YAML files in one git repo into one [Model](/docs/reference/glos
 
 `archidocs build` writes that Model as a [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), a single JSON file, for the latest commit and for past Revisions. The viewer and the MCP server read Bundles, never the YAML, so they always agree.
 
+## The viewer: read-only, and every screen is a link
+
+`archidocs dev` serves the viewer on your machine as you edit. `archidocs build` writes it as a static site, with the Model at every kept Revision.
+
+The viewer only reads the Model. People explore it there: they search, open Systems in place, and turn on a [Lens](/docs/reference/glossary/#term-lens) for impact, a path or a Team. To change the Model, they change the YAML.
+
+Everything on screen is held in the URL: the View, what is open, the selection, the Lens and the Revision. Anyone who opens the link sees the same screen. **Save as View** turns a screen into Saved View YAML, for a pull request.
+
 ## Why it works this way
 
 - **Diagrams drawn by hand go stale.** Every diagram here is a query over the validated Model, so changing the YAML redraws every diagram it touches.
 - **No single Team knows the whole architecture.** Each Team writes down only its own slice, in its own folder. One Workspace combines the slices, so nobody has to ask around for the full picture.
 - **Git is already where changes are reviewed.** The Model lives in the repo, so a change to the architecture gets the same pull request, review and history as a change to code.
+- **Most people arrive from a link.** Someone shares a URL in a pull request, a chat thread or an incident channel. So the viewer opens on the answer the link points at, and every screen can be shared the same way.
+- **A static site, with nothing to sign in to.** It needs no server or database, so CI can publish it to any static host. The host's own access control decides who can open it.
+- **Read-only, so review stays in git.** A change made in the viewer would skip review and could disagree with the files. That is also why Save as View writes YAML instead of saving on a server.
 - **People and agents ask the same questions.** Both read the same Model, so the viewer and an agent can't give different answers.
 
 ## Related
 
 - [Quick start](/docs/start/quick-start/)
 - [Model your first system](/docs/start/tutorial/)
+- [Use the viewer](/docs/guides/viewer/)
 - [Glossary](/docs/reference/glossary/)

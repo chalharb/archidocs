@@ -14,7 +14,7 @@ const read = (path: string) => readFileSync(file(path), "utf8");
 const GROUPS = [
   { label: "Start here", folder: "start", lists: ["start"] },
   { label: "Concepts", folder: "concepts", lists: ["concepts"] },
-  { label: "Guides", folder: "guides", lists: ["guides/model", "guides/publish", "guides/agents", "guides/review"] },
+  { label: "Guides", folder: "guides", lists: ["guides/viewer", "guides/model", "guides/publish", "guides/agents", "guides/review"] },
   { label: "Reference", folder: "reference", lists: [] },
   { label: "Examples", folder: "examples", lists: ["examples"] },
 ];
