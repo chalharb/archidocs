@@ -46,6 +46,8 @@ Every page is one of four types, and does only that type's job. The type decides
 
 A few pages are none of the four: the docs home, a group's index page (`index.mdx`), the other pages in `start/`, the Examples and the Help pages. They follow the style rules and no template.
 
+To add a Help page, put its `.mdx` file in `help/` with the next `sidebar.order`. The sidebar group and the Help index list it with no other change.
+
 ## Templates
 
 Each template lists its sections in order. Write the headings exactly as shown: the test matches some of them, and readers learn where to look. Leave a section out only where the template says you can. Never reorder them or add a section of another page type.
@@ -328,4 +330,5 @@ So a list only gets shorter. When you rewrite a page to its template, take it of
 - **Command lines:** every `archidocs …` line in a shell block or in inline code is parsed against the CLI's own definitions. An unknown command or flag fails the build.
 - **Samples:** Model YAML is never typed into a page. Include it from a file with an empty fence, `file="examples/…"` and an optional `region="…"`. `website/test/samples.test.ts` fails on Model YAML typed inline.
 - **Screenshots:** show the viewer with `<Screenshot id="…" alt="…" />`, where the id is a shot in `website/src/screenshots.ts`. A shot names an example (`big-bank`, `kitchen-sink` or `quick-start`), a viewer URL such as `#/view/c2` and a window size. The build opens the URL on the example's site in Chromium, in light and dark, and fails on an unknown id or on a URL that shows the viewer's error or empty state. A shot of a demo links to the same URL on the live demo. Pictures are cached in `website/node_modules/.cache/`, keyed on the built site and the shot, so an unchanged viewer isn't captured again. The build needs Chromium once: `pnpm exec playwright install chromium`.
+- **Troubleshooting quotes:** `website/test/help.test.ts` reads every line of a code block on `help/troubleshooting.mdx` that starts with `archidocs: `. The rest of the line must be a message in `src/`, word for word, where a `${…}` placeholder stands for any text. Reword an error and the test fails until the page quotes the new wording. The test also fails on an entry that links no guide or reference page.
 - **Samples that are wrong on purpose:** each lives in `website/samples/` and is shown with `fails="<rule-id>"`. The test checks that it fails `archidocs check` with exactly that rule, and that its page links the rule's page.

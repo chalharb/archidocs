@@ -10,13 +10,14 @@ let site: BuildResult;
 const file = (path: string) => join(site.outDir, path);
 const read = (path: string) => readFileSync(file(path), "utf8");
 
-/** The five sidebar groups, each with its folder under `/docs/` and the folders whose pages its index lists. */
+/** The six sidebar groups, each with its folder under `/docs/` and the folders whose pages its index lists. */
 const GROUPS = [
   { label: "Start here", folder: "start", lists: ["start"] },
   { label: "Concepts", folder: "concepts", lists: ["concepts"] },
   { label: "Guides", folder: "guides", lists: ["guides/model", "guides/publish", "guides/agents", "guides/review"] },
   { label: "Reference", folder: "reference", lists: [] },
   { label: "Examples", folder: "examples", lists: ["examples"] },
+  { label: "Help", folder: "help", lists: ["help"] },
 ];
 
 /** The Reference's sections, which are generated, so its index names them by hand. */
@@ -125,7 +126,7 @@ describe("every docs page's footer", () => {
 describe("llms.txt", () => {
   it("indexes every group, and each group's set holds its index page", () => {
     const index = read("llms.txt");
-    const sets = { "Start here": "start-here", Concepts: "concepts", Guides: "guides", Examples: "examples" };
+    const sets = { "Start here": "start-here", Concepts: "concepts", Guides: "guides", Examples: "examples", Help: "help" };
     for (const [label, slug] of Object.entries(sets)) {
       expect(index).toContain(`- [${label}](https://archidocs.dev/_llms-txt/${slug}.txt)`);
       expect(read(`_llms-txt/${slug}.txt`), label).toContain(`\n# ${label}\n`);
