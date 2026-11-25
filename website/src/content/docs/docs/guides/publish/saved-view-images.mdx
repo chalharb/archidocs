@@ -1,13 +1,18 @@
 ---
-title: Saved View images
+title: Publish Saved View images
 description: Publish every Saved View as an SVG at a stable URL, for wikis and READMEs.
 sidebar:
   order: 4
 ---
 
-With images on, the published site also holds a picture of every Saved View, at a URL that never changes. Embed it in a wiki page or a README and it always shows the latest Model.
+Publish a picture of every [Saved View](/docs/reference/glossary/#term-saved-view) with the site, at a URL that never changes, so a wiki page or README always shows the latest Model.
 
-## Turn them on
+## Before you start
+
+- The site publishes from CI. See [Publish to GitHub Pages](/docs/guides/publish/github-pages/) or [Publish to GitLab Pages](/docs/guides/publish/gitlab-pages/).
+- The Workspace has at least one Saved View. See [Save a View](/docs/guides/model/save-a-view/).
+
+## 1. Turn images on
 
 On GitHub, set the Action's `images` input:
 
@@ -20,26 +25,38 @@ On GitHub, set the Action's `images` input:
 
 On GitLab, set the [template](/docs/guides/publish/gitlab-pages/)'s `images` input to `true`.
 
-Each Saved View is rendered to `views/<view-id>.svg` in the site, with any `:` or `/` in its id turned into `-`: `shop:checkout-impact` is `views/shop-checkout-impact.svg`. Pictures are styled like the viewer and drawn for the latest Revision only, never per Revision.
+## 2. Embed one
 
-## Embed one
+Each Saved View is drawn to `views/<view-id>.svg` in the site, with any `:` or `/` in its id turned into `-`. Embed it, and link it to the same View in the viewer so readers can explore it:
 
-```markdown
-![Checkout impact](https://<owner>.github.io/<repo>/views/shop-checkout-impact.svg)
+```markdown title="README.md"
+[![Checkout impact](https://<owner>.github.io/<repo>/views/shop-checkout-impact.svg)](https://<owner>.github.io/<repo>/#/view/shop:checkout-impact)
 ```
 
-Link the picture to the same View in the viewer, `https://<owner>.github.io/<repo>/#/view/shop:checkout-impact`, so readers can explore it.
+## Check it worked
 
-## Without CI
+After the next deploy, open a View's picture, such as `https://<owner>.github.io/<repo>/views/shop-checkout-impact.svg`. The picture is styled like the viewer and drawn for the latest Revision.
 
-The Action runs `archidocs export --all-saved --format svg` into the site. Run it yourself for pictures anywhere else, such as a docs folder or a slide deck:
+To see which files CI writes, run the same command locally:
 
 ```bash
 archidocs export --all-saved --out views
 ```
 
-See [Export diagrams](/docs/guides/review/export/) for themes, PNG and one View at a time.
+```text
+Wrote views/digital-mainframe-outage.svg
+Wrote views/digital-prod-deployment.svg
+Wrote views/digital-sign-in.svg
+Wrote views/digital-sign-in-path.svg
+Wrote views/payments-make-a-payment.svg
+```
+
+## If it didn't
+
+If the picture's URL is not found, check the file name: `:` and `/` in the View id become `-`. A Generated View, such as `c2`, gets no picture; [save it as a View](/docs/guides/model/save-a-view/) first.
 
 ## Related
 
+- [Export diagrams](/docs/guides/review/export/), for pictures anywhere else, in PNG, or one View at a time
+- [GitHub Action reference](/docs/reference/ci/github-action/)
 - [Save a View](/docs/guides/model/save-a-view/)

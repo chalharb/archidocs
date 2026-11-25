@@ -5,11 +5,15 @@ sidebar:
   order: 1
 ---
 
-A YAML diff shows which lines changed. `archidocs diff` shows what changed in the architecture: which Elements, Relationships, Deployments, Views and ADRs were added, removed or changed, and which fields.
+List what a change does to the architecture: which Elements, Relationships, Deployments, Views and ADRs were added, removed or changed, and which fields.
 
-## Your working tree
+## Before you start
 
-With one point, `diff` compares it with your uncommitted working tree, so you can see what an edit does before you commit:
+- The Workspace is in a git repo with at least one commit. See the [Quick start](/docs/start/quick-start/).
+
+## 1. Diff your working tree
+
+Give one point, and `diff` compares it with your uncommitted working tree. Run it before you commit:
 
 ```bash
 archidocs diff HEAD
@@ -32,28 +36,68 @@ Changes from HEAD (b70fffd) to working tree: 5 added, 0 removed, 2 changed
 
 Each line is one [Change](/docs/reference/glossary/#term-change): `+` added, `-` removed, `~` changed, with the fields that changed.
 
-## Two points in history
+## 2. Diff two points in history
 
-Give two git refs to compare them, such as a pull request's base and head, or two release tags:
+Give two git refs to compare them, such as a pull request's base and head:
 
 ```bash
 archidocs diff origin/main HEAD
 ```
 
-A point can also be a date, which means the last commit on the default branch at or before it:
+```text
+Changes from origin/main (83d7816) to HEAD (783c53a): 2 added, 0 removed, 0 changed
+
++ Element payments:payments-cache
++ Relationship payments:payments-service -> payments:payments-cache
+```
+
+A point can also be a date. It means the last commit on the default branch at or before that date:
 
 ```bash
 archidocs diff 2026-01-01 2026-06-30
 ```
 
-## For a pull request
+## 3. Format it for a pull request
 
-`--format markdown` writes the same Changes as a table for a pull request comment, and `--format json` for scripts. [PR previews](/docs/guides/publish/pr-previews/#comment-the-changes) has a workflow that comments them on every pull request, beside a preview site that opens on Compare.
+`--format markdown` writes the same Changes as a table for a pull request comment:
 
-## In the viewer and over MCP
+```bash
+archidocs diff origin/main HEAD --format markdown
+```
 
-A published viewer's **Compare** shows the Changes between two Revisions on the diagram, and over MCP [`get_changes`](/docs/reference/mcp/read-tools/#get_changes) returns them. See [Revisions and history](/docs/concepts/revisions-and-history/).
+```text
+### Model changes `origin/main (83d7816)` → `HEAD (783c53a)`
+
+2 added, 0 removed, 0 changed.
+
+| Change | Kind | Id | Fields |
+| --- | --- | --- | --- |
+| added | Element | `payments:payments-cache` |  |
+| added | Relationship | `payments:payments-service -> payments:payments-cache` |  |
+```
+
+`--format json` writes them for scripts. [Preview pull requests](/docs/guides/publish/pr-previews/#4-comment-the-changes) has a workflow that posts the table on every pull request.
+
+## Check it worked
+
+The first line names both points and their short commits, and counts the Changes. A diff with no Changes prints `0 added, 0 removed, 0 changed`.
+
+## If it didn't
+
+`diff` stops when a point isn't a commit, tag, branch or date in the repo:
+
+```text
+archidocs: Unknown ref or date "origin/develop"; a date resolves to the last default-branch commit at or before it.
+```
+
+Check the name. For a branch in CI, fetch it first, or check out with `fetch-depth: 0`.
+
+## With an agent
+
+[`get_changes`](/docs/reference/mcp/read-tools/#get_changes) returns the Changes between two Revisions. A published viewer's **Compare** shows them on the diagram.
 
 ## Related
 
+- [Revisions and history](/docs/concepts/revisions-and-history/)
 - [`archidocs diff` reference](/docs/reference/cli/diff/)
+- [Preview pull requests](/docs/guides/publish/pr-previews/)

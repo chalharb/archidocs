@@ -5,57 +5,88 @@ sidebar:
   order: 8
 ---
 
-Ids are referenced across files and Projects, by Relationships, Deployments, Views and ADRs, so changing one is never a single edit. `archidocs check` finds every reference you miss.
+Rename, move or remove an Element or Deployment Target without leaving a reference to it behind.
 
 :::note[For agents]
 The agent topic for this task is [`change`](/docs/reference/agent-guide/change/).
 :::
 
-## Remove something
+## Before you start
 
-1. Find what refers to it. In the viewer, the Element panel lists its Relationships in and its Deployments; over MCP, [`get_element`](/docs/reference/mcp/read-tools/#get_element) lists those and the Dynamic Views and ADRs that use it.
-2. Deal with each reference: remove the Relationships and Deployments, point them elsewhere, or drop the Element from the Views that name it. A reference from another Project belongs to that Project's Team: tell them first.
-3. Remove it. Removing an Element removes what is declared under it: its children and its outbound Relationships.
+- You can run `archidocs check` in the Workspace. See the [Quick start](/docs/start/quick-start/).
+- References from another Project belong to that Project's Team. Tell them before you change what they point at.
+
+## 1. Find what refers to it
+
+In the viewer, the Element panel lists its Relationships in and its Deployments. Over MCP, [`get_element`](/docs/reference/mcp/read-tools/#get_element) lists those and the Dynamic Views and ADRs that use it.
+
+## 2. Add the new id or parent
+
+Skip this step for a removal. To rename, add the Element again under the new id, with the same fields and parent. To move, add it under the new parent. Changing only the display `name` needs no other step, because nothing refers to names.
+
+## 3. Repoint every reference
+
+Move its Components, Relationships and Deployments to the new id, and change every reference to the old one. For a removal, remove or repoint the Relationships and Deployments, and drop the Element from the Views that name it.
+
+## 4. Remove the old one
+
+Remove the old id. Removing an Element removes what is declared under it: its children and its outbound Relationships. To keep the same id when moving, remove the old one before adding the new one, or use a temporary id.
+
+## Check it worked
+
+```bash
+archidocs check
+```
+
+```text
+0 errors, 0 warnings
+```
+
+Then compare with the base branch. Here Big Bank's `payments-db` was renamed `payments-ledger`:
+
+```bash
+archidocs diff main
+```
+
+```text
+Changes from main (83d7816) to working tree: 3 added, 3 removed, 0 changed
+
+- Element payments:payments-db
++ Element payments:payments-ledger
+- Relationship payments:payments-service -> payments:payments-db
++ Relationship payments:payments-service -> payments:payments-ledger
+- Deployment payments:payments-db in prod on platform:eks-prod
++ Deployment payments:payments-ledger in prod on platform:eks-prod
+```
+
+A rename shows as a removal and an addition, for the Element and for each reference to it. This is what reviewers see in the pull request. See [Review changes with diff](/docs/guides/review/diff/).
+
+## If it didn't
 
 A reference left behind fails the check. Here `legacy-db` was removed, but a Relationship still points at it:
 
 ```yaml file="website/samples/dangling-reference/archidocs/shop/model.yaml" fails="unknown-element"
 ```
 
-`archidocs check` reports [`unknown-element`](/docs/reference/rules/unknown-element/) at the line that still names it.
+```text
+archidocs/shop/model.yaml:10:13  error  unknown-element  Unknown Element "legacy-db" in Project "shop"
 
-ADRs are history: an accepted ADR that links a removed Element is better left alone and followed by a new ADR than edited.
+1 error, 0 warnings
 
-## Rename an id
-
-A rename is add, repoint, remove:
-
-1. Add the Element again under the new id, with the same fields and parent.
-2. Move its Components, Relationships and Deployments to the new id, and change every reference to the old one.
-3. Remove the old id. `archidocs check` names anything that still points at it.
-
-Changing only the display `name` is a one-line edit: nothing refers to names.
-
-## Move something
-
-Moving an Element to another parent, or a Deployment Target into another, is a rename in disguise: add it under the new parent, repoint the references, then remove the old one. The id can stay the same only once the old one is gone, so remove it first if nothing refers to it, or use a temporary id.
-
-## Check and review
-
-```bash
-archidocs check
+Rule docs:
+  unknown-element  https://archidocs.dev/docs/reference/rules/unknown-element/
 ```
 
-```bash
-archidocs diff main
-```
+That is [`unknown-element`](/docs/reference/rules/unknown-element/). Repoint or remove the reference at the line it names.
 
-`archidocs diff` against the base branch shows the rename as a removal and an addition, which is what reviewers will see in the pull request. See [Review changes with diff](/docs/guides/review/diff/).
+An accepted ADR that links a removed Element is history. Leave it, and follow it with a new ADR. See [Decisions](/docs/concepts/decisions/).
 
 ## With an agent
 
-The `remove_*` tools, such as [`remove_element`](/docs/reference/mcp/write-tools/#remove_element), never cascade: a removal still referenced is refused, with each reference's file and line, so the agent works through the list.
+The `remove_*` tools, such as [`remove_element`](/docs/reference/mcp/write-tools/#remove_element), never cascade. A removal that is still referenced is refused, with each reference's file and line, so the agent works through the list.
 
 ## Related
 
 - [Relationships](/docs/concepts/relationships/)
+- [`archidocs check` reference](/docs/reference/cli/check/)
+- [Review changes with diff](/docs/guides/review/diff/)

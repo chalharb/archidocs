@@ -1,0 +1,79 @@
+---
+title: Write a Dynamic View
+description: Walk through one scenario, Step by Step, over the Relationships in the Model.
+sidebar:
+  order: 6
+---
+
+import Diagram from "../../../../../components/Diagram.astro";
+
+Write a [Dynamic View](/docs/reference/glossary/#term-dynamic-view), one scenario as numbered Steps, so readers can follow a flow such as "a customer signs in" as a sequence chart.
+
+:::note[For agents]
+The agent topic for this task is [`dynamic-view`](/docs/reference/agent-guide/dynamic-view/).
+:::
+
+## Before you start
+
+- Every call in the scenario is a Relationship in the Model. See [Connect Services](/docs/guides/model/connect-services/). [Views](/docs/concepts/views/) says why a Step must follow one.
+
+## 1. Trace the scenario
+
+Start from who or what begins it, and follow the Relationships. In the viewer, the Element panel lists each Element's Relationships, and the **Connect to…** Lens shows the paths between two Elements. Where a call happens but the Model has no Relationship for it, [add the Relationship](/docs/guides/model/connect-services/) first.
+
+## 2. Write the Steps
+
+Add the View under `views` › `dynamic` in a Project's `views.yaml`. Each Step is a call, a reply with `return: true`, or an event from a Publisher to a Subscriber:
+
+```yaml file="examples/big-bank/archidocs/digital/views.yaml" region="sign-in"
+```
+
+Every field of a Step is in the [Saved Views reference](/docs/reference/model/views-yaml/#views).
+
+## 3. Check the Workspace
+
+```bash
+archidocs check
+```
+
+```text
+0 errors, 0 warnings
+```
+
+## Check it worked
+
+In the viewer, open the View from the **Views** tree. It opens as a sequence chart, with its Steps listed beside it:
+
+<Diagram view="big-bank/digital:sign-in" alt="A Big Bank customer signs in: the Single-Page Application, the Sign In Controller and the Security Component validate a token with the Auth Service, and the replies come back." />
+
+Select a Step to follow it.
+
+## If it didn't
+
+A Step needs a Relationship to follow. A reply written as a call has none:
+
+```yaml file="website/samples/step-without-relationship/archidocs/shop/views.yaml" fails="missing-step"
+```
+
+```text
+archidocs/shop/views.yaml:9:11  error  missing-step  No Relationship from "shop:api" to "shop:web", nor a `via` subscription of "shop:web" to it
+
+1 error, 0 warnings
+
+Rule docs:
+  missing-step  https://archidocs.dev/docs/reference/rules/missing-step/
+```
+
+That is [`missing-step`](/docs/reference/rules/missing-step/). The second Step is the reply to the first, so add `return: true` to it.
+
+`check` reports [`ambiguous-step`](/docs/reference/rules/ambiguous-step/) when two Relationships connect the same pair. Name one with `relationship: <id>`.
+
+## With an agent
+
+[`upsert_view`](/docs/reference/mcp/write-tools/#upsert_view) writes a Dynamic View when its definition has `steps`. [`find_paths`](/docs/reference/mcp/read-tools/#find_paths) helps trace one.
+
+## Related
+
+- [Views](/docs/concepts/views/)
+- [Saved Views reference](/docs/reference/model/views-yaml/)
+- [Kitchen sink](/docs/examples/kitchen-sink/), whose Dynamic View has a call, a derived edge, an event and a reply

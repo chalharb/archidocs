@@ -24,6 +24,8 @@ const site = "https://archidocs.dev";
 
 export default defineConfig({
   site,
+  // Renamed pages keep their old URL. A static build writes each as a page that forwards to the new one.
+  redirects: { "/docs/guides/model/dynamic-views": "/docs/guides/model/write-a-dynamic-view/" },
   // The fixture tests (test/fixtures.test.ts) build a copy of src/ with a broken page added, into a temp folder.
   srcDir: process.env.ARCHIDOCS_DOCS_SRC_DIR ?? "./src",
   outDir: process.env.ARCHIDOCS_DOCS_OUT_DIR ?? "./dist",
@@ -54,7 +56,7 @@ export default defineConfig({
         group("Concepts", "docs/concepts"),
         {
           label: "Guides",
-          items: ["docs/guides", group("Model", "docs/guides/model"), group("Publish", "docs/guides/publish"), group("Agents", "docs/guides/agents"), group("Review", "docs/guides/review")],
+          items: ["docs/guides", group("Model", "docs/guides/model"), group("Publish", "docs/guides/publish"), group("Agents", "docs/guides/agents"), group("Review and share", "docs/guides/review")],
         },
         {
           label: "Reference",

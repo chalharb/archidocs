@@ -1,39 +1,63 @@
 ---
-title: Other hosts
+title: Publish to another host
 description: Publish the viewer to an S3-style bucket, Netlify, Cloudflare Pages or any static host.
 sidebar:
   order: 5
 ---
 
-The site `archidocs build` writes is plain static files with relative URLs and hash routing, so any static host can serve it, under any base path, with no rewrites.
+Publish the viewer from any CI to any static host, such as an S3-style bucket, Netlify or Cloudflare Pages.
 
-## In CI
+## Before you start
 
-1. Check out the full history (`fetch-depth: 0` on GitHub, `GIT_DEPTH: 0` on GitLab): the site shows past Revisions.
-2. Restore `.archidocs/cache/` from your CI cache, keyed by the Bundle `schemaVersion` that `archidocs version --format json` prints.
-3. Check, then build. If the check fails, stop, so the last good site stays up:
+- `archidocs check` passes on the Workspace. See the [Quick start](/docs/start/quick-start/).
+- Your CI can install the CLI and upload files to the host. On GitHub or GitLab Pages, use [Publish to GitHub Pages](/docs/guides/publish/github-pages/) or [Publish to GitLab Pages](/docs/guides/publish/gitlab-pages/) instead.
 
-   ```bash
-   archidocs check
-   archidocs build --out site
-   ```
+## 1. Check out the full history
 
-4. Save `.archidocs/cache/`, then upload `site/`.
+Set `fetch-depth: 0` on GitHub, or `GIT_DEPTH: 0` on GitLab. The site builds past [Revisions](/docs/reference/glossary/#term-revision) from git.
 
-Publish on every push to the default branch and on every tag.
+## 2. Restore the history cache
 
-## Cache headers
+Restore `.archidocs/cache/` from your CI cache. Key it by the Bundle `schemaVersion`, which this prints:
+
+```bash
+archidocs version --format json
+```
+
+```text
+{"version":"1.2.0","schemaVersion":1}
+```
+
+## 3. Check and build
+
+Run both, and stop if the check fails, so the last good site stays up:
+
+```bash
+archidocs check
+archidocs build --out site
+```
+
+```text
+0 errors, 0 warnings
+Wrote the site to site
+```
+
+Then save `.archidocs/cache/` to your CI cache.
+
+## 4. Upload the site
+
+Upload `site/` on every push to the default branch and on every tag. The site uses relative URLs and hash routing, so it works under any base path with no rewrites.
+
+Set these headers, so readers get each new deploy at once:
 
 | Path | `Cache-Control` |
 | --- | --- |
-| `bundles/<sha>.json` | `public, max-age=31536000, immutable` (it never changes once published) |
+| `bundles/<sha>.json` | `public, max-age=31536000, immutable` |
 | `bundles/index.json` | `no-cache` |
 | `workspace.bundle.json` | `no-cache` |
 | `index.html` | `no-cache` |
 
-No headers are required. `archidocs mcp --bundle <url>` re-checks `index.json` at most every 60 seconds, with `If-None-Match` or `If-Modified-Since` when the host gives an `ETag` or `Last-Modified`.
-
-## S3-style buckets
+### An S3-style bucket
 
 Upload the past Bundles first and the index last, so a reader never sees an index naming a Bundle that isn't there yet:
 
@@ -46,9 +70,9 @@ aws s3 cp site/index.html "s3://$BUCKET/" --cache-control no-cache
 aws s3 cp site/bundles/index.json "s3://$BUCKET/bundles/" --cache-control no-cache
 ```
 
-## Netlify
+### Netlify
 
-Netlify can apply more than one matching rule in `_headers`, so give each Bundle a rule of its own rather than a `/bundles/*` rule that `index.json` also matches. Write the file into the site before deploying:
+Netlify applies every matching rule in `_headers`, so give each Bundle a rule of its own. A `/bundles/*` rule would also match `index.json`. Write the file into the site before deploying:
 
 ```sh
 {
@@ -63,9 +87,9 @@ Netlify can apply more than one matching rule in `_headers`, so give each Bundle
 netlify deploy --prod --dir site
 ```
 
-## Cloudflare Pages
+### Cloudflare Pages
 
-Cloudflare Pages joins the values of matching rules and allows 100 rules, so detach the general rule's header for the index with `!`:
+Cloudflare Pages joins the values of matching rules, so detach the general rule's header for the index with `!`:
 
 ```sh
 cat > site/_headers <<'EOF'
@@ -82,7 +106,22 @@ EOF
 wrangler pages deploy site --project-name <project>
 ```
 
+## Check it worked
+
+Open the site's URL: the viewer starts on the C2 Landscape. Then check the index's header, which should be `no-cache`:
+
+```sh
+curl -sI https://architecture.example.com/bundles/index.json | grep -i cache-control
+```
+
+## If it didn't
+
+If the viewer shows only the latest Revision, the CI checkout is shallow. Check out the full history, as in step 1.
+
+If a new deploy doesn't show until a hard reload, `index.html`, `workspace.bundle.json` or `bundles/index.json` is cached. Set `no-cache` on all three.
+
 ## Related
 
-- [GitHub Pages](/docs/guides/publish/github-pages/), which the Action does for you
-- [`archidocs build`](/docs/reference/cli/build/)
+- [Revisions and history](/docs/concepts/revisions-and-history/)
+- [`archidocs build` reference](/docs/reference/cli/build/)
+- [Publish to GitHub Pages](/docs/guides/publish/github-pages/), which the Action does for you

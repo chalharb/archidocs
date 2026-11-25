@@ -5,53 +5,74 @@ sidebar:
   order: 4
 ---
 
-A Deployment is one Service in one Environment on one Deployment Target, and it holds the Service's URL there. See [Deployments](/docs/concepts/deployments/) for the idea.
+Add a [Deployment](/docs/reference/glossary/#term-deployment), one Service in one Environment on one Deployment Target, so readers find where the Service runs and its URL there.
 
 :::note[For agents]
 The agent topic for this task is [`deployments`](/docs/reference/agent-guide/deployments/).
 :::
 
-## 1. Check the Environment exists
+## Before you start
 
-Environments are defined once, in `workspace.yaml`, and shared by every Project. Add one only after agreeing it with the other Teams.
+- The Service is in the Model. See [Add a Service](/docs/guides/model/add-a-service/).
+- The Environment is defined in `workspace.yaml`. Every Project shares it, so agree a new one with the other Teams first. See [`environments`](/docs/reference/model/workspace-yaml/#environments).
 
-## 2. Declare the Targets
+## 1. Declare the Deployment Targets
 
-Under `targets`, declare where Services run: a `name` and a `kind` (`region`, `cluster`, `namespace`, `platform`, or whatever fits), nested as they nest. Usually one Team, such as a platform Team, declares the shared ones:
+Under `targets`, declare where Services run, nested as they nest. A platform Team usually declares the shared ones:
 
 ```yaml file="examples/big-bank/archidocs/platform/targets.yaml"
 ```
 
-Other Projects use them by Qualified id, as `platform:eks-prod`. A Target has its own Owner, the Project's Team unless `owner` says otherwise.
+Other Projects use a Target by its Qualified id, as `platform:eks-prod`. Every field is in the [`targets` reference](/docs/reference/model/deployments-yaml/#targets).
 
-## 3. Add the Deployments
+## 2. Add the Deployments
 
-Under `deployments`, add one entry per Service per Environment and Target, with its `url`, and any further named URLs as `endpoints`:
+Under `deployments`, add one entry per Service, Environment and Target, with its `url`:
 
 ```yaml file="examples/big-bank/archidocs/platform/deployments.yaml"
 ```
 
-A Service that doesn't serve HTTP, such as a database, has no `url`. Kafka has an endpoint for its bootstrap servers instead.
+A Service that serves no HTTP, such as a database, has no `url`. The other fields, such as `endpoints`, are in the [`deployments` reference](/docs/reference/model/deployments-yaml/#deployments).
 
-The `environment` must be defined in `workspace.yaml`. A near miss is caught:
-
-```yaml file="website/samples/unknown-environment/archidocs/shop/deployments.yaml" fails="unknown-environment"
-```
-
-`archidocs check` reports [`unknown-environment`](/docs/reference/rules/unknown-environment/) and suggests `prod`.
-
-## 4. Check it
+## 3. Check the Workspace
 
 ```bash
 archidocs check
 ```
 
-In the viewer, select the Service and use **Where is it deployed?**, or open the Environment's Deployment View, `deployment/prod`.
+```text
+0 errors, 0 warnings
+```
+
+## Check it worked
+
+Run `archidocs dev`, select the Service and use **Where is it deployed?**. Or open the Environment's Deployment View, such as `deployment/prod`.
+
+## If it didn't
+
+`check` catches an `environment` that `workspace.yaml` doesn't define:
+
+```yaml file="website/samples/unknown-environment/archidocs/shop/deployments.yaml" fails="unknown-environment"
+```
+
+```text
+archidocs/shop/deployments.yaml:7:18  error  unknown-environment  Unknown Environment "production"; did you mean "prod"?
+
+1 error, 0 warnings
+
+Rule docs:
+  unknown-environment  https://archidocs.dev/docs/reference/rules/unknown-environment/
+```
+
+That is [`unknown-environment`](/docs/reference/rules/unknown-environment/): use the name it suggests.
+
+`check` reports [`unknown-target`](/docs/reference/rules/unknown-target/) when `target` names no Deployment Target. Check the Qualified id.
 
 ## With an agent
 
-[`upsert_target`](/docs/reference/mcp/write-tools/#upsert_target) and [`upsert_deployment`](/docs/reference/mcp/write-tools/#upsert_deployment) write them; [`upsert_environment`](/docs/reference/mcp/write-tools/#upsert_environment) adds an Environment.
+[`upsert_target`](/docs/reference/mcp/write-tools/#upsert_target) and [`upsert_deployment`](/docs/reference/mcp/write-tools/#upsert_deployment) write them. [`upsert_environment`](/docs/reference/mcp/write-tools/#upsert_environment) adds an Environment.
 
 ## Related
 
+- [Deployments](/docs/concepts/deployments/)
 - [Deployment Targets and Deployments reference](/docs/reference/model/deployments-yaml/)

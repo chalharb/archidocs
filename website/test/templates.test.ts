@@ -104,7 +104,6 @@ const BANNED_WORDS: BannedWord[] = [
     notYetMigrated: [
       `${DOCS}/concepts/agents-and-mcp.mdx`,
       `${DOCS}/guides/agents/connect-mcp.mdx`,
-      `${DOCS}/guides/agents/install-skill.mdx`,
     ],
   },
 ];
@@ -119,27 +118,8 @@ const bannedWordProblems = (page: Page, banned: BannedWord): string[] => {
 
 // ── The not-yet-migrated lists ───────────────────────────────────────────────
 
-/** Guides still to rewrite to the how-to template. Ticket 08 empties this. */
-const GUIDES_NOT_YET_MIGRATED = [
-  `${DOCS}/guides/agents/bootstrap-from-code.mdx`,
-  `${DOCS}/guides/agents/connect-mcp.mdx`,
-  `${DOCS}/guides/agents/install-skill.mdx`,
-  `${DOCS}/guides/model/add-a-project.mdx`,
-  `${DOCS}/guides/model/add-a-service.mdx`,
-  `${DOCS}/guides/model/add-deployments.mdx`,
-  `${DOCS}/guides/model/connect-services.mdx`,
-  `${DOCS}/guides/model/dynamic-views.mdx`,
-  `${DOCS}/guides/model/record-an-adr.mdx`,
-  `${DOCS}/guides/model/rename-move-remove.mdx`,
-  `${DOCS}/guides/model/save-a-view.mdx`,
-  `${DOCS}/guides/publish/github-pages.mdx`,
-  `${DOCS}/guides/publish/gitlab-pages.mdx`,
-  `${DOCS}/guides/publish/other-hosts.mdx`,
-  `${DOCS}/guides/publish/pr-previews.mdx`,
-  `${DOCS}/guides/publish/saved-view-images.mdx`,
-  `${DOCS}/guides/review/diff.mdx`,
-  `${DOCS}/guides/review/export.mdx`,
-];
+/** Guides still to rewrite to the how-to template. None is left; keep it empty. */
+const GUIDES_NOT_YET_MIGRATED: string[] = [];
 
 /** Concept pages with numbered step headings. None has any today; keep it empty. */
 const CONCEPTS_NOT_YET_MIGRATED: string[] = [];
