@@ -102,7 +102,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   const place = usePlace();
   const openKey = place.open.join(",");
   const view = useMemo(
-    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open }) : structuralView(workspace.bundle, place.view, { expand: place.open, lens: "none" })),
+    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open, lens: "none" }) : structuralView(workspace.bundle, place.view, { expand: place.open, lens: "none" })),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
     [workspace, comparison, place.view, openKey],
   );

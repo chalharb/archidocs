@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { GLYPH_ICON, Icon, type IconName } from "./Icon.tsx";
 import { parseViewId } from "../../src/core/views/index.ts";
+import { GLYPH_ICON, Icon, type IconName } from "./Icon.tsx";
 import { focusOf, type TreeRow, type Workspace } from "./workspace.ts";
 
 type Panel = "Model" | "Views" | "Teams";

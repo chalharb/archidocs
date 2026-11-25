@@ -12,9 +12,9 @@ import type { CompareMark, ResolveOptions, ResolvedView } from "./types.ts";
  * changed when its Element changed, or for a collapsed box when anything
  * inside it was added, removed or changed; an edge when its Relationships
  * did. A View that exists at one side only is drawn from that side.
- * Undefined when neither side has the View.
+ * Undefined when neither side has the View. The options are `resolveView`'s.
  */
-export function compareView(before: Bundle, after: Bundle, id: string, options: Pick<ResolveOptions, "expand"> = {}): ResolvedView | undefined {
+export function compareView(before: Bundle, after: Bundle, id: string, options: ResolveOptions = {}): ResolvedView | undefined {
   const both = unionBundle(before, after);
   const model = new ModelIndex(both);
   const view = resolveStructural(both, model, id, options);
