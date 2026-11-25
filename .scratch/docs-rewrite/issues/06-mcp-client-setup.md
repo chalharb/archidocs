@@ -1,6 +1,6 @@
 # 06: Per-client MCP setup
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -14,6 +14,6 @@ Rewrite `guides/agents/connect-mcp` so a reader finds their own client. Today it
 
 ## Acceptance criteria
 
-- [ ] Each of the four clients has a tab with a config a reader can paste.
-- [ ] Every `archidocs …` line and every `args` array passes the CLI-line check.
-- [ ] "harness" appears on no hand-written page.
+- [x] Each of the four clients has a tab with a config a reader can paste.
+- [x] Every `archidocs …` line and every `args` array passes the CLI-line check.
+- [x] "harness" appears on no hand-written page.

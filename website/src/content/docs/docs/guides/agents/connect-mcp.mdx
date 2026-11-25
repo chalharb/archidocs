@@ -1,31 +1,45 @@
 ---
 title: Connect an agent over MCP
-description: Register the Archidocs MCP server with a coding agent, over a checkout or a published site.
+description: Register the Archidocs MCP server with Claude Code, Cursor, VS Code / Copilot or Codex, over a checkout or a published site.
 sidebar:
   order: 1
 ---
 
-Register the Archidocs MCP server with a coding agent, so it can answer architecture questions and edit the Model.
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+Register the Archidocs MCP server with your coding agent, so it can answer architecture questions and edit the Model.
 
 ## Before you start
 
 - The Archidocs CLI is installed. See the [Quick start](/docs/start/quick-start/).
-- You know what the server offers. See [Agents and MCP](/docs/concepts/agents-and-mcp/).
+- You are in the Workspace repo, the repo that holds the `archidocs/` folder. For another repo, see [In a code repo](#in-a-code-repo).
 
-## In the Workspace repo
+## 1. Register the server
 
-Serve the checkout, so the agent gets the read tools and the write tools. From the repo root:
+The server is one command, run from the repo root. `archidocs init` prints it for your repo:
 
 ```bash
 archidocs mcp --workspace archidocs
 ```
 
-`archidocs init` prints this command for your repo. Register it the way your harness takes MCP servers. Most read a JSON file such as `.mcp.json` at the repo root:
+Pick your coding agent, and add the command where it reads MCP servers.
+
+<Tabs syncKey="mcp-client">
+<TabItem label="Claude Code">
+
+From the repo root:
+
+```bash
+claude mcp add --scope project archidocs -- archidocs mcp --workspace archidocs
+```
+
+It writes `.mcp.json` at the repo root. Commit it, so everyone who clones the repo gets the server. Or write the file yourself:
 
 ```json title=".mcp.json"
 {
   "mcpServers": {
     "archidocs": {
+      "type": "stdio",
       "command": "archidocs",
       "args": ["mcp", "--workspace", "archidocs"]
     }
@@ -33,17 +47,99 @@ archidocs mcp --workspace archidocs
 }
 ```
 
-Paths are relative to where the harness starts the server, usually the repo root. If the CLI isn't installed globally, use `"command": "npx"` and put `"archidocs"` first in `args`.
+Start `claude` in the repo and approve the server when it asks. `/mcp` lists it as connected.
+
+</TabItem>
+<TabItem label="Cursor">
+
+Create `.cursor/mcp.json` in the repo:
+
+```json title=".cursor/mcp.json"
+{
+  "mcpServers": {
+    "archidocs": {
+      "type": "stdio",
+      "command": "archidocs",
+      "args": ["mcp", "--workspace", "${workspaceFolder}/archidocs"]
+    }
+  }
+}
+```
+
+Cursor replaces `${workspaceFolder}` with the folder that holds `.cursor/mcp.json`. The server appears under MCP in Cursor's settings, where you can turn it on or off.
+
+</TabItem>
+<TabItem label="VS Code / Copilot">
+
+Create `.mcp.json` at the repo root:
+
+```json title=".mcp.json"
+{
+  "mcpServers": {
+    "archidocs": {
+      "type": "stdio",
+      "command": "archidocs",
+      "args": ["mcp", "--workspace", "archidocs"]
+    }
+  }
+}
+```
+
+Claude Code reads the same file. Run **MCP: List Servers** from the Command Palette to start the server and see its state.
+
+</TabItem>
+<TabItem label="Codex">
+
+Create `.codex/config.toml` in the repo:
+
+```toml title=".codex/config.toml"
+[mcp_servers.archidocs]
+command = "archidocs"
+args = ["mcp", "--workspace", "archidocs"]
+```
+
+Codex reads a project's `.codex/config.toml` only once you trust the project. To add the server for every project instead, run this, which writes `~/.codex/config.toml`:
+
+```bash
+codex mcp add archidocs -- archidocs mcp --workspace archidocs
+```
+
+In the `codex` TUI, `/mcp` lists the server.
+
+</TabItem>
+</Tabs>
+
+If the CLI isn't installed globally, run it with npx: set `"command"` to `"npx"` and start `args` with `"-y", "archidocs"`.
+
+## Check it worked
+
+Ask the agent something the Model knows, such as "what breaks if the Orders DB goes down?". It calls [`get_impact`](/docs/reference/mcp/get_impact/) and answers from the Model, with the Owners of the Elements it lists.
+
+## If it didn't
+
+If the server fails to start, run its command yourself from the repo root:
+
+```bash
+archidocs mcp --workspace archidocs
+```
+
+When the path is wrong, it prints why and exits:
+
+```text
+archidocs: No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.
+```
+
+Correct `--workspace` in your config: it is relative to the folder the coding agent starts the server in, usually the repo root. When the command works, it waits for input with no output. Stop it with Ctrl+C.
 
 ## In a code repo
 
-An agent working on a Service's code can keep the Model in step from there. Clone the Workspace repo beside the code repo and point the server at that checkout:
+An agent working on a Service's code can keep the Model in step from there. Clone the Workspace repo beside the code repo, and register the same command with `--workspace` pointing at that checkout:
 
 ```bash
 archidocs mcp --workspace ../architecture/archidocs
 ```
 
-`archidocs init --skill --workspace ../architecture/archidocs` installs the skill in the code repo and prints the same command. See [Install the agent skill](/docs/guides/agents/install-skill/).
+In `args`, that is `["mcp", "--workspace", "../architecture/archidocs"]`. `archidocs init --skill --workspace ../architecture/archidocs` installs the skill in the code repo and prints the same command. See [Install the agent skill](/docs/guides/agents/install-skill/).
 
 ## From a published site, read-only
 
@@ -57,19 +153,62 @@ Only the read tools are offered. The server re-reads the site's Revision index a
 
 ## Over HTTP
 
-For a harness that connects to a URL instead of starting a process:
+For a coding agent that connects to a URL instead of starting a process, start the server yourself:
 
 ```bash
 archidocs mcp --http --port 3737 --workspace archidocs
 ```
 
-It listens on a loopback address only, at `/mcp`, and leaves the write tools off unless you add `--allow-writes`.
+It listens on `http://127.0.0.1:3737/mcp` only, and leaves the write tools off unless you add `--allow-writes`. Register the URL:
 
-## Check it worked
+<Tabs syncKey="mcp-client">
+<TabItem label="Claude Code">
 
-Ask the agent something the Model knows, such as "what breaks if the Orders DB goes down?". It should call [`get_impact`](/docs/reference/mcp/read-tools/#get_impact) and answer from the Model, with the Elements' Owners. Then ask it to load the authoring guide before an edit: it calls [`get_authoring_guide`](/docs/reference/mcp/read-tools/#get_authoring_guide).
+```bash
+claude mcp add --scope project --transport http archidocs http://127.0.0.1:3737/mcp
+```
+
+</TabItem>
+<TabItem label="Cursor">
+
+```json title=".cursor/mcp.json"
+{
+  "mcpServers": {
+    "archidocs": {
+      "url": "http://127.0.0.1:3737/mcp"
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="VS Code / Copilot">
+
+```json title=".mcp.json"
+{
+  "mcpServers": {
+    "archidocs": {
+      "type": "http",
+      "url": "http://127.0.0.1:3737/mcp"
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Codex">
+
+```toml title=".codex/config.toml"
+[mcp_servers.archidocs]
+url = "http://127.0.0.1:3737/mcp"
+```
+
+</TabItem>
+</Tabs>
 
 ## Related
 
+- [Agents and MCP](/docs/concepts/agents-and-mcp/)
 - [`archidocs mcp` reference](/docs/reference/cli/mcp/)
-- [Read tools](/docs/reference/mcp/read-tools/) and [write tools](/docs/reference/mcp/write-tools/)
+- [`get_impact`](/docs/reference/mcp/get_impact/) and the other [read tools](/docs/reference/mcp/read-tools/)
+- [Install the agent skill](/docs/guides/agents/install-skill/)

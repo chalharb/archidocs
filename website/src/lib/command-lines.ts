@@ -3,12 +3,17 @@
  * the CLI's structured definitions with `parseCommandLine`, without running
  * anything. An unknown command or flag, or a flag missing its value, is a
  * problem. Shell code blocks are read line by line; inline code counts when
- * it is a whole command line.
+ * it is a whole command line. A command after ` -- `, as in
+ * `claude mcp add archidocs -- archidocs mcp`, counts too. In a JSON or TOML
+ * block, each MCP server entry's `command` and `args` are read as one line.
  */
 import { parseCommandLine } from "../../../src/cli/commands.ts";
 
 /** Code block languages whose lines are shell commands. */
 export const SHELL_LANGUAGES: ReadonlySet<string> = new Set(["sh", "bash", "shell", "zsh", "console", "shellsession"]);
+
+/** Code block languages whose MCP server entries (`command` plus `args`) are read. */
+export const CONFIG_LANGUAGES: ReadonlySet<string> = new Set(["json", "jsonc", "json5", "toml"]);
 
 export interface CommandLineProblem {
   /** The command line as written. */
@@ -84,10 +89,27 @@ export function shellWords(command: string): string[] {
   return words.map((w) => w.replace(/^\[+/, "").replace(/\]+$/, "")).filter(Boolean);
 }
 
-/** The words after `archidocs`, if `command` runs it. */
+/** A command another tool runs, after its ` -- `: `claude mcp add archidocs -- archidocs mcp`. */
+const AFTER_SEPARATOR = /\s--\s+(\S.*)$/;
+
+/** The words after `archidocs`, if `command` runs it, itself or after a ` -- `. */
 export function archidocsArgs(command: string): string[] | undefined {
-  const match = COMMAND.exec(command.trim());
+  const match = COMMAND.exec(command.trim()) ?? COMMAND.exec(AFTER_SEPARATOR.exec(command)?.[1] ?? "");
   return match ? shellWords(match[1]!) : undefined;
+}
+
+/**
+ * Each MCP server entry in a JSON or TOML config, as the command line it
+ * starts: `"command": "npx", "args": ["-y", "archidocs", "mcp"]` is
+ * `npx -y archidocs mcp`. An entry is a `command` string followed, before the
+ * next `command`, by an `args` array of strings.
+ */
+export function commandsInConfig(code: string): string[] {
+  const entry = /"?command"?\s*[:=]\s*"((?:[^"\\]|\\.)*)"(?:(?!"?command"?\s*[:=])[\s\S])*?"?args"?\s*[:=]\s*\[([^\]]*)\]/g;
+  return [...code.matchAll(entry)].map((m) => {
+    const words = [m[1]!, ...[...m[2]!.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((w) => w[1]!)];
+    return words.map((w) => (/[\s'"]/.test(w) ? `'${w}'` : w)).join(" ");
+  });
 }
 
 /** Checks one command; returns a problem if it runs `archidocs` with a line the CLI would refuse. */
@@ -98,11 +120,11 @@ export function checkCommand(command: string): CommandLineProblem | undefined {
   return parsed.ok ? undefined : { line: command.trim(), message: parsed.message };
 }
 
-/** Checks a code block's lines (when its language is a shell) or an inline code span. */
+/** Checks a code block's lines (a shell), its MCP server entries (JSON or TOML), or an inline code span. */
 export function checkCode(code: string, { lang, inline }: { lang?: string | null; inline?: boolean }): CommandLineProblem[] {
   if (inline) return [checkCommand(code)].filter((p) => p !== undefined);
-  if (!lang || !SHELL_LANGUAGES.has(lang)) return [];
-  return commandsInBlock(code)
+  const commands = lang && SHELL_LANGUAGES.has(lang) ? commandsInBlock(code) : lang && CONFIG_LANGUAGES.has(lang) ? commandsInConfig(code) : [];
+  return commands
     .map(checkCommand)
     .filter((p) => p !== undefined);
 }
