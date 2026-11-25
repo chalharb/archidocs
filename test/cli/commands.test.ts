@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandList, commands, parseCommandLine, usageText } from "../../src/cli/commands.ts";
+import { commandList, commands, EXIT, parseCommandLine, usageText, type CommandDefinition } from "../../src/cli/commands.ts";
 import { DEFAULT_DEV_PORT } from "../../src/cli/dev.ts";
 import { DEFAULT_KEEP } from "../../src/history/index.ts";
 import { DEFAULT_PORT } from "../../src/mcp/index.ts";
@@ -15,6 +15,9 @@ function synopsisArgv(synopsis: string): string[] {
     .filter((t) => t !== "" && t !== "|")
     .map((t) => (t.startsWith("<") ? "value" : t.split("|")[0]!));
 }
+
+/** An example's words as a shell splits them: spaces separate, and double quotes hold a word together. */
+const exampleArgv = (line: string): string[] => (line.match(/"[^"]*"|\S+/g) ?? []).map((word) => word.replace(/^"(.*)"$/, "$1"));
 
 describe("CLI command definitions", () => {
   it("print the usage text", () => {
@@ -54,6 +57,37 @@ describe("CLI command definitions", () => {
     for (const command of commandList) {
       const used = new Set(command.synopsis.flatMap((s) => [...s.matchAll(/--([a-z-]+)/g)].map((m) => m[1])));
       expect([...used].sort(), command.name).toEqual(Object.keys(command.flags).sort());
+    }
+  });
+
+  it("give every command an example, each a line the CLI accepts with a line on what it does", () => {
+    for (const command of commandList) {
+      expect(command.examples, `${command.name} has no example`).not.toHaveLength(0);
+      for (const example of command.examples) {
+        const [program, ...argv] = exampleArgv(example.command);
+        expect(program, example.command).toBe("archidocs");
+        expect(parseCommandLine(argv), example.command).toEqual({ ok: true, command: command.name });
+        expect(example.description.trim(), example.command).not.toBe("");
+      }
+      expect(new Set(command.examples.map((e) => e.command)).size, `${command.name} repeats an example`).toBe(command.examples.length);
+    }
+  });
+
+  it("refuse, in the type, a command with no example or no exit code", () => {
+    // @ts-expect-error A command needs at least one example.
+    const noExample: CommandDefinition = { ...commands.check, examples: [] };
+    // @ts-expect-error A command needs at least one exit code.
+    const noExitCode: CommandDefinition = { ...commands.check, exitCodes: [] };
+    expect([noExample.examples, noExitCode.exitCodes]).toEqual([[], []]);
+  });
+
+  it("list each command's exit codes once, lowest first, each with what it means", () => {
+    for (const command of commandList) {
+      const codes = command.exitCodes.map((e) => e.code);
+      expect(codes, command.name).toEqual([...new Set(codes)].sort((a, b) => a - b));
+      // Any command can be given a flag it doesn't take.
+      expect(codes, command.name).toContain(EXIT.couldNotRun);
+      for (const { code, meaning } of command.exitCodes) expect(meaning.trim(), `${command.name} exit ${code}`).not.toBe("");
     }
   });
 

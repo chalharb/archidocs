@@ -1,10 +1,11 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { commandList } from "../../src/cli/commands.ts";
+import { commandList, NO_WORKSPACE, parseCommandLine, type CommandDefinition } from "../../src/cli/commands.ts";
 import { rules } from "../../src/core/rules.ts";
 import { topics } from "../../src/guide/index.ts";
+import { archidocsArgs, checkMarkdown } from "../src/lib/command-lines.ts";
 import { repoPath } from "../src/lib/repo.ts";
-import { cliPages, commandPath } from "../src/reference/cli.ts";
+import { cliPages, commandPath, handWrittenFile, SEE_ALSO, WORKSPACE_SECTION } from "../src/reference/cli.ts";
 import { generatedPages } from "../src/reference/index.ts";
 import { listTools, mcpPages } from "../src/reference/mcp.ts";
 import { modelPages } from "../src/reference/model.ts";
@@ -43,6 +44,56 @@ describe("generated reference pages", () => {
       expect(page.title).toBe(`archidocs ${command.name}`);
       for (const flag of Object.keys(command.flags)) expect(page.body).toMatch(new RegExp(`^### \`--${flag}\`$`, "m"));
     }
+  });
+
+  it("gives every command page its examples, each a line the CLI accepts, and its exit codes", () => {
+    const pages = cliPages();
+    for (const command of commandList) {
+      const page = pages.find((p) => commandPath(command.name) === `/${p.id}/`)!;
+      for (const heading of ["Examples", "Exit codes", "See also"]) expect(page.body, `${command.name}: ${heading}`).toMatch(new RegExp(`^## ${heading}$`, "m"));
+      expect(command.examples.length, command.name).toBeGreaterThan(0);
+      for (const example of command.examples) {
+        expect(parseCommandLine(archidocsArgs(example.command) ?? []), example.command).toEqual({ ok: true, command: command.name });
+        // In a shell fence, so the build's command-line check reads it too.
+        expect(page.body).toContain(`\`\`\`sh\n${example.command}\n\`\`\``);
+        expect(page.body).toContain(example.description);
+      }
+      for (const { code } of command.exitCodes) expect(page.body, `${command.name} exit ${code}`).toMatch(new RegExp(`^\\| \`${code}\` \\| `, "m"));
+      expect(checkMarkdown(page.body), command.name).toEqual([]);
+    }
+  });
+
+  it("fails the page of a command whose example the CLI would refuse", () => {
+    const [check] = commandList.filter((c) => c.name === "check");
+    const wrong: CommandDefinition = { ...check!, examples: [{ command: "archidocs check --strct", description: "Fail on warnings too." }] };
+    const page = cliPages([wrong])[1]!;
+    expect(checkMarkdown(page.body).map((p) => p.line)).toEqual(["archidocs check --strct"]);
+  });
+
+  it("links every command page to the pages that use the command, all of which exist", async () => {
+    const generated = await byId();
+    for (const command of commandList) {
+      const page = cliPages().find((p) => commandPath(command.name) === `/${p.id}/`)!;
+      const links = SEE_ALSO[command.name as keyof typeof SEE_ALSO];
+      expect(links.length, command.name).toBeGreaterThan(0);
+      for (const { href, title } of links) {
+        expect(page.body, `${command.name} → ${href}`).toContain(`](${href})`);
+        // A hand-written page gives the link its title; a link with a title of its own goes to a generated page.
+        if (title === undefined) expect(handWrittenFile(href), href).toBeDefined();
+        else expect(generated.has(href.replace(/^\/|\/$/g, "")), href).toBe(true);
+      }
+    }
+  });
+
+  it("explains on the CLI index how the Workspace is found, and where each command starts looking", () => {
+    const [index, ...commandPages] = cliPages();
+    const section = index!.body.slice(index!.body.indexOf("## How the Workspace is found"), index!.body.indexOf("## Exit codes"));
+    expect(WORKSPACE_SECTION).toBe("/docs/reference/cli/#how-the-workspace-is-found");
+    expect(section).toContain(`archidocs: ${NO_WORKSPACE}`);
+    for (const command of commandList) expect(section, command.name).toMatch(new RegExp(`^\\| \\[\`archidocs ${command.name}\`\\]`, "m"));
+    // Each command that takes --workspace or reads a Workspace links the section; `version` and `guide` read none.
+    const linking = commandPages.filter((p) => p.body.includes(`](${WORKSPACE_SECTION})`)).map((p) => p.label);
+    expect(linking).toEqual(commandList.map((c) => c.name).filter((name) => name !== "version" && name !== "guide"));
   });
 
   it("documents every MCP tool the server lists under its own heading, split by readOnlyHint", async () => {
