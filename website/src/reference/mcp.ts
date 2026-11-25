@@ -250,7 +250,7 @@ export function mcpPages({ tools: captured, error }: Capture): GeneratedPage[] {
       description: `The ${write.length} MCP tools that work on a Workspace checkout, most of them editing its YAML.`,
       source: "src/mcp/writes.ts",
       body: blocks(
-        `These ${write.length} tools need a Workspace checkout (\`archidocs mcp --workspace <dir>\`), not a published Workspace Bundle; over HTTP they also need \`--allow-writes\`. The ones that edit the YAML keep its comments and formatting, and return a unified diff.`,
+        `These ${write.length} tools need a [Workspace checkout](/docs/reference/glossary/#term-checkout) (\`archidocs mcp --workspace <dir>\`), not a published Workspace Bundle; over HTTP they also need \`--allow-writes\`. The ones that edit the YAML keep its comments and formatting, and return a unified diff.`,
         `A write that would add a check error is refused with [\`validation_failed\`](${ERRORS_PATH}#validation_failed) and the issues, each with a link to its rule's page.`,
         indexTable(write),
         ...write.map(indexSection),
