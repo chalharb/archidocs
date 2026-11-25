@@ -6,7 +6,10 @@ export type Lens = BundleLens;
 export type ImpactWay = "upstream" | "downstream" | "both";
 const ways: readonly ImpactWay[] = ["upstream", "downstream", "both"];
 export const directions: readonly Direction[] = ["TB", "BT", "LR", "RL"];
-const paths = ["shortest"] as const;
+/** The values of `paths`, `mode` and `brokers` that aren't numbers, shared by the parser, the formatter and the list. */
+const SHORTEST = "shortest";
+const GRAPH = "graph";
+const BROKERS_ON = "1";
 
 /** Values as a sentence: `` `a`, `b` or `c` ``. */
 const oneOf = (values: readonly (string | number)[]): string => {
@@ -15,9 +18,10 @@ const oneOf = (values: readonly (string | number)[]): string => {
 };
 
 /** The route every place sits under: a View, by id. Query parameters follow a `?`. */
+const ROUTE_PREFIX = "#/view/";
 export const VIEW_ROUTE = {
-  prefix: "#/view/",
-  syntax: "#/view/<view-id>",
+  prefix: ROUTE_PREFIX,
+  syntax: `${ROUTE_PREFIX}<view-id>`,
   does: "Opens the View with this id: `c2`, a Generated View such as `c2/payments:payments` or `deployment/prod`, or a Saved View's qualified id. An empty route opens the Service Landscape, `c2`.",
 } as const;
 
@@ -44,11 +48,11 @@ export const URL_PARAMETERS = [
   { name: "team", values: "A Team id", does: "Turns on the Team Lens: what this Team owns. Read only without `impact`." },
   { name: "from", values: "An Element id", does: "Turns on the Connect to… Lens: the paths from this Element to the one `to` names. Read only without `impact` and `team`." },
   { name: "to", values: "An Element id", does: "The other end of the Connect to… Lens. Read only with `from`." },
-  { name: "paths", values: `${oneOf(paths)}, or a whole number of hops`, does: "Which paths the Connect to… Lens lights: the shortest, however long, or every path of at most that many hops. Left out, `shortest`." },
+  { name: "paths", values: `${oneOf([SHORTEST])}, or a whole number of hops`, does: "Which paths the Connect to… Lens lights: the shortest, however long, or every path of at most that many hops. Left out, `shortest`." },
   { name: "picks", values: "Element or Deployment ids, separated by commas", does: "Picks these nodes, as Save as View and downloads use them." },
   { name: "step", values: "A whole number from 1", does: "Selects this Step of a Dynamic View." },
-  { name: "mode", values: "`graph`", does: "Draws a Dynamic View as the graph of numbered Steps instead of the sequence chart." },
-  { name: "brokers", values: "`1`", does: "Draws a Dynamic View's event Steps as publish and deliver legs through their broker." },
+  { name: "mode", values: oneOf([GRAPH]), does: "Draws a Dynamic View as the graph of numbered Steps instead of the sequence chart." },
+  { name: "brokers", values: oneOf([BROKERS_ON]), does: "Draws a Dynamic View's event Steps as publish and deliver legs through their broker." },
   { name: "at", values: "A tag, commit sha or date", does: "Shows the whole viewer at this past Revision." },
   { name: "vs", values: "A tag, commit sha or date", does: "Compares against this Revision: what changed from it to `at`, or to the latest." },
   { name: "adr", values: "An ADR's qualified id, such as `payments:0001`", does: "Opens this ADR in the reader." },
@@ -91,7 +95,7 @@ export interface Place {
 export const HOME: Place = { view: "c2", open: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
 
 /** The route, then the View id up to the first `?`, then the query. */
-const ROUTE_PATTERN = new RegExp(`^${VIEW_ROUTE.prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^?]*)(?:\\?(.*))?$`);
+const ROUTE_PATTERN = new RegExp(`^${ROUTE_PREFIX}([^?]*)(?:\\?(.*))?$`);
 
 /**
  * Reads a place from a hash such as `#/view/c2?open=shop:checkout&sel=shop:cart&dir=TB`.
@@ -115,8 +119,8 @@ export function parsePlace(hash: string): Place {
     lens: parseLens(get),
     picks: list("picks"),
     step: positive(get("step")),
-    graph: get("mode") === "graph",
-    brokers: get("brokers") === "1",
+    graph: get("mode") === GRAPH,
+    brokers: get("brokers") === BROKERS_ON,
     at: get("at") || null,
     vs: get("vs") || null,
     adr: get("adr") || null,
@@ -139,7 +143,7 @@ function parseLens(get: (name: UrlParameterName) => string | null): Lens | null 
   const [from, to] = [get("from"), get("to")];
   if (from && to) {
     const hops = Number(get("paths"));
-    return { path: { from, to, paths: Number.isInteger(hops) && hops > 0 ? hops : "shortest" } };
+    return { path: { from, to, paths: Number.isInteger(hops) && hops > 0 ? hops : SHORTEST } };
   }
   return null;
 }
@@ -151,7 +155,7 @@ function formatLens(lens: Lens): string[] {
   if ("impact" in lens) return [pair("impact", encode(lens.impact)), pair("way", lens.direction)];
   if ("team" in lens) return [pair("team", encode(lens.team))];
   const { from, to, paths } = lens.path;
-  return [pair("from", encode(from)), pair("to", encode(to)), ...(paths !== undefined && paths !== "shortest" ? [pair("paths", paths)] : [])];
+  return [pair("from", encode(from)), pair("to", encode(to)), ...(paths !== undefined && paths !== SHORTEST ? [pair("paths", paths)] : [])];
 }
 
 /** Writes a place as a hash; ids keep their `:`, `/` and `@` (a Deployment's `<service>@<target>`) so links stay readable. */
@@ -163,8 +167,8 @@ export function formatPlace(place: Place): string {
   if (place.lens !== null) query.push(...formatLens(place.lens));
   if (place.picks.length > 0) query.push(pair("picks", place.picks.map(encode).join(",")));
   if (place.step !== null) query.push(pair("step", place.step));
-  if (place.graph) query.push(pair("mode", "graph"));
-  if (place.brokers) query.push(pair("brokers", 1));
+  if (place.graph) query.push(pair("mode", GRAPH));
+  if (place.brokers) query.push(pair("brokers", BROKERS_ON));
   if (place.at !== null) query.push(pair("at", encode(place.at)));
   if (place.vs !== null) query.push(pair("vs", encode(place.vs)));
   if (place.adr !== null) query.push(pair("adr", encode(place.adr)));

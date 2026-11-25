@@ -241,6 +241,7 @@ To change a reference page, change its source, never the page:
 | MCP tools | The tool registrations in `src/mcp/` |
 | Check rules | `src/core/rules.ts` |
 | CI | `action.yml` and the GitLab template in `templates/gitlab/` |
+| Viewer URLs | `URL_PARAMETERS` and `VIEW_ROUTE` in `viewer/src/place.ts`; the worked links in `website/src/reference/viewer-urls.ts` |
 
 A generated command page, as Markdown:
 

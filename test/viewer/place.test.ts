@@ -76,12 +76,13 @@ describe("parsing and formatting", () => {
     expect(parsePlace(h), `${name} changes nothing`).not.toEqual(parsePlace(hash("c2", query.replace(new RegExp(`(^|&)${name}=[^&]*`), ""))));
   });
 
-  it("round-trips every parameter at once, in the list's order", () => {
-    const query = ["open", "sel", "dir", "picks", "step", "mode", "brokers", "at", "vs", "adr"].map((n) => samples[n]).join("&");
-    const ordered = parsePlace(hash("c2", query));
-    expect(formatPlace(ordered)).toBe(
-      hash("c2", "open=shop:checkout,payments:payments&sel=shop:cart&dir=LR&picks=shop:cart,shop:web&step=3&mode=graph&brokers=1&at=v1&vs=2025-07-21&adr=shop:0002"),
-    );
+  it("writes parameters in the list's order, whatever order they were read in", () => {
+    // One Lens at a time: the Connect to… Lens, whose three parameters can all be present.
+    const pairs = Object.values(samples).flatMap((q) => q.split("&"));
+    const value = (name: string) => pairs.find((p) => p.startsWith(`${name}=`))!;
+    const present = names.filter((n) => !["impact", "way", "team"].includes(n));
+    const query = (order: readonly string[]) => order.map(value).join("&");
+    expect(formatPlace(parsePlace(hash("c2", query([...present].reverse()))))).toBe(hash("c2", query(present)));
   });
 
   it("formats the route from VIEW_ROUTE, keeping `/`, `:` and `@` in ids", () => {

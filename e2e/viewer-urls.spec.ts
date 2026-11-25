@@ -10,8 +10,8 @@ test.use({ baseURL: `http://127.0.0.1:${PORT}${SITES.bigBank}` });
 const panel = (page: Page) => page.getByRole("complementary", { name: "Element" });
 const lens = (page: Page) => page.getByRole("region", { name: "Lens" });
 
-/** What each worked link must show, by its hash: the screen its row on the reference page describes. */
-const shows: Record<string, (page: Page) => Promise<void>> = {
+/** What each worked link must show on screen, by its hash: the screen its row on the reference page describes. */
+const checks: Record<string, (page: Page) => Promise<void>> = {
   "#/view/c2?from=digital:spa&to=core:mainframe": async (page) => {
     await expect(lens(page)).toContainText("Paths from Single-Page Application to Mainframe");
   },
@@ -41,7 +41,7 @@ const shows: Record<string, (page: Page) => Promise<void>> = {
 };
 
 test("every worked link on the viewer URL reference has a check here", () => {
-  expect(WORKED_LINKS.map((l) => formatPlace(l.place)).sort()).toEqual(Object.keys(shows).sort());
+  expect(WORKED_LINKS.map((l) => formatPlace(l.place)).sort()).toEqual(Object.keys(checks).sort());
 });
 
 for (const link of WORKED_LINKS) {
@@ -49,6 +49,6 @@ for (const link of WORKED_LINKS) {
   test(`${link.who}: ${link.question} ${h}`, async ({ page }) => {
     await open(page, h);
     expect(hash(page)).toBe(h);
-    await shows[h]!(page);
+    await checks[h]!(page);
   });
 }
