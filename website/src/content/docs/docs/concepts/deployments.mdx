@@ -34,9 +34,9 @@ The [Deployment Targets and Deployments reference](/docs/reference/model/deploym
 
 A Deployment's `url` is the Service's main address in that Environment. Big Bank's API is `https://api.bigbank.example` in production and `https://api.staging.bigbank.example` in staging. `endpoints` adds more named URLs, such as a health check.
 
-That answers the QA Tester's question, "what is this Service's URL in staging?". The viewer shows it in the Element panel. Over MCP, [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments) returns it.
+That answers the QA Tester's question, "what is this Service's URL in staging?". The viewer shows it in the Element panel. Over MCP, [`get_deployments`](/docs/reference/mcp/get_deployments/) returns it.
 
-Agents can go the other way too. [`search_elements`](/docs/reference/mcp/read-tools/#search_elements) finds the Service deployed at a URL or host name.
+Agents can go the other way too. [`search_elements`](/docs/reference/mcp/search_elements/) finds the Service deployed at a URL or host name.
 
 ## Deployment Views
 

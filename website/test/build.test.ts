@@ -58,7 +58,7 @@ describe("the built site", () => {
     expect(generated).toMatch(/^### `--all-saved`$/m);
   });
 
-  it("shows the quick start's files, tabs and screenshots from examples/quick-start, which is no demo", () => {
+  it("shows the quick start's files and screenshots from examples/quick-start, which is no demo", () => {
     const html = read("docs/start/quick-start/index.html");
     // Its Workspace isn't deployed, so it has screenshots of the viewer but no live viewer to link, and no Examples page.
     for (const shot of ["quick-start-landscape", "quick-start-online-shop"]) {
@@ -69,14 +69,21 @@ describe("the built site", () => {
     }
     expect(html).not.toContain("Open in the live viewer");
     expect(existsSync(file("docs/examples/quick-start/index.html"))).toBe(false);
-    expect(html.match(/<a role="tab"/g)).toHaveLength(3);
 
-    // The Markdown copy: each tab under its label, each file in full under its path, the screenshots as images.
+    // The Markdown copy: each file in full under its path, the screenshots as images.
     const markdown = read("docs/start/quick-start.md");
-    expect(markdown).toContain("**pnpm**\n\n```bash\npnpm add --global archidocs\n```\n\n**npx**\n\n");
     expect(markdown).toContain('```yaml title="archidocs/shop/project.yaml"\nid: shop\nname: Shop\nowner: storefront\n```');
     expect(markdown).toContain("](/screenshots/light/quick-start-landscape.png)");
     expect(markdown).not.toMatch(/<\/?Tab|<Screenshot|file="examples\/|Open in the live viewer|^import /m);
+  });
+
+  it("shows the installation page's package-manager tabs, and each tab under its label in the Markdown copy", () => {
+    const html = read("docs/start/installation/index.html");
+    // Install, upgrade and uninstall each have npm, pnpm and npx tabs; pinning has GitHub Actions and GitLab CI.
+    expect(html.match(/<a role="tab"/g)).toHaveLength(11);
+    const markdown = read("docs/start/installation.md");
+    expect(markdown).toContain("**pnpm**\n\nGlobally:\n\n```bash\npnpm add --global archidocs\n```");
+    expect(markdown).not.toMatch(/<\/?Tab|^import /m);
   });
 
   it("serves a picture for every shot in the shot list, in both themes", () => {

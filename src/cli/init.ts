@@ -4,7 +4,7 @@ import { dirname, join, relative, sep } from "node:path";
 import { findWorkspaceRoot, nodeFileSystem } from "../core/index.ts";
 import { SKILL_NAME, skillStub } from "../guide/index.ts";
 
-/** Where harnesses look for skills; the stub goes into each. */
+/** Where coding agents look for skills; the stub goes into each. */
 export const SKILL_DIRS = [".agents/skills", ".claude/skills", ".github/skills"] as const;
 
 const STARTER_WORKSPACE = `# The Archidocs Workspace root: Teams and Environments are defined here only.
@@ -75,11 +75,11 @@ export async function init({ repoRoot, cwd, skillOnly, workspace }: InitOptions)
   const mcpPath = workspace ?? where ?? "<path-to-workspace-checkout>";
   out.push(
     "",
-    "Register the Archidocs MCP server with your agent harness, started from the repo root:",
+    "Register the Archidocs MCP server with your coding agent, started from the repo root:",
     "",
     `  archidocs mcp --workspace ${mcpPath}`,
     "",
-    ...(workspaceDir === undefined ? ["Point --workspace at a local checkout of the Workspace repo, relative to where the harness starts the server."] : []),
+    ...(workspaceDir === undefined ? ["Point --workspace at a local checkout of the Workspace repo, relative to where the coding agent starts the server."] : []),
   );
   return out;
 }

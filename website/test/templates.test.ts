@@ -132,10 +132,6 @@ const BANNED_WORDS: BannedWord[] = [
   {
     word: "harness",
     instead: "coding agent",
-    // Ticket 06 empties this.
-    notYetMigrated: [
-      `${DOCS}/guides/agents/connect-mcp.mdx`,
-    ],
   },
 ];
 

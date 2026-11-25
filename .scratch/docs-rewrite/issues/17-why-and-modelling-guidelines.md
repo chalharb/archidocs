@@ -1,6 +1,6 @@
 # 17: "Why Archidocs" and Modelling guidelines
 
-Status: ready-for-agent
+Status: done
 Blocked by: 07
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -26,6 +26,6 @@ Take the guidance from `guide/` and the v1 tickets, so people and agents are tol
 
 ## Acceptance criteria
 
-- [ ] Both pages exist and are linked from the docs home.
-- [ ] The page names no other product.
-- [ ] Nothing in the modelling guidelines contradicts the agent guide in `guide/`.
+- [x] Both pages exist and are linked from the docs home.
+- [x] The page names no other product.
+- [x] Nothing in the modelling guidelines contradicts the agent guide in `guide/`.

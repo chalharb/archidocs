@@ -1,0 +1,48 @@
+---
+title: Why Archidocs
+description: The problem it solves, what makes it different, and when another kind of tool fits better.
+sidebar:
+  order: 5
+---
+
+This page is for someone choosing how to keep their architecture written down. It says what problem Archidocs solves, how it differs from the usual approaches, and when it isn't the right fit.
+
+## The problem
+
+- **Diagrams drawn by hand go stale.** A diagram is right on the day it is drawn. After that, every change to the software has to be redrawn by someone who remembers to. Most aren't, so readers can't tell which boxes still exist.
+- **No one Team holds the whole picture.** Each [Team](/docs/reference/glossary/#term-team), a group that owns part of the architecture, knows its own Services well and the rest of the organization vaguely. To answer "what breaks if this goes down?", someone asks around, Team by Team.
+- **The answers live in different places.** Who owns a [Service](/docs/reference/glossary/#term-service), a deployable unit of software, where it runs and what its URL is in staging are often kept in a wiki, a spreadsheet and a chat thread. Each copy drifts on its own.
+
+## The usual approaches
+
+Teams usually reach for one of three kinds of tool. Each solves part of the problem.
+
+| Approach | What it does well | Where it falls short |
+| --- | --- | --- |
+| Diagrams drawn by hand | Quick to start, and every box can go exactly where you want it | Nothing checks a diagram against anything. Each diagram is its own copy of the truth, and it goes stale. |
+| Diagrams as code | The diagrams live in git and change through review | The text often describes one diagram, not one model, so two diagrams can still disagree. Ownership, Environments and URLs are rarely part of it. |
+| A service catalog | Lists every Service with its owner and links | It lists Services but rarely shows how they depend on each other. Impact questions stay hard. It usually runs as a hosted app with a database of its own. |
+
+## What Archidocs does differently
+
+- **One validated Model.** Every Team writes its slice as YAML in one [Workspace](/docs/reference/glossary/#term-workspace), a single git repo. `archidocs check` validates the whole [Model](/docs/reference/glossary/#term-model), every Element and Relationship, at one commit. An [Element](/docs/reference/glossary/#term-element) is a node of the Model, and a [Relationship](/docs/reference/glossary/#term-relationship) is one Element's dependency on another. A reference to another Team's Service that doesn't exist fails before it merges. Every diagram is a [View](/docs/reference/glossary/#term-view), a query over that Model, so no two can disagree.
+- **An Owner on every Element.** Each Element has exactly one [Owner](/docs/reference/glossary/#term-owner), the Team accountable for it. The viewer shows it on every node, so the Team to call is never a guess.
+- **A URL per Environment.** A [Deployment](/docs/reference/glossary/#term-deployment), one Service running in one [Environment](/docs/reference/glossary/#term-environment) such as `prod`, holds that Service's URL there. The URL for staging is in the Model, next to the one for production.
+- **Impact questions.** Relationships always point from what depends to what is depended on. So the viewer and agents can answer what is Upstream of an outage, or how two Services connect, across every Team.
+- **The same answers for people and agents.** The viewer and the [MCP server](/docs/concepts/agents-and-mcp/) read the same built Model. A coding agent asking what a Service depends on gets the answer a person sees on screen.
+- **Git is the workflow.** A change to the architecture is a pull request, reviewed like code. Past [Revisions](/docs/reference/glossary/#term-revision), the commits that changed the Model, stay browsable, and two can be compared.
+- **Nothing to run but a static site.** The viewer is a set of files you publish from CI. There is no server, database or sign-in to maintain.
+
+## When it isn't the right tool
+
+- **A one-off sketch.** Archidocs draws only what the Model holds, and you can't move a box by hand. For a whiteboard picture of an idea, a drawing tool is quicker.
+- **Finding out what is running.** Archidocs shows what Teams declare. It doesn't read your clusters, cloud accounts or traces, and it doesn't detect drift from them.
+- **Architecture spread over many repos.** A Workspace is one git repo. Each Team gets a folder in it, not a repo of its own.
+- **A catalog of everything.** A Workspace holds architecture: Elements, Relationships, Deployments, Views and ADRs. It has no place for on-call rotations, scorecards or package versions.
+- **A hosted service with sign-in.** The viewer is a static site you host, and the MCP server runs on your machine or in your CI. There is no shared server to sign in to.
+
+## Next
+
+- [Quick start](/docs/start/quick-start/): see your own Model in the viewer in about five minutes.
+- [How Archidocs works](/docs/concepts/how-archidocs-works/): the whole picture on one page.
+- [Big Bank demo ↗](https://big-bank.archidocs.dev): a finished Workspace with five Teams.

@@ -1,6 +1,6 @@
 # 19: Upgrading and versioning
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -40,6 +40,6 @@ Answered by the maintainer on 2026-11-24.
 ## Acceptance criteria
 
 - [x] The eight answers are recorded in this ticket.
-- [ ] The page exists under Help and states each promise in one sentence.
-- [ ] The page states the viewer URL exception as written above, without promising a redirect.
-- [ ] The Installation page's upgrade section links it.
+- [x] The page exists under Help and states each promise in one sentence.
+- [x] The page states the viewer URL exception as written above, without promising a redirect.
+- [x] The Installation page's upgrade section links it.

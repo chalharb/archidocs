@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { commandList } from "../../src/cli/commands.ts";
 import { rules } from "../../src/core/rules.ts";
 import { PAGEFIND_RANKING } from "../src/lib/search.ts";
+import { listTools, toolPath } from "../src/reference/mcp.ts";
 
 /** The URLs of Pagefind's first results for each query, searching the built index with the ranking the site's search box uses. */
 async function firstResults(page: Page, queries: string[]): Promise<Record<string, string | undefined>> {
@@ -53,17 +54,19 @@ test("a CLI flag only one command takes finds that command's page first", async 
   expect(await firstResults(page, Object.keys(expected))).toEqual(expected);
 });
 
-test("an MCP tool name finds its tools page first, for every tool", async ({ page }) => {
-  const headings = async (path: string) => {
-    await page.goto(path);
-    return page.locator(".sl-markdown-content h2").evaluateAll((hs) => hs.map((h) => h.id));
-  };
-  const expected: Record<string, string> = {};
-  for (const path of ["/docs/reference/mcp/read-tools/", "/docs/reference/mcp/write-tools/"]) for (const id of await headings(path)) expected[id] = path;
-  expect(expected["upsert_element"]).toBe("/docs/reference/mcp/write-tools/");
+test("an MCP tool name finds the tool's own page first, for every tool", async ({ page }) => {
+  const tools = await listTools();
+  const expected = Object.fromEntries(tools.map((t) => [t.name, toolPath(t)]));
+  expect(expected["upsert_element"]).toBe("/docs/reference/mcp/upsert_element/");
   // The `check` tool shares its name with the `archidocs check` command, whose page fairly comes first.
   delete expected["check"];
   expect(await firstResults(page, Object.keys(expected))).toEqual(expected);
+});
+
+test("an old read-tools or write-tools anchor still lands on the tool's heading", async ({ page }) => {
+  await page.goto("/docs/reference/mcp/write-tools/#upsert_element");
+  await expect(page.locator("h2#upsert_element")).toBeVisible();
+  await expect(page.locator('.sl-markdown-content a[href="/docs/reference/mcp/upsert_element/"]').first()).toBeVisible();
 });
 
 test("the search box finds a rule and links to its page", async ({ page }) => {

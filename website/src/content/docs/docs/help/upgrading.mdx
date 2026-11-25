@@ -1,0 +1,121 @@
+---
+title: Upgrading
+description: What an Archidocs version number promises, how to upgrade the CLI and CI together, and how to read the Changelog.
+sidebar:
+  order: 3
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+Archidocs follows semantic versioning. A version is `major.minor.patch`, such as `1.2.0`. This page says what each part promises, and how to move to a new version.
+
+## What breaks only in a major release
+
+Within a major, such as every 1.x release, these keep working:
+
+- **CLI:** the [commands](/docs/reference/cli/), their flags and their exit codes change only in a major release.
+- **Model YAML:** a [Workspace](/docs/reference/glossary/#term-workspace), the repo that holds the whole architecture, that passes `archidocs check` keeps passing within a major.
+- **New rules:** a new [rule](/docs/reference/rules/) arrives as a warning first.
+- **MCP tools:** tool names, required inputs and existing output fields change only in a major release.
+- **New MCP tools:** new tools and new optional fields can arrive in a minor release.
+- **Rule ids:** a rule's id is never reused.
+- **Removed rules:** a removed rule keeps a stub page, so the links that `archidocs check` printed still open.
+- **Viewer URLs:** a shared viewer link keeps opening the same screen within a major, except for the change below.
+- **Node.js:** Archidocs supports every Node.js line in active or maintenance LTS.
+- **Dropping Node.js:** dropping support for a Node.js line needs a major release.
+
+The [viewer URL reference](/docs/reference/viewer-urls/) lists the routes and parameters that the promise covers.
+
+### The exception: viewer URLs lose `#/`
+
+Viewer URLs will drop `/#/` in a 1.x release, so the hash form, such as `#/view/c2`, will change within v1. What an old `#/view/…` link does after that change isn't decided yet. Nothing is promised about old links until that work is specified.
+
+## What carries no promise
+
+The [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one file the viewer and MCP server read, has no promise. Its format and its `schemaVersion` are internal, and can change in any release. Sites and caches rebuild the Workspace Bundle from git, so a new format needs no action from you. The Changelog says when the format changes.
+
+## The Action's tags
+
+- **`@v1`:** a moving tag that each 1.x release moves to itself, so `chalharb/archidocs@v1` always runs the newest 1.x release.
+- **`@v1.2.0`:** a fixed tag that pins one release.
+
+The GitLab template's URL uses the same tags. There the tag picks only the template file. The template's `version` input picks the CLI it runs.
+
+## Upgrade the CLI and CI together
+
+Run the same version on your machine and in CI, so a check that passes locally passes in the pipeline.
+
+### 1. Upgrade the CLI
+
+Install the new version with the package manager you used. [Installation](/docs/start/installation/#upgrade) has the command for npm, pnpm and npx.
+
+### 2. Upgrade the CI pipeline
+
+<Tabs syncKey="ci">
+<TabItem label="GitHub Actions">
+
+With `@v1` and no `version` input, there is nothing to change: the next 1.x release moves the tag. If you pin, change the tag or the `version` input to the new release:
+
+```yaml title=".github/workflows/architecture.yml"
+      - uses: chalharb/archidocs@v1
+        with:
+          version: 1.2.0
+```
+
+For a new major, change `@v1` to the new major, such as `@v2`. See the [GitHub Action reference](/docs/reference/ci/github-action/).
+
+</TabItem>
+<TabItem label="GitLab CI">
+
+If you set the `version` input, change it to the new release:
+
+```yaml title=".gitlab-ci.yml"
+include:
+  - remote: https://raw.githubusercontent.com/chalharb/archidocs/v1/templates/gitlab/archidocs.gitlab-ci.yml
+    inputs:
+      version: 1.2.0
+```
+
+Without a `version` input, the template runs the newest release on npm, even a new major. Pin `version` to stay on one major. For a new major, change `/v1/` in the URL and the `version` input. See the [GitLab template reference](/docs/reference/ci/gitlab-template/).
+
+</TabItem>
+</Tabs>
+
+### 3. Run `archidocs init` again
+
+From the Workspace repo's root, run:
+
+```bash
+archidocs init
+```
+
+It refreshes the agent skill files that the new version changed, and adds any setup that is missing. It leaves your [Model](/docs/reference/glossary/#term-model), every Element and Relationship of your architecture, alone. [Installation](/docs/start/installation/#upgrade) shows what it prints.
+
+### 4. Check the Workspace
+
+```bash
+archidocs check
+```
+
+```text
+0 errors, 0 warnings
+```
+
+Within a major, a Workspace that passed still has no errors. A new rule can add a warning, and the warning's line links the rule's page. With `archidocs check --strict`, a warning fails the check, so fix it before you upgrade CI.
+
+## Read the Changelog
+
+The [Changelog](/docs/reference/changelog/) lists every release, newest first. release-please writes it from the type of each commit message. The type decides the section and the version number:
+
+| Commit type | Changelog section | Release |
+| --- | --- | --- |
+| A breaking change, marked `!` | ⚠ BREAKING CHANGES | Major |
+| `feat` | Features | Minor |
+| `fix` | Bug fixes | Patch |
+
+`perf` and `revert` commits get the Performance and Reverts sections. Other types, such as `docs`, `refactor` and `chore`, don't appear in the Changelog. Before a major upgrade, read its ⚠ BREAKING CHANGES section, which lists the breaking changes.
+
+## Related
+
+- [Installation](/docs/start/installation/): install, upgrade, pin and remove the CLI.
+- [Troubleshooting](/docs/help/troubleshooting/): fixes for the problems people hit most.

@@ -1,0 +1,51 @@
+---
+title: See where a Service runs
+description: Find each Environment a Service is deployed in, its Deployment Target and its URL.
+sidebar:
+  order: 3
+---
+
+import Screenshot from "../../../../../components/Screenshot.astro";
+
+See where a [Service](/docs/reference/glossary/#term-service) is deployed in each [Environment](/docs/reference/glossary/#term-environment), and copy its URL there.
+
+## Before you start
+
+- You have a viewer open. See [Find an Element](/docs/guides/viewer/find-an-element/).
+- The Service has Deployments in the Model. See [Add Deployments](/docs/guides/model/add-deployments/).
+
+## 1. Ask where it is deployed
+
+Select the Service. Under **Where is it deployed?** in its Element panel, select an Environment.
+
+The viewer opens that Environment's [Deployment View](/docs/reference/glossary/#term-deployment-view), which draws every [Deployment](/docs/reference/glossary/#term-deployment) on its [Deployment Target](/docs/reference/glossary/#term-deployment-target). The Service's Deployments are picked:
+
+<Screenshot id="viewer-deployment-view" alt="The Staging Deployment View: the Payments Service is picked inside the Payments System on EKS staging, with its URL, payments.staging.bigbank.example." />
+
+## 2. Copy its URL
+
+Select the **URLs** tab of the Element panel. It lists each Environment the Service runs in, with its Deployment Target and URL. Select **Copy** beside a URL.
+
+## 3. Browse an Environment
+
+The location bar has one button per Environment, such as **Production** and **Staging**. Each opens that Environment's Deployment View, with nothing picked.
+
+## Check it worked
+
+The location bar names the Deployment View and shows a **picked** chip. The picked box carries the Service's URL in that Environment. On the demo, [the Payments Service in Staging ↗](https://big-bank.archidocs.dev/#/view/deployment/staging?picks=payments:payments-service@platform:eks-staging) runs on EKS staging.
+
+## If it didn't
+
+**Where is it deployed?** says "Not deployed in any Environment." The Model has no Deployment for the Service. Add one: see [Add Deployments](/docs/guides/model/add-deployments/).
+
+The **URLs** tab says "No URL" under an Environment. The Deployment has no `url` in the Model.
+
+## With an agent
+
+Ask "Where is the Payments Service deployed, and at which URL?". [`get_deployments`](/docs/reference/mcp/get_deployments/) answers it for every Environment, or for one.
+
+## Related
+
+- [Deployments](/docs/concepts/deployments/)
+- [Add Deployments](/docs/guides/model/add-deployments/)
+- [Viewer URLs](/docs/reference/viewer-urls/)

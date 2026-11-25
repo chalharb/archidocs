@@ -75,7 +75,7 @@ export const SEE_ALSO: Readonly<Record<CommandName, readonly SeeAlso[]>> = {
   dev: [
     { href: "/docs/start/quick-start/", why: "opens a new Workspace in the viewer with it" },
     { href: "/docs/guides/model/save-a-view/", why: "uses the viewer it serves to write a Saved View" },
-    { href: "/docs/concepts/viewer/", why: "what the viewer shows" },
+    { href: "/docs/guides/viewer/", why: "what the viewer shows" },
   ],
   export: [
     { href: "/docs/guides/review/export/", why: "exports one View or every Saved View, with each option shown" },
@@ -90,7 +90,7 @@ export const SEE_ALSO: Readonly<Record<CommandName, readonly SeeAlso[]>> = {
     { href: "/docs/guides/publish/other-hosts/", why: "keeps that cache between CI runs" },
   ],
   mcp: [
-    { href: "/docs/guides/agents/connect-mcp/", why: "registers it with an agent harness, from a checkout, a published site or over HTTP" },
+    { href: "/docs/guides/agents/connect-mcp/", why: "registers it with Claude Code, Cursor, VS Code / Copilot or Codex, from a checkout, a published site or over HTTP" },
     { href: "/docs/concepts/agents-and-mcp/", why: "what the server offers an agent" },
   ],
 };
