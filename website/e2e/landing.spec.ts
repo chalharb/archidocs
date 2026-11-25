@@ -66,9 +66,9 @@ test("each persona question links its MCP tools to their reference", async ({ pa
   const rows = page.locator(".questions tbody tr");
   await expect(rows).toHaveCount(6);
   const link = rows.getByRole("link", { name: "get_impact" });
-  await expect(link).toHaveAttribute("href", "/docs/reference/mcp/read-tools/#get_impact");
+  await expect(link).toHaveAttribute("href", "/docs/reference/mcp/get_impact/");
   await link.click();
-  await expect(page.locator("#get_impact")).toBeVisible();
+  await expect(page.locator("h1")).toHaveText("get_impact");
 });
 
 test("at 390 wide the page doesn't scroll sideways and the diagram does", async ({ page }) => {
