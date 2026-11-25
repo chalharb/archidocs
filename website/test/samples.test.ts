@@ -112,7 +112,7 @@ describe("sample regions", () => {
   });
 
   it("titles a sample that is wrong on purpose with the rule it fails", () => {
-    expect(fillSamples('```yaml file="website/samples/own-prefix/archidocs/shop/project.yaml" fails="own-project-prefix"\n```')).toContain('title="shop/project.yaml · fails check: own-project-prefix"');
+    expect(fillSamples('```yaml file="website/samples/unknown-environment/archidocs/shop/project.yaml" fails="unknown-environment"\n```')).toContain('title="shop/project.yaml · fails check: unknown-environment"');
   });
 
   it("fills a page's sample fences for its Markdown copy", () => {

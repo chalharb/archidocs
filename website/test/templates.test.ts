@@ -8,7 +8,7 @@
  * - a page that is NOT on its list breaks the rule: fix the page, never add it to the list;
  * - a page that IS on its list now passes, or is gone: remove it from the list.
  *
- * So a list can only shrink. Tickets 06, 08 and 09 of `.scratch/docs-rewrite/`
+ * So a list can only shrink. Tickets 06 and 08 of `.scratch/docs-rewrite/`
  * empty them, and after that every list stays empty.
  */
 import { readdirSync, readFileSync } from "node:fs";
@@ -50,10 +50,12 @@ const blank = (text: string, pattern: RegExp): string => text.replace(pattern, (
 const FRONTMATTER = /^---\n[\s\S]*?\n---[ \t]*(?=\n|$)/;
 const FENCE = /^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?^[ \t]*\1[ \t]*$/gm;
 
+/** A page's text without its frontmatter and code blocks, with the line breaks kept. */
+const body = (text: string): string => blank(blank(text, FRONTMATTER), FENCE);
+
 /** A page's Markdown headings. A `#` line in the frontmatter or in a code block is not one. */
 function headings(text: string): { level: number; text: string }[] {
-  const body = blank(blank(text, FRONTMATTER), FENCE);
-  return [...body.matchAll(/^(#{1,6})[ \t]+(.+?)[ \t]*$/gm)].map((m) => ({ level: m[1]!.length, text: m[2]! }));
+  return [...body(text).matchAll(/^(#{1,6})[ \t]+(.+?)[ \t]*$/gm)].map((m) => ({ level: m[1]!.length, text: m[2]! }));
 }
 
 /**
@@ -77,11 +79,41 @@ const guideProblems = (page: Page): string[] => {
 /** A numbered step heading: one that starts with a number, as `## 1. Add the file` or `### Step 2` does. */
 const NUMBERED = /^(step\s+)?\d/i;
 
-/** The numbered step headings on a concept page, which has none. */
-const conceptProblems = (page: Page): string[] =>
-  headings(page.text)
-    .filter((h) => NUMBERED.test(h.text))
-    .map((h) => `${page.path}: numbered step heading "${h.text}"`);
+/** The `##` headings every concept page has, spelled exactly as here. */
+const CONCEPT_HEADINGS = ["Why it works this way", "Related"];
+
+/** What a concept page breaks of the concept template: a numbered step heading, or a missing heading. */
+const conceptProblems = (page: Page): string[] => {
+  const found = headings(page.text);
+  return [
+    ...found.filter((h) => NUMBERED.test(h.text)).map((h) => `${page.path}: numbered step heading "${h.text}"`),
+    ...CONCEPT_HEADINGS.filter((h) => !found.some((f) => f.level === 2 && f.text === h)).map((h) => `${page.path}: no "## ${h}" heading`),
+  ];
+};
+
+/** The most links one sentence may hold. */
+const MAX_LINKS = 2;
+
+/** A Markdown link, `[text](target)`. Its text holds no `]`, its target no space. */
+const LINK = /\[[^\]\n]*\]\([^)\s]*\)/g;
+
+/**
+ * The sentences of a page's text, outside the frontmatter and code blocks.
+ * A line break ends one, so each list item and table row stands alone; so
+ * does `.`, `!` or `?` followed by a space.
+ */
+const sentences = (text: string): string[] =>
+  body(text)
+    .split("\n")
+    .flatMap((line) => line.split(/(?<=[.!?])\s+/))
+    .filter((s) => s.trim() !== "");
+
+/** Each sentence on a page with more than two links. */
+const linkProblems = (page: Page): string[] =>
+  sentences(page.text).flatMap((s) => {
+    const links = s.match(LINK)?.length ?? 0;
+    return links > MAX_LINKS ? [`${page.path}: ${links} links in "${s.trim().slice(0, 80)}…"`] : [];
+  });
 
 interface BannedWord {
   /** Matched in prose at the start of a word, in any case, so "harness" also finds "Harnesses". */
@@ -102,7 +134,6 @@ const BANNED_WORDS: BannedWord[] = [
     instead: "coding agent",
     // Ticket 06 empties this.
     notYetMigrated: [
-      `${DOCS}/concepts/agents-and-mcp.mdx`,
       `${DOCS}/guides/agents/connect-mcp.mdx`,
       `${DOCS}/guides/agents/install-skill.mdx`,
     ],
@@ -141,8 +172,11 @@ const GUIDES_NOT_YET_MIGRATED = [
   `${DOCS}/guides/review/export.mdx`,
 ];
 
-/** Concept pages with numbered step headings. None has any today; keep it empty. */
+/** Concept pages still to rewrite to the concept template. Ticket 09 emptied it; keep it empty. */
 const CONCEPTS_NOT_YET_MIGRATED: string[] = [];
+
+/** Concept pages with a sentence of more than two links. Ticket 09 emptied it; keep it empty. */
+const LINKS_NOT_YET_MIGRATED: string[] = [];
 
 /**
  * Sorts a rule's problems against its not-yet-migrated list:
@@ -179,12 +213,16 @@ describe("how-to guides have Before you start and Check it worked", () => {
   itHolds(guides, guideProblems, GUIDES_NOT_YET_MIGRATED);
 });
 
-describe("concept pages have no numbered step headings", () => {
+describe("concept pages have Why it works this way and Related, and no numbered step headings", () => {
   it("finds the concept pages", () => {
     expect(concepts.length).toBeGreaterThan(0);
   });
 
   itHolds(concepts, conceptProblems, CONCEPTS_NOT_YET_MIGRATED);
+});
+
+describe("no sentence on a concept page has more than two links", () => {
+  itHolds(concepts, linkProblems, LINKS_NOT_YET_MIGRATED);
 });
 
 describe.each(BANNED_WORDS)('no hand-written page says "$word"', (banned) => {
@@ -223,8 +261,21 @@ describe("the template checks", () => {
   });
 
   it("find a numbered step heading on a concept page", () => {
-    const page = { path: "concepts/views.mdx", text: "## 1. Start from the question\n\n### Step 2: save it\n\n## C4 levels\n\n1. A list item, which is fine.\n" };
+    const page = { path: "concepts/views.mdx", text: "## 1. Start from the question\n\n### Step 2: save it\n\n## C4 levels\n\n1. A list item, which is fine.\n\n## Why it works this way\n\n## Related\n" };
     expect(conceptProblems(page)).toEqual(['concepts/views.mdx: numbered step heading "1. Start from the question"', 'concepts/views.mdx: numbered step heading "Step 2: save it"']);
+  });
+
+  it("want Why it works this way and Related on a concept page, at the second level", () => {
+    const page = { path: "concepts/views.mdx", text: "A View.\n\n### Why it works this way\n\n## Related\n" };
+    expect(conceptProblems(page)).toEqual(['concepts/views.mdx: no "## Why it works this way" heading']);
+  });
+
+  it("count the links in each sentence, not in each line or in code", () => {
+    const page = {
+      path: "concepts/views.mdx",
+      text: ["---", "title: Views", "---", "", "See [a](/a/) and [b](/b/). Then [c](/c/), [d](/d/) and [e](/e/).", "", "- [f](/f/), [g](/g/)", "", "```md", "[h](/h/) [i](/i/) [j](/j/)", "```"].join("\n"),
+    };
+    expect(linkProblems(page)).toEqual(['concepts/views.mdx: 3 links in "Then [c](/c/), [d](/d/) and [e](/e/).…"']);
   });
 
   it("find a banned word in prose, with its line, and not in code or a link target", () => {

@@ -2,47 +2,67 @@
 title: Agents and MCP
 description: The MCP server answers the viewer's questions for agents and lets them edit the Model safely.
 sidebar:
-  order: 10
+  order: 11
 ---
 
-:::tip[If you are an agent]
-If you can run Archidocs, prefer its own guide: `archidocs guide` or the MCP `get_authoring_guide` tool serves the [authoring guide](/docs/reference/agent-guide/) that matches the installed version. This site documents the latest release only.
+:::note[For agents]
+If you can run Archidocs, read its own guide: `archidocs guide`, or the MCP tool `get_authoring_guide`. It matches the installed version, while this site documents the latest release only. The same guide is rendered under [Authoring guide for agents](/docs/reference/agent-guide/).
 :::
 
-`archidocs mcp` serves the Model to AI agents over the [Model Context Protocol](https://modelcontextprotocol.io). It is the viewer's twin: what a person can see in the viewer, an agent can ask the MCP server, and the answers come from the same Model.
+`archidocs mcp` serves the Model to coding agents over the [Model Context Protocol](https://modelcontextprotocol.io) (MCP). It is the viewer's twin: what a person can see in the viewer, an agent can ask the MCP server, and both answers come from the same Model.
+
+```text title="An agent's question, and the tool that answers it"
+"What breaks if the mainframe goes down?"
+  → get_impact { "id": "core:mainframe", "direction": "upstream" }
+```
 
 ## Read tools
 
-The [read tools](/docs/reference/mcp/read-tools/) answer the same questions as the viewer: how two Services are connected ([`find_paths`](/docs/reference/mcp/read-tools/#find_paths)), what an outage affects ([`get_impact`](/docs/reference/mcp/read-tools/#get_impact)), where a Service is deployed and at which URL ([`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments)), what a Team owns ([`list_owned`](/docs/reference/mcp/read-tools/#list_owned)), which decisions sit behind an Element ([`list_adrs`](/docs/reference/mcp/read-tools/#list_adrs)) and what changed between two Revisions ([`get_changes`](/docs/reference/mcp/read-tools/#get_changes)). With `--viewer-url`, results link to the same thing in the published viewer, so an agent can hand a person the picture.
+The [read tools](/docs/reference/mcp/read-tools/) answer the same questions as the viewer:
+
+- How are two Services connected? [`find_paths`](/docs/reference/mcp/read-tools/#find_paths)
+- What does an outage affect? [`get_impact`](/docs/reference/mcp/read-tools/#get_impact)
+- Where is a Service deployed, and at which URL? [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments)
+- What does a Team own? [`list_owned`](/docs/reference/mcp/read-tools/#list_owned)
+- Which decisions sit behind an Element? [`list_adrs`](/docs/reference/mcp/read-tools/#list_adrs)
+- What changed between two Revisions? [`get_changes`](/docs/reference/mcp/read-tools/#get_changes)
+
+Started with `--viewer-url`, the server adds a link to each result that opens the same thing in the published viewer. So an agent can hand a person the picture.
 
 ## Write tools
 
-Over a Workspace checkout, the [write tools](/docs/reference/mcp/write-tools/) edit the YAML in place: [`upsert_element`](/docs/reference/mcp/write-tools/#upsert_element), [`upsert_relationship`](/docs/reference/mcp/write-tools/#upsert_relationship), [`upsert_deployment`](/docs/reference/mcp/write-tools/#upsert_deployment), [`upsert_view`](/docs/reference/mcp/write-tools/#upsert_view), [`propose_adr`](/docs/reference/mcp/write-tools/#propose_adr), the `remove_*` tools and more. Each one:
+Over a checkout of the Workspace, the [write tools](/docs/reference/mcp/write-tools/) edit the YAML in place. They add or update Elements, Relationships, Deployments and Views, propose ADRs, and remove things. Each one:
 
-- keeps the file's comments and formatting, and returns a unified diff of what it changed;
-- refuses any change that would fail `archidocs check`, with `validation_failed` and each issue's rule and file:line, so the Model is valid after every step;
-- refuses to remove something still referenced, listing each reference, rather than cascading;
+- keeps the file's comments and formatting, and returns a diff of what it changed;
+- refuses any change that would fail `archidocs check`, with each issue's rule and file:line;
+- refuses to remove something still referenced, and lists each reference;
 - can be tried first with `dry_run: true`, which returns the diff and writes nothing.
 
-The agent edits files in your checkout, like a person would. Committing, opening the pull request and reviewing it stay with you.
+The agent edits files in your checkout, as a person would. Committing, opening the pull request and reviewing it stay with you.
 
 ## Two places to serve from
 
 - **A checkout**, `archidocs mcp --workspace ./archidocs`: read and write tools, for an agent working in the Workspace repo.
-- **A published Bundle**, `archidocs mcp --bundle https://architecture.example.com/workspace.bundle.json`: read tools only, from a site that `archidocs build` published. Any agent can then answer architecture questions without a checkout, and sees the latest published Revision.
+- **A published Bundle**, `archidocs mcp --bundle https://architecture.example.com/workspace.bundle.json`: read tools only, from a site that `archidocs build` published. Any agent can answer architecture questions without a checkout, from the latest published Revision.
 
-The server talks over stdio by default, which is what agent harnesses start. `--http` serves Streamable HTTP on a loopback address instead, with the write tools off unless `--allow-writes` turns them on.
+The server talks over stdio by default, which is how coding agents start MCP servers. `--http` serves Streamable HTTP on a loopback address instead, with the write tools off unless `--allow-writes` turns them on.
 
 ## The authoring guide
 
-The MCP tools say what they do; the authoring guide says how to model well with them: the Model's rules, the edit loop (read, write, handle a refusal, show the diff, finish with `check`), and a task topic for each job, such as bootstrapping a Project from code. It ships with the CLI, so it always matches it:
+The MCP tools say what they do. The authoring guide says how to model well with them: the Model's rules, the edit loop, and a topic for each task, such as bootstrapping a Project from code.
 
-- `archidocs guide` and `archidocs guide <topic>` print it;
-- the MCP tool [`get_authoring_guide`](/docs/reference/mcp/read-tools/#get_authoring_guide) serves it;
-- `archidocs init` installs a skill that points agents at it;
-- this site renders it under [Reference › Authoring guide for agents](/docs/reference/agent-guide/), for the latest release.
+It ships with the CLI, so it always matches it. `archidocs guide` prints it, and the MCP tool `get_authoring_guide` serves it. `archidocs init` installs a skill that points agents at it.
 
 The guides on this site cover the same tasks for people, and each links its agent topic.
+
+## Why it works this way
+
+- **Same answers for people and agents.** The viewer and the MCP server read the same Bundle, so an agent can't tell you something the diagram contradicts.
+- **Writes refuse an invalid Model.** Every write checks the whole Workspace with the change applied. The Model is valid after every step, and a refusal names the rule and the line, so the agent can fix its own mistake.
+- **No cascading removals.** Removing a Service that others depend on would silently change their files. Refusing, with the list of references, leaves that choice to whoever asked.
+- **Edits stay in your checkout.** A change to the architecture is accepted in review, like a change to code. So the agent writes files, and the pull request stays with you.
+- **Read-only from a Bundle, and over HTTP by default.** A published site has no files to write. The HTTP server has no sign-in, so writing over it has to be turned on.
+- **The guide ships with the CLI.** An agent that reads it from the installed version can't follow rules from a newer or older release.
 
 ## Related
 
