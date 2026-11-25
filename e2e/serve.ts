@@ -1,8 +1,11 @@
+import { execFile } from "node:child_process";
 import { createReadStream } from "node:fs";
-import { mkdir, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, stat } from "node:fs/promises";
 import { createServer } from "node:http";
+import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { build } from "vite";
 import { archidocs } from "../test/support/cli.ts";
 import { checkoutScenarioWorkspace, decisionsWorkspace, historyAfter, historyBefore, viewerWorkspace } from "../test/support/fixtures.ts";
@@ -52,6 +55,13 @@ async function previewSite(): Promise<string> {
   return join(repo.repoRoot, "site");
 }
 
+/** The Big Bank demo, built as `pnpm demo:big-bank` builds it. */
+async function bigBankSite(): Promise<string> {
+  const out = join(await mkdtemp(join(tmpdir(), "archidocs-e2e-big-bank-")), "site");
+  await promisify(execFile)(process.execPath, [fileURLToPath(new URL("../examples/big-bank/build-demo.mjs", import.meta.url)), out]);
+  return out;
+}
+
 const roots = new Map<string, string>([
   [SITES.landscape, await site(viewerWorkspace, ["c2", "shop:checkout-impact"])],
   [SITES.big, await site(syntheticWorkspace({ systems: 6, services: 20 }))],
@@ -59,6 +69,7 @@ const roots = new Map<string, string>([
   [SITES.history, await historySite()],
   [SITES.preview, await previewSite()],
   [SITES.decisions, await site(decisionsWorkspace)],
+  [SITES.bigBank, await bigBankSite()],
 ]);
 
 const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };

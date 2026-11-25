@@ -1,6 +1,6 @@
 # 14: Viewer URL reference
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -16,7 +16,7 @@ Don't change what any existing URL means.
 
 ## Acceptance criteria
 
-- [ ] The page lists every parameter the viewer reads.
-- [ ] A unit test fails when the parser reads a parameter that isn't in the list.
-- [ ] Every example link on the page opens the View it describes on the Big Bank demo (checked in the viewer's end-to-end tests).
-- [ ] The viewer's existing URL tests pass unchanged.
+- [x] The page lists every parameter the viewer reads.
+- [x] A unit test fails when the parser reads a parameter that isn't in the list.
+- [x] Every example link on the page opens the View it describes on the Big Bank demo (checked in the viewer's end-to-end tests).
+- [x] The viewer's existing URL tests pass unchanged.

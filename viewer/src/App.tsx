@@ -12,7 +12,7 @@ import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
 import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
-import { HOME, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
+import { HOME, formatPlace, isPlaceHash, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
 import { loadTimeline, pointLabel, type Revision, type Timeline } from "./revisions.ts";
@@ -49,7 +49,7 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error
  */
 function openPreview(timeline: Timeline) {
   const base = timeline.previewBase();
-  if (base && !/^#\/view\//.test(window.location.hash)) go({ ...HOME, vs: pointLabel(base) }, { replace: true });
+  if (base && !isPlaceHash(window.location.hash)) go({ ...HOME, vs: pointLabel(base) }, { replace: true });
 }
 
 export function App() {

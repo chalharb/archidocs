@@ -65,6 +65,7 @@ export default defineConfig({
             group("MCP tools", "docs/reference/mcp"),
             group("CI", "docs/reference/ci"),
             group("Check rules", "docs/reference/rules", { collapsed: true }),
+            "docs/reference/viewer-urls",
             group("Authoring guide for agents", "docs/reference/agent-guide", { collapsed: true }),
             "docs/reference/glossary",
             "docs/reference/changelog",
