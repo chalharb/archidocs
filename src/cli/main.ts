@@ -11,7 +11,7 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitHead, gitTopLevel } from "../git.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { authoringGuide } from "../guide/index.ts";
-import { parseCommand, usageText } from "./commands.ts";
+import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
@@ -20,10 +20,8 @@ import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, history, previ
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
 
-/** Exit codes: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
-const OK = 0;
-const FOUND_ERRORS = 1;
-const COULD_NOT_RUN = 2;
+/** Exit codes, shared with the command definitions that document them: 0 no errors, 1 errors found (or any warning with `--strict`), 2 could not run. */
+const { ok: OK, foundErrors: FOUND_ERRORS, couldNotRun: COULD_NOT_RUN } = EXIT;
 
 class UsageError extends Error {}
 
@@ -261,7 +259,7 @@ async function workspaceName(root: string): Promise<string> {
 
 async function workspaceRoot(start: string): Promise<string> {
   const root = await findWorkspaceRoot(nodeFileSystem(), start);
-  if (!root) throw new UsageError("No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.");
+  if (!root) throw new UsageError(NO_WORKSPACE);
   return root;
 }
 

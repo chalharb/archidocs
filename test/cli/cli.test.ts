@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
+import { commandList, EXIT, NO_WORKSPACE } from "../../src/cli/commands.ts";
+import { findWorkspaceRoot, type FileSystem } from "../../src/core/index.ts";
 import { validWorkspace } from "../support/fixtures.ts";
 import { archidocs } from "../support/cli.ts";
 import { writeWorkspace } from "../support/workspace.ts";
@@ -157,5 +159,61 @@ describe("archidocs CLI", () => {
     expect(code).toBe(1);
     expect(stdout).toContain("unknown-team");
     expect(existsSync(join(repoRoot, "out"))).toBe(false);
+  });
+});
+
+// The CLI reference prints each command's exit codes from its definition; these hold the definitions to what the CLI does.
+describe("the exit codes the command definitions list", () => {
+  const listing = (code: number) => commandList.filter((c) => c.exitCodes.some((e) => e.code === code)).map((c) => c.name);
+
+  it.each(commandList.map((c) => c.name))("%s exits 2 on a flag it does not take, with usage on stderr", async (name) => {
+    const { repoRoot } = await writeWorkspace(validWorkspace);
+    const { code, stderr } = await archidocs(repoRoot, ...name.split(" "), "--no-such-flag");
+
+    expect(code).toBe(EXIT.couldNotRun);
+    expect(stderr).toContain("Usage:");
+    expect(listing(EXIT.couldNotRun)).toContain(name);
+  });
+
+  it("check, build and export exit 1 on a Workspace with errors, and only they list 1", async () => {
+    const { repoRoot } = await writeWorkspace(broken);
+    const runs = { check: ["check"], build: ["build", "--bundle-only", "--out", "out"], export: ["export", "c1"] };
+
+    for (const args of Object.values(runs)) expect((await archidocs(repoRoot, ...args)).code, args.join(" ")).toBe(EXIT.foundErrors);
+    expect(listing(EXIT.foundErrors)).toEqual(Object.keys(runs));
+  });
+
+  it("a command that needs a Workspace exits 2 with the message the reference quotes when there is none", async () => {
+    const { repoRoot } = await writeWorkspace({});
+    const { code, stderr } = await archidocs(repoRoot, "export", "c1");
+
+    expect(code).toBe(EXIT.couldNotRun);
+    expect(stderr).toContain(`archidocs: ${NO_WORKSPACE}\nUsage:`);
+  });
+});
+
+describe("how the Workspace is found", () => {
+  it("looks in a folder, then its archidocs/ folder, then the same in each folder above, up to the root", async () => {
+    const looked: string[] = [];
+    const nothing = { exists: async (path: string) => (looked.push(path), false) } as unknown as FileSystem;
+
+    expect(await findWorkspaceRoot(nothing, join(sep, "repo", "shop"))).toBeUndefined();
+    expect(looked).toEqual([
+      join(sep, "repo", "shop", "workspace.yaml"),
+      join(sep, "repo", "shop", "archidocs", "workspace.yaml"),
+      join(sep, "repo", "workspace.yaml"),
+      join(sep, "repo", "archidocs", "workspace.yaml"),
+      join(sep, "workspace.yaml"),
+      join(sep, "archidocs", "workspace.yaml"),
+    ]);
+  });
+
+  it("takes the first workspace.yaml it finds: a folder's own before the one in its archidocs/ folder", async () => {
+    const both = { exists: async (path: string) => path.endsWith("workspace.yaml") && path.startsWith(join(sep, "repo")) } as unknown as FileSystem;
+    const nested = { exists: async (path: string) => path === join(sep, "repo", "archidocs", "workspace.yaml") } as unknown as FileSystem;
+
+    expect(await findWorkspaceRoot(both, join(sep, "repo"))).toBe(join(sep, "repo"));
+    expect(await findWorkspaceRoot(nested, join(sep, "repo", "archidocs", "shop"))).toBe(join(sep, "repo", "archidocs"));
+    expect(await findWorkspaceRoot(nested, join(sep, "repo"))).toBe(join(sep, "repo", "archidocs"));
   });
 });
