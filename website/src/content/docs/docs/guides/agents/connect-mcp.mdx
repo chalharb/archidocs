@@ -7,16 +7,16 @@ sidebar:
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Register the Archidocs MCP server with your coding agent, so it can answer architecture questions and edit the Model.
+Register the Archidocs MCP server with your coding agent, so it can answer architecture questions and edit the [Model](/docs/reference/glossary/#term-model), the architecture your YAML files describe.
 
 ## Before you start
 
 - The Archidocs CLI is installed. See the [Quick start](/docs/start/quick-start/).
-- You are in the Workspace repo, the repo that holds the `archidocs/` folder. For another repo, see [In a code repo](#in-a-code-repo).
+- The repo has a [Workspace](/docs/reference/glossary/#term-workspace), the `archidocs/` folder. The [Quick start](/docs/start/quick-start/) creates one.
 
 ## 1. Register the server
 
-The server is one command, run from the repo root. `archidocs init` prints it for your repo:
+The server is one command, run from the repo root. `archidocs init` prints it for your repo. From a code repo, the path differs: see [In a code repo](#in-a-code-repo).
 
 ```bash
 archidocs mcp --workspace archidocs
@@ -66,7 +66,7 @@ Create `.cursor/mcp.json` in the repo:
 }
 ```
 
-Cursor replaces `${workspaceFolder}` with the folder that holds `.cursor/mcp.json`. The server appears under MCP in Cursor's settings, where you can turn it on or off.
+Cursor replaces `${workspaceFolder}` with the repo root, the folder that holds `.cursor/`. Cursor doesn't say which folder it starts a server in, so the path starts there. The server appears under MCP in Cursor's settings. Turn it on there.
 
 </TabItem>
 <TabItem label="VS Code / Copilot">
@@ -98,7 +98,7 @@ command = "archidocs"
 args = ["mcp", "--workspace", "archidocs"]
 ```
 
-Codex reads a project's `.codex/config.toml` only once you trust the project. To add the server for every project instead, run this, which writes `~/.codex/config.toml`:
+Codex reads a project's `.codex/config.toml` only once you trust the project. To add the server for every project instead, run this. It writes `~/.codex/config.toml`.
 
 ```bash
 codex mcp add archidocs -- archidocs mcp --workspace archidocs
@@ -109,11 +109,11 @@ In the `codex` TUI, `/mcp` lists the server.
 </TabItem>
 </Tabs>
 
-If the CLI isn't installed globally, run it with npx: set `"command"` to `"npx"` and start `args` with `"-y", "archidocs"`.
+If the CLI isn't installed globally, run it with npx. Set `"command"` to `"npx"`, and start `args` with `"-y", "archidocs"`.
 
 ## Check it worked
 
-Ask the agent something the Model knows, such as "what breaks if the Orders DB goes down?". It calls [`get_impact`](/docs/reference/mcp/get_impact/) and answers from the Model, with the Owners of the Elements it lists.
+Ask the agent what breaks if one of your databases goes down: "what breaks if the Orders DB goes down?". It calls [`get_impact`](/docs/reference/mcp/get_impact/) and answers from the Model. It lists each affected [Element](/docs/reference/glossary/#term-element), a Service or other part of the Model, with its [Owner](/docs/reference/glossary/#term-owner).
 
 ## If it didn't
 
@@ -129,7 +129,9 @@ When the path is wrong, it prints why and exits:
 archidocs: No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.
 ```
 
-Correct `--workspace` in your config: it is relative to the folder the coding agent starts the server in, usually the repo root. When the command works, it waits for input with no output. Stop it with Ctrl+C.
+Correct `--workspace` in your config. The path is relative to the folder the coding agent starts the server in, usually the repo root.
+
+When the command works, it waits for input with no output. Stop it with Ctrl+C.
 
 ## In a code repo
 

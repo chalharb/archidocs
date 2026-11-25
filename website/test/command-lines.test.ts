@@ -20,10 +20,12 @@ describe("archidocs command lines", () => {
   });
 
   it("reads each MCP server entry in a JSON or TOML config as a command line", () => {
-    const json = '{ "mcpServers": { "archidocs": { "type": "stdio", "command": "npx", "args": ["-y", "archidocs", "mcp", "--workspace", "my docs"] }, "other": { "command": "other", "env": {} } } }';
-    expect(commandsInConfig(json)).toEqual(["npx -y archidocs mcp --workspace 'my docs'"]);
-    const toml = ['[mcp_servers.archidocs]', 'command = "archidocs"', 'args = ["mcp", "--workspace", "archidocs"]'].join("\n");
-    expect(commandsInConfig(toml)).toEqual(["archidocs mcp --workspace archidocs"]);
+    const json = '{ "mcpServers": { "archidocs": { "args": ["-y", "archidocs", "mcp", "--workspace", "my [docs]"], "type": "stdio", "command": "npx" }, "other": { "subcommand": "x", "env": {} } } }';
+    expect(commandsInConfig(json, "json")).toEqual([["npx", "-y", "archidocs", "mcp", "--workspace", "my [docs]"]]);
+    expect(checkCode(json, { lang: "json" })).toEqual([]);
+    const toml = ["[mcp_servers.archidocs]", 'args = ["mcp", "--workspace", "archidocs"]', 'command = "archidocs"', "", "[mcp_servers.other]", 'url = "http://127.0.0.1:3737/mcp"'].join("\n");
+    expect(commandsInConfig(toml, "toml")).toEqual([["archidocs", "mcp", "--workspace", "archidocs"]]);
+    expect(checkCode('[a]\ncommand = "npx"\nargs = ["-y", "archidocs", "mpc"]', { lang: "toml" })[0]?.line).toBe("npx -y archidocs mpc");
     expect(checkCode(toml, { lang: "toml" })).toEqual([]);
     expect(checkCode('{ "command": "archidocs", "args": ["mcp", "--workspce", "archidocs"] }', { lang: "json" })[0]?.message).toMatch(/--workspce/);
     expect(checkCode('{ "command": "archidocs", "args": ["mcp", "--nope"] }', { lang: "yaml" })).toEqual([]);
