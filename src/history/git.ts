@@ -1,20 +1,6 @@
-import { execFile } from "node:child_process";
 import { join, relative, sep } from "node:path";
-import { promisify } from "node:util";
 import type { DirEntry, FileSystem } from "../core/fs.ts";
-
-const exec = promisify(execFile);
-
-/** Runs git in `cwd` and returns stdout; throws with git's own message on failure. */
-export async function git(cwd: string, ...args: string[]): Promise<string> {
-  try {
-    const { stdout } = await exec("git", ["-c", "core.quotePath=false", ...args], { cwd, maxBuffer: 1024 * 1024 * 1024, encoding: "utf8" });
-    return stdout;
-  } catch (e) {
-    const err = e as { stderr?: string; message: string };
-    throw new Error(err.stderr?.trim() || err.message, { cause: e });
-  }
-}
+import { git } from "../git.ts";
 
 /**
  * A read-only FileSystem over the tree of one commit. Paths are absolute

@@ -2,7 +2,8 @@ import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promi
 import { dirname, join, relative, sep } from "node:path";
 import { changedIds, countChanges, diff, load, serializeBundle, type ChangeCounts } from "../core/index.ts";
 import { Bundle, SCHEMA_VERSION } from "../schema/bundle.ts";
-import { commitInfo, defaultBranch, git, firstParentCommitsTouching, gitFileSystem, isDate, joinRepo, resolvePoint, tagsByCommit, type CommitInfo } from "./git.ts";
+import { git } from "../git.ts";
+import { commitInfo, defaultBranch, firstParentCommitsTouching, gitFileSystem, isDate, joinRepo, resolvePoint, tagsByCommit, type CommitInfo } from "./git.ts";
 
 export { migrateBundle, migrations, type Migration } from "./migrate.ts";
 export { resolvePoint, isDate, type CommitInfo } from "./git.ts";
