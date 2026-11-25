@@ -1,0 +1,28 @@
+---
+title: Reference
+description: Every CLI command, Model YAML field, MCP tool and check rule, generated from the Archidocs source.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+Look up a command, a field, a tool or a rule. These pages are generated from the Archidocs source when the site builds, so they match the release this site documents.
+
+- **[CLI](/docs/reference/cli/)**: every `archidocs` command and its flags.
+- **Model YAML**: every field of every file in a Workspace.
+  - [workspace.yaml](/docs/reference/model/workspace-yaml/): the Workspace file, with its Teams and Environments.
+  - [project.yaml](/docs/reference/model/project-yaml/): the file that marks a Project folder.
+  - [Elements and Relationships](/docs/reference/model/model-yaml/): Persons, Systems, Services and Components, and their Relationships.
+  - [Deployment Targets and Deployments](/docs/reference/model/deployments-yaml/): where Services run in each Environment.
+  - [Saved Views](/docs/reference/model/views-yaml/): the Structural, Deployment and Dynamic Views a Project keeps.
+  - [ADR frontmatter](/docs/reference/model/adr-frontmatter/): the YAML frontmatter of an ADR.
+- **MCP tools**: every tool the MCP server lists, with its input and output.
+  - [Read tools](/docs/reference/mcp/read-tools/): the tools that query the Model without changing it.
+  - [Write tools](/docs/reference/mcp/write-tools/): the tools that work on a Workspace checkout, most of them editing its YAML.
+- **CI**: what checks and publishes a Workspace in a pipeline.
+  - [GitHub Action](/docs/reference/ci/github-action/): the Action's inputs and outputs.
+  - [GitLab CI template](/docs/reference/ci/gitlab-template/): the template's inputs.
+- **[Check rules](/docs/reference/rules/)**: every rule `archidocs check` reports, with a failing example and the fix.
+- **[Authoring guide for agents](/docs/reference/agent-guide/)**: the skill and task topics agents follow to edit the Model.
+- **[Glossary](/docs/reference/glossary/)**: the terms Archidocs uses, each defined once.
+- **[Changelog](/docs/reference/changelog/)**: what changed in each release.

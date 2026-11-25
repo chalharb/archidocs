@@ -1,0 +1,25 @@
+---
+/**
+ * Starlight's `LinkCard`, with ": " between the title and the description
+ * that only screen readers and llms*.txt see. Those files are made from the
+ * page's HTML, where the card's title and description are neighboring spans
+ * and would otherwise run together as "Quick startGo from an empty repo…".
+ *
+ *   <LinkCard title="Quick start" href="/docs/start/quick-start/" description="Go from an empty repo to the viewer." />
+ *
+ * The page's Markdown copy writes the card as a list item (`src/render-markdown.ts`).
+ */
+import { LinkCard } from "@astrojs/starlight/components";
+
+interface Props {
+  title: string;
+  href: string;
+  /** Plain text. */
+  description: string;
+}
+
+const { title, href, description } = Astro.props;
+const escape = (text: string) => text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
+---
+
+<LinkCard title={escape(title)} href={href} description={`<span class="sr-only">: </span>${escape(description)}`} />

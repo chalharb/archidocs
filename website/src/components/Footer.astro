@@ -1,0 +1,21 @@
+---
+/**
+ * Starlight's page footer (edit link, last-updated date, previous and next)
+ * with one line added: the release the site documents. The site builds from
+ * the repo, so the version is the root `package.json`'s. The line is the
+ * same on every page, so search leaves it out.
+ */
+import Default from "@astrojs/starlight/components/Footer.astro";
+import { VERSION } from "../lib/repo.ts";
+---
+
+<Default><slot /></Default>
+<p class="release" data-pagefind-ignore>Documents Archidocs v{VERSION}, the latest release.</p>
+
+<style>
+  .release {
+    margin-top: 1.5rem;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+</style>

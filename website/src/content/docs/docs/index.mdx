@@ -3,10 +3,18 @@ title: Archidocs docs
 description: Documentation for Archidocs, git-native architecture as code.
 ---
 
+import { CardGrid } from "@astrojs/starlight/components";
+import LinkCard from "../../../components/LinkCard.astro";
+
 Archidocs keeps your architecture as YAML in git and serves one Model to people, through a diagram viewer, and to agents, over MCP.
 
-- [Start here](/docs/start/introduction/): what it is, a quick start and a tutorial.
-- [Concepts](/docs/concepts/workspace-and-projects/): the Model and how its parts fit.
-- [Guides](/docs/guides/model/add-a-project/): how to model, publish, connect agents and review.
-- [Reference](/docs/reference/cli/): every CLI command, Model YAML field, MCP tool and check rule.
-- [Examples](/docs/examples/big-bank/): the Big Bank and Kitchen sink Workspaces.
+<CardGrid>
+  <LinkCard title="Open the demo" href="https://big-bank.archidocs.dev" description="Explore Big Bank, a fictional bank with five Teams, in the live viewer." />
+  <LinkCard title="Quick start" href="/docs/start/quick-start/" description="Go from an empty repo to the viewer in a few commands." />
+  <LinkCard title="Model your architecture" href="/docs/guides/#model" description="Add Projects, Services, Relationships, Deployments and Views." />
+  <LinkCard title="Publish the viewer" href="/docs/guides/#publish" description="Deploy the viewer from CI to GitHub Pages, GitLab Pages or another host." />
+  <LinkCard title="Connect an agent" href="/docs/guides/agents/connect-mcp/" description="Register the MCP server with a coding agent." />
+  <LinkCard title="Look something up" href="/docs/reference/" description="Find a CLI command, a Model YAML field, an MCP tool or a check rule." />
+</CardGrid>
+
+Or browse a section: [Start here](/docs/start/), [Concepts](/docs/concepts/), [Guides](/docs/guides/), [Reference](/docs/reference/) or [Examples](/docs/examples/).
