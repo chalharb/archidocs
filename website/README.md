@@ -116,7 +116,7 @@ One task, for a reader who has done the quick start. The title starts with a ver
 | 4 | Numbered steps: `## 1. Declare the Service`, `## 2. …` | One action each. Each heading starts with a verb. A short guide can have one step. |
 | 5 | `## Check it worked` | What to run or open, and what the reader sees when the task worked |
 | 6 | `## If it didn't` | The likely failures: what is printed, and the fix. Link the rule's page. Leave it out when nothing commonly goes wrong. |
-| 7 | `## With an agent` | The same task over MCP: the tools that do it, or what to ask. Leave it out when the guide is about setting up the agent itself. |
+| 7 | `## With an agent` | The same task over MCP: the tools that do it, or what to ask. Leave it out when the guide is about setting up the agent itself, or when no MCP tool does the task. |
 | 8 | `## Related` | A short list of links: the concept, the reference, the next guide |
 
 A guide holds no field lists and no explanation:

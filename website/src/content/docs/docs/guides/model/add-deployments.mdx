@@ -14,7 +14,7 @@ The agent topic for this task is [`deployments`](/docs/reference/agent-guide/dep
 ## Before you start
 
 - The Service is in the Model. See [Add a Service](/docs/guides/model/add-a-service/).
-- The Environment is defined in `workspace.yaml`. Every Project shares it, so agree a new one with the other Teams first. See [`environments`](/docs/reference/model/workspace-yaml/#environments).
+- The Environment is defined in `workspace.yaml`. Every Project shares it, so agree on a new one with the other Teams first. See [`environments`](/docs/reference/model/workspace-yaml/#environments).
 
 ## 1. Declare the Deployment Targets
 
@@ -23,7 +23,7 @@ Under `targets`, declare where Services run, nested as they nest. A platform Tea
 ```yaml file="examples/big-bank/archidocs/platform/targets.yaml"
 ```
 
-Other Projects use a Target by its Qualified id, as `platform:eks-prod`. Every field is in the [`targets` reference](/docs/reference/model/deployments-yaml/#targets).
+Other Projects use a Deployment Target by its Qualified id, as `platform:eks-prod`. Every field is in the [`targets` reference](/docs/reference/model/deployments-yaml/#targets).
 
 ## 2. Add the Deployments
 

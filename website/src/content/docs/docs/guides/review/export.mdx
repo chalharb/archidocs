@@ -36,6 +36,8 @@ archidocs export payments:make-a-payment --format png --out make-a-payment.png
 Wrote make-a-payment.png
 ```
 
+The viewer also downloads the View on screen as SVG or PNG. Use `export` when the picture should be rebuilt from the Model, in CI or a docs build.
+
 ## 2. Export every Saved View
 
 ```bash
@@ -54,13 +56,17 @@ Each file is named by the View id, with `:` and `/` turned into `-`. The Action'
 
 ## 3. Style it
 
-Add the options the picture needs:
+Add the flags the picture needs. For a dark slide, draw it in the viewer's dark palette, laid out left to right:
 
-- `--theme dark` draws it in the viewer's dark palette, for dark slides and pages.
-- `--direction LR` lays a structural View out left to right. Dynamic Views ignore it.
-- `--label "Big Bank · v1.2.0"` replaces the line under the title, which otherwise names the Workspace, the short commit and the date.
+```bash
+archidocs export c2 --theme dark --direction LR --out c2-dark.svg
+```
 
-Every flag is in the [`archidocs export` reference](/docs/reference/cli/export/).
+```text
+Wrote c2-dark.svg
+```
+
+Every flag, such as `--label` for the line under the title, is in the [`archidocs export` reference](/docs/reference/cli/export/).
 
 ## Check it worked
 

@@ -18,7 +18,7 @@ Set `fetch-depth: 0` on GitHub, or `GIT_DEPTH: 0` on GitLab. The site builds pas
 
 ## 2. Restore the history cache
 
-Restore `.archidocs/cache/` from your CI cache. Key it by the Bundle `schemaVersion`, which this prints:
+Restore `.archidocs/cache/` from your CI cache. Key it by the Workspace Bundle's `schemaVersion`, which this prints:
 
 ```bash
 archidocs version --format json
@@ -48,7 +48,7 @@ Then save `.archidocs/cache/` to your CI cache.
 
 Upload `site/` on every push to the default branch and on every tag. The site uses relative URLs and hash routing, so it works under any base path with no rewrites.
 
-Set these headers, so readers get each new deploy at once:
+The headers are optional. Set them, so readers get each new deploy at once:
 
 | Path | `Cache-Control` |
 | --- | --- |
@@ -108,11 +108,7 @@ wrangler pages deploy site --project-name <project>
 
 ## Check it worked
 
-Open the site's URL: the viewer starts on the C2 Landscape. Then check the index's header, which should be `no-cache`:
-
-```sh
-curl -sI https://architecture.example.com/bundles/index.json | grep -i cache-control
-```
+Open the site's URL: the viewer starts on the C2 Landscape. In the browser's developer tools, the response for `bundles/index.json` has `Cache-Control: no-cache`.
 
 ## If it didn't
 
