@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
-import { checkoutSource, createServer, ERROR_CODES } from "../../../src/mcp/index.ts";
+import { checkoutSource, createServer, ERROR_CODES, type ErrorCode } from "../../../src/mcp/index.ts";
 import { GITHUB_URL, repoPath } from "../lib/repo.ts";
 import { fieldSections, fieldTable, type FieldSection, type JsonSchema } from "./json-schema.ts";
 import { blocks, fence, table, text, type GeneratedPage } from "./page.ts";
@@ -29,18 +29,20 @@ export interface ListedTool {
   annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
 }
 
+/** A tool call: the tool's name and its arguments. */
 interface Call {
   tool: string;
   arguments: Record<string, unknown>;
 }
 
+/** The input a tool's page shows it called with. */
 export interface ToolExample {
   arguments: Record<string, unknown>;
   /**
    * Writes made first, for real, on a copy of the Kitchen sink: for a tool
    * whose example needs something the Kitchen sink doesn't have.
    */
-  before?: { call: Call; says: string };
+  before?: { call: Call; /** Why, for the page. */ says: string };
 }
 
 /**
@@ -85,11 +87,13 @@ export const EXAMPLES: Readonly<Record<string, ToolExample>> = {
   create_project: { arguments: { id: "billing", name: "Billing", owner: "core", dry_run: true } },
 };
 
+/** A tool as the server lists it, with its example and the result the example returned. */
 export interface CapturedTool {
   tool: ListedTool;
   example: ToolExample & { result: Record<string, unknown> };
 }
 
+/** Everything the MCP pages show that the build captures from the running server. */
 export interface Capture {
   tools: CapturedTool[];
   /** A real failed call, shown on the error page. */
@@ -109,6 +113,7 @@ async function connect(root: string): Promise<Client> {
   return client;
 }
 
+/** Every tool the client's server lists, page by page. */
 async function list(client: Client): Promise<ListedTool[]> {
   const tools: ListedTool[] = [];
   let cursor: string | undefined;
@@ -171,7 +176,7 @@ async function capture(examples: Readonly<Record<string, ToolExample>>): Promise
     for (const tool of tools) {
       const example = examples[tool.name];
       if (!example) throw new Error(`The MCP tool ${tool.name} has no example: add its input to EXAMPLES in website/src/reference/mcp.ts.`);
-      if (tool.inputSchema.properties?.["dry_run"] && example.arguments["dry_run"] !== true) throw new Error(`${tool.name}'s example must pass dry_run: true, so the docs build writes nothing.`);
+      if (takes(tool, "dry_run") && example.arguments["dry_run"] !== true) throw new Error(`${tool.name}'s example must pass dry_run: true, so the docs build writes nothing.`);
       const what = `${tool.name}'s example`;
       const result = example.before ? await onCopy(example.before.call, { tool: tool.name, arguments: example.arguments }, what) : await call(client, { tool: tool.name, arguments: example.arguments }, what);
       out.push({ tool, example: { ...example, result: relativize(result, [root]) as Record<string, unknown> } });
@@ -206,13 +211,20 @@ async function onCopy(before: Call, then: Call, what: string): Promise<Record<st
 export const toolPath = (tool: Pick<ListedTool, "name">): string => `/${BASE}/${tool.name}/`;
 
 const ERRORS_PATH = `/${BASE}/errors/`;
-const indexPath = (tool: ListedTool) => `/${BASE}/${isWrite(tool) ? "write-tools" : "read-tools"}/`;
+/** The hand-written pages every tool page and the error page link. */
+const SEE_ALSO = ["- [Agents and MCP](/docs/concepts/agents-and-mcp/)", "- [Connect an agent over MCP](/docs/guides/agents/connect-mcp/)"];
+
 const isWrite = (tool: ListedTool) => tool.annotations?.readOnlyHint === false;
-const takesAt = (tool: ListedTool) => tool.inputSchema.properties?.["at"] !== undefined;
+/** Its index page, as a link: read tools or write tools. */
+const indexLink = (tool: ListedTool) => (isWrite(tool) ? `[Write tools](/${BASE}/write-tools/)` : `[Read tools](/${BASE}/read-tools/)`);
+const takes = (tool: ListedTool, field: string) => tool.inputSchema.properties?.[field] !== undefined;
+/** The tool's title, with "destructive" for a tool that removes things. */
+const titleOf = (tool: ListedTool, separator: string) => `${tool.title ?? tool.name}${tool.annotations?.destructiveHint ? `${separator}destructive` : ""}`;
 
 /** A description's first sentence. */
 const firstSentence = (description: string): string => /^[\s\S]*?[.!?](?=\s|$)/.exec(description)?.[0] ?? description;
 
+/** The read-tools and write-tools indexes, the error page, and a page per tool. */
 export function mcpPages({ tools: captured, error }: Capture): GeneratedPage[] {
   const all = captured.map((c) => c.tool);
   const read = all.filter((t) => !isWrite(t));
@@ -238,7 +250,7 @@ export function mcpPages({ tools: captured, error }: Capture): GeneratedPage[] {
       description: `The ${write.length} MCP tools that work on a Workspace checkout, most of them editing its YAML.`,
       source: "src/mcp/writes.ts",
       body: blocks(
-        `These ${write.length} tools need a Workspace checkout (\`archidocs mcp --workspace <dir>\`), not a published Bundle; over HTTP they also need \`--allow-writes\`. The ones that edit the YAML keep its comments and formatting, and return a unified diff.`,
+        `These ${write.length} tools need a Workspace checkout (\`archidocs mcp --workspace <dir>\`), not a published Workspace Bundle; over HTTP they also need \`--allow-writes\`. The ones that edit the YAML keep its comments and formatting, and return a unified diff.`,
         `A write that would add a check error is refused with [\`validation_failed\`](${ERRORS_PATH}#validation_failed) and the issues, each with a link to its rule's page.`,
         indexTable(write),
         ...write.map(indexSection),
@@ -257,12 +269,13 @@ const indexTable = (tools: readonly ListedTool[]): string =>
 
 /** A tool's heading on its index page, kept so `read-tools/#<tool>` links still land on it. */
 const indexSection = (tool: ListedTool): string =>
-  blocks(`## ${tool.name}`, `${tool.title ?? tool.name}${tool.annotations?.destructiveHint ? " (destructive)" : ""}: [its input, output and an example](${toolPath(tool)}).`);
+  blocks(`## ${tool.name}`, `${titleOf(tool, ", ")}: [its input, output and an example](${toolPath(tool)}).`);
 
+/** A tool's page: what it does, its input and output, the example call and its result, its errors. */
 function toolPage({ tool, example }: CapturedTool, order: number): GeneratedPage {
   const write = isWrite(tool);
   const input = fieldSections(tool.inputSchema, { maxDepth: 3 });
-  const output = tool.outputSchema ? fieldSections(tool.outputSchema, { maxDepth: 2 }) : [];
+  const output = tool.outputSchema ? fieldSections(tool.outputSchema, { maxDepth: 3 }) : [];
   const { diff, ...rest } = example.result;
   const long: string[] = [];
   const shown = shorten(typeof diff === "string" ? { ...rest, diff: "(the patch below)" } : example.result, "", long);
@@ -273,7 +286,7 @@ function toolPage({ tool, example }: CapturedTool, order: number): GeneratedPage
     description: tool.title ?? tool.name,
     source: write ? "src/mcp/writes.ts" : "src/mcp/server.ts",
     body: blocks(
-      `**${tool.title ?? tool.name}** · ${write ? "write tool" : "read tool"}${tool.annotations?.destructiveHint ? " · destructive" : ""}`,
+      `**${titleOf(tool, " · ")}** · ${write ? "write tool" : "read tool"}`,
       tool.description && text(tool.description),
       "## Input",
       sections(input, "No arguments."),
@@ -285,25 +298,25 @@ function toolPage({ tool, example }: CapturedTool, order: number): GeneratedPage
       fence("json", JSON.stringify(example.arguments, null, 2)),
       "Result:",
       fence("json", JSON.stringify(shown, null, 2)),
-      long.length > 0 && `${[...new Set(long)].map((p) => `\`${p}\``).join(" and ")} ${new Set(long).size === 1 ? "is" : "are"} cut short here, after ${LONG} characters.`,
+      long.length > 0 && `${[...new Set(long)].map((p) => `\`${p}\``).join(" and ")} ${new Set(long).size === 1 ? "is" : "are"} cut short here, after ${SHOWN_CHARS} characters.`,
       typeof diff === "string" && "The `diff`, as a patch:",
       typeof diff === "string" && fence("diff", diff),
       "## Errors",
       errorsSection(tool),
       "## See also",
-      [`- [${write ? "Write tools" : "Read tools"}](${indexPath(tool)})`, `- [Error codes](${ERRORS_PATH})`].join("\n"),
+      [`- ${indexLink(tool)}`, `- [Error codes](${ERRORS_PATH})`, ...SEE_ALSO].join("\n"),
     ),
   };
 }
 
 /** How much of a long string an example result shows. */
-const LONG = 300;
+const SHOWN_CHARS = 300;
 
-/** A result with each string longer than `LONG` cut short, collecting the paths of those it cut. */
+/** A result with each string longer than `SHOWN_CHARS` cut short, collecting the paths of those it cut. */
 function shorten(value: unknown, path: string, cut: string[]): unknown {
-  if (typeof value === "string" && value.length > LONG) {
+  if (typeof value === "string" && value.length > SHOWN_CHARS) {
     cut.push(path);
-    return `${value.slice(0, LONG)}…`;
+    return `${value.slice(0, SHOWN_CHARS)}…`;
   }
   if (Array.isArray(value)) return value.map((v) => shorten(v, `${path}[]`, cut));
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, shorten(v, path ? `${path}.${k}` : k, cut)]));
@@ -316,14 +329,39 @@ const sections = (list: readonly FieldSection[], none: string): string =>
     ? none
     : blocks(...list.flatMap((s) => [s.when && `**${s.when}**`, s.rows.length > 0 ? fieldTable(s.rows) : "No other fields."]));
 
+/**
+ * The codes a tool can return, each with when, read off its input: a tool
+ * that names something can find nothing, one with a history `scope` can find
+ * two things, and so on. `get_authoring_guide` reads no Workspace.
+ */
+export function toolErrors(tool: ListedTool): { code: ErrorCode; when: string }[] {
+  const write = isWrite(tool);
+  const history = takes(tool, "scope_kind");
+  const readsWorkspace = tool.name !== "get_authoring_guide";
+  // The guide takes `at` like every read tool, but ships with the server, so it ignores it.
+  const at = readsWorkspace && takes(tool, "at");
+  const names = write ? takes(tool, "project") : (tool.inputSchema.required?.length ?? 0) > 0 || at || takes(tool, "topic");
+  const pair = write && ((takes(tool, "from") && takes(tool, "to")) || (takes(tool, "service") && takes(tool, "target")));
+  const errors: ({ code: ErrorCode; when: string } | false)[] = [
+    { code: "invalid_input", when: "the arguments don't fit the input above." },
+    names && { code: "not_found", when: `${write ? "the Project, or an id it names," : `an id or name${at ? ", or the point in history given as `at`," : ""}`} matches nothing.` },
+    history && { code: "ambiguous", when: "`scope` names both a Project and an Element; pass `scope_kind`." },
+    pair && { code: "ambiguous", when: "the arguments match more than one Relationship or Deployment." },
+    takes(tool, "dry_run") && { code: "validation_failed", when: "the write would add a check error. Nothing is written." },
+    write && { code: "read_only", when: "the server reads a published Workspace Bundle, or serves HTTP without `--allow-writes`." },
+    readsWorkspace && { code: "source_unavailable", when: "the server can't read the Workspace." },
+    readsWorkspace && (history || at) && { code: "history_unavailable", when: `the Workspace has no history to read${history ? "" : " at `at`"}.` },
+  ];
+  return errors.filter((e): e is { code: ErrorCode; when: string } => e !== false);
+}
+
 function errorsSection(tool: ListedTool): string {
-  const code = (c: keyof typeof ERROR_CODES) => `[\`${c}\`](${ERRORS_PATH}#${c})`;
   return blocks(
-    `A call that fails returns \`isError: true\` and \`{code, message, suggestions?}\` as \`structuredContent\`. Arguments that don't fit the input return ${code("invalid_input")}.`,
-    tool.inputSchema.properties?.["dry_run"] && `A write that would add a check error returns ${code("validation_failed")} with the issues, and writes nothing.`,
-    isWrite(tool) && `A server reading a published Bundle, or serving HTTP without \`--allow-writes\`, returns ${code("read_only")}.`,
-    takesAt(tool) && `With \`at\`, a point the history doesn't hold returns ${code("not_found")}, and a source with no history returns ${code("history_unavailable")}.`,
-    `[Error codes](${ERRORS_PATH}) lists every code and what to do about it.`,
+    "A call that fails returns `isError: true`, with `{code, message, suggestions?}` as `structuredContent`. This tool returns:",
+    toolErrors(tool)
+      .map((e) => `- [\`${e.code}\`](${ERRORS_PATH}#${e.code}) when ${e.when}`)
+      .join("\n"),
+    `[Error codes](${ERRORS_PATH}) says what to do about each.`,
   );
 }
 
@@ -343,6 +381,8 @@ function errorsPage(error: Capture["error"]): GeneratedPage {
         Object.entries(ERROR_CODES).map(([c, e]) => [`[\`${c}\`](#${c})`, text(e.meaning)]),
       ),
       ...Object.entries(ERROR_CODES).flatMap(([c, e]) => [`## \`${c}\``, text(e.meaning), `**What to do:** ${text(e.action)}`]),
+      "## See also",
+      ["- [Read tools](/docs/reference/mcp/read-tools/)", "- [Write tools](/docs/reference/mcp/write-tools/)", ...SEE_ALSO].join("\n"),
     ),
   };
 }

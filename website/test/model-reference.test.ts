@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describedRows, describedShape, describedTable, fieldRows, sharedProperties, splitDefault, usedShapes, type DescribeOptions, type JsonSchema } from "../src/reference/json-schema.ts";
+import { describedRows, describedShape, describedTable, fieldSections, sharedProperties, splitDefault, usedShapes, type DescribeOptions, type JsonSchema } from "../src/reference/json-schema.ts";
 import { modelPages } from "../src/reference/model.ts";
 
 /** The cells of every field-table row in a page's Markdown, with the table's header. */
@@ -214,7 +214,11 @@ describe("field tables with shared shapes", () => {
     expect(splitDefault("No default here.")).toEqual({ description: "No default here.", default: "" });
   });
 
-  it("still flattens a schema into one table for the MCP tool reference", () => {
-    expect(fieldRows(sample).map((r) => r.path)).toEqual(["folders", "folders.<id>.name", "folders.<id>.mode", "folders.<id>.links", "folders.<id>.links[].url", "folders.<id>.folders", "picks", "picks[].depth", "picks[].url", "notes", "notes[].text", "notes[].code"]);
+  it("lists a schema's fields for the MCP tool reference, a union's variants in tables of their own", () => {
+    expect(fieldSections(sample).map((s) => [s.when, s.rows.map((r) => r.path)])).toEqual([
+      [undefined, ["folders", "folders.<id>.name", "folders.<id>.mode", "folders.<id>.links", "folders.<id>.links[].url", "folders.<id>.folders", "picks", "notes", "notes[].text", "notes[].code"]],
+      ["When `picks[]` has `depth`", ["picks[].depth"]],
+      ["When `picks[]` has `url`", ["picks[].url"]],
+    ]);
   });
 });

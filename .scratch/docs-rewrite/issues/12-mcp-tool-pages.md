@@ -23,3 +23,8 @@ The 31 tools sit on two long pages with no example call, and outputs that are un
 - [x] Old `read-tools/#<tool>` and `write-tools/#<tool>` links still resolve.
 - [x] `website/e2e/search.spec.ts` finds each tool's own page first.
 - [x] The error-code page lists every code the server can return, checked by a test.
+
+## Notes
+
+- `toolPath`, the landing page, the reference index and the e2e tests link the tool pages. The hand-written `read-tools/#<tool>` and `write-tools/#<tool>` links in `guides/`, `concepts/` and `start/introduction.mdx` still resolve, and were left for tickets 08 and 09, which rewrite those pages in parallel, to point at `/docs/reference/mcp/<tool>/`.
+- CI's `docs` and `e2e` jobs check out the full history (`fetch-depth: 0`), since the `get_changes` and `list_history` examples read it.

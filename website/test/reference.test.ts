@@ -13,7 +13,7 @@ import { repoPath } from "../src/lib/repo.ts";
 import { cliPages, commandPath, handWrittenFile, SEE_ALSO, WORKSPACE_SECTION } from "../src/reference/cli.ts";
 import { generatedPages } from "../src/reference/index.ts";
 import { fieldSections, type JsonSchema } from "../src/reference/json-schema.ts";
-import { captureTools, EXAMPLES, listTools, mcpPages, toolPath } from "../src/reference/mcp.ts";
+import { captureTools, EXAMPLES, listTools, mcpPages, toolErrors, toolPath } from "../src/reference/mcp.ts";
 import { ERROR_CODES } from "../../src/mcp/index.ts";
 import { modelPages } from "../src/reference/model.ts";
 import { rulePages } from "../src/reference/rules.ts";
@@ -360,9 +360,15 @@ describe("MCP tool pages", () => {
     }
   });
 
-  it("links each tool to its own page", async () => {
-    const [tool] = await listTools();
-    expect(toolPath(tool!)).toBe(`/docs/reference/mcp/${tool!.name}/`);
+  it("lists on each tool's page the error codes it can return", async () => {
+    const byName = new Map((await listTools()).map((t) => [t.name, t]));
+    const codes = (name: string) => toolErrors(byName.get(name)!).map((e) => e.code);
+    expect(codes("get_element")).toEqual(["invalid_input", "not_found", "source_unavailable", "history_unavailable"]);
+    expect(codes("get_changes")).toEqual(["invalid_input", "not_found", "ambiguous", "source_unavailable", "history_unavailable"]);
+    expect(codes("upsert_relationship")).toEqual(["invalid_input", "not_found", "ambiguous", "validation_failed", "read_only", "source_unavailable"]);
+    expect(codes("check")).toEqual(["invalid_input", "read_only", "source_unavailable"]);
+    expect(codes("get_authoring_guide")).toEqual(["invalid_input", "not_found"]);
+    expect((await pages()).get("docs/reference/mcp/get_element")!.body).toContain("- [`not_found`](/docs/reference/mcp/errors/#not_found) when");
   });
 
   it("lists every error code the server can return on the errors page", async () => {

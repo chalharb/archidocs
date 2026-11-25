@@ -21,11 +21,11 @@ export const ERROR_CODES = {
     action: "Fix what `issues` or `references` lists, each issue with a link to its rule's page, then write again.",
   },
   read_only: {
-    meaning: "A write tool was called on a server that can't write: one reading a published Bundle, or one over HTTP started without `--allow-writes`.",
+    meaning: "A write tool was called on a server that can't write: one reading a published Workspace Bundle, or one over HTTP started without `--allow-writes`.",
     action: "Run `archidocs mcp` over a Workspace checkout, and add `--allow-writes` over HTTP.",
   },
   source_unavailable: {
-    meaning: "The server could not read the Workspace or the Bundle, or could not write the checkout.",
+    meaning: "The server could not read the Workspace or the Workspace Bundle, or could not write the checkout.",
     action: "Check that the folder or URL the server was started with exists and is readable, then call again: each call tries anew.",
   },
   history_unavailable: {
@@ -34,4 +34,5 @@ export const ERROR_CODES = {
   },
 } as const satisfies Record<string, { meaning: string; action: string }>;
 
+/** A code a failed tool result carries. */
 export type ErrorCode = keyof typeof ERROR_CODES;

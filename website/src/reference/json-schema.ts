@@ -1,8 +1,8 @@
 /**
  * Field tables from JSON Schemas: each field's path, type, whether it is
  * required, and what the schema says about it. The MCP tools' inputs and
- * outputs use `fieldRows` and `fieldTable`, which flatten a schema into one
- * table. The Model YAML reference (`schemas/*.schema.json`) uses
+ * outputs use `fieldSections` and `fieldTable`: one table, and one more for
+ * each variant of a union. The Model YAML reference (`schemas/*.schema.json`) uses
  * `describedRows` and `describedShape`, which list a shape used in several
  * places (a `$defs` entry) once and link to it from each place it is used.
  */
@@ -40,43 +40,6 @@ export interface FieldRow {
   notes: string;
 }
 
-/**
- * The rows for a schema's fields, depth first. A map keyed by id shows as
- * `<id>` in the path, a list's items as `[]`. A `$ref` seen higher up the
- * same path is named, not expanded again.
- */
-export function fieldRows(schema: JsonSchema, { root = schema, prefix = "", maxDepth = Infinity }: { root?: JsonSchema; prefix?: string; maxDepth?: number } = {}): FieldRow[] {
-  const rows: FieldRow[] = [];
-  const walk = (node: JsonSchema, path: string, depth: number, seen: readonly string[]) => {
-    const { schema: s, ref } = deref(node, root);
-    if (ref && seen.includes(ref)) return;
-    const nextSeen = ref ? [...seen, ref] : seen;
-    if (depth >= maxDepth) return;
-    const variants = s.anyOf ?? s.oneOf;
-    if (variants) {
-      for (const v of variants) {
-        const d = deref(v, root).schema;
-        if (d.properties || d.additionalProperties || d.items) walk(v, path, depth, nextSeen);
-      }
-      return;
-    }
-    for (const [key, child] of Object.entries(s.properties ?? {})) {
-      const childPath = path ? `${path}.${key}` : key;
-      rows.push(row(child, childPath, s.required?.includes(key) ?? false, root));
-      walk(child, childPath, depth + 1, nextSeen);
-    }
-    if (typeof s.additionalProperties === "object") {
-      const childPath = `${path ? `${path}.` : ""}<id>`;
-      const child = s.additionalProperties;
-      const d = deref(child, root).schema;
-      if (d.properties || d.anyOf || d.oneOf) walk(child, childPath, depth + 1, nextSeen);
-    }
-    if (s.items) walk(s.items, `${path}[]`, depth + 1, nextSeen);
-  };
-  walk(schema, prefix, 0, []);
-  return rows;
-}
-
 /** A table's worth of rows: the fields always there, or those of one variant of a union. */
 export interface FieldSection {
   /** For a variant: "When `element.kind` is `service`". */
@@ -85,8 +48,9 @@ export interface FieldSection {
 }
 
 /**
- * The rows for a schema's fields, as `fieldRows` lists them, except that a
- * union of objects is split: the fields every variant has, defined the same
+ * The rows for a schema's fields, depth first. A map keyed by id shows as
+ * `<id>` in the path, a list's items as `[]`, and a `$ref` seen higher up
+ * the same path is named, not expanded again. A union of objects is split: the fields every variant has, defined the same
  * way, stay in the table they are met in, and each variant's other fields get
  * a section of their own. A variant is named by the field whose constant
  * tells the variants apart (`kind`), or else by the required fields only it
@@ -148,7 +112,7 @@ export function fieldSections(schema: JsonSchema, { root = schema, maxDepth = In
     fields(s, Object.keys(s.properties ?? {}), path, depth, nextSeen, into);
     if (typeof s.additionalProperties === "object") {
       const d = deref(s.additionalProperties, root).schema;
-      if (d.properties || d.anyOf || d.oneOf) walk(s.additionalProperties, `${path ? `${path}.` : ""}<id>`, depth + 1, nextSeen, into);
+      if (d.properties || d.anyOf || d.oneOf) walk(s.additionalProperties, join(path, "<id>"), depth + 1, nextSeen, into);
     }
     if (s.items) walk(s.items, `${path}[]`, depth + 1, nextSeen, into);
   };

@@ -43,7 +43,6 @@ export interface ServerOptions {
   allowWrites?: boolean;
 }
 
-export type { ErrorCode } from "./errors.ts";
 
 export type ToolOutcome =
   | { ok: true; data: Record<string, unknown>; text: string }
