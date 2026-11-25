@@ -1,7 +1,6 @@
-import { readFile, realpath } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { gitTopLevel } from "../git.ts";
-import { bundleAt, buildHistory, history, isDate, migrateBundle, readIndex, resolvePoint, type History } from "../history/index.ts";
+import { bundleAt, buildHistory, isDate, migrateBundle, readIndex, resolvePoint, type History } from "../history/index.ts";
 import { INDEX_PATH, pastBundlePath, type RevisionEntry } from "../revisions/index.ts";
 import { commitInfo } from "../history/git.ts";
 import type { Bundle } from "../schema/bundle.ts";
@@ -48,13 +47,7 @@ function dateTime(point: string, edge: "start" | "end"): number {
 }
 
 function checkoutPast(source: CheckoutSource): Past {
-  let found: Promise<History | undefined> | undefined;
-  const repo = () =>
-    (found ??= (async () => {
-      const root = await realpath(source.root);
-      const repoRoot = await gitTopLevel(root);
-      return repoRoot ? history(repoRoot, root) : undefined;
-    })());
+  const repo = async (): Promise<History | undefined> => (await source.checkout.repo())?.history;
   const noGit = unavailable(`The Workspace at ${source.root} is not in a git repository, so it has no history.`);
 
   return {

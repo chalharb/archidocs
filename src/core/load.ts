@@ -9,6 +9,7 @@ import { checkSchema } from "./schema-check.ts";
 import { bundleAdrs } from "./adrs.ts";
 import { PROJECT_TEMPLATE, readAdr } from "./adr.ts";
 import { parseYaml } from "./yaml.ts";
+import { isSkippedName, isWorkspaceFile } from "./workspace-files.ts";
 import type { z } from "zod";
 
 export interface LoadOptions {
@@ -142,11 +143,12 @@ async function walk(fs: FileSystem, root: string): Promise<{ files: string[]; ma
   const dirs: string[] = [root];
   for (let i = 0; i < dirs.length; i++) {
     for (const entry of await fs.readDir(dirs[i]!)) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (isSkippedName(entry.name)) continue;
       const path = join(dirs[i]!, entry.name);
       if (entry.isDirectory) dirs.push(path);
+      else if (!isWorkspaceFile(entry.name)) continue;
       else if (entry.name.endsWith(".yaml")) files.push(path);
-      else if (entry.name.endsWith(".md")) markdown.push(path);
+      else markdown.push(path);
     }
   }
   return { files: files.sort(cmp), markdown: markdown.sort(cmp), dirs: dirs.sort(cmp) };

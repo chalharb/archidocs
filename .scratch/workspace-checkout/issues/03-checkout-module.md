@@ -1,6 +1,6 @@
 # 03: Checkout module
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01, 02
 Spec: [Workspace checkout](../spec.md)
 
@@ -60,13 +60,13 @@ Open a Workspace on disk in one place, with one "which files count" rule. The on
 
 ## Acceptance criteria
 
-- [ ] `grep -rn "realpath\|gitTopLevel" src/cli/run.ts src/cli/dev.ts src/mcp` finds nothing outside the `init` path.
-- [ ] `grep -rn 'startsWith(".")' src` finds only `core/workspace-files.ts` and `cli/dev.ts`'s watcher (ticket 06 removes that one).
-- [ ] `mcp/source.ts` has no `fingerprint` of its own.
-- [ ] `build` finds the Workspace root once per run.
-- [ ] `GLOSSARY.md` defines Checkout, and the pages listed under Docs link it.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `grep -rn "realpath\|gitTopLevel" src/cli/run.ts src/cli/dev.ts src/mcp` finds nothing outside the `init` path.
+- [x] `grep -rn 'startsWith(".")' src` finds only `core/workspace-files.ts` and `cli/dev.ts`'s watcher (ticket 06 removes that one).
+- [x] `mcp/source.ts` has no `fingerprint` of its own.
+- [x] `build` finds the Workspace root once per run.
+- [x] `GLOSSARY.md` defines Checkout, and the pages listed under Docs link it.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.
 
 ## Comments
 

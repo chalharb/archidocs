@@ -1,7 +1,7 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { load, nodeFileSystem, type Issue } from "../core/index.ts";
-import { gitHead } from "../git.ts";
+import type { Issue } from "../core/index.ts";
+import { checkoutAt, type Checkout } from "../workspace/index.ts";
 import { Bundle } from "../schema/bundle.ts";
 import { LATEST_BUNDLE_PATH } from "../revisions/index.ts";
 
@@ -28,6 +28,8 @@ export interface CheckoutSource extends SourceBase {
   readonly kind: "checkout";
   /** The Workspace root: the folder holding `workspace.yaml`. */
   readonly root: string;
+  /** The Checkout at `root` the Bundle is built from. */
+  readonly checkout: Checkout;
 }
 
 export interface BundleSource extends SourceBase {
@@ -43,17 +45,17 @@ export interface BundleSource extends SourceBase {
  * next call with no watcher to start or stop.
  */
 export function checkoutSource({ root }: { root: string }): CheckoutSource {
+  const checkout = checkoutAt(root);
   let cached: { key: string; snapshot: Snapshot } | undefined;
   return {
     kind: "checkout",
     root,
+    checkout,
     writesAllowed: true,
     async snapshot() {
-      const [files, head] = await Promise.all([fingerprint(root), gitHead(root)]);
+      const [files, head] = await Promise.all([checkout.fingerprint(), checkout.head()]);
       const key = `${head.commit}\n${head.builtAt}\n${files}`;
-      if (cached?.key !== key) {
-        cached = { key, snapshot: await load({ fs: nodeFileSystem(), root, commit: head.commit, builtAt: head.builtAt }) };
-      }
+      if (cached?.key !== key) cached = { key, snapshot: await checkout.load() };
       return cached.snapshot;
     },
   };
@@ -142,22 +144,4 @@ function parse(text: string, from: string): Snapshot {
   if (!bundle.success) throw new Error(`${from} is not a Workspace Bundle this version can read.`);
   // A Bundle is only ever published from a Workspace with no errors; check's warnings aren't kept in it.
   return { bundle: bundle.data, issues: [] };
-}
-
-/** Path, mtime and size of every `.yaml` and `.md` file (ADRs) under the root, in a stable order. */
-async function fingerprint(root: string): Promise<string> {
-  const lines: string[] = [];
-  const dirs = [root];
-  for (let i = 0; i < dirs.length; i++) {
-    for (const entry of await readdir(dirs[i]!, { withFileTypes: true })) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
-      const path = join(dirs[i]!, entry.name);
-      if (entry.isDirectory()) dirs.push(path);
-      else if (entry.name.endsWith(".yaml") || entry.name.endsWith(".md")) {
-        const s = await stat(path);
-        lines.push(`${path}\0${s.mtimeMs}\0${s.size}`);
-      }
-    }
-  }
-  return lines.sort().join("\n");
 }

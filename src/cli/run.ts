@@ -1,13 +1,14 @@
 import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Bundle } from "../schema/bundle.ts";
-import { findWorkspaceRoot, load, nodeFileSystem, resolveView, serializeBundle, type AnyView } from "../core/index.ts";
+import { resolveView, serializeBundle, type AnyView } from "../core/index.ts";
 import { directions, layoutView, renderSequenceSvg, renderSvg, themes, type Direction, type Theme } from "../render/index.ts";
 import { renderPngInNode } from "../render/node.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
-import { gitHead, gitTopLevel } from "../git.ts";
+import { gitTopLevel } from "../git.ts";
+import { findCheckout, type Checkout } from "../workspace/index.ts";
 import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
 import { authoringGuide } from "../guide/index.ts";
 import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
@@ -15,7 +16,7 @@ import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 import { diff } from "../core/index.ts";
-import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, history, previewSides, publishHistory, publishPreview, resolvePoint, type History, type PreviewSides } from "../history/index.ts";
+import { bundleAt, buildHistory, DEFAULT_KEEP, defaultBaseBranch, previewSides, publishHistory, publishPreview, resolvePoint, type History, type PreviewSides } from "../history/index.ts";
 import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat, type DiffSide } from "./diff-format.ts";
@@ -91,7 +92,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     const { values } = parseCommand("check", rest);
     const format = values.format as Format;
     if (!formats.includes(format)) throw new UsageError(`Unknown format "${values.format}"; use ${formats.join(", ")}.`);
-    const { issues } = await loadFromCwd(io.cwd);
+    const { issues } = await (await checkoutFrom(io.cwd)).load();
     io.stdout.write(formatIssues(issues, format, { color: useColor(io) }));
     return exitCodeFor(issues, { strict: values.strict });
   }
@@ -103,7 +104,8 @@ async function main(argv: string[], io: Io): Promise<number> {
     const keep = values.keep === undefined ? DEFAULT_KEEP : values.keep === "all" ? "all" : Number(values.keep);
     if (keep !== "all" && !(Number.isInteger(keep) && keep >= 0)) throw new UsageError(`--keep "${values.keep}" is not a count or all.`);
     if (values["bundle-only"] && values.keep !== undefined) throw new UsageError("--keep only applies to a site; --bundle-only writes no past Bundles.");
-    const { bundle, issues } = await loadFromCwd(io.cwd);
+    const checkout = await checkoutFrom(io.cwd);
+    const { bundle, issues } = await checkout.load();
     if (issues.some((i) => i.severity === "error")) {
       io.stdout.write(formatText(issues, { color: useColor(io) }));
       io.stderr.write(`Not writing the ${values["bundle-only"] ? "Bundle" : "site"}: the Workspace has errors.\n`);
@@ -112,7 +114,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     // A preview finds both sides before writing anything, so a missing base writes no site.
     let preview: { h: History; sides: PreviewSides } | undefined;
     if (values.preview) {
-      const h = await historyFromCwd(io.cwd);
+      const h = await historyOf(checkout);
       preview = { h, sides: await previewSides(h, values.base ?? (await defaultBaseBranch(h.repoRoot))) };
     }
     const out = resolve(io.cwd, values.out);
@@ -120,8 +122,7 @@ async function main(argv: string[], io: Io): Promise<number> {
       if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
       await cp(VIEWER_DIR, out, { recursive: true });
       // The viewer's exports name the Workspace as `archidocs export` does: by its repo's folder.
-      const root = await workspaceRoot(io.cwd);
-      await writeFile(join(out, SITE_FILE_PATH), JSON.stringify({ workspace: await workspaceName(root) }) + "\n");
+      await writeFile(join(out, SITE_FILE_PATH), JSON.stringify({ workspace: await checkout.name() }) + "\n");
     }
     await mkdir(out, { recursive: true });
     await writeFile(join(out, LATEST_BUNDLE_PATH), serializeBundle(bundle));
@@ -130,7 +131,7 @@ async function main(argv: string[], io: Io): Promise<number> {
       io.stdout.write(`Wrote the preview site to ${values.out}: Compare origin/${base} (${baseSha.slice(0, 7)}) → PR (${headSha.slice(0, 7)})\n`);
       return OK;
     }
-    if (!values["bundle-only"]) await writeSiteHistory(io.cwd, out, keep);
+    if (!values["bundle-only"]) await writeSiteHistory(checkout, out, keep);
     io.stdout.write(values["bundle-only"] ? `Wrote ${join(values.out, LATEST_BUNDLE_PATH)}\n` : `Wrote the site to ${values.out}\n`);
     return OK;
   }
@@ -139,12 +140,11 @@ async function main(argv: string[], io: Io): Promise<number> {
     const port = values.port === undefined ? DEFAULT_DEV_PORT : Number(values.port);
     if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`--port "${values.port}" is not a port.`);
     if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(`The viewer is not built (no ${VIEWER_DIR}); run \`pnpm build\` first.`);
-    const root = await workspaceRoot(values.workspace === undefined ? io.cwd : resolve(io.cwd, values.workspace));
+    const checkout = await checkoutFrom(values.workspace === undefined ? io.cwd : resolve(io.cwd, values.workspace));
     const color = useColor(io);
     const dev = await serveDev({
-      root,
+      checkout,
       viewerDir: VIEWER_DIR,
-      workspace: await workspaceName(root),
       port,
       ...(values.host === undefined ? {} : { host: values.host }),
       onLoad: ({ issues, kept, first }) => {
@@ -157,7 +157,7 @@ async function main(argv: string[], io: Io): Promise<number> {
       if ((e as { code?: string }).code === "EADDRINUSE") throw new UsageError(`Port ${port} is in use; pick another with --port.`);
       throw e;
     });
-    io.stderr.write(`Archidocs dev server on ${dev.url} (watching ${root}; Ctrl+C to stop)\n`);
+    io.stderr.write(`Archidocs dev server on ${dev.url} (watching ${checkout.root}; Ctrl+C to stop)\n`);
     return OK;
   }
   if (command === "export") {
@@ -175,14 +175,14 @@ async function main(argv: string[], io: Io): Promise<number> {
     const theme = values.theme as Theme;
     if (!themes.includes(theme)) throw new UsageError(`Unknown theme "${values.theme}"; use ${themes.join(" or ")}.`);
     const { label } = values;
-    const root = await workspaceRoot(io.cwd);
-    const { bundle, issues } = await loadFromCwd(io.cwd);
+    const checkout = await checkoutFrom(io.cwd);
+    const { bundle, issues } = await checkout.load();
     if (issues.some((i) => i.severity === "error")) {
       io.stdout.write(formatText(issues, { color: useColor(io) }));
       io.stderr.write("Not exporting: the Workspace has errors.\n");
       return FOUND_ERRORS;
     }
-    const workspace = await workspaceName(root);
+    const workspace = await checkout.name();
     const fileName = (id: string) => `${id.replace(/[/:]/g, "-")}.${format}`;
     const source = { workspace, commit: bundle.commit, date: bundle.builtAt };
     const write = async (svg: string, out: string) => {
@@ -216,10 +216,11 @@ async function main(argv: string[], io: Io): Promise<number> {
     const [fromPoint, toPoint, ...extra] = positionals;
     if (fromPoint === undefined) throw new UsageError("Give the point to diff from: a ref or a date.");
     if (extra.length > 0) throw new UsageError(`Give at most two points; got ${positionals.join(", ")}.`);
-    const h = await historyFromCwd(io.cwd);
+    const checkout = await checkoutFrom(io.cwd);
+    const h = await historyOf(checkout);
     /** A point's Bundle; with no point, the working tree's. */
     const side = async (point: string | undefined): Promise<[DiffSide, Bundle]> => {
-      if (point === undefined) return [{ point: "working tree", commit: null }, (await loadFromCwd(io.cwd)).bundle];
+      if (point === undefined) return [{ point: "working tree", commit: null }, (await checkout.load()).bundle];
       const commit = await resolvePoint(h.repoRoot, point);
       if (!commit) throw new UsageError(`Unknown ref or date "${point}"; a date resolves to the last default-branch commit at or before it.`);
       return [{ point, commit }, (await bundleAt(h, commit)).bundle];
@@ -233,7 +234,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     const [sub, ...args] = rest;
     if (sub !== "build") throw new UsageError(sub ? `Unknown history command "${sub}".` : "Give a history command: build.");
     const { values } = parseCommand("history build", args);
-    const h = await historyFromCwd(io.cwd);
+    const h = await historyOf(await checkoutFrom(io.cwd));
     const { revisions, built } = await buildHistory(h, values.since === undefined ? {} : { since: values.since });
     const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
     io.stdout.write(`Built ${plural(built, "Revision")}; ${revisions - built} of ${revisions} already built.\n`);
@@ -252,7 +253,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     const source =
       values.bundle !== undefined
         ? bundleSource({ location: /^https?:\/\//i.test(values.bundle) ? values.bundle : resolve(io.cwd, values.bundle) })
-        : checkoutSource({ root: await workspaceRoot(values.workspace === undefined ? io.cwd : resolve(io.cwd, values.workspace)) });
+        : checkoutSource({ root: (await checkoutFrom(values.workspace === undefined ? io.cwd : resolve(io.cwd, values.workspace))).root });
     const options = { source, ...(viewerUrl === undefined ? {} : { viewerUrl }) };
     if (values.http) {
       const http = await serveHttp({ ...options, port, allowWrites: values["allow-writes"], ...(values.host === undefined ? {} : { host: values.host }) });
@@ -274,38 +275,26 @@ function useColor(io: Io): boolean {
   return io.stdout.isTTY === true;
 }
 
-/** How a picture's source line names the Workspace: its git repo's folder, else the Workspace root's. */
-async function workspaceName(root: string): Promise<string> {
-  return basename((await gitTopLevel(root)) ?? root);
+/** The Checkout whose Workspace holds `start`, found by walking up from it. */
+async function checkoutFrom(start: string): Promise<Checkout> {
+  const checkout = await findCheckout(start);
+  if (!checkout) throw new UsageError(NO_WORKSPACE);
+  return checkout;
 }
 
-async function workspaceRoot(start: string): Promise<string> {
-  const root = await findWorkspaceRoot(nodeFileSystem(), start);
-  if (!root) throw new UsageError(NO_WORKSPACE);
-  return root;
-}
-
-/** The history of the Workspace found from `cwd`; it must be in a git repo. */
-async function historyFromCwd(cwd: string): Promise<History> {
-  const root = await workspaceRoot(cwd);
-  const repoRoot = await gitTopLevel(root);
-  if (!repoRoot) throw new UsageError("History needs the Workspace in a git repository.");
-  return history(repoRoot, await realpath(root));
+/** The Checkout's history; it must be in a git repo. */
+async function historyOf(checkout: Checkout): Promise<History> {
+  const repo = await checkout.repo();
+  if (!repo) throw new UsageError("History needs the Workspace in a git repository.");
+  return repo.history;
 }
 
 /** The site's past Bundles and Revision index; outside git, an empty index, so the viewer knows there is no history. */
-async function writeSiteHistory(cwd: string, out: string, keep: number | "all") {
-  const root = await workspaceRoot(cwd);
-  const repoRoot = await gitTopLevel(root);
-  if (repoRoot) await publishHistory(history(repoRoot, await realpath(root)), out, { keep });
+async function writeSiteHistory(checkout: Checkout, out: string, keep: number | "all") {
+  const repo = await checkout.repo();
+  if (repo) await publishHistory(repo.history, out, { keep });
   else {
     await mkdir(dirname(join(out, INDEX_PATH)), { recursive: true });
     await writeFile(join(out, INDEX_PATH), JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: [] }, null, 2) + "\n");
   }
-}
-
-async function loadFromCwd(cwd: string) {
-  const root = await workspaceRoot(cwd);
-  const { commit, builtAt } = await gitHead(root);
-  return load({ fs: nodeFileSystem(), root, commit, builtAt });
 }

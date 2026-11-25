@@ -3,9 +3,9 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { extname, join, normalize, sep } from "node:path";
-import { load, nodeFileSystem, serializeBundle, type Issue } from "../core/index.ts";
+import { serializeBundle, type Issue } from "../core/index.ts";
 import { formatText } from "./format.ts";
-import { gitHead } from "../git.ts";
+import type { Checkout } from "../workspace/index.ts";
 import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
 
 export const DEFAULT_DEV_PORT = 4321;
@@ -14,12 +14,10 @@ export const DEFAULT_DEV_PORT = 4321;
 const EVENTS = "/__archidocs/events";
 
 export interface DevOptions {
-  /** The Workspace root, watched for changes. */
-  root: string;
+  /** The Workspace to serve. Its root is watched for changes, and its name is how the viewer's exports name the Workspace, as `site.json` does in a built site. */
+  checkout: Checkout;
   /** The prebuilt viewer to serve. */
   viewerDir: string;
-  /** How the viewer's exports name the Workspace, as `site.json` does in a built site. */
-  workspace: string;
   host?: string;
   /** 0 picks a free port. */
   port?: number;
@@ -69,7 +67,7 @@ const CLIENT = `<script>
  * the Workspace on every file change. A Workspace with errors keeps serving
  * its last good Bundle and shows the errors in the page instead.
  */
-export async function serveDev({ root, viewerDir, workspace, host = "127.0.0.1", port = DEFAULT_DEV_PORT, onLoad }: DevOptions): Promise<DevServer> {
+export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port = DEFAULT_DEV_PORT, onLoad }: DevOptions): Promise<DevServer> {
   let bundleJson: string | undefined;
   let errors: string | undefined;
   const clients = new Set<ServerResponse>();
@@ -79,8 +77,7 @@ export async function serveDev({ root, viewerDir, workspace, host = "127.0.0.1",
 
   let first = true;
   const rebuild = async () => {
-    const { commit, builtAt } = await gitHead(root);
-    const { bundle, issues } = await load({ fs: nodeFileSystem(), root, commit, builtAt });
+    const { bundle, issues } = await checkout.load();
     const failed = issues.filter((i) => i.severity === "error");
     const kept = failed.length > 0 && bundleJson !== undefined;
     onLoad?.({ issues, kept, first });
@@ -116,7 +113,7 @@ export async function serveDev({ root, viewerDir, workspace, host = "127.0.0.1",
 
   await rebuild();
   const index = (await readFile(join(viewerDir, "index.html"), "utf8")).replace("</body>", `${CLIENT}</body>`);
-  const site = JSON.stringify({ workspace }) + "\n";
+  const site = JSON.stringify({ workspace: await checkout.name() }) + "\n";
   const noHistory = JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: [] }) + "\n";
 
   const server = createServer((req, res) => {
@@ -156,7 +153,7 @@ export async function serveDev({ root, viewerDir, workspace, host = "127.0.0.1",
     server.listen(port, host, () => done());
   });
 
-  const watcher: FSWatcher = watch(root, { recursive: true }, (_event, name) => {
+  const watcher: FSWatcher = watch(checkout.root, { recursive: true }, (_event, name) => {
     // Hidden folders (.git, editor swap files) and node_modules aren't Workspace files.
     if (name && name.split(/[\\/]/).some((part) => part.startsWith(".") || part === "node_modules")) return;
     schedule();
