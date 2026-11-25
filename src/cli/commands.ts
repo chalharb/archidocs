@@ -281,7 +281,7 @@ export const commands = {
     examples: [
       {
         command: "archidocs mcp --workspace archidocs",
-        description: "Serve a Workspace checkout over stdio, with the read and write tools. This is the command to register with an agent harness, which starts it from the repo root.",
+        description: "Serve a Workspace checkout over stdio, with the read and write tools. This is the command to register with a coding agent, which starts it from the repo root.",
       },
       { command: "archidocs mcp --bundle https://big-bank.archidocs.dev/workspace.bundle.json", description: "Serve a published Bundle, here the Big Bank demo's, with the read tools only." },
       {

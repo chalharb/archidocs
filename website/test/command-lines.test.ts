@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { archidocsArgs, checkCode, checkMarkdown, commandsInBlock } from "../src/lib/command-lines.ts";
+import { archidocsArgs, checkCode, checkMarkdown, commandsInBlock, commandsInConfig } from "../src/lib/command-lines.ts";
 import { repoPath } from "../src/lib/repo.ts";
 
 describe("archidocs command lines", () => {
@@ -11,6 +11,24 @@ describe("archidocs command lines", () => {
     expect(archidocsArgs("archidocs-authoring")).toBeUndefined();
     expect(archidocsArgs("archidocs")).toBeUndefined();
     expect(archidocsArgs("git commit")).toBeUndefined();
+  });
+
+  it("finds a command another tool runs after its --", () => {
+    expect(archidocsArgs("claude mcp add --scope project archidocs -- archidocs mcp --workspace archidocs")).toEqual(["mcp", "--workspace", "archidocs"]);
+    expect(archidocsArgs("codex mcp add archidocs -- npx -y archidocs mcp")).toEqual(["mcp"]);
+    expect(archidocsArgs("claude mcp add archidocs -- other-server --flag")).toBeUndefined();
+  });
+
+  it("reads each MCP server entry in a JSON or TOML config as a command line", () => {
+    const json = '{ "mcpServers": { "archidocs": { "args": ["-y", "archidocs", "mcp", "--workspace", "my [docs]"], "type": "stdio", "command": "npx" }, "other": { "subcommand": "x", "env": {} } } }';
+    expect(commandsInConfig(json, "json")).toEqual([["npx", "-y", "archidocs", "mcp", "--workspace", "my [docs]"]]);
+    expect(checkCode(json, { lang: "json" })).toEqual([]);
+    const toml = ["[mcp_servers.archidocs]", 'args = ["mcp", "--workspace", "archidocs"]', 'command = "archidocs"', "", "[mcp_servers.other]", 'url = "http://127.0.0.1:3737/mcp"'].join("\n");
+    expect(commandsInConfig(toml, "toml")).toEqual([["archidocs", "mcp", "--workspace", "archidocs"]]);
+    expect(checkCode('[a]\ncommand = "npx"\nargs = ["-y", "archidocs", "mpc"]', { lang: "toml" })[0]?.line).toBe("npx -y archidocs mpc");
+    expect(checkCode(toml, { lang: "toml" })).toEqual([]);
+    expect(checkCode('{ "command": "archidocs", "args": ["mcp", "--workspce", "archidocs"] }', { lang: "json" })[0]?.message).toMatch(/--workspce/);
+    expect(checkCode('{ "command": "archidocs", "args": ["mcp", "--nope"] }', { lang: "yaml" })).toEqual([]);
   });
 
   it("drops synopsis brackets, keeping what they hold", () => {
