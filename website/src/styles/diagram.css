@@ -1,4 +1,4 @@
-/* <Diagram>: show the picture exported for Starlight's current theme. */
+/* <Diagram> and <Screenshot>: show the picture exported for Starlight's current theme. */
 .diagram img {
   display: block;
   width: 100%;
@@ -15,4 +15,9 @@
   margin-top: 0.5rem;
   font-size: var(--sl-text-sm);
   color: var(--sl-color-gray-2);
+}
+/* <Screenshot>: the viewer's window, framed so its edge shows on a page of the same color. */
+.screenshot img {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 0.5rem;
 }

@@ -2,64 +2,67 @@
 title: Workspace and Projects
 description: One repo holds the whole architecture; each Team edits its own Project folder in it.
 sidebar:
-  order: 1
+  order: 2
 ---
 
-A [Workspace](/docs/reference/glossary/#term-workspace) is the whole architecture landscape, kept in one git repository. Archidocs reads it from a folder in that repo, `archidocs/` by default, which holds one `workspace.yaml` and a folder per Project.
+import { FileTree } from "@astrojs/starlight/components";
 
-```text
-archidocs/
-├── workspace.yaml        # Teams and Environments, for every Project
-├── payments/
-│   ├── project.yaml      # id, name and owner Team
-│   ├── model.yaml        # Elements and Relationships
-│   ├── deployments.yaml  # Deployment Targets and Deployments
-│   ├── views.yaml        # Saved Views
-│   └── adr/              # architecture decision records
-└── core/
-    └── ...
-```
+A [Workspace](/docs/reference/glossary/#term-workspace) is the whole architecture, kept in one git repo. Each Team edits its own [Project](/docs/reference/glossary/#term-project), a folder in the Workspace that holds the Team's slice of the Model.
+
+<FileTree>
+- archidocs/
+  - workspace.yaml Teams and Environments, for every Project
+  - payments/
+    - project.yaml the Project's id, name and owner Team
+    - model.yaml Elements and Relationships
+    - deployments.yaml Deployment Targets and Deployments
+    - views.yaml Saved Views
+    - adr/ architecture decision records
+  - core/
+    - …
+</FileTree>
 
 ## The Workspace file
 
-`workspace.yaml` defines what every Project shares: the [Teams](/docs/concepts/teams-and-ownership/) that own things and the [Environments](/docs/concepts/deployments/) that Services run in. Each is defined once, so `prod` means the same thing in every Project. This is Big Bank's:
+`workspace.yaml` marks the Workspace's folder, `archidocs/` by default. It defines what every Project shares: the [Teams](/docs/concepts/teams-and-ownership/) that own things and the [Environments](/docs/concepts/deployments/) that Services run in. Each is defined once, so `prod` means the same thing in every Project.
 
-```yaml file="examples/big-bank/archidocs/workspace.yaml"
-```
-
-Nothing else goes in it: Elements, Deployments and Views always belong to a Project. Every field is in the [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/).
+Nothing else goes in it. Elements, Deployments and Views always belong to a Project. The [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/) lists its fields.
 
 ## Projects
 
-A [Project](/docs/reference/glossary/#term-project) is one Team's slice of the Workspace, kept in a folder of its own. A `project.yaml` marks the folder, gives the Project its id, and names the Team that owns what is declared in it:
+A `project.yaml` marks a Project's folder. It gives the Project its id and names the Team that owns what is declared in it. The [`project.yaml` reference](/docs/reference/model/project-yaml/) lists its fields.
 
-```yaml file="examples/big-bank/archidocs/payments/project.yaml"
-```
+Every other `.yaml` file in the folder is part of the Project's Model, whatever its name. `model.yaml`, `deployments.yaml` and `views.yaml` are only a convention: Big Bank's Platform Project keeps its Services in `services.yaml`.
 
-Every other `.yaml` file in the folder is part of the Project's Model, whatever its name. `model.yaml`, `deployments.yaml` and `views.yaml` are a convention: Big Bank's Platform Project keeps its Services in `services.yaml` and its Deployment Targets in `targets.yaml`. Projects don't nest, and a `.yaml` file outside any Project is an error ([`file-outside-project`](/docs/reference/rules/file-outside-project/)).
-
-Because each Team edits only its own folder, a `CODEOWNERS` file can route every change to the Team that owns it.
+Projects don't nest. A `.yaml` file outside every Project is an error, which `archidocs check` reports as [`file-outside-project`](/docs/reference/rules/file-outside-project/).
 
 ## Ids
 
-Everything in a Project has an id: a lowercase slug such as `payments-service`, unique across the Project's Elements and Deployment Targets. Inside its own Project an id is written bare. To name something in another Project, write its [Qualified id](/docs/reference/glossary/#term-qualified-id), `project:id`. Here the Payments Service depends on the mainframe that the Core Banking Team declares in its `core` Project:
+Everything in a Project has an id: a lowercase slug such as `payments-service`, unique in the Project. Inside its own Project an id is written bare.
+
+To name something in another Project, write its [Qualified id](/docs/reference/glossary/#term-qualified-id), the id with its Project in front: `core:mainframe`. Here the Payments Service depends on the mainframe that the Core Banking Team declares in its `core` Project:
 
 ```yaml file="examples/big-bank/archidocs/payments/model.yaml" region="payments-service"
 ```
 
-`payments-db` and `card-gateway` are in the same Project, so they are bare. Writing a Project's own prefix is an error, so that every id has one spelling:
-
-```yaml file="website/samples/own-prefix/archidocs/shop/model.yaml" fails="own-project-prefix"
-```
-
-`archidocs check` reports it as [`own-project-prefix`](/docs/reference/rules/own-project-prefix/): write `to: api` instead. Teams and Environments belong to the Workspace, so their ids are always bare.
+`payments-db` and `card-gateway` are in the same Project, so they are bare. Writing a Project's own prefix is an error, [`own-project-prefix`](/docs/reference/rules/own-project-prefix/). Teams and Environments belong to the Workspace, so their ids are always bare.
 
 ## One Model
 
-`archidocs check` and every other command read all the Projects together as one [Model](/docs/reference/glossary/#term-model), checking every reference across them. The viewer and the MCP server never see Projects as separate diagrams: they show and answer questions about the whole Workspace, with each Element marked with the Team that owns it.
+`archidocs check` and every other command read all the Projects together as one [Model](/docs/reference/glossary/#term-model), every Element and Relationship in the Workspace. They check every reference across Projects.
+
+The viewer and the MCP server never show Projects as separate diagrams. They show the whole Workspace, with each Element marked with the Team that owns it.
+
+## Why it works this way
+
+- **One repo, one commit.** Every Project is read at the same commit, so there are no versions to pin between them. A Workspace Bundle, the combined Model, records the one commit it was built from.
+- **A folder per Team.** Each Team edits only its own folder, so a `CODEOWNERS` file can route every change to the Team that owns it.
+- **No list of Projects.** A folder with a `project.yaml` is a Project. Adding a Team's Project never means editing a shared file.
+- **Qualified ids, even in one repo.** With dozens of Teams, ids such as `api` or `db` would clash. A Project prefix keeps every id unique, and would let Projects move to repos of their own later without renaming anything.
+- **One spelling per id.** A Project can't prefix its own ids, so inside a Project each thing is written one way, and a prefix always means another Project.
 
 ## Related
 
 - [Add a Project](/docs/guides/model/add-a-project/)
-- [`project.yaml` reference](/docs/reference/model/project-yaml/)
 - [Teams and ownership](/docs/concepts/teams-and-ownership/)
+- [`project.yaml` reference](/docs/reference/model/project-yaml/)

@@ -2,62 +2,62 @@
 title: Elements
 description: Persons, Systems, Services and Components, and how they nest.
 sidebar:
-  order: 2
+  order: 3
 ---
 
 import Diagram from "../../../../components/Diagram.astro";
 
-An [Element](/docs/reference/glossary/#term-element) is a node of the Model. There are four kinds, after the [C4 model](https://c4model.com):
-
-| Kind | What it is | Nests in |
-| --- | --- | --- |
-| [Person](/docs/reference/glossary/#term-person) | A human or role that uses a System, such as a customer or a support agent. | Nothing: always top-level. |
-| [System](/docs/reference/glossary/#term-system) | A named group of Services that together deliver a business capability. | Nothing: Systems don't nest. |
-| [Service](/docs/reference/glossary/#term-service) | A deployable, addressable unit of software: the thing with a URL and Deployments. | A System, or nothing. |
-| [Component](/docs/reference/glossary/#term-component) | A part inside a Service that isn't deployed on its own. | A Service. |
-
-Nesting is strict: System › Service › Component. A Service may also stand outside any System.
+An [Element](/docs/reference/glossary/#term-element) is a node of the Model: a Person, a System, a Service or a Component. The four kinds come from the [C4 model](https://c4model.com), and they nest in one fixed order: System › Service › Component.
 
 <Diagram view="kitchen-sink/sink:everything" alt="The Kitchen sink: a Customer, the Shop System with its Services and the API's Components, a Service outside any System, and External ones." />
 
-## Declaring Elements
+## Four kinds
 
-Elements are declared under the top-level keys `people`, `systems`, `services` and `components` of any Project file, keyed by id, with children under their parent. This is the Kitchen sink's Shop System, which has one of each kind of Service:
+| Kind | What it is | Nests in |
+| --- | --- | --- |
+| [Person](/docs/reference/glossary/#term-person) | A human or role that uses a System, such as a customer or a support agent. | Nothing |
+| [System](/docs/reference/glossary/#term-system) | A named group of Services that together deliver a business capability. | Nothing |
+| [Service](/docs/reference/glossary/#term-service) | A deployable unit of software: the thing with a URL and Deployments. | A System, or nothing |
+| [Component](/docs/reference/glossary/#term-component) | A part inside a Service that isn't deployed on its own. | A Service |
+
+Elements are declared in any file of a Project, keyed by id, with children under their parent. This is the Kitchen sink's Shop System:
 
 ```yaml file="examples/kitchen-sink/archidocs/sink/model.yaml" region="systems"
 ```
 
-Every Element has a `name` and can have a `description`, an `owner`, `tags` and `links`. On top of that:
+Every Element has a name and an [Owner](/docs/reference/glossary/#term-owner), the one Team accountable for it. A Service also has a `type` that says what kind of software it is, such as a datastore or a message broker, and each type is drawn differently. The [Elements and Relationships reference](/docs/reference/model/model-yaml/) lists every field.
 
-- A **Service** has a `type`: `app` by default, `datastore` for a database or store, or `broker` for a message broker that async Relationships run through. Each is drawn differently.
-- Services and Components have a `technology`, shown under their name.
-- A System or Service can be **External**.
+## Nesting
 
-Every field is in the [Elements and Relationships reference](/docs/reference/model/model-yaml/).
+Nesting is strict. Systems don't nest in Systems, and Components don't nest in Components. A Service may also stand outside any System, as the Kitchen sink's Search does.
+
+A child usually sits under its parent in the YAML. When a Project splits its Model across files, a Service declared at the top of another file can name its System with `in`, and a Component its Service.
 
 ## External Elements
 
-An [External](/docs/reference/glossary/#term-external) System or Service runs outside the organisation, such as a payment provider or a card scheme. Its Owner is the Team accountable for the integration. An External Service has no declared Components ([`external-with-components`](/docs/reference/rules/external-with-components/)): you can't see inside it.
+An [External](/docs/reference/glossary/#term-external) System or Service runs outside your organization, such as a payment provider or a card scheme. Its Owner is the Team accountable for the integration.
 
-## Elements in more than one file
-
-A child usually sits under its parent. When a Project splits its Model across files, a top-level Service can name its System with `in`, and a Component its Service:
-
-```yaml file="examples/kitchen-sink/archidocs/sink/reporting.yaml"
-```
+You can't see inside an External Service, so it has no declared Components. `archidocs check` reports any as [`external-with-components`](/docs/reference/rules/external-with-components/).
 
 ## Levels
 
-The viewer and [Views](/docs/concepts/views/) show the Model at a level:
+The viewer and [Views](/docs/concepts/views/) show the Model at one of three levels:
 
 - **C1**, the System landscape: People and Systems.
 - **C2**, the Service landscape: Services, grouped in their Systems.
-- **C3**: the Components inside a Service.
+- **C3**: the Components inside one Service.
 
 Each level is drawn from the same Elements. A diagram never adds an Element of its own.
+
+## Why it works this way
+
+- **Fixed kinds.** Every Workspace has the same four kinds, so a C2 diagram means the same thing in every organization. An agent knows what a Service is without reading a custom schema.
+- **Strict nesting gives the levels.** Because a Component is always inside a Service and a Service inside at most one System, the viewer can collapse any diagram to C1, C2 or C3 without asking how.
+- **External is a flag, not a kind.** An External Service is still a Service: other Elements depend on it, and impact questions reach it. The flag only says that its inside is out of view.
+- **Ids don't depend on nesting.** Moving a Service into another System keeps its id, so nothing that refers to it breaks.
 
 ## Related
 
 - [Add a Service](/docs/guides/model/add-a-service/)
 - [Relationships](/docs/concepts/relationships/)
-- [Teams and ownership](/docs/concepts/teams-and-ownership/)
+- [Elements and Relationships reference](/docs/reference/model/model-yaml/)

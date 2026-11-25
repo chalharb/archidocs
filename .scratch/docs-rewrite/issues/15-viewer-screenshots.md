@@ -1,6 +1,6 @@
 # 15: Generated viewer screenshots
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -17,8 +17,8 @@ The docs have no picture of the viewer. Hand-taken screenshots would go stale, s
 
 ## Acceptance criteria
 
-- [ ] A page using `<Screenshot>` shows the viewer in light and dark.
-- [ ] The build fails on an unknown shot id, and on a shot whose URL shows the viewer's empty or error state.
-- [ ] Two builds of the same commit produce the same images.
-- [ ] The `.md` copy of a page with a screenshot holds an image link.
-- [ ] The docs build in CI and for PR previews still passes.
+- [x] A page using `<Screenshot>` shows the viewer in light and dark.
+- [x] The build fails on an unknown shot id, and on a shot whose URL shows the viewer's empty or error state.
+- [x] Two builds of the same commit produce the same images.
+- [x] The `.md` copy of a page with a screenshot holds an image link.
+- [x] The docs build in CI and for PR previews still passes.

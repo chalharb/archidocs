@@ -1,0 +1,63 @@
+---
+title: How Archidocs works
+description: The whole picture on one page, from YAML in git to the viewer and the MCP server.
+sidebar:
+  order: 1
+---
+
+import Flow from "../../../../components/Flow.astro";
+
+Archidocs turns YAML files in one git repo into one [Model](/docs/reference/glossary/#term-model), every Element and Relationship of your architecture. People explore that Model in a diagram viewer, and agents query and edit it over MCP.
+
+<Flow>
+1. **YAML in git:**
+   - a **Workspace**, one repo
+   - a **Project** folder per **Team**
+2. **`archidocs check`** validates every file and every reference between Projects.
+3. **One Model**, at every **Revision**:
+   - **Elements** and **Relationships**
+   - **Deployments**
+   - **Views** and **ADRs**
+4. **Two ways in:**
+   - the **viewer**, for people
+   - the **MCP server**, for agents
+</Flow>
+
+## Where the Model is written
+
+- **Workspace.** The whole architecture, kept in one git repo. It also defines the Teams and Environments that every Project shares. See [Workspace and Projects](/docs/concepts/workspace-and-projects/).
+- **Project.** One Team's slice of the Workspace: a folder of YAML files that the Team edits through pull requests.
+- **Team.** A group that owns things. Every Element has exactly one Owner Team, shown on every node. See [Teams and ownership](/docs/concepts/teams-and-ownership/).
+
+## What the Model holds
+
+- **Element.** A node of the Model: a Person, a System, a Service or a Component. See [Elements](/docs/concepts/elements/).
+- **Relationship.** A directed edge from a consumer Element to the provider it depends on, declared under the consumer. Edges between bigger boxes are derived from it. See [Relationships](/docs/concepts/relationships/).
+- **Deployment.** One Service running in one Environment, such as `prod`, on one Deployment Target, such as a cluster. A Service's URL lives here. See [Deployments](/docs/concepts/deployments/).
+- **ADR.** An architecture decision record: a Markdown file in a Project, linked to the Elements it affects. See [Decisions](/docs/concepts/decisions/).
+
+## How it is shown
+
+- **View.** A diagram defined by a query over the Model. Archidocs generates one for every scope, and Teams save their own. See [Views](/docs/concepts/views/).
+- **Revision.** A commit that changed the Model. The viewer and the MCP server can show the Model at any Revision and compare two. See [Revisions and history](/docs/concepts/revisions-and-history/).
+- **The viewer.** A static site that shows the Model as diagrams, where every screen is a link. See [The viewer](/docs/concepts/viewer/).
+- **The MCP server.** Answers the viewer's questions for agents, and lets them edit the YAML safely. See [Agents and MCP](/docs/concepts/agents-and-mcp/).
+
+## One Model, read the same way everywhere
+
+`archidocs check` reads every Project at the same commit and combines them into one Model. It checks every reference between Projects, so a typo in another Team's id fails before it merges.
+
+`archidocs build` writes that Model as a [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), a single JSON file, for the latest commit and for past Revisions. The viewer and the MCP server read Bundles, never the YAML, so they always agree.
+
+## Why it works this way
+
+- **Diagrams drawn by hand go stale.** Every diagram here is a query over the validated Model, so changing the YAML redraws every diagram it touches.
+- **No single Team knows the whole architecture.** Each Team writes down only its own slice, in its own folder. One Workspace combines the slices, so nobody has to ask around for the full picture.
+- **Git is already where changes are reviewed.** The Model lives in the repo, so a change to the architecture gets the same pull request, review and history as a change to code.
+- **People and agents ask the same questions.** Both read the same Model, so the viewer and an agent can't give different answers.
+
+## Related
+
+- [Quick start](/docs/start/quick-start/)
+- [Model your first system](/docs/start/tutorial/)
+- [Glossary](/docs/reference/glossary/)

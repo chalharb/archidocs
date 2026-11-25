@@ -30,6 +30,7 @@ CI also runs `pnpm docs:tutorial`, which follows the tutorial's steps in a temp 
 | Reference pages | Generated at build time by `website/src/reference/`. They are never committed. |
 | Intros of generated Model YAML pages | `website/src/intros/` |
 | YAML samples shown on pages | `examples/`, and `website/samples/` for samples that are wrong on purpose |
+| Screenshots of the viewer | The shot list in `website/src/screenshots.ts`. The pictures are taken at build time and never committed. |
 | Tests | `website/test/` |
 
 ## Page types
@@ -305,7 +306,8 @@ Pages written before these rules may still break them. Fix a page when you rewri
 | Rule | Pages | What fails |
 | --- | --- | --- |
 | A guide has the two headings | Every page under `guides/`, except an `index.mdx` | No `## Before you start` heading, or no `## Check it worked` heading. Both are second-level, with exactly this text. |
-| A concept page has no numbered step headings | Every page under `concepts/`, except an `index.mdx` | A heading of any level that starts with a number, or with "Step" and a number: `## 1. Add the file`, `### Step 2` |
+| A concept page follows the concept template | Every page under `concepts/`, except an `index.mdx` | No `## Why it works this way` heading, or no `## Related` heading. Or a heading of any level that starts with a number, or with "Step" and a number: `## 1. Add the file`, `### Step 2` |
+| At most two links in a sentence | Every page under `concepts/`, except an `index.mdx` | A sentence with three or more Markdown links. A line break ends a sentence, so each list item and table row counts on its own. |
 | No banned word | Every page under `website/src/content/docs/`, and every intro in `website/src/intros/` | A banned word in prose. The list is `BANNED_WORDS` in the test, and today holds "harness". |
 
 The banned-word check reads prose: the frontmatter and the text, not code blocks, inline code or link targets. It matches the start of a word in any case, so "harness" also finds "Harnesses".
@@ -324,4 +326,5 @@ So a list only gets shorter. When you rewrite a page to its template, take it of
 - **Links:** the build fails on a link to a page or anchor that doesn't exist.
 - **Command lines:** every `archidocs …` line in a shell block or in inline code is parsed against the CLI's own definitions. An unknown command or flag fails the build.
 - **Samples:** Model YAML is never typed into a page. Include it from a file with an empty fence, `file="examples/…"` and an optional `region="…"`. `website/test/samples.test.ts` fails on Model YAML typed inline.
+- **Screenshots:** show the viewer with `<Screenshot id="…" alt="…" />`, where the id is a shot in `website/src/screenshots.ts`. A shot names an example (`big-bank`, `kitchen-sink` or `quick-start`), a viewer URL such as `#/view/c2` and a window size. The build opens the URL on the example's site in Chromium, in light and dark, and fails on an unknown id or on a URL that shows the viewer's error or empty state. A shot of a demo links to the same URL on the live demo. Pictures are cached in `website/node_modules/.cache/`, keyed on the built site and the shot, so an unchanged viewer isn't captured again. The build needs Chromium once: `pnpm exec playwright install chromium`.
 - **Samples that are wrong on purpose:** each lives in `website/samples/` and is shown with `fails="<rule-id>"`. The test checks that it fails `archidocs check` with exactly that rule, and that its page links the rule's page.

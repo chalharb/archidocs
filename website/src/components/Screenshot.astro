@@ -1,0 +1,38 @@
+---
+/**
+ * A screenshot of the viewer, from the shot list in `src/screenshots.ts`:
+ * the light and dark pictures, of which CSS shows the one for Starlight's
+ * `[data-theme]`, and for a demo a link that opens the same URL on the live
+ * demo. The pictures are taken at build time (`lib/screenshots.ts`); an
+ * unknown id fails the build.
+ *
+ *   <Screenshot id="quick-start-landscape" alt="…" />
+ */
+import type { Theme } from "../lib/examples.ts";
+import { findShot, liveShotUrl, screenshotUrl } from "../lib/screenshots.ts";
+
+interface Props {
+  /** The shot's id in `src/screenshots.ts`. */
+  id: string;
+  alt: string;
+  caption?: string;
+}
+
+const { id, alt, caption } = Astro.props;
+const shot = findShot(id);
+const live = liveShotUrl(shot);
+const image = (theme: Theme) => ({ src: screenshotUrl(theme, shot.id), alt, width: shot.viewport.width, height: shot.viewport.height, loading: "lazy" as const, decoding: "async" as const });
+---
+
+<figure class="diagram screenshot not-content" data-screenshot={shot.id}>
+  <img class="diagram-light" {...image("light")} />
+  <img class="diagram-dark" {...image("dark")} />
+  {
+    (caption || live) && (
+      <figcaption>
+        {caption && <span>{live ? `${caption} · ` : caption}</span>}
+        {live && <a href={live}>Open in the live viewer ↗</a>}
+      </figcaption>
+    )
+  }
+</figure>

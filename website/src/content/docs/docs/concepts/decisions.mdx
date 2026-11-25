@@ -2,35 +2,48 @@
 title: Decisions
 description: Architecture decision records, kept beside the Model and linked to what they affect.
 sidebar:
-  order: 8
+  order: 9
 ---
 
-An [ADR](/docs/reference/glossary/#term-adr), an architecture decision record, records one decision: the problem, the options considered, what was chosen and what follows from it. Archidocs keeps ADRs in the Project that owns the decision, as Markdown files in its `adr/` folder, and links each one to the Elements, Deployment Targets and Saved Views it affects.
-
-## An ADR file
-
-Each ADR is `<project>/adr/NNNN-slug.md`: a four-digit number, unique in the Project, and a slug of its title. Its frontmatter carries the status and the links; its body is ordinary Markdown under one `#` title:
+An [ADR](/docs/reference/glossary/#term-adr), an architecture decision record, records one decision: the problem, the options considered, what was chosen and what follows from it. Archidocs keeps each ADR as a Markdown file in the Project that owns the decision, linked to the Elements and Saved Views it affects.
 
 ```markdown file="examples/big-bank/archidocs/payments/adr/0002-hold-payments-on-a-high-fraud-score.md"
 ```
 
-- `status` is `proposed`, `accepted`, `rejected`, `deprecated` or `superseded`, and `date` is when it last changed.
-- `elements` and `views` link the decision to the Model. They are checked like any other reference ([`unknown-adr-link`](/docs/reference/rules/unknown-adr-link/)), and use Qualified ids for other Projects.
-- `decision-makers`, `consulted` and `informed` say who took part. They aren't checked.
+## An ADR file
 
-Every field is in the [ADR frontmatter reference](/docs/reference/model/adr-frontmatter/).
+Each ADR is a file in its Project's `adr/` folder, named with a four-digit number and a slug of its title, such as `0002-hold-payments-on-a-high-fraud-score.md`. The number is unique in the Project. The body is ordinary Markdown under one `#` title.
+
+The frontmatter carries the decision's status and date, the people who took part, and its links. The [ADR frontmatter reference](/docs/reference/model/adr-frontmatter/) lists every field and status.
+
+## Linked to the Model
+
+An ADR's links name Elements, Deployment Targets and Saved Views. They are checked like any other reference in the Model, so a link to an id that doesn't exist fails `archidocs check`. Links to another Project use Qualified ids.
+
+Links are optional. A decision for the whole Workspace, such as "every Service emits OpenTelemetry", can link nothing.
 
 ## Proposed, then accepted
 
-A decision starts as `proposed`, in a pull request. Reviewing the pull request is reviewing the decision, next to the Model changes it brings; accepting it is setting `status: accepted` and the date before the merge. A Proposed ADR is still shown, marked as proposed, so nobody mistakes it for the architecture as it is.
+A decision starts as `proposed`, in a pull request. Reviewing the pull request is reviewing the decision, next to the Model changes it brings. Accepting it means setting `status: accepted` and the date before the merge.
+
+A Proposed ADR is still shown, marked as proposed, so nobody mistakes it for the architecture as it is.
 
 ## Superseded
 
-When a later decision replaces an earlier one, the new ADR lists it in `supersedes`, and Archidocs derives that the old one is superseded. The old ADR keeps the status it had: writing `superseded` by hand is an error ([`hand-written-superseded`](/docs/reference/rules/hand-written-superseded/)), so the record of what replaced what lives in one place. Big Bank's Digital Banking Team superseded its first sign-in decision when it moved sign-in to the Identity Platform.
+When a later decision replaces an earlier one, the new ADR lists the old one in `supersedes`. Once the new ADR is accepted, Archidocs derives that the old one is superseded, and shows it so.
+
+The old file isn't edited and keeps the status it had. Writing `superseded` by hand is an error, [`hand-written-superseded`](/docs/reference/rules/hand-written-superseded/).
 
 ## Decisions in the viewer and MCP
 
-The Element panel lists the ADRs linked to an Element, and the ADR reader opens one beside the diagram, so the decisions behind an Element are one click away from it. Over MCP, [`list_adrs`](/docs/reference/mcp/read-tools/#list_adrs) and [`get_adr`](/docs/reference/mcp/read-tools/#get_adr) read them, and [`propose_adr`](/docs/reference/mcp/write-tools/#propose_adr) writes a new one with the next free number and today's date.
+The Element panel lists the ADRs linked to an Element, and the ADR reader opens one beside the diagram. Over MCP, [`list_adrs`](/docs/reference/mcp/read-tools/#list_adrs) and [`get_adr`](/docs/reference/mcp/read-tools/#get_adr) read them. [`propose_adr`](/docs/reference/mcp/write-tools/#propose_adr) writes a new one, with the next free number and today's date.
+
+## Why it works this way
+
+- **ADRs live beside the Model.** A decision and the Model change it brings arrive in the same pull request, are reviewed together, and share one history.
+- **In the Project that owns the decision.** Each Team keeps its own decisions, numbered in its own Project. A decision that spans Projects lives in the Project that made it, and links the others by Qualified id.
+- **Accepting is a review, so it happens in the pull request.** The status change is the act of approval. No tool accepts an ADR on its own: a person or an agent edits the status, and the pull request is reviewed like any other.
+- **`superseded` is derived, never written.** "B replaces A" is declared once, on B. If A also had to say "superseded by B", the two files could disagree, and editing an accepted decision's file would blur what was decided. The trade-off: reading A's file raw in git still shows its old status, while the viewer and MCP show it as superseded.
 
 ## Related
 

@@ -1,6 +1,0 @@
-services:
-  web:
-    name: Web
-  checkout:
-    name: Checkout
-    owner: paymnets

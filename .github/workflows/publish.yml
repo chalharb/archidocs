@@ -112,5 +112,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The docs build takes its screenshots of the viewer in Chromium (website/src/lib/screenshots.ts).
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm docs:build
       - run: pnpm exec wrangler deploy --cwd website

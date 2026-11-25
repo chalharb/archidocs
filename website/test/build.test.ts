@@ -2,8 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { rules } from "../../src/core/rules.ts";
-import { EXAMPLES, exportDiagrams } from "../src/lib/examples.ts";
+import { EXAMPLES, exportDiagrams, THEMES } from "../src/lib/examples.ts";
 import { repoPath } from "../src/lib/repo.ts";
+import { SHOTS } from "../src/screenshots.ts";
 import { buildSite, type BuildResult } from "./support.ts";
 
 let site: BuildResult;
@@ -57,26 +58,29 @@ describe("the built site", () => {
     expect(generated).toMatch(/^### `--all-saved`$/m);
   });
 
-  it("shows the quick start's files, tabs and diagrams from examples/quick-start, which is no demo", () => {
+  it("shows the quick start's files, tabs and screenshots from examples/quick-start, which is no demo", () => {
     const html = read("docs/start/quick-start/index.html");
-    // Its Workspace isn't deployed, so it has pictures of Generated Views but no live viewer to link, and no Examples page.
-    for (const view of ["c2", "c2-shop-online-shop"]) {
+    // Its Workspace isn't deployed, so it has screenshots of the viewer but no live viewer to link, and no Examples page.
+    for (const shot of ["quick-start-landscape", "quick-start-online-shop"]) {
       for (const theme of ["light", "dark"]) {
-        expect(html).toContain(`src="/diagrams/quick-start/${theme}/${view}.svg"`);
-        expect(read(`diagrams/quick-start/${theme}/${view}.svg`)).toContain("Quick start · v");
+        expect(html).toContain(`src="/screenshots/${theme}/${shot}.png"`);
+        expect(readFileSync(file(`screenshots/${theme}/${shot}.png`)).subarray(1, 4).toString()).toBe("PNG");
       }
     }
-    expect(read("diagrams/quick-start/light/c2-shop-online-shop.svg")).toContain("Online Shop (C2)");
     expect(html).not.toContain("Open in the live viewer");
     expect(existsSync(file("docs/examples/quick-start/index.html"))).toBe(false);
     expect(html.match(/<a role="tab"/g)).toHaveLength(3);
 
-    // The Markdown copy: each tab under its label, each file in full under its path, the pictures as images.
+    // The Markdown copy: each tab under its label, each file in full under its path, the screenshots as images.
     const markdown = read("docs/start/quick-start.md");
     expect(markdown).toContain("**pnpm**\n\n```bash\npnpm add --global archidocs\n```\n\n**npx**\n\n");
     expect(markdown).toContain('```yaml title="archidocs/shop/project.yaml"\nid: shop\nname: Shop\nowner: storefront\n```');
-    expect(markdown).toContain("](/diagrams/quick-start/light/c2.svg)");
-    expect(markdown).not.toMatch(/<\/?Tab|file="examples\/|Open in the live viewer|^import /m);
+    expect(markdown).toContain("](/screenshots/light/quick-start-landscape.png)");
+    expect(markdown).not.toMatch(/<\/?Tab|<Screenshot|file="examples\/|Open in the live viewer|^import /m);
+  });
+
+  it("serves a picture for every shot in the shot list, in both themes", () => {
+    for (const shot of SHOTS) for (const theme of THEMES) expect(existsSync(file(`screenshots/${theme}/${shot.id}.png`)), `${theme}/${shot.id}`).toBe(true);
   });
 
   it("carries the Archidocs brand: the mark beside the title, and the viewer's favicon", () => {

@@ -2,52 +2,49 @@
 title: Teams and ownership
 description: Every Element has exactly one Owner Team, shown on every node.
 sidebar:
-  order: 4
+  order: 5
 ---
 
-A [Team](/docs/reference/glossary/#term-team) is a group that can own things. Teams are defined once, in `workspace.yaml`, so every Project uses the same ids:
-
-```yaml file="examples/kitchen-sink/archidocs/workspace.yaml"
-```
-
-## Every Element has one Owner
-
-The [Owner](/docs/reference/glossary/#term-owner) is the one Team accountable for an Element. It is never blank and never shared: when something breaks, there is one Team to ask.
-
-The Owner defaults to the Team that owns the Project, from `project.yaml`:
-
-```yaml file="examples/kitchen-sink/archidocs/sink/project.yaml"
-```
-
-Set `owner` on an Element only when it differs. In the Kitchen sink, the Core Team owns the Project, the Edge Team owns the web front end, and the Data Team owns the datastore and the broker:
+A [Team](/docs/reference/glossary/#term-team) is a group that can own things, defined once in `workspace.yaml` for every Project. Every Element has exactly one [Owner](/docs/reference/glossary/#term-owner), the Team accountable for it.
 
 ```yaml file="examples/kitchen-sink/archidocs/sink/model.yaml" region="systems"
 ```
 
-A child inherits nothing from its parent: Shop's Services are owned by Core, unless they say otherwise, whoever owns Shop.
+## One Owner, by default the Project's
+
+The Owner is never blank and never shared. It defaults to the Team that owns the Project, named in its `project.yaml`. Set `owner` on an Element only when it differs.
+
+In the Kitchen sink above, the Core Team owns the Project. The Edge Team owns the web front end, and the Data Team owns the datastore and the broker.
+
+A child inherits nothing from its parent. Shop's Services are owned by the Project's Team unless they say otherwise, whoever owns Shop.
 
 ## What else has an Owner
 
-- A **Relationship** belongs to its consumer's Owner: the Team that depends on something is the one that declares it.
+- A **Relationship** belongs to its consumer's Owner.
 - A **Deployment** belongs to its Service's Owner.
-- A **Deployment Target** has an Owner of its own, defaulting to its Project's Team, like an Element. Big Bank's Platform Team owns the AWS region, but the Core Banking Team owns the data centre declared beside it.
+- A **Deployment Target**, a place Services run such as a cluster, has an Owner of its own. Like an Element's, it defaults to its Project's Team. Big Bank's Platform Team owns the AWS region, but the Core Banking Team owns the data center declared beside it.
 
 ## Owners must exist
 
-An `owner` that names no Team is an error, with a suggestion when it is close to one:
-
-```yaml file="website/samples/misspelt-owner/archidocs/shop/model.yaml" fails="unknown-team"
-```
-
-`archidocs check` reports [`unknown-team`](/docs/reference/rules/unknown-team/) and suggests `payments`. Add a new Team to `workspace.yaml` first.
+An `owner` that names no Team is an error. `archidocs check` reports it as [`unknown-team`](/docs/reference/rules/unknown-team/), with a suggestion when the name is close to a Team's. To add a Team, add it to `workspace.yaml` first. The [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/) lists a Team's fields.
 
 ## Ownership in the viewer and MCP
 
-Every node in the viewer and in an exported diagram carries its Owner: a coloured stripe with the Team's short code, so the colour never carries it alone. The **Team** Lens highlights what one Team owns, and the Teams tree lists each Team's Elements.
+Every node in the viewer and in an exported diagram carries its Owner: a colored stripe with the Team's short code. The **Team** Lens highlights what one Team owns, and the Teams tree lists each Team's Elements.
 
-Over MCP, [`list_owned`](/docs/reference/mcp/read-tools/#list_owned) answers "what does my Team own?" and [`list_teams`](/docs/reference/mcp/read-tools/#list_teams) lists the Teams. A Saved View can select a Team's Elements with a `{team}` selector, or open with the Team Lens.
+Over MCP, [`list_owned`](/docs/reference/mcp/read-tools/#list_owned) answers "what does my Team own?". A Saved View can select one Team's Elements, or open with the Team Lens.
+
+## Why it works this way
+
+- **One Team to ask.** When something breaks, the Owner is the Team to call. A blank or shared Owner would leave that question open, so neither is allowed.
+- **A default from the Project.** Most of a Project belongs to its Team, so `owner` is written only for the exceptions. A Project's files stay short, and the exceptions stand out.
+- **Nothing inherited from the parent.** A System often spans Teams. Inheriting its Owner would hand every Service in it to one Team by accident.
+- **The consumer's Team owns a Relationship.** The Team that depends on something is the one that declares it, in its own Project. So ownership of the edge follows who wrote it.
+- **Teams are flat and have no members.** A Team has a name, a description and links, but no sub-Teams and no member list. The Workspace holds no staff data, and a Developer just picks their Team.
+- **Color never works alone.** The Team's code sits on every stripe, so ownership reads the same for people who can't tell the colors apart.
 
 ## Related
 
-- [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/)
 - [Workspace and Projects](/docs/concepts/workspace-and-projects/)
+- [`workspace.yaml` reference](/docs/reference/model/workspace-yaml/)
+- [Add a Project](/docs/guides/model/add-a-project/)
