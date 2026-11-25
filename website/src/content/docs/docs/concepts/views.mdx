@@ -2,12 +2,17 @@
 title: Views
 description: Diagrams defined by a query over the Model, generated or saved, structural or dynamic.
 sidebar:
-  order: 6
+  order: 7
 ---
 
 import Diagram from "../../../../components/Diagram.astro";
 
-A [View](/docs/reference/glossary/#term-view) is a diagram defined by a query over the Model. It is never a source of truth: it selects Elements and draws them, and the Model decides what they are and how they connect. Change the Model and every View that shows the change redraws.
+A [View](/docs/reference/glossary/#term-view) is a diagram defined by a query over the Model. It is never a source of truth: it picks Elements and draws them, and the Model decides what they are and how they connect.
+
+```yaml file="examples/big-bank/archidocs/digital/views.yaml" region="mainframe-outage"
+```
+
+<Diagram view="big-bank/digital:mainframe-outage" alt="Everything that depends on the Big Bank mainframe, directly or not, with the Impact Lens on." />
 
 ## Generated Views
 
@@ -15,8 +20,8 @@ A [Generated View](/docs/reference/glossary/#term-generated-view) exists for eve
 
 | View id | Shows |
 | --- | --- |
-| `c1` | The System Landscape: every Person and System. |
-| `c2` | The Service Landscape: every Service, grouped in its System. |
+| `c1` | The System landscape: every Person and System. |
+| `c2` | The Service landscape: every Service, grouped in its System. |
 | `c2/<system>` | One System's Services, with what they connect to. |
 | `c3/<service>` | One Service's Components, with what they connect to. |
 | `deployment/<environment>` | Every Deployment in one Environment, on its Targets. |
@@ -25,46 +30,47 @@ They cover most questions. The viewer opens on `c2`.
 
 ## Saved Views
 
-A [Saved View](/docs/reference/glossary/#term-saved-view) is a View written into a Project's files, under `views`, for a question the Generated Views don't answer at a glance. A structural Saved View has a `level` and selectors. Big Bank's Digital Banking Team saved one for the mainframe:
+A [Saved View](/docs/reference/glossary/#term-saved-view) is a View written into a Project's files, for a question the Generated Views don't answer at a glance. It has a Qualified id, such as `digital:mainframe-outage`.
 
-```yaml file="examples/big-bank/archidocs/digital/views.yaml" region="mainframe-outage"
-```
+A Saved View says which Elements to include, and the level to draw them at. It can pick Elements by id, by what is upstream or downstream of one, by Team, by tag, or by the paths between two. The [Saved Views reference](/docs/reference/model/views-yaml/) lists every selector.
 
-<Diagram view="big-bank/digital:mainframe-outage" alt="Everything that depends on the Big Bank mainframe, directly or not, with the Impact Lens on." />
-
-- `include` picks Elements: by id, with their children or descendants, `upstream` or `downstream` of one, by `team`, by `tag`, or on the paths between two (`from` and `to`). `exclude` drops some again.
-- `level` (`c1`, `c2`, `c3` or `deployment`) collapses what was picked to that level, and `expand` and `collapse` open or close single Elements.
-
-A Saved View has a Qualified id, such as `digital:mainframe-outage`, and the selectors keep working as the Model changes: a new Service that depends on the mainframe joins this View without anyone editing it. Every field is in the [Views reference](/docs/reference/model/views-yaml/).
+The selectors keep working as the Model changes. A new Service that depends on the mainframe joins the View above without anyone editing it.
 
 ## Lenses
 
-A [Lens](/docs/reference/glossary/#term-lens) highlights a View without changing which nodes it shows:
+A [Lens](/docs/reference/glossary/#term-lens) highlights part of a View without changing which nodes it shows:
 
 - **Impact**: what is upstream, downstream, or both, of one Element, each node marked with how many hops away it is.
 - **Team**: what one Team owns.
 - **Path**: the paths between two Elements.
 
-The viewer turns Lenses on and off; a Saved View can open with one, as `mainframe-outage` opens with Impact.
+The viewer turns Lenses on and off. A Saved View can open with one, as `mainframe-outage` opens with Impact.
 
 ## Deployment Views
 
-A [Deployment View](/docs/reference/glossary/#term-deployment-view) places Deployments on their Deployment Targets in one Environment. Each Environment has a Generated one, and a Saved View with `level: deployment` narrows it to some Elements or `targets`. See [Deployments](/docs/concepts/deployments/#deployment-views).
+A [Deployment View](/docs/reference/glossary/#term-deployment-view) places Deployments on their Deployment Targets in one Environment. Each Environment has a Generated one, and a Saved View can narrow it to some Services or Targets. See [Deployments](/docs/concepts/deployments/#deployment-views).
 
 ## Dynamic Views
 
-A [Dynamic View](/docs/reference/glossary/#term-dynamic-view) shows one scenario as an ordered list of [Steps](/docs/reference/glossary/#term-step), drawn as a sequence chart:
+A [Dynamic View](/docs/reference/glossary/#term-dynamic-view) shows one scenario, drawn as a sequence chart. It is an ordered list of [Steps](/docs/reference/glossary/#term-step), each one interaction:
 
 <Diagram view="big-bank/payments:make-a-payment" alt="A Big Bank customer makes a payment: numbered Steps from the customer through the app and the Payments Service to the mainframe, with the payment events and the reply." />
 
-Each Step must follow a Relationship that exists in the Model, so a scenario can't show a call the architecture doesn't have. See [Dynamic Views](/docs/guides/model/dynamic-views/).
+Each Step must follow a Relationship that exists in the Model. See [Dynamic Views](/docs/guides/model/dynamic-views/).
 
 ## Layout
 
-The [Layout](/docs/reference/glossary/#term-layout), where each node sits, is computed every time, never stored, so it can't change what the architecture means. A View says only which way it runs: top to bottom, left to right or the reverse.
+The [Layout](/docs/reference/glossary/#term-layout), where each node sits on the diagram, is computed every time a View is drawn. It is never stored. A View says only which way it runs: top to bottom, left to right, or the reverse of either.
+
+## Why it works this way
+
+- **A View is a query, so it can't go stale.** It never stores the Elements it shows. When the Model changes, every View that the change touches redraws, and a new Service joins every View whose selectors pick it.
+- **Layout is never stored, so it can't carry meaning.** If positions were saved, a box's place could start to mean something the Model doesn't say, and every Model change would leave old positions to fix. Computing the Layout keeps the Model the only truth. It also keeps View files free of coordinates, so they diff cleanly in a pull request.
+- **Generated Views for every scope.** Nobody has to write and maintain a diagram for each System and Service. A Saved View is only for a question worth naming.
+- **Steps follow Relationships.** A scenario can't show a call the architecture doesn't have. If a Relationship is removed, `archidocs check` reports every Step that used it.
 
 ## Related
 
 - [Save a View](/docs/guides/model/save-a-view/)
-- [Export diagrams](/docs/guides/review/export/)
+- [Saved Views reference](/docs/reference/model/views-yaml/)
 - [The viewer](/docs/concepts/viewer/)

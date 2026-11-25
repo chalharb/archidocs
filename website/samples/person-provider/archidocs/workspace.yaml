@@ -1,8 +1,0 @@
-teams:
-  web:
-    name: Web
-  payments:
-    name: Payments
-environments:
-  prod:
-    name: Production

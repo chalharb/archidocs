@@ -2,19 +2,26 @@
 title: The viewer
 description: The static site people use to explore the Model, where every screen is a link.
 sidebar:
-  order: 9
+  order: 10
 ---
 
-The viewer is a static site that shows the Model as diagrams. `archidocs dev` serves it on your machine as you edit; `archidocs build` writes it for any static host, with the Model at every past Revision. It is read-only: it never writes to the Workspace.
+import Diagram from "../../../../components/Diagram.astro";
 
-Most people arrive from a link in a pull request, a chat thread or an incident channel, so the viewer is built to answer the question in the link first. Try it on the [Big Bank demo ↗](https://big-bank.archidocs.dev).
+The viewer is a static site that shows the Model as diagrams. It is read-only: people explore the architecture in it, and change it only through the YAML.
+
+<Diagram view="big-bank/digital:mainframe-outage" alt="A View in the viewer: everything that depends on the Big Bank mainframe, with the Impact Lens on." />
+
+`archidocs dev` serves the viewer on your machine as you edit. `archidocs build` writes it for any static host, with the Model at every kept Revision. Try it on the [Big Bank demo ↗](https://big-bank.archidocs.dev).
 
 ## Finding your way
 
 - **Find** (press `/`) searches Elements by name, id, technology or Owner, and Services by any of their URLs.
-- The **Model** tree walks Systems, Services and Components; the **Teams** tree lists what each [Team](/docs/reference/glossary/#term-team) owns; the **Views** tree lists the Generated and Saved Views.
+- The **Model** tree walks Systems, Services and Components.
+- The **Teams** tree lists what each [Team](/docs/reference/glossary/#term-team) owns.
+- The **Views** tree lists the Generated and Saved Views.
 - The **location bar** shows where you are, with back and forward, recent places and Copy link.
-- Selecting a node opens the **Element panel**: its Owner, description, links, Relationships in and out, Deployments with their URLs in each Environment, and the ADRs linked to it. For a Service, **Where is it deployed?** opens each Environment's Deployment View with its Deployments marked.
+
+Selecting a node opens the **Element panel**: its Owner, description, links, Relationships in and out, Deployments with their URLs, and linked ADRs. For a Service, **Where is it deployed?** opens each Environment's Deployment View with its Deployments marked.
 
 On a structural View, open a System or Service in place to see what is inside it, without leaving the View.
 
@@ -25,33 +32,40 @@ A [Lens](/docs/reference/glossary/#term-lens) highlights part of a View without 
 | Lens | Answers |
 | --- | --- |
 | **Impact** | What is upstream or downstream of this Element, and how far away? |
-| **Connect to…** | How are these two Elements connected? |
+| **Connect to…**, the Path Lens | How are these two Elements connected? |
 | **Team** | What does this Team own? |
 
 ## Every screen is a link
 
-The URL holds everything on screen: the View, what is open, the selection, the Lens, the direction and the Revision. Copy it and anyone who opens it sees the same thing. For example, everything upstream of Big Bank's mainframe on the Service Landscape:
+The URL holds everything on screen: the View, what is open, the selection, the Lens, the direction and the Revision. Copy it, and anyone who opens it sees the same thing. For example, everything upstream of Big Bank's mainframe on the Service landscape:
 
 [`https://big-bank.archidocs.dev/#/view/c2?impact=core:mainframe&way=upstream`](https://big-bank.archidocs.dev/#/view/c2?impact=core:mainframe&way=upstream)
 
 ## Save as View
 
-When a screen answers a question worth keeping, **Save as View** writes it out as Saved View YAML, the same definition the MCP `upsert_view` tool takes. The viewer doesn't save it anywhere: paste it into a Project's `views.yaml` and open a pull request, so the View is reviewed like the rest of the Model. See [Save a View](/docs/guides/model/save-a-view/).
+When a screen answers a question worth keeping, **Save as View** writes it out as Saved View YAML. The viewer doesn't store it anywhere. Paste it into a Project's `views.yaml` and open a pull request. See [Save a View](/docs/guides/model/save-a-view/).
 
 ## Dynamic Views
 
-A [Dynamic View](/docs/reference/glossary/#term-dynamic-view) opens as a sequence chart, with its Steps listed beside it. Select a Step to follow the scenario one interaction at a time, switch to a graph of the numbered Steps, or show the broker that each event goes through.
+A [Dynamic View](/docs/reference/glossary/#term-dynamic-view), one scenario as a sequence chart, opens with its Steps listed beside it. Select a Step to follow the scenario one interaction at a time. You can also switch to a graph of the numbered Steps, or show the broker that each event goes through.
 
 ## History and Compare
 
-A published viewer holds the Model at every kept [Revision](/docs/reference/glossary/#term-revision). Pick a Revision to see the whole viewer as it was then, or **Compare** two to see what was added, removed and changed, marked on the diagram. See [Revisions and history](/docs/concepts/revisions-and-history/).
+A published viewer holds the Model at every kept [Revision](/docs/reference/glossary/#term-revision). Pick a Revision to see the whole viewer as it was then. **Compare** two to see what was added, removed and changed, marked on the diagram. See [Revisions and history](/docs/concepts/revisions-and-history/).
 
 ## Pictures
 
-Any View can be downloaded as SVG or PNG from the viewer, styled as it is on screen. For pictures in CI, wikis and slide decks, use [`archidocs export`](/docs/guides/review/export/).
+Any View can be downloaded from the viewer as SVG or PNG, styled as it is on screen. For pictures in CI, wikis and slide decks, use [`archidocs export`](/docs/guides/review/export/).
+
+## Why it works this way
+
+- **Most people arrive from a link.** Someone shares a URL in a pull request, a chat thread or an incident channel. So the viewer opens on the answer the link points at, and every screen can be shared the same way.
+- **A static site.** It needs no server, database or sign-in, so it can be published to any static host from CI. The host's own access control decides who can open it.
+- **Read-only.** The YAML in git is the only place the Model changes. A change made in the viewer would skip review and could disagree with the files.
+- **Save as View writes YAML, not a server-side save.** A Saved View is part of the Model, so it is reviewed in a pull request like the rest.
 
 ## Related
 
-- [Publish on GitHub Pages](/docs/guides/publish/github-pages/)
 - [Views](/docs/concepts/views/)
+- [Publish to GitHub Pages](/docs/guides/publish/github-pages/)
 - [`archidocs dev`](/docs/reference/cli/dev/)

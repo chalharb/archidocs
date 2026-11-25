@@ -1,30 +1,20 @@
 ---
-title: Introduction
-description: What Archidocs is, who it is for, and the demos.
+title: What is Archidocs?
+description: What Archidocs is, who it is for, when it isn't the right tool, and the demos.
 sidebar:
   order: 1
 ---
 
-import Flow from "../../../../components/Flow.astro";
+Archidocs is git-native architecture as code. Each Team declares its slice of the architecture as YAML in one repo. Archidocs checks the files, combines them into one Model, and publishes a diagram viewer for people and an MCP server for agents.
 
-Archidocs is git-native architecture as code. Each Team declares its slice of the architecture as YAML in one repo; Archidocs validates it, combines it into one Model, and publishes a diagram viewer for people and an MCP server for agents.
+The diagrams are generated from the Model at a commit, never drawn by hand, so they don't go stale. Every Element has one Owner Team, every Service has a URL per Environment, and every screen of the viewer is a link you can share. [How Archidocs works](/docs/concepts/how-archidocs-works/) shows how the parts fit together.
 
-<Flow>
-1. **Project YAML in git.** Each Team edits its own Project folder, through pull requests.
-2. **`archidocs check`** validates every file and every reference between Projects.
-3. **One Model** of the whole Workspace, rebuilt at any commit.
-4. **Two ways in:**
-   - the **viewer**, for people
-   - the **MCP server**, for agents
-</Flow>
+## Who it's for
 
-## Why
-
-- **Diagrams that don't go stale.** Every diagram is generated from the validated Model at a commit, never drawn by hand.
-- **Ownership is first-class.** Every Element has exactly one Owner Team, shown on every node.
-- **One answer, many Teams.** Each Team keeps its own Project folder in one Workspace repo. Archidocs merges them, so nobody has to ask around.
-- **Every screen is a link.** Any view in the viewer can be shared by URL and saved as View YAML.
-- **Same answers for people and agents.** What the viewer shows, the MCP server can answer, and agents can edit the Model through it.
+- **People who need one answer about the architecture.** Most arrive in the viewer from a link in a pull request, a chat thread or an incident channel. The viewer needs only a browser.
+- **Teams who own part of the architecture.** Each Team keeps its slice in its own folder of the repo and changes it through pull requests, as it changes code.
+- **Architects** who curate Saved Views and record decisions as ADRs.
+- **Coding agents,** which read and edit the same Model over MCP.
 
 ## The questions it answers
 
@@ -36,6 +26,13 @@ Archidocs is git-native architecture as code. Each Team declares its slice of th
 | Product Owner | What is upstream and downstream of an outage? | The Impact Lens | [`get_impact`](/docs/reference/mcp/read-tools/#get_impact) |
 | QA Tester | What is a Service's URL in a given Environment? | The Element panel | [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments) |
 | Technical staff | Which decisions sit behind an Element, and how has the system changed? | The ADR reader, history and Compare | [`list_adrs`](/docs/reference/mcp/read-tools/#list_adrs), [`get_changes`](/docs/reference/mcp/read-tools/#get_changes) |
+
+## When it isn't the right tool
+
+- **A one-off sketch.** Archidocs draws only what the Model holds, and you can't move a box by hand. For a whiteboard picture of an idea, a drawing tool is quicker.
+- **Discovering what is running.** Archidocs shows what Teams declare. It doesn't read your clusters, cloud accounts or traces, and it doesn't detect drift from them.
+- **Architecture spread over many repos.** A Workspace is one git repo. Each Team gets a folder in it, not a repo of its own.
+- **A hosted service with sign-in.** The viewer is a static site you host, and the MCP server runs on your machine or in your CI. There is no shared server to sign in to.
 
 ## See it working
 

@@ -1,6 +1,6 @@
 # 09: Concepts trimmed, and "How Archidocs works"
 
-Status: ready-for-agent
+Status: done
 Blocked by: 07
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -22,8 +22,8 @@ Spec: [Docs rewrite proposal](../spec.md)
 
 ## Acceptance criteria
 
-- [ ] `how-archidocs-works` exists, is first in Concepts, and links all ten concept pages.
-- [ ] Every concept page passes the template test, and the not-yet-migrated list is empty.
-- [ ] Every concept page has a "Why it works this way" section.
-- [ ] No concept page lists the fields of a YAML file.
-- [ ] No sentence on a concept page has more than two links.
+- [x] `how-archidocs-works` exists, is first in Concepts, and links all ten concept pages.
+- [x] Every concept page passes the template test, and the not-yet-migrated list is empty.
+- [x] Every concept page has a "Why it works this way" section.
+- [x] No concept page lists the fields of a YAML file.
+- [x] No sentence on a concept page has more than two links.

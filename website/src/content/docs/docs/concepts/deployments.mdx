@@ -2,53 +2,60 @@
 title: Deployments
 description: Environments, Deployment Targets and Deployments, and where a Service's URL lives.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 import Diagram from "../../../../components/Diagram.astro";
 
-Three things describe where software runs:
-
-- An [Environment](/docs/reference/glossary/#term-environment) is a named stage, such as `prod` or `staging`, defined once in `workspace.yaml`.
-- A [Deployment Target](/docs/reference/glossary/#term-deployment-target) is a place a Service runs in: a region, a cluster in it, a namespace, a platform.
-- A [Deployment](/docs/reference/glossary/#term-deployment) is one Service running in one Environment on one Target.
-
-## Deployment Targets
-
-Targets nest to any depth, each with a `kind` that says what it is. They are declared under `targets` in any Project file. Big Bank's Platform Team declares the cloud region with its clusters, and the Core Banking Team's data centre:
-
-```yaml file="examples/big-bank/archidocs/platform/targets.yaml"
-```
-
-Targets aren't Elements: nothing depends on a cluster, and it never shows on a structural diagram. They do share the Project's ids with Elements, have an Owner of their own (the London data centre is Core Banking's), and can be linked from ADRs. Other Projects use them by Qualified id, as `platform:eks-prod`.
-
-A Target isn't tied to one Environment. Which Environments a Target serves follows from the Deployments on it.
-
-## Deployments
-
-Deployments are listed under `deployments`, each naming its `service`, `environment` and `target`:
+A [Deployment](/docs/reference/glossary/#term-deployment) is one Service running in one Environment, such as `prod`, on one Deployment Target, a place such as a cluster. It is where the Service's URL lives, because the URL is different in every Environment.
 
 ```yaml file="examples/big-bank/archidocs/digital/deployments.yaml"
 ```
 
-The Service, Environment and Target name the Deployment; the same three can appear only once ([`duplicate-deployment`](/docs/reference/rules/duplicate-deployment/)). Only a Service can be deployed: Systems and Components run as part of their Services.
+## Environments and Deployment Targets
+
+An [Environment](/docs/reference/glossary/#term-environment) is a named stage, such as `prod` or `staging`. It is defined once in `workspace.yaml`, so `prod` means the same thing in every Project.
+
+A [Deployment Target](/docs/reference/glossary/#term-deployment-target) is a place a Service runs: a region, a cluster in it, a namespace or a platform. Targets nest to any depth, and each has a `kind` that says what it is. Big Bank's Platform Team declares an AWS region with its clusters, and the Core Banking Team declares its own data center.
+
+Targets aren't Elements. Nothing depends on a cluster, so a Deployment Target never shows on a Structural View of Elements. Targets do have an Owner of their own, and other Projects use them by Qualified id, as `platform:eks-prod` above.
+
+A Target isn't tied to one Environment. The Deployments on it say which Environments it serves.
+
+## Deployments
+
+A Deployment names its Service, Environment and Deployment Target, and those three identify it. The same three can appear only once: `archidocs check` reports a second one as [`duplicate-deployment`](/docs/reference/rules/duplicate-deployment/).
+
+Only a Service can be deployed. Systems and Components run as part of their Services. A Service can have several Deployments in one Environment, such as one per region.
+
+The [Deployment Targets and Deployments reference](/docs/reference/model/deployments-yaml/) lists every field.
 
 ## URLs live on Deployments
 
-A Service's `url` belongs to a Deployment, because it differs per Environment: the API is `https://api.bigbank.example` in production and `https://api.staging.bigbank.example` in staging. `endpoints` adds further named URLs, such as a health check or an admin console.
+A Deployment's `url` is the Service's main address in that Environment. Big Bank's API is `https://api.bigbank.example` in production and `https://api.staging.bigbank.example` in staging. `endpoints` adds more named URLs, such as a health check.
 
-That answers the QA Tester's question, "what is this Service's URL in staging?": in the viewer's Element panel, or over MCP with [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments). Agents can go the other way too: [`search_elements`](/docs/reference/mcp/read-tools/#search_elements) resolves a URL or host name to the Service deployed there.
+That answers the QA Tester's question, "what is this Service's URL in staging?". The viewer shows it in the Element panel. Over MCP, [`get_deployments`](/docs/reference/mcp/read-tools/#get_deployments) returns it.
+
+Agents can go the other way too. [`search_elements`](/docs/reference/mcp/read-tools/#search_elements) finds the Service deployed at a URL or host name.
 
 ## Deployment Views
 
-Each Environment has a Generated [Deployment View](/docs/reference/glossary/#term-deployment-view), `deployment/<environment>`, which places every Deployment on its Target, nested as the Targets nest. A Saved View with `level: deployment` narrows one down, as Big Bank's view of internet banking in production does:
-
-```yaml file="examples/big-bank/archidocs/digital/views.yaml" region="prod-deployment"
-```
+Each Environment has a [Deployment View](/docs/reference/glossary/#term-deployment-view), a diagram that places every Deployment on its Target. Targets nest in it as they nest in the YAML. A Saved View can narrow one down, as Big Bank's view of internet banking in production does:
 
 <Diagram view="big-bank/digital:prod-deployment" alt="Big Bank's internet banking Services in production, placed on the EKS prod cluster inside the AWS London region." />
+
+The edges between Deployments come from the Relationships between their Services. There are no Relationships that exist only in one Environment.
+
+## Why it works this way
+
+- **URLs live on Deployments, not on Services.** A Service has a different URL in every Environment, and can have several in one, such as one per region. A single `url` on the Service would be right for one of them at most.
+- **Targets aren't Elements.** A cluster runs software, but nothing calls it. Keeping Deployment Targets out of the Element tree keeps C1 to C3 Views about software, and Deployment Views about where it runs.
+- **A Deployment has no id to invent.** Its Service, Environment and Target already say which Deployment it is. A second id would only be one more thing to keep in step.
+- **Environments are defined once.** Every Project's `prod` is the same `prod`, so a Deployment View of `prod` can show every Team's Services together.
+- **Relationships are declared once.** Deployment Views take their edges from the Relationships, so there is one place to say what depends on what.
 
 ## Related
 
 - [Add Deployments](/docs/guides/model/add-deployments/)
 - [Deployment Targets and Deployments reference](/docs/reference/model/deployments-yaml/)
+- [Views](/docs/concepts/views/)
