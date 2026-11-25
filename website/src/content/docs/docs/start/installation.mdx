@@ -1,0 +1,205 @@
+---
+title: Installation
+description: What Archidocs needs, how to install, check, upgrade and pin it, and how to remove it.
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+Archidocs is one command-line tool, `archidocs`, published to npm. The same package runs the checks, the viewer and the MCP server.
+
+## Requirements
+
+- **Node.js 22.18 or later.** Run `node --version` to see yours.
+- **git.** A [Workspace](/docs/reference/glossary/#term-workspace), the repo that holds the whole architecture, is a git repo. Archidocs reads its history to show past [Revisions](/docs/reference/glossary/#term-revision), the Workspace as it was at a commit.
+
+## Install
+
+Install it globally to use `archidocs` in any repo. Or add it as a dev dependency of the Workspace repo, so everyone who clones the repo runs the same version.
+
+<Tabs syncKey="package-manager">
+<TabItem label="npm">
+
+Globally:
+
+```bash
+npm install --global archidocs
+```
+
+As a dev dependency, from the Workspace repo's root:
+
+```bash
+npm install --save-dev archidocs
+```
+
+Run a dev dependency with `npx`, as in `npx archidocs check`.
+
+</TabItem>
+<TabItem label="pnpm">
+
+Globally:
+
+```bash
+pnpm add --global archidocs
+```
+
+As a dev dependency, from the Workspace repo's root:
+
+```bash
+pnpm add --save-dev archidocs
+```
+
+Run a dev dependency with `pnpm exec`, as in `pnpm exec archidocs check`.
+
+</TabItem>
+<TabItem label="npx">
+
+There is nothing to install. Put `npx` before each command, as in `npx archidocs check`. The first time, npx downloads the latest version. It then runs that copy from its cache.
+
+To run one version, name it:
+
+```bash
+npx archidocs@1.2.0 check
+```
+
+</TabItem>
+</Tabs>
+
+## Check the install
+
+```bash
+archidocs version
+```
+
+```text
+archidocs 1.2.0 (Bundle schemaVersion 1)
+```
+
+The first number is the CLI's version. The Bundle `schemaVersion` is the version of the [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle) format. That is the JSON file that `archidocs build` writes for the viewer. For scripts, add `--format json`:
+
+```bash
+archidocs version --format json
+```
+
+```text
+{"version":"1.2.0","schemaVersion":1}
+```
+
+## Upgrade
+
+Install again with the package manager you used:
+
+<Tabs syncKey="package-manager">
+<TabItem label="npm">
+
+```bash
+npm install --global archidocs@latest
+```
+
+For a dev dependency, drop `--global` and run it from the Workspace repo's root.
+
+</TabItem>
+<TabItem label="pnpm">
+
+```bash
+pnpm add --global archidocs@latest
+```
+
+For a dev dependency, drop `--global` and run it from the Workspace repo's root.
+
+</TabItem>
+<TabItem label="npx">
+
+npx keeps running the copy in its cache, even after a new release. To fetch the newest release, name it:
+
+```bash
+npx archidocs@latest version
+```
+
+</TabItem>
+</Tabs>
+
+Then run `archidocs init` again from the Workspace repo's root:
+
+```bash
+archidocs init
+```
+
+It rewrites the agent skill files that the new version changed, and adds any setup that is missing. It leaves your Model alone. When the skill changed, it prints:
+
+```text
+Updated .agents/skills/archidocs-authoring/SKILL.md
+Updated .claude/skills/archidocs-authoring/SKILL.md
+Updated .github/skills/archidocs-authoring/SKILL.md
+
+Register the Archidocs MCP server with your agent harness, started from the repo root:
+
+  archidocs mcp --workspace archidocs
+```
+
+The [Changelog](/docs/reference/changelog/) lists what changed in each version.
+
+## Pin a version in CI
+
+Both CI templates take a `version` input, the npm version of `archidocs` to run. Pin it so that a new release changes your pipeline only when you change the input.
+
+<Tabs syncKey="ci">
+<TabItem label="GitHub Actions">
+
+```yaml title=".github/workflows/architecture.yml"
+      - uses: chalharb/archidocs@v1
+        with:
+          version: 1.2.0
+```
+
+When `version` is empty, the Action runs the version it was checked out at. See the [GitHub Action reference](/docs/reference/ci/github-action/).
+
+</TabItem>
+<TabItem label="GitLab CI">
+
+```yaml title=".gitlab-ci.yml"
+include:
+  - remote: https://raw.githubusercontent.com/chalharb/archidocs/v1/templates/gitlab/archidocs.gitlab-ci.yml
+    inputs:
+      version: 1.2.0
+```
+
+The template runs `latest` when `version` is not set. See the [GitLab template reference](/docs/reference/ci/gitlab-template/).
+
+</TabItem>
+</Tabs>
+
+## Uninstall
+
+<Tabs syncKey="package-manager">
+<TabItem label="npm">
+
+```bash
+npm uninstall --global archidocs
+```
+
+For a dev dependency, drop `--global`.
+
+</TabItem>
+<TabItem label="pnpm">
+
+```bash
+pnpm remove --global archidocs
+```
+
+For a dev dependency, drop `--global`.
+
+</TabItem>
+<TabItem label="npx">
+
+Nothing is installed. npx keeps its copy in the npm cache, and npm clears old entries on its own.
+
+</TabItem>
+</Tabs>
+
+Uninstalling leaves the Workspace's files in place: the `archidocs/` folder, and the agent skill files that `archidocs init` wrote.
+
+## Next
+
+- [Quick start](/docs/start/quick-start/): from an empty repo to your first System in the viewer, in about five minutes.

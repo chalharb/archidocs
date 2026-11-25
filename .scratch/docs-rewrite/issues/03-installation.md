@@ -1,6 +1,6 @@
 # 03: Installation page
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -19,6 +19,6 @@ The quick start and tutorial link here for requirements and keep one install lin
 
 ## Acceptance criteria
 
-- [ ] The page exists and is second in the Start here group.
-- [ ] Every `archidocs …` line passes the CLI-line check.
-- [ ] The Node.js version on the page is read from `package.json` `engines`, or a test fails when they differ.
+- [x] The page exists and is second in the Start here group.
+- [x] Every `archidocs …` line passes the CLI-line check.
+- [x] The Node.js version on the page is read from `package.json` `engines`, or a test fails when they differ.
