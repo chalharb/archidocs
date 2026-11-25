@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { describeLens } from "../../src/core/views/index.ts";
+import { describeLens, parseViewId } from "../../src/core/views/index.ts";
 import type { ExportFormat } from "./export.ts";
 import { directions, formatPlace, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { readRecent, type RecentPlace } from "./recent.ts";
@@ -216,7 +216,10 @@ function useDismiss(open: boolean, close: () => void) {
 
 /** One link per Environment to its Deployment View, the current one marked. */
 function DeploymentLinks({ workspace, place }: { workspace: Workspace; place: Place }) {
-  const links = workspace.deploymentViews();
+  const links = workspace.views.flatMap((v) => {
+    const ref = parseViewId(v.id);
+    return ref?.form === "deployment" ? [{ view: v.id, label: workspace.name(ref.environment) }] : [];
+  });
   if (links.length === 0) return null;
   return (
     <nav className="arc-deployments" aria-label="Deployment Views">

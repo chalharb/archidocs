@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { listAdrs } from "../../src/core/adrs.ts";
 import { getDeployments } from "../../src/core/deployments.ts";
 import { getImpact, type ImpactRing } from "../../src/core/impact.ts";
+import { ownViewId } from "../../src/core/views/index.ts";
 import type { BundleRelationship } from "../../src/schema/bundle.ts";
 import type { Comparison } from "./App.tsx";
 import { AdrStatusBadge } from "./AdrReader.tsx";
@@ -94,7 +95,7 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
                 <Icon name="connect" />
                 Connect to…
               </button>
-              {workspace.ownView(id) !== undefined && (
+              {ownViewId(workspace.bundle, id) !== undefined && (
                 <button type="button" className="arc-action" onClick={() => onOpenView(id)}>
                   <Icon name="open" />
                   Open its View

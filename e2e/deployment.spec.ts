@@ -84,4 +84,12 @@ test.describe("Solutions Architect: where is a Service deployed?", () => {
     const [web, cart] = [boxes.get("shop:web")!, boxes.get("shop:cart@platform:eks-staging")!];
     expect(web.y + web.height).toBeLessThan(cart.y);
   });
+
+  test("a Deployment in a Saved Deployment View shows the URL of that View's Environment", async ({ page }) => {
+    // Payments API runs on EKS prod in both Environments; only its staging Deployment has a URL.
+    await open(page, "#/view/shop:staging-deployment");
+    await expect(node(page, "payments:payments-api@platform:eks-prod")).toContainText("payments.staging.example.com");
+    await open(page, "#/view/deployment/prod");
+    await expect(node(page, "payments:payments-api@platform:eks-prod")).toContainText("EKS prod");
+  });
 });
