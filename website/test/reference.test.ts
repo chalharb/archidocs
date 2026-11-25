@@ -12,7 +12,9 @@ import { archidocsArgs, checkMarkdown } from "../src/lib/command-lines.ts";
 import { repoPath } from "../src/lib/repo.ts";
 import { cliPages, commandPath, handWrittenFile, SEE_ALSO, WORKSPACE_SECTION } from "../src/reference/cli.ts";
 import { generatedPages } from "../src/reference/index.ts";
-import { listTools, mcpPages } from "../src/reference/mcp.ts";
+import { fieldSections, type JsonSchema } from "../src/reference/json-schema.ts";
+import { captureTools, EXAMPLES, listTools, mcpPages, toolPath } from "../src/reference/mcp.ts";
+import { ERROR_CODES } from "../../src/mcp/index.ts";
 import { modelPages } from "../src/reference/model.ts";
 import { rulePages } from "../src/reference/rules.ts";
 import { anchorTerms, glossaryPage, rewriteLinks, termAnchor } from "../src/reference/text-sources.ts";
@@ -234,17 +236,6 @@ describe("generated reference pages", () => {
     expect(linking).toEqual(commandList.map((c) => c.name).filter((name) => name !== "version" && name !== "guide"));
   });
 
-  it("documents every MCP tool the server lists under its own heading, split by readOnlyHint", async () => {
-    const tools = await listTools();
-    const [read, write] = await mcpPages(tools);
-    expect(tools.length).toBeGreaterThan(20);
-    for (const tool of tools) {
-      const page = tool.annotations?.readOnlyHint === false ? write! : read!;
-      expect(page.body).toMatch(new RegExp(`^## ${tool.name}$`, "m"));
-    }
-    expect(write!.body).toMatch(/^## upsert_element$/m);
-  });
-
   it("covers every top-level key of every schema in the Model YAML pages", async () => {
     const bodies = modelPages().map((p) => p.body).join("\n");
     for (const name of ["workspace", "project", "model", "adr"]) {
@@ -277,5 +268,110 @@ describe("generated reference pages", () => {
     for (const id of (await byId()).keys()) {
       for (const ext of [".md", ".mdx", "/index.md", "/index.mdx"]) expect(existsSync(repoPath(`website/src/content/docs/${id}${ext}`)), `${id}${ext}`).toBe(false);
     }
+  });
+});
+
+describe("MCP tool pages", () => {
+  const pages = async () => new Map(mcpPages(await captureTools()).map((p) => [p.id, p]));
+  /** The Field column of every table in a page, one list per table. */
+  const tableFields = (body: string): string[][] =>
+    body
+      .split(/\n{2,}/)
+      .filter((block) => block.startsWith("| Field |"))
+      .map((block) => block.split("\n").slice(2).map((line) => line.split(" | ")[0]!.replace(/^\| /, "")));
+
+  it("gives every tool a page with its input, output, an example call with its real result, and its errors", async () => {
+    const tools = await listTools();
+    const all = await pages();
+    expect(tools.length).toBeGreaterThan(20);
+    for (const tool of tools) {
+      const page = all.get(`docs/reference/mcp/${tool.name}`);
+      expect(page, tool.name).toBeDefined();
+      expect(page!.title).toBe(tool.name);
+      expect(headings(page!.body), tool.name).toEqual(["Input", "Output", "Example", "Errors", "See also"]);
+      expect(page!.body, tool.name).toMatch(/^## Example\n\n[^\n]+\n\nArguments:\n\n```json\n[\s\S]+?\n```\n\nResult:\n\n```json\n\{/m);
+    }
+  });
+
+  it("shows the result each example call really returns", async () => {
+    const captured = await captureTools();
+    const impact = captured.tools.find((c) => c.tool.name === "get_impact")!;
+    expect(impact.example.arguments).toEqual(EXAMPLES["get_impact"]!.arguments);
+    expect(impact.example.result).toMatchObject({ id: "sink:orders-db", direction: "upstream" });
+    const body = (await pages()).get("docs/reference/mcp/get_impact")!.body;
+    expect(body).toContain('"id": "sink:orders-db"');
+    // No path from the machine that built the site.
+    expect(JSON.stringify(captured)).not.toContain(repoPath(""));
+  });
+
+  it("fails when a tool has no example input, or its example returns an error", async () => {
+    const withoutOne = Object.fromEntries(Object.entries(EXAMPLES).filter(([name]) => name !== "get_element"));
+    await expect(captureTools(withoutOne)).rejects.toThrow(/get_element has no example/);
+    await expect(captureTools({ ...EXAMPLES, get_element: { arguments: { id: "sink:nope" } } })).rejects.toThrow(/get_element's example returned not_found/);
+  });
+
+  it("calls every tool that takes dry_run with dry_run: true, and writes nothing", async () => {
+    const captured = await captureTools();
+    const dry = captured.tools.filter((c) => c.tool.inputSchema.properties?.["dry_run"]);
+    expect(dry.map((c) => c.tool.name)).toContain("upsert_element");
+    for (const c of dry) expect(c.example.arguments["dry_run"], c.tool.name).toBe(true);
+    await expect(captureTools({ ...EXAMPLES, upsert_team: { arguments: { id: "billing", fields: { name: "Billing" } } } })).rejects.toThrow(/upsert_team's example must pass dry_run: true/);
+    const { stdout } = await promisify(execFile)("git", ["status", "--porcelain", "--", "examples/kitchen-sink"], { cwd: repoPath("") });
+    expect(stdout).toBe("");
+  });
+
+  it("repeats no field name in any table, and shows a union output as one table per variant", async () => {
+    for (const page of (await pages()).values()) for (const fields of tableFields(page.body)) expect(new Set(fields).size, `${page.id}: ${fields.join(", ")}`).toBe(fields.length);
+    const element = (await pages()).get("docs/reference/mcp/get_element")!.body;
+    for (const kind of ["person", "system", "service", "component"]) expect(element).toContain(`When \`element.kind\` is \`${kind}\``);
+    expect((await pages()).get("docs/reference/mcp/get_view")!.body).toContain("When `lens` has `team`");
+  });
+
+  it("splits a union of objects into shared rows and a section per variant", () => {
+    const schema: JsonSchema = {
+      type: "object",
+      properties: {
+        thing: {
+          oneOf: [
+            { type: "object", properties: { kind: { const: "a" }, id: { type: "string" }, size: { type: "number" } }, required: ["kind", "id"] },
+            { type: "object", properties: { kind: { const: "b" }, id: { type: "string" }, url: { type: "string" } }, required: ["kind", "id"] },
+          ],
+        },
+      },
+    };
+    const sections = fieldSections(schema);
+    expect(sections.map((s) => [s.when, s.rows.map((r) => r.path)])).toEqual([
+      [undefined, ["thing", "thing.kind", "thing.id"]],
+      ["When `thing.kind` is `a`", ["thing.size"]],
+      ["When `thing.kind` is `b`", ["thing.url"]],
+    ]);
+    expect(sections[0]!.rows[1]!.type).toBe('`"a"` or `"b"`');
+  });
+
+  it("keeps read-tools and write-tools as indexes, with a heading per tool so old anchors resolve", async () => {
+    const tools = await listTools();
+    const all = await pages();
+    const read = all.get("docs/reference/mcp/read-tools")!.body;
+    const write = all.get("docs/reference/mcp/write-tools")!.body;
+    for (const tool of tools) {
+      const index = tool.annotations?.readOnlyHint === false ? write : read;
+      expect(index, tool.name).toMatch(new RegExp(`^## ${tool.name}$`, "m"));
+      expect(index, tool.name).toMatch(new RegExp(`^\\| \\[\`${tool.name}\`\\]\\(${toolPath(tool)}\\) \\|`, "m"));
+    }
+  });
+
+  it("links each tool to its own page", async () => {
+    const [tool] = await listTools();
+    expect(toolPath(tool!)).toBe(`/docs/reference/mcp/${tool!.name}/`);
+  });
+
+  it("lists every error code the server can return on the errors page", async () => {
+    const body = (await pages()).get("docs/reference/mcp/errors")!.body;
+    for (const code of Object.keys(ERROR_CODES)) expect(body).toMatch(new RegExp(`^## \`${code}\`$`, "m"));
+    // Every code a tool result is built with, in the server and the writer it calls, is in the list.
+    const { stdout } = await promisify(execFile)("git", ["grep", "-hoE", `(code: |fail\\()"[a-z_]+"`, "--", "src/mcp", "src/writer"], { cwd: repoPath("") });
+    const used = new Set(stdout.split("\n").filter(Boolean).map((m) => /"([a-z_]+)"/.exec(m)![1]!));
+    expect(used.size).toBeGreaterThan(4);
+    for (const code of used) expect(Object.keys(ERROR_CODES), code).toContain(code);
   });
 });

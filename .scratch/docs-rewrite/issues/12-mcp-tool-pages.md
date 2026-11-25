@@ -1,6 +1,6 @@
 # 12: A page per MCP tool, with a real example
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -17,9 +17,9 @@ The 31 tools sit on two long pages with no example call, and outputs that are un
 
 ## Acceptance criteria
 
-- [ ] Every tool has a page with an example call and its real result.
-- [ ] The build fails when a tool has no example input or its example returns an error.
-- [ ] No output table repeats a field name.
-- [ ] Old `read-tools/#<tool>` and `write-tools/#<tool>` links still resolve.
-- [ ] `website/e2e/search.spec.ts` finds each tool's own page first.
-- [ ] The error-code page lists every code the server can return, checked by a test.
+- [x] Every tool has a page with an example call and its real result.
+- [x] The build fails when a tool has no example input or its example returns an error.
+- [x] No output table repeats a field name.
+- [x] Old `read-tools/#<tool>` and `write-tools/#<tool>` links still resolve.
+- [x] `website/e2e/search.spec.ts` finds each tool's own page first.
+- [x] The error-code page lists every code the server can return, checked by a test.

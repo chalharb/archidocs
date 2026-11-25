@@ -77,6 +77,97 @@ export function fieldRows(schema: JsonSchema, { root = schema, prefix = "", maxD
   return rows;
 }
 
+/** A table's worth of rows: the fields always there, or those of one variant of a union. */
+export interface FieldSection {
+  /** For a variant: "When `element.kind` is `service`". */
+  when?: string;
+  rows: FieldRow[];
+}
+
+/**
+ * The rows for a schema's fields, as `fieldRows` lists them, except that a
+ * union of objects is split: the fields every variant has, defined the same
+ * way, stay in the table they are met in, and each variant's other fields get
+ * a section of their own. A variant is named by the field whose constant
+ * tells the variants apart (`kind`), or else by the required fields only it
+ * has. So no table lists a field twice.
+ */
+export function fieldSections(schema: JsonSchema, { root = schema, maxDepth = Infinity }: { root?: JsonSchema; maxDepth?: number } = {}): FieldSection[] {
+  const sections: FieldSection[] = [];
+  const open = (when?: string): FieldSection => {
+    const section: FieldSection = when === undefined ? { rows: [] } : { when, rows: [] };
+    sections.push(section);
+    return section;
+  };
+  const join = (path: string, key: string) => (path ? `${path}.${key}` : key);
+
+  const fields = (s: JsonSchema, keys: readonly string[], path: string, depth: number, seen: readonly string[], into: FieldSection) => {
+    for (const key of keys) {
+      const child = s.properties![key]!;
+      const childPath = join(path, key);
+      into.rows.push(row(child, childPath, s.required?.includes(key) ?? false, root));
+      walk(child, childPath, depth + 1, seen, into);
+    }
+  };
+
+  const split = (objects: JsonSchema[], path: string, depth: number, seen: readonly string[], into: FieldSection) => {
+    const shared = sharedProperties(objects);
+    const tag = discriminator(objects);
+    const first = objects[0]!;
+    for (const key of Object.keys(first.properties!)) {
+      if (key === tag) {
+        const values = objects.map((o) => constOf(o.properties![key]!));
+        const required = objects.every((o) => o.required?.includes(key));
+        into.rows.push({ ...row(first.properties![key]!, join(path, key), required, root), type: values.map((v) => `\`${JSON.stringify(v)}\``).join(" or ") });
+      } else if (shared.includes(key)) fields(first, [key], path, depth, seen, into);
+    }
+    const subject = path === "" ? "the result" : `\`${path}\``;
+    for (const o of objects) {
+      const own = (o.required ?? []).filter((k) => !objects.some((other) => other !== o && other.properties?.[k]));
+      const label = tag !== undefined ? `When \`${join(path, tag)}\` is \`${String(constOf(o.properties![tag]!))}\`` : `When ${subject} has ${own.map((k) => `\`${k}\``).join(" and ")}`;
+      const section = open(into.when ? `${into.when}, and ${label.replace(/^When /, "")}` : label);
+      fields(o, Object.keys(o.properties!).filter((k) => k !== tag && !shared.includes(k)), path, depth, seen, section);
+    }
+  };
+
+  const walk = (node: JsonSchema, path: string, depth: number, seen: readonly string[], into: FieldSection) => {
+    const { schema: s, ref } = deref(node, root);
+    if (ref && seen.includes(ref)) return;
+    const nextSeen = ref ? [...seen, ref] : seen;
+    if (depth >= maxDepth) return;
+    const variants = s.anyOf ?? s.oneOf;
+    if (variants) {
+      const objects = variants.map((v) => deref(v, root).schema).filter((d) => d.properties);
+      if (objects.length >= 2) return split(objects, path, depth, nextSeen, into);
+      for (const v of variants) {
+        const d = deref(v, root).schema;
+        if (d.properties || d.additionalProperties || d.items) walk(v, path, depth, nextSeen, into);
+      }
+      return;
+    }
+    fields(s, Object.keys(s.properties ?? {}), path, depth, nextSeen, into);
+    if (typeof s.additionalProperties === "object") {
+      const d = deref(s.additionalProperties, root).schema;
+      if (d.properties || d.anyOf || d.oneOf) walk(s.additionalProperties, `${path ? `${path}.` : ""}<id>`, depth + 1, nextSeen, into);
+    }
+    if (s.items) walk(s.items, `${path}[]`, depth + 1, nextSeen, into);
+  };
+
+  walk(schema, "", 0, [], open());
+  return sections;
+}
+
+/** A schema's constant: its `const`, or the one value of its `enum`. */
+const constOf = (s: JsonSchema): unknown => (s.const !== undefined ? s.const : s.enum?.length === 1 ? s.enum[0] : undefined);
+
+/** The property whose constant differs in every one of the objects, if there is one. */
+function discriminator(objects: readonly JsonSchema[]): string | undefined {
+  return Object.keys(objects[0]!.properties ?? {}).find((key) => {
+    const values = objects.map((o) => (o.properties?.[key] ? constOf(o.properties[key]) : undefined));
+    return values.every((v) => v !== undefined) && new Set(values.map((v) => JSON.stringify(v))).size === values.length;
+  });
+}
+
 export const fieldTable = (rows: readonly FieldRow[]): string =>
   table(
     ["Field", "Type", "Required", "Notes"],
