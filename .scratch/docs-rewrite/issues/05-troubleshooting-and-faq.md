@@ -1,6 +1,6 @@
 # 05: Troubleshooting and FAQ
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Docs rewrite proposal](../spec.md)
 
@@ -22,6 +22,6 @@ A new Help sidebar group with two pages.
 
 ## Acceptance criteria
 
-- [ ] Both pages exist under a Help group, last in the sidebar.
-- [ ] A test checks that every error message quoted on the troubleshooting page appears verbatim in `src/`, so a reworded error fails the build.
-- [ ] Each troubleshooting entry links the guide or reference page that covers its fix.
+- [x] Both pages exist under a Help group, last in the sidebar.
+- [x] A test checks that every error message quoted on the troubleshooting page appears verbatim in `src/`, so a reworded error fails the build.
+- [x] Each troubleshooting entry links the guide or reference page that covers its fix.
