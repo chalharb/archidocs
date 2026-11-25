@@ -6,7 +6,7 @@ Spec: [Workspace checkout](../spec.md)
 
 ## What to build
 
-Open a Workspace on disk in one place, with one "which files count" rule. This ticket holds the spec's two behaviour changes; list them in the PR description. PR title: `refactor(workspace): ...`.
+Open a Workspace on disk in one place, with one "which files count" rule. The one behaviour change is where the Bundle's `repoRoot` comes from; name it in the PR description. PR title: `refactor(workspace): ...`.
 
 ### The rule
 
@@ -30,14 +30,19 @@ Open a Workspace on disk in one place, with one "which files count" rule. This t
 ### Callers
 
 - `src/cli/run.ts`: replace `workspaceRoot`, `workspaceName`, `historyFromCwd`, `writeSiteHistory`'s git lookup and `loadFromCwd` with one Checkout opened per command. `build` opens it once, not four times. Keep the `NO_WORKSPACE` and "History needs the Workspace in a git repository." messages.
-- `src/cli/dev.ts`: `serveDev` takes a Checkout instead of `root` and `workspace`. `rebuild` (`:81-83`) uses the Checkout's HEAD and load; the watcher (`:159-163`) calls `isWorkspaceFile` on the changed path. Update `DevOptions` and its doc comments.
+- `src/cli/dev.ts`: `serveDev` takes a Checkout instead of `root` and `workspace`. `rebuild` (`:81-83`) uses the Checkout's HEAD and load. Leave the watcher's filter (`:159-163`) as it is; ticket 06 moves it onto the rule. Update `DevOptions` and its doc comments.
 - `src/mcp/source.ts`: `checkoutSource({ root })` keeps its signature and `root` field. Inside, it makes a Checkout at `root` and uses its fingerprint, HEAD and load. Delete the local `fingerprint`.
 - `src/mcp/history.ts:49-56` (`checkoutPast`): use the Checkout's repo instead of `realpath` + `gitTopLevel` + `history`. Reach the Checkout through the source: add it to `CheckoutSource` as a read-only field. Leave `bundlePast` (`:96-187`) alone; it belongs to card 3.
 
-### Behaviour changes (for the PR description)
+### Behaviour change (for the PR description)
 
-- `archidocs dev` reloads only when a `.yaml` or `.md` file changes.
 - In git, the Bundle's `repoRoot` comes from `git rev-parse --show-toplevel` instead of the `.git` walk.
+
+### Docs
+
+- `GLOSSARY.md` publishes as the site's Glossary page, so the Checkout entry must pass the wording rules in `website/test/templates.test.ts`.
+- Link the first "Workspace checkout" on each page that uses it to `/docs/reference/glossary/#term-checkout`: the MCP reference intro and write-tools text (`website/src/reference/mcp.ts:250, :253`), `website/src/content/docs/docs/guides/agents/bootstrap-from-code.mdx:16` and `guides/viewer/compare-two-revisions.mdx:46`.
+- Update the `WORKSPACE_SEARCH` comment in `website/src/reference/cli.ts:24-27`: the Checkout module, not `run.ts`, now calls `findWorkspaceRoot`.
 
 ## Tests
 
@@ -49,16 +54,16 @@ Open a Workspace on disk in one place, with one "which files count" rule. This t
   - HEAD read twice around a commit gives two shas;
   - no Workspace gives undefined.
 - New table test for `isWorkspaceFile`: hidden folder, hidden file, `node_modules`, `.yaml`, `.md`, `.json`, nested path, Windows separators.
-- `test/cli/dev.test.ts`: re-point at the new `serveDev` options. Add a case that writing a non-Workspace file (`notes.txt`) doesn't reload.
+- `test/cli/dev.test.ts`: re-point at the new `serveDev` options.
 - `test/mcp/*` and `website/src/reference/mcp.ts` callers pass unchanged (the `checkoutSource({ root })` signature is kept).
 - The golden Bundles and SVGs are byte-identical; if one changes, the PR explains why.
 
 ## Acceptance criteria
 
 - [ ] `grep -rn "realpath\|gitTopLevel" src/cli/run.ts src/cli/dev.ts src/mcp` finds nothing outside the `init` path.
-- [ ] `grep -rn 'startsWith(".")' src` finds only `core/workspace-files.ts`.
+- [ ] `grep -rn 'startsWith(".")' src` finds only `core/workspace-files.ts` and `cli/dev.ts`'s watcher (ticket 06 removes that one).
 - [ ] `mcp/source.ts` has no `fingerprint` of its own.
 - [ ] `build` finds the Workspace root once per run.
-- [ ] `GLOSSARY.md` defines Checkout.
+- [ ] `GLOSSARY.md` defines Checkout, and the pages listed under Docs link it.
 - [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
 - [ ] This ticket's `Status:` is set to `done` in the same PR.

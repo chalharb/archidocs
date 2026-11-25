@@ -44,7 +44,7 @@ The folder `src/workspace/`, node-only. Its index is the only file imported from
 - **HEAD**: read on every call, because MCP and dev must notice a commit or a checkout.
 - **Load**: the working tree's Bundle and issues. In git it calls `load` with the realpath'd root and git's top level, both resolved. `load` makes every path in the Bundle relative to `repoRoot` (`load.ts:47-48`), so passing git's resolved top level with an unresolved root would write `../../var/…` paths under a symlinked folder. Outside git it calls `load` as today.
 - **The fingerprint**: path, mtime and size of every Workspace file (today's `mcp/source.ts:147-162`).
-- **Is this a Workspace file**: the one rule. A path counts if no part of it starts with `.` or is `node_modules`, and it ends in `.yaml` (model) or `.md` (ADR). `load`'s walk, the fingerprint and dev's watcher all use it. The rule itself is a pure function in core (a new `core/workspace-files.ts`), so that `load` can use it without importing a node-only module. The Checkout module re-exports it.
+- **Is this a Workspace file**: the one rule. A path counts if no part of it starts with `.` or is `node_modules`, and it ends in `.yaml` (model) or `.md` (ADR). `load`'s walk and the fingerprint use it in ticket 03; dev's watcher moves onto it in ticket 06. The rule itself is a pure function in core (a new `core/workspace-files.ts`), so that `load` can use it without importing a node-only module. The Checkout module re-exports it.
 
 `load` keeps its `.git` walk (`load.ts:131-136`) as the fallback for callers that don't pass `repoRoot`. Those are the history (which passes one already, `history/index.ts:66`) and direct test calls.
 
@@ -71,8 +71,8 @@ A folder `src/commands/`, node-only, with one index. Each function takes a Check
 
 ### Behaviour changes
 
-- **`archidocs dev` reloads only on Workspace files.** Today any file change outside hidden folders and `node_modules` reloads the page (`cli/dev.ts:161`). After ticket 03, only `.yaml` and `.md` files do. Nothing else feeds the Bundle, so the page shows the same thing; it just reloads less.
-- **The Bundle's `repoRoot` comes from git** when the Workspace is in a repo, instead of from the `.git` walk. The two agree except under `GIT_DIR`, `GIT_WORK_TREE` or a folder named `.git` that isn't a repo. Golden Bundles in the tests should not change; if one does, the ticket says why.
+- **`archidocs dev` reloads only on Workspace files** (ticket 06). Today any file change outside hidden folders and `node_modules` reloads the page (`cli/dev.ts:161`). After ticket 06, only `.yaml` and `.md` files do. Nothing else feeds the Bundle, so the page shows the same thing; it just reloads less. This gets its own `fix(dev)` ticket so release-please writes a changelog line for it, and the site's Changelog page (generated from `CHANGELOG.md`) shows it.
+- **The Bundle's `repoRoot` comes from git** (ticket 03) when the Workspace is in a repo, instead of from the `.git` walk. The two agree except under `GIT_DIR`, `GIT_WORK_TREE` or a folder named `.git` that isn't a repo. Golden Bundles in the tests should not change; if one does, the ticket says why.
 
 There are no other user-visible changes: same output, same messages, same exit codes.
 
@@ -107,8 +107,24 @@ These were the research's open questions. Each was settled for the smaller chang
 | 03 | [Checkout module](issues/03-checkout-module.md) | `refactor(workspace)` | 01, 02 |
 | 04 | [Commands as functions](issues/04-commands-as-functions.md) | `refactor(cli)` | 03 |
 | 05 | [Website and tests call commands in-process](issues/05-in-process-callers.md) | `refactor(website)` | 04 |
+| 06 | [`dev` reloads only on Workspace files, and the docs say which files those are](issues/06-dev-reloads-on-workspace-files.md) | `fix(dev)` | 03 |
 
-01 and 02 can run in parallel; both touch the import lines of `src/cli/main.ts`, so whichever merges second rebases. Ticket 03 holds both behaviour changes (dev reloads, `repoRoot`) and says so in its PR description. The others change no behaviour.
+01 and 02 can run in parallel; both touch the import lines of `src/cli/main.ts`, so whichever merges second rebases. 04 and 06 can also run in parallel after 03. Ticket 06 holds the one user-visible change. Ticket 03 holds the `repoRoot` change, which users can't see in a normal repo; its PR description names it. The others change no behaviour.
+
+## Documentation
+
+The docs site is built from `website/`, the generated reference in `website/src/reference/`, `GLOSSARY.md` (published as the Glossary page and checked by the wording rules in `website/test/templates.test.ts`) and `CHANGELOG.md`. Each ticket that changes something documented updates the docs in the same PR:
+
+| Ticket | What changes in the docs |
+|---|---|
+| 01 | The source comments that name `src/cli/main.ts` as where commands run: `website/src/reference/cli.ts:25` (`WORKSPACE_SEARCH`) and `website/test/help.test.ts:12` point at `src/cli/run.ts`. In `CONTRIBUTING.md`, a line under "Run the checks" on how CLI tests work: in-process through `test/support/cli.ts`, with spawning kept for `test/cli/binary.test.ts` and `test/cli/mcp.test.ts`. |
+| 02 | None. |
+| 03 | **Checkout** in `GLOSSARY.md`, which publishes it on the Glossary page. It must pass the wording rules (`pnpm docs:test`). The docs already say "Workspace checkout" to users (`website/src/reference/mcp.ts:250, :253`, `guides/agents/bootstrap-from-code.mdx:16`, `guides/viewer/compare-two-revisions.mdx:46`): link the first use on each of those pages to `/docs/reference/glossary/#term-checkout`, as the pages do for other terms. The `WORKSPACE_SEARCH` comment in `website/src/reference/cli.ts:24-27` names the Checkout module as the caller of `findWorkspaceRoot`. |
+| 04 | None. Output, messages and exit codes are unchanged, so the generated CLI reference is byte-identical. |
+| 05 | None. The built site's diagrams and screenshots must be byte-identical to `main`'s. |
+| 06 | `dev`'s description in `src/cli/commands.ts:175`, which feeds the CLI's usage text, the `dev` reference page and the CLI index: it reloads when a `.yaml` or `.md` file in the Workspace changes. A new "Which files are read" section on the CLI reference index (`website/src/reference/cli.ts`, after "How the Workspace is found"): the rule, for `check`, `build`, `export`, `dev` and `mcp`. Today the rule is undocumented even for `check`. |
+
+The pages that say the viewer "reloads as you edit" (`start/quick-start.mdx:79`, `start/tutorial.mdx:118`, `help/troubleshooting.mdx:38`, `README.md:167`, `CONTRIBUTING.md:27`) stay true after ticket 06 and don't change. Nothing else in `website/src/content/docs/`, `guide/` or `docs/` describes the CLI's internals, the git lookup or MCP's `source` shape. `checkoutSource({ root })` keeps its signature, so the MCP reference generator (`website/src/reference/mcp.ts:108`) and the landing page (`website/src/lib/landing.ts:84`) don't change.
 
 ## Out of Scope
 

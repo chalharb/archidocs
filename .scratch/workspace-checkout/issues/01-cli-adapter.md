@@ -17,6 +17,11 @@ Make the CLI callable in-process, with no behaviour change. The command bodies m
 - `main.ts` keeps the shebang and becomes: call `run(process.argv.slice(2), { cwd: process.cwd(), env: process.env, stdout: process.stdout, stderr: process.stderr })` and set `process.exitCode`. Keep the `VIEWER_DIR` and `PACKAGE_JSON` constants working from both `src/cli/` and `dist/cli/`: `run.ts` sits in the same folder, so the `../../` paths hold.
 - Keep every message string byte-for-byte.
 
+### Docs
+
+- Point the comments that name `src/cli/main.ts` as where commands run at `src/cli/run.ts`: `website/src/reference/cli.ts:25` and `website/test/help.test.ts:12`.
+- `CONTRIBUTING.md`, under "Run the checks": one or two sentences saying CLI tests call the CLI in-process through `archidocs()` in `test/support/cli.ts`, and that only `test/cli/binary.test.ts` and `test/cli/mcp.test.ts` spawn the built binary, so a new CLI test should use `archidocs()`.
+
 ## Tests
 
 - `test/support/cli.ts`: `archidocs(cwd, env?, ...args)` keeps its signature and result. It calls `run` with collecting streams (`stdout.isTTY` unset), `cwd`, and `env` built as today: `process.env` without `NO_COLOR`/`FORCE_COLOR`, then the given env. Keep the old spawning version as `archidocsBinary` in the same file.
@@ -33,4 +38,5 @@ Make the CLI callable in-process, with no behaviour change. The command bodies m
 - [ ] `test/cli/binary.test.ts` exists, with the three spawn tests.
 - [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm test:e2e` and `pnpm docs:test` pass.
 - [ ] `node dist/cli/main.js version` works after `pnpm build`.
+- [ ] `grep -rn "src/cli/main.ts" website/src/reference website/test` finds only `website/test/reference.test.ts` and `samples.test.ts`, which spawn the CLI until ticket 05.
 - [ ] This ticket's `Status:` is set to `done` in the same PR.
