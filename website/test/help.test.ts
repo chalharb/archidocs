@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { repoPath } from "../src/lib/repo.ts";
 
 const PAGE = "website/src/content/docs/docs/help/troubleshooting.mdx";
-/** The CLI's own prefix on every error it prints (`src/cli/main.ts`). */
+/** The CLI's own prefix on every error it prints (`src/cli/run.ts`). */
 const PREFIX = "archidocs: ";
 
 const page = readFileSync(repoPath(PAGE), "utf8");
