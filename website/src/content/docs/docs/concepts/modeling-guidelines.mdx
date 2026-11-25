@@ -5,20 +5,20 @@ sidebar:
   order: 12
 ---
 
-The reference says what the Model accepts. These guidelines say what to write in it when several answers are valid. The [agent guide](/docs/reference/agent-guide/) tells coding agents the same thing, so people and agents model the same way.
-
-Big Bank's Payments Project shows most of them: a System with its Services, a datastore, and an External card scheme.
+Modeling guidelines are the judgment calls the reference can't make: what to write when the [Model](/docs/reference/glossary/#term-model) accepts several answers. The [Authoring guide for agents](/docs/reference/agent-guide/) gives coding agents the same rules, so people and agents model the same way.
 
 ```yaml file="examples/big-bank/archidocs/payments/model.yaml"
 ```
 
+Big Bank's Payments Project, above, shows most of them: a System with its Services, a datastore, and an External card scheme.
+
 ## How much detail
 
-Model what someone outside the Team needs to know. Start with Services and the Relationships between them. That is enough for every impact question, every URL and every Owner.
+Model what someone outside the Team needs to know. Start with [Services](/docs/reference/glossary/#term-service), the deployable units, and the [Relationships](/docs/reference/glossary/#term-relationship) between them. That is enough for every impact question, every URL and every Owner.
 
 - **A Service** is a deployable unit of software, the thing with a URL. Databases and message brokers are Services too, with `type: datastore` or `type: broker`, because other Services depend on them.
 - **A [Component](/docs/reference/glossary/#term-component)**, a part inside a Service, is worth adding when the Team talks about it by name. Add Components when people outside the Team ask which part of a Service does something. Leave out classes, packages and modules that only the code knows about.
-- **A Relationship** is declared at the level you know. If the code shows which Component calls which, declare it between Components. Otherwise declare it between Services. Edges between Systems are derived, never declared.
+- **A Relationship** is declared at the level you know. If the code shows which Component calls which, declare it between Components. Otherwise declare it between Services. Relationships between Systems are derived from these, never declared.
 
 Detail can be added later without breaking anything. Adding Components to a Service changes no id and no Relationship.
 
@@ -35,9 +35,9 @@ Systems don't nest, and a Service sits in at most one System. If a group of Syst
 
 An [External](/docs/reference/glossary/#term-external) System or Service runs outside your organization, such as a payment provider, a card scheme or an email API.
 
-- **Outside the organization only.** A Service another Team runs isn't External. It belongs in that Team's Project, and you point to it with its Qualified id.
+- **Outside the organization only.** A Service another Team runs isn't External. It belongs in that Team's Project, and you point to it with its [Qualified id](/docs/reference/glossary/#term-qualified-id), such as `core:mainframe`.
 - **Declared by the Team that integrates with it.** If no Project has it yet, declare it in your own Project, owned by your Team. Your Team is the one accountable for the integration.
-- **No Components.** You can't see inside it, so don't model its insides.
+- **An External Service has no Components.** You can't see inside it, so don't model its insides.
 - **Another Team's Service that isn't in the Model** is a gap, not an External. Leave the Relationship out and tell that Team, so they declare their own Service.
 
 ## Naming ids
@@ -45,7 +45,7 @@ An [External](/docs/reference/glossary/#term-external) System or Service runs ou
 An id is how everything else refers to an Element: Relationships, Deployments, Views, ADRs and other Teams' Projects. The `name` is only what people read. Pick ids that stay true when the name changes.
 
 - **Name what it does.** `payments-service` and `fraud-detection` stay true longer than a product name, a code name or a vendor.
-- **Leave out what changes.** Keep the Team, the version, the technology and the Environment out of the id. `orders-db` survives a move from one database to another. `orders-postgres-v2` doesn't.
+- **Leave out what changes.** Keep the Team, the version and the technology out of an Element's id. `orders-db` survives a move from one database to another. `orders-postgres-v2` doesn't.
 - **Lowercase slugs.** An id is lowercase letters, digits and hyphens, unique in its Project across Elements and Deployment Targets.
 - **Short is fine inside a Project.** Ids are namespaced by Project, so `api` in one Project doesn't clash with `api` in another.
 
@@ -70,21 +70,21 @@ A [Deployment Target](/docs/reference/glossary/#term-deployment-target) is where
 
 ## When a question deserves a Saved View
 
-The viewer already has a Generated View for every scope: the System landscape, each System's Services, each Service's Components, and each Environment's Deployments. Most questions are answered there, with a Lens, and shared as a link.
+The viewer already has a [Generated View](/docs/reference/glossary/#term-generated-view) for every scope: the System landscape, the Service landscape, each System's Services, each Service's Components, and each Environment's Deployments. Most questions are answered there, with a Lens, and shared as a link.
 
 Write a [Saved View](/docs/reference/glossary/#term-saved-view) when:
 
 - **The question comes back.** "What does a mainframe outage take down?" gets asked in every incident. A Saved View gives it a name and a stable link.
 - **It has an audience.** Know who the View is for and what it answers. That sets its level and what it includes.
 - **No Generated View shows it at a glance.** A View that only repeats a Generated View is one more thing to keep up to date.
-- **It is a scenario.** A Dynamic View, the ordered Steps of one scenario, is always a Saved View.
+- **It is a scenario.** A [Dynamic View](/docs/reference/glossary/#term-dynamic-view), the ordered Steps of one scenario, is always a Saved View.
 
 For a one-off question, share the viewer's link instead.
 
 ## Why it works this way
 
 - **The Model is for people outside the Team.** The Team already knows its own code. Modeling past what others need adds files to maintain and no answers.
-- **People and agents follow the same guidelines.** The agent guide gives coding agents these rules, and an agent asks for what code can't tell it: the System grouping, External flags, descriptions and Owners. A Model edited by both reads as if one hand wrote it.
+- **People and agents follow the same guidelines.** The Authoring guide for agents gives coding agents these rules, and an agent asks for what code can't tell it: the System grouping, External flags, descriptions and Owners. A Model edited by both reads as if one hand wrote it.
 - **Ids are references.** Everything in a Workspace points at ids, across files and across Teams. An id that survives a rename keeps those references from breaking.
 - **Each thing is declared once.** A Service, a shared cluster or an External provider has one declaration and one Owner. Copies would drift apart, as hand-drawn diagrams do.
 
