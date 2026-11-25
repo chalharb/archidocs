@@ -1,7 +1,12 @@
-import { existsSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { commandList } from "../../src/cli/commands.ts";
-import { rules } from "../../src/core/rules.ts";
+import type { Files } from "../../src/core/files.ts";
+import { ruleAreas, rules } from "../../src/core/rules.ts";
 import { topics } from "../../src/guide/index.ts";
 import { repoPath } from "../src/lib/repo.ts";
 import { cliPages, commandPath } from "../src/reference/cli.ts";
@@ -13,6 +18,81 @@ import { anchorTerms, glossaryPage, rewriteLinks, termAnchor } from "../src/refe
 
 const byId = async () => new Map((await generatedPages()).map((p) => [p.id, p]));
 
+/** Every rule id a release has shipped (v1.0.0 to v1.2.0). Released CLIs print these rules' URLs, so each keeps a page for good. */
+const releasedRuleIds = [
+  "yaml-syntax",
+  "unknown-field",
+  "missing-field",
+  "invalid-value",
+  "nested-project",
+  "file-outside-project",
+  "duplicate-project-id",
+  "definition-outside-workspace",
+  "unknown-team",
+  "duplicate-id",
+  "invalid-nesting",
+  "external-with-components",
+  "unknown-element",
+  "unknown-project",
+  "own-project-prefix",
+  "duplicate-relationship-id",
+  "self-relationship",
+  "person-as-provider",
+  "ancestor-descendant-relationship",
+  "via-on-sync",
+  "via-not-broker",
+  "duplicate-deployment",
+  "unknown-environment",
+  "unknown-target",
+  "wrong-kind",
+  "oversized-view",
+  "duplicate-view-id",
+  "missing-step",
+  "ambiguous-step",
+  "return-without-relationship",
+  "return-on-async",
+  "ancestor-descendant-participants",
+  "target-outside-environment",
+  "bad-expand",
+  "empty-view",
+  "unresolved-path",
+  "invalid-adr-frontmatter",
+  "missing-adr-title",
+  "bad-adr-filename",
+  "duplicate-adr-number",
+  "unknown-adr-link",
+  "hand-written-superseded",
+  "supersedes-cycle",
+  "superseded-twice",
+  "supersedes-unaccepted",
+];
+
+/** The lines under a rule page's "What `check` reports". */
+const reportedLines = (body: string): string[] => /^## What `check` reports\n\n[^\n]+\n\n```text\n([\s\S]*?)\n```$/m.exec(body)?.[1]?.split("\n") ?? [];
+
+/** A page's `## ` headings, in order. */
+const headings = (body: string): string[] => [...body.matchAll(/^## (.+)$/gm)].map((m) => m[1]!);
+
+/** A page's Markdown with the `<` that `text()` escaped put back, to compare with the registry's own text. */
+const unescaped = (markdown: string): string => markdown.replace(/&lt;/g, "<");
+
+/** The issue lines the CLI itself prints for a Workspace: `archidocs check`, run in a temp folder that is its own repo root. */
+async function cliIssueLines(files: Files): Promise<string[]> {
+  const root = mkdtempSync(join(tmpdir(), "archidocs-rule-"));
+  mkdirSync(join(root, ".git"));
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    writeFileSync(join(root, path), text);
+  }
+  const { stdout } = await promisify(execFile)(process.execPath, [repoPath("src/cli/main.ts"), "check"], { cwd: root }).catch((error: { stdout: string; code: number }) => {
+    if (error.code !== 1) throw error;
+    return error;
+  });
+  // The issue lines come first; the count ("1 error, 0 warnings") ends them.
+  const lines = stdout.split("\n");
+  return lines.slice(0, lines.findIndex((line) => /^\d+ errors?, \d+ warnings?$/.test(line))).filter((line) => line !== "");
+}
+
 describe("generated reference pages", () => {
   it("gives every rule in the registry a page titled with its id, and lists it on the index", async () => {
     const pages = await byId();
@@ -23,9 +103,67 @@ describe("generated reference pages", () => {
     }
   });
 
-  it("keeps a stub page for each removed rule, linking its replacement", () => {
+  it("keeps a page for every rule id a release has shipped, as a rule or as a removed rule's stub", async () => {
+    const pages = await byId();
+    for (const id of releasedRuleIds) expect(pages.has(`docs/reference/rules/${id}`), id).toBe(true);
+  });
+
+  it("shows on every rule page the lines the CLI prints for its failing example", async () => {
+    const pages = await byId();
+    const printed = await Promise.all(rules.map((rule) => cliIssueLines(rule.example.failing)));
+    for (const [i, rule] of rules.entries()) {
+      const shown = reportedLines(pages.get(`docs/reference/rules/${rule.id}`)!.body);
+      expect(shown.length, rule.id).toBeGreaterThan(0);
+      expect(shown, rule.id).toEqual(printed[i]!.filter((line) => line.includes(`  ${rule.id}  `)));
+      for (const line of shown) expect(line, rule.id).toMatch(new RegExp(`^\\S+:\\d+(:\\d+)?  ${rule.severity}  ${rule.id}  \\S`));
+    }
+  });
+
+  it("shows, in the failing example, every file a reported line points into", async () => {
+    const pages = await byId();
+    for (const rule of rules) {
+      const { body } = pages.get(`docs/reference/rules/${rule.id}`)!;
+      const example = body.slice(body.indexOf("## Failing example"), body.indexOf("## Fix"));
+      for (const line of reportedLines(body)) expect(example, rule.id).toContain(`\`${line.slice(0, line.indexOf(":"))}\`:`);
+    }
+  });
+
+  it("orders a rule page: summary, severity and since, what check reports, why, the example, the fix, related rules", async () => {
+    const pages = await byId();
+    for (const rule of rules) {
+      const { body } = pages.get(`docs/reference/rules/${rule.id}`)!;
+      expect(body.split("\n\n").slice(0, 2).map(unescaped), rule.id).toEqual([rule.summary, `**Severity:** ${rule.severity} · **Since:** v${rule.since}`]);
+      expect(headings(body), rule.id).toEqual(["What `check` reports", "Why", "Failing example", "Fix", "Fixed", ...(rule.related?.length ? ["Related rules"] : [])]);
+      expect(unescaped(body.slice(body.indexOf("## Why"), body.indexOf("## Failing example"))), rule.id).toContain(rule.why);
+      for (const id of rule.related ?? []) expect(body.slice(body.indexOf("## Related rules")), rule.id).toContain(`(/docs/reference/rules/${id}/)`);
+    }
+  });
+
+  it("names the other rules a failing example also reports", async () => {
+    const { body } = (await byId()).get("docs/reference/rules/unresolved-path")!;
+    expect(body).toContain("The same example also reports [`empty-view`](/docs/reference/rules/empty-view/).");
+  });
+
+  it("groups the index by area, one table each, with every rule in exactly one", async () => {
+    const index = (await byId()).get("docs/reference/rules")!.body;
+    const sections = index.split(/^## /m).slice(1);
+    expect(sections.map((s) => s.slice(0, s.indexOf("\n")))).toEqual(["Workspace", "Elements", "Relationships", "Deployments", "Views", "Decisions"]);
+    for (const [i, area] of ruleAreas.entries()) {
+      const linked = [...sections[i]!.matchAll(/\(\/docs\/reference\/rules\/([a-z-]+)\/\)/g)].map((m) => m[1]);
+      expect(linked, area).toEqual(rules.filter((r) => r.area === area).map((r) => r.id));
+      expect(sections[i]!.match(/^\| Rule \| Severity \| Meaning \|$/gm), area).toHaveLength(1);
+    }
+  });
+
+  it("fails the build when a failing example doesn't report its rule, or a related id names no rule", async () => {
+    const [rule] = rules;
+    await expect(rulePages([{ ...rule!, example: { failing: rule!.example.passing, passing: rule!.example.passing } }], [])).rejects.toThrow(/doesn't report it/);
+    await expect(rulePages([{ ...rule!, related: ["no-such-rule"] }], [])).rejects.toThrow(/no-such-rule/);
+  });
+
+  it("keeps a stub page for each removed rule, linking its replacement", async () => {
     const [current] = rules;
-    const pages = rulePages(rules, [
+    const pages = await rulePages(rules, [
       { id: "old-rule", removedIn: "1.4.0", replacement: current!.id },
       { id: "older-rule", removedIn: "1.2.0", replacement: "Nothing replaces it." },
     ]);
