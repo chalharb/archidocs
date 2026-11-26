@@ -1,6 +1,6 @@
 # 04: One site writer
 
-Status: ready-for-agent
+Status: done
 Blocked by: 03, workspace-checkout 04
 Spec: [Revision index](../spec.md)
 

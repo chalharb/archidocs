@@ -22,6 +22,7 @@ import { promisify } from "node:util";
 import { chromium, type Browser } from "@playwright/test";
 import { build } from "../../../src/commands/index.ts";
 import { DEFAULT_KEEP } from "../../../src/history/index.ts";
+import { serializeSiteFile, SITE_FILE_PATH } from "../../../src/revisions/index.ts";
 import { checkoutAt } from "../../../src/workspace/index.ts";
 import { SHOTS } from "../screenshots.ts";
 import { findDiagramSource, isDemo, THEMES, type Theme } from "./examples.ts";
@@ -99,7 +100,7 @@ export async function buildExampleSite(example: Shot["example"], { without = [] 
   }
   // site.json names the Workspace for the viewer's downloads. The demo build names it after its temp folder,
   // so it is named here instead: the site, and so its hash, is then the same on every build.
-  await writeFile(join(site, "site.json"), JSON.stringify({ workspace: example }) + "\n");
+  await writeFile(join(site, SITE_FILE_PATH), serializeSiteFile(example));
   return site;
 }
 

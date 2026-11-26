@@ -1,8 +1,7 @@
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
 import { onTestFinished } from "vitest";
-import { serializeBundle } from "../../src/core/index.ts";
-import { LATEST_BUNDLE_PATH } from "../../src/revisions/index.ts";
+import { LATEST_BUNDLE_PATH, serializeBundle } from "../../src/revisions/index.ts";
 import { loadWorkspace, type Files } from "./workspace.ts";
 
 /** Builds the Bundle for a fixture Workspace, as `archidocs build --bundle-only` writes it. */

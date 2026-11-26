@@ -175,6 +175,7 @@ Recommended cache headers:
 | `bundles/<sha>.json` | `public, max-age=31536000, immutable` (it never changes once published) |
 | `bundles/index.json` | `no-cache` |
 | `workspace.bundle.json` | `no-cache` |
+| `site.json` | `no-cache` |
 | `index.html` | `no-cache` |
 
 No headers are required. MCP's `--bundle <url>` re-checks `index.json` and `workspace.bundle.json` at most every 60 seconds, each with `If-None-Match` or `If-Modified-Since` when the host gives an ETag or `Last-Modified`.
@@ -186,8 +187,9 @@ Upload the past Bundles first and the index last, so a reader never sees an inde
 ```sh
 aws s3 sync site/bundles/ "s3://$BUCKET/bundles/" --delete --exclude index.json \
   --cache-control "public, max-age=31536000, immutable"
-aws s3 sync site/ "s3://$BUCKET/" --delete --exclude "bundles/*" --exclude index.html --exclude workspace.bundle.json
+aws s3 sync site/ "s3://$BUCKET/" --delete --exclude "bundles/*" --exclude index.html --exclude workspace.bundle.json --exclude site.json
 aws s3 cp site/workspace.bundle.json "s3://$BUCKET/" --cache-control no-cache
+aws s3 cp site/site.json "s3://$BUCKET/" --cache-control no-cache
 aws s3 cp site/index.html "s3://$BUCKET/" --cache-control no-cache
 aws s3 cp site/bundles/index.json "s3://$BUCKET/bundles/" --cache-control no-cache
 ```
@@ -200,6 +202,7 @@ Netlify can apply more than one matching rule in `_headers`, so give each Bundle
 {
   printf '/index.html\n  Cache-Control: no-cache\n'
   printf '/workspace.bundle.json\n  Cache-Control: no-cache\n'
+  printf '/site.json\n  Cache-Control: no-cache\n'
   printf '/bundles/index.json\n  Cache-Control: no-cache\n'
   for f in site/bundles/*.json; do
     [ "$(basename "$f")" = index.json ] && continue
@@ -221,6 +224,8 @@ cat > site/_headers <<'EOF'
   ! Cache-Control
   Cache-Control: no-cache
 /workspace.bundle.json
+  Cache-Control: no-cache
+/site.json
   Cache-Control: no-cache
 /index.html
   Cache-Control: no-cache

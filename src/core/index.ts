@@ -1,4 +1,4 @@
-export { load, findWorkspaceRoot, serializeBundle, type LoadOptions, type LoadResult } from "./load.ts";
+export { load, findWorkspaceRoot, type LoadOptions, type LoadResult } from "./load.ts";
 export { nodeFileSystem, type FileSystem, type WritableFileSystem, type DirEntry } from "./fs.ts";
 export { rules, removed, ruleDocsUrl, withDocs, RULE_DOCS_BASE_URL, type RuleDefinition, type RemovedRule } from "./rules.ts";
 export type { Issue, Severity } from "./model.ts";

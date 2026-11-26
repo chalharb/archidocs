@@ -491,11 +491,6 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
   return Bundle.parse(bundle);
 }
 
-/** The Bundle as written to `workspace.bundle.json`: stable key order, two-space indent. */
-export function serializeBundle(bundle: Bundle): string {
-  return JSON.stringify(Bundle.parse(bundle), null, 2) + "\n";
-}
-
 const asRecord = (v: unknown): Record<string, unknown> =>
   v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
