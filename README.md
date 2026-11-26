@@ -102,7 +102,7 @@ npx archidocs check
 npx archidocs dev
 ```
 
-Open <http://localhost:4321>. The viewer starts on the C2 Landscape, which shows the Shopper and the Online Shop; select the arrow button on the Online Shop box to see the two Services inside it. The viewer reloads as you edit the files.
+Open <http://localhost:4321>. The viewer starts on the C1 Landscape, which shows the Shopper and the Online Shop. Choose **Go deeper › C2 Landscape** and select the arrow button on the Online Shop box to see the two Services inside it. The viewer reloads as you edit the files.
 
 The finished Workspace is in [examples/quick-start](examples/quick-start).
 

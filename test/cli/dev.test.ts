@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { serveDev, type DevServer } from "../../src/cli/dev.ts";
+import { QUIET_MS, serveDev, type DevServer } from "../../src/cli/dev.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
 import { writeWorkspace } from "../support/workspace.ts";
 import { checkoutAt } from "../../src/workspace/index.ts";
@@ -27,6 +27,23 @@ async function nextEvent(url: string, want: string): Promise<string> {
   }
 }
 
+/** Counts Server-Sent Events named `name` from the dev server until stopped. */
+function countEvents(url: string, name: string): { count: () => number; stop: () => void } {
+  let count = 0;
+  const controller = new AbortController();
+  void (async () => {
+    const res = await fetch(new URL("__archidocs/events", url), { signal: controller.signal });
+    let text = "";
+    for await (const value of res.body!.pipeThrough(new TextDecoderStream())) {
+      text += value;
+      const blocks = text.split("\n\n");
+      text = blocks.pop()!;
+      count += blocks.filter((block) => block.startsWith(`event: ${name}\n`)).length;
+    }
+  })().catch(() => {});
+  return { count: () => count, stop: () => controller.abort() };
+}
+
 describe("archidocs dev", () => {
   let dev: DevServer | undefined;
   afterEach(async () => dev?.close());
@@ -41,8 +58,9 @@ describe("archidocs dev", () => {
     return { repoRoot, root, url: dev.url, loads: () => loads, nextLoad };
   }
 
-  /** Longer than the watcher's 80 ms debounce, so a rebuild it started would have run. */
-  const settle = () => new Promise((done) => setTimeout(done, 400));
+  const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
+  /** Longer than the watcher's quiet window, so a rebuild it started would have run. */
+  const settle = () => sleep(QUIET_MS + 400);
 
   it("serves the viewer with a live-reload client, the Workspace's Bundle, its name and no history", async () => {
     const { repoRoot, url } = await start();
@@ -65,6 +83,24 @@ describe("archidocs dev", () => {
     await reload;
     const bundle = await (await fetch(new URL("workspace.bundle.json", url))).json();
     expect(bundle.elements.find((e: { id: string }) => e.id === "shop:checkout").name).toBe("Checkout v2");
+  });
+
+  it("makes one reload of a run of edits seconds apart, as an agent's MCP calls are", async () => {
+    const { root, url, loads } = await start();
+    const reloads = countEvents(url, "reload");
+    const systems = join(root, "shop/systems.yaml");
+    const original = await readFile(systems, "utf8");
+    for (let i = 1; i <= 5; i++) {
+      await writeFile(systems, original.replace("name: Checkout\n", `name: Checkout v${i}\n`));
+      await sleep(200);
+    }
+
+    await settle();
+    expect(reloads.count()).toBe(1);
+    expect(loads()).toBe(2);
+    const bundle = await (await fetch(new URL("workspace.bundle.json", url))).json();
+    expect(bundle.elements.find((e: { id: string }) => e.id === "shop:checkout").name).toBe("Checkout v5");
+    reloads.stop();
   });
 
   it("keeps the last good Bundle and sends the errors while the Workspace is broken", async () => {
