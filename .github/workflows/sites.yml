@@ -75,15 +75,10 @@ jobs:
           # Full history: each docs page's "Last updated" date is the date of its file's last commit.
           # The demos don't need it, but the repo is small enough to fetch whole for all three.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # The docs build takes its screenshots of the viewer in Chromium (website/src/lib/screenshots.ts).
-      - if: matrix.site == 'docs'
-        run: pnpm exec playwright install --with-deps chromium
+          # The docs build takes its screenshots of the viewer in Chromium (website/src/lib/screenshots.ts).
+          chromium: ${{ matrix.site == 'docs' }}
       - run: pnpm "${{ matrix.build }}"
         env:
           # The staging docs say they document the beta branch rather than the last release
@@ -193,12 +188,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - name: Delete the PR Preview
         env:
           PR: ${{ github.event.pull_request.number }}

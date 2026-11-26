@@ -29,12 +29,7 @@ jobs:
         with:
           # `pnpm typecheck` runs `astro check`, which builds the MCP tool pages; their get_changes and list_history examples read the git history.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test --coverage.enabled true
@@ -44,42 +39,66 @@ jobs:
       - run: pnpm build
 
   docs:
-    # The docs site in website/: its build (links validated, every `archidocs` line parsed),
-    # and its tests, which include fixture builds that must fail. The build takes its screenshots
-    # of the viewer in Chromium (website/src/lib/screenshots.ts).
+    # The docs site in website/, built once (links validated, every `archidocs` line parsed; the
+    # build takes its screenshots of the viewer in Chromium, website/src/lib/screenshots.ts), then
+    # the Playwright suite in website/e2e against that build: Diagrams following the theme toggle, and search.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           # The MCP tool pages call get_changes and list_history, which read the git history.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+          chromium: "true"
       - run: pnpm docs:build
-      - run: pnpm docs:test
+      - run: pnpm test:e2e
+        env:
+          E2E_PROJECT: website
+          E2E_DOCS_DIST: website/dist
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-website
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  docs-test:
+    # The docs site's unit tests (website/test), split in two: the fixture builds that must fail
+    # run one at a time (Astro keeps build state in website/.astro) and take as long as the rest put together.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { part: fixtures, args: test/fixtures.test.ts }
+          - { part: rest, args: --exclude test/fixtures.test.ts }
+    name: docs-test (${{ matrix.part }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Each page's "Last updated" date, which the builds show, comes from the git history.
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+        with:
+          chromium: "true"
+      # The builds take screenshots of the viewer.
+      - run: pnpm build:viewer
+      - run: pnpm docs:test ${{ matrix.args }}
 
   e2e:
-    # Playwright: the Viewer seam against fixture sites written by `archidocs build --out`,
-    # and the built docs site (website/e2e): Diagrams following the theme toggle, and search.
+    # Playwright: the Viewer seam against fixture sites written by `archidocs build --out`.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
         with:
-          # The MCP tool pages call get_changes and list_history, which read the git history.
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+          chromium: "true"
       - run: pnpm test:e2e
+        env:
+          E2E_PROJECT: chromium
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -89,36 +108,25 @@ jobs:
             test-results/
           retention-days: 7
 
-  tutorial:
-    # The tutorial "Model your first system" (website/src/content/docs/docs/start/tutorial.mdx),
-    # run as a reader would in a temp folder: its shell blocks in order, with each file it shows,
-    # using this repo's CLI. Its files must add up to examples/tutorial/.
+  walkthroughs:
+    # The tutorial "Model your first system" and the quick start (website/src/content/docs/docs/start/),
+    # each run as a reader would in a temp folder: its shell blocks in order, with each file it shows,
+    # using this repo's CLI. Their files must add up to examples/tutorial/ and examples/quick-start/;
+    # for the quick start, `archidocs check` must pass and print what the page shows, and the README's
+    # Quick start must match the page.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - run: pnpm docs:tutorial
+      - run: pnpm docs:quick-start
 
-  quick-start:
-    # The quick start (website/src/content/docs/docs/start/quick-start.mdx), run as a reader
-    # would in an empty repo in a temp folder: its shell blocks in order, with each file it shows,
-    # using this repo's CLI. Its files must add up to examples/quick-start/, `archidocs check`
-    # must pass and print what the page shows, and the README's Quick start must match the page.
+  actionlint:
+    # The workflows and the setup action under .github/.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm docs:quick-start
+      - uses: raven-actions/actionlint@v2
 
   action:
     # The reusable Action (action.yml) against fixture Workspace repos: a site with

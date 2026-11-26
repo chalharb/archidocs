@@ -1,18 +1,22 @@
-// Builds the docs site into a temp folder and serves it as Workers static
-// assets would: `/a/` serves `a/index.html`, `/a` redirects to `/a/`, and a
+// Builds the docs site into a temp folder, or takes the one already built at
+// E2E_DOCS_DIST (CI's docs job builds it once for its build checks and this
+// suite), and serves it as Workers static assets would: `/a/` serves `a/index.html`, `/a` redirects to `/a/`, and a
 // missing path gets `404.html`.
 import { execFileSync } from "node:child_process";
 import { createReadStream, mkdtempSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOCS_PORT } from "./port.ts";
 
 const website = fileURLToPath(new URL("..", import.meta.url));
-const root = join(mkdtempSync(join(tmpdir(), "archidocs-docs-e2e-")), "dist");
-execFileSync("pnpm", ["exec", "astro", "build"], { cwd: website, stdio: ["ignore", "ignore", "inherit"], env: { ...process.env, ARCHIDOCS_DOCS_OUT_DIR: root } });
+const prebuilt = process.env.E2E_DOCS_DIST;
+const root = prebuilt ? resolve(prebuilt) : join(mkdtempSync(join(tmpdir(), "archidocs-docs-e2e-")), "dist");
+if (!prebuilt) {
+  execFileSync("pnpm", ["exec", "astro", "build"], { cwd: website, stdio: ["ignore", "ignore", "inherit"], env: { ...process.env, ARCHIDOCS_DOCS_OUT_DIR: root } });
+}
 
 const types: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
