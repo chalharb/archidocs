@@ -50,8 +50,9 @@ export default defineConfig({
       // The date of each hand-written page's last commit, so the workflows that deploy the site check out
       // the full git history (`fetch-depth: 0`). A generated page has no file, so it shows no date.
       lastUpdated: true,
-      // Starlight's page footer, with the release the site documents added.
-      components: { Footer: "./src/components/Footer.astro" },
+      // Starlight's page footer, with the release the site documents added, and its site title,
+      // with a beta badge on the staging build of the beta branch.
+      components: { Footer: "./src/components/Footer.astro", SiteTitle: "./src/components/SiteTitle.astro" },
       // Each group opens with its index page: `index.mdx` in the group's folder, with `sidebar.order: 0`.
       // Guides and Reference are made of sub-groups, so their index pages are named here.
       sidebar: [

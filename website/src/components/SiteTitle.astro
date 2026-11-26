@@ -1,0 +1,35 @@
+---
+/**
+ * Starlight's site title, with a "beta" badge after it on the staging build of
+ * the beta branch (beta.archidocs.dev; src/lib/channel.ts), so a reader can
+ * tell it from the docs of the latest release at a glance.
+ */
+import Default from "@astrojs/starlight/components/SiteTitle.astro";
+import { isBeta } from "../lib/channel.ts";
+---
+
+<Default />
+{
+  isBeta() && (
+    <span class="channel-badge" title="These docs follow the beta branch, ahead of the latest release." data-pagefind-ignore>
+      beta
+    </span>
+  )
+}
+
+<style>
+  /* A square-cornered tile framed in the title's own ink, like the rest of the chrome (DESIGN.md). */
+  .channel-badge {
+    align-self: center;
+    margin-inline-start: 0.6rem;
+    padding: 0.15rem 0.45rem 0.05rem;
+    border: 1.5px solid currentColor;
+    color: var(--sl-color-white);
+    font-size: var(--sl-text-xs);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+</style>

@@ -9,6 +9,7 @@
 import "../styles/landing.css";
 import favicon from "../../../viewer/public/favicon.svg?url";
 import mark from "../../../assets/brand/archidocs-mark-light.svg?url";
+import { isBeta } from "../lib/channel.ts";
 import { findExample, liveViewerUrl } from "../lib/examples.ts";
 import { captureLanding, countWord, LANDING_MAP_URL, landingDiagram, QUESTION } from "../lib/landing.ts";
 import { GITHUB_URL, VERSION } from "../lib/repo.ts";
@@ -100,6 +101,13 @@ const description = "Archidocs turns each Team's architecture YAML into one chec
     <header class="plate">
       <div class="wrap top">
         <a class="brand" href="/"><img src={mark} alt="" width="28" height="28" />Archidocs</a>
+        {
+          isBeta() && (
+            <span class="channel-badge" title="This site follows the beta branch, ahead of the latest release.">
+              beta
+            </span>
+          )
+        }
         <nav aria-label="Site">
           <a href="/docs/">Docs</a>
           <a class="wide" href="/docs/examples/">Examples</a>
