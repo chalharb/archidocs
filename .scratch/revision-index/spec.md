@@ -1,6 +1,6 @@
 # Revision index
 
-Status: ready-for-agent
+Status: done
 
 This spec gives the published site's layout and the Revision index one owner: one way to name a Revision, read a site and write one. It turns card 3 of the architecture review of 2026-11-24 into tickets, from the findings in [research.md](research.md). The research was checked against `6b70992`; line numbers here are from `origin/main` at `a5d1f97`, after card 2's git runner (PR #86). The decisions were settled in a grilling session on 2026-11-25 (Q1–Q18, listed under "Decisions"). Terms follow [GLOSSARY.md](../../GLOSSARY.md); "module", "interface", "seam", "adapter", "depth" and "leverage" are used as in the codebase-design vocabulary.
 
