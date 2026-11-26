@@ -20,6 +20,7 @@ import type { BundleElement } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
 import { NODE_SIZES } from "../../src/render/layout.ts";
+import { targetStep } from "../../src/render/tokens.ts";
 import { Icon, type IconName } from "./Icon.tsx";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
@@ -106,6 +107,8 @@ interface BoxData extends Record<string, unknown> {
   sublabel: string;
   team: TeamStyle | undefined;
   container: boolean;
+  /** A Deployment Target's Target Depth ground: 1 for an outermost Target, one step more per Target it nests in, capped. */
+  targetStep: number | undefined;
   /** The box was laid out a line taller, for a name too long for the widest box. */
   twoLine: boolean;
   /** `+` when collapsed with children to show, `−` when opened by the viewer, else neither. */
@@ -157,6 +160,10 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       const parent = byId.get(id)?.parent ?? null;
       return parent === null ? 0 : 1 + depth(parent);
     };
+    const targetDepth = (id: string): number => {
+      const node = byId.get(id);
+      return node?.kind !== "target" ? 0 : 1 + (node.parent === null ? 0 : targetDepth(node.parent));
+    };
     return layout.nodes.map((box) => {
       const node = byId.get(box.id)!;
       const element = workspace.byId.get(node.element ?? box.id);
@@ -180,9 +187,10 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         data: {
           node,
           type: element?.kind === "service" && element.type !== "app" ? element.type : undefined,
-          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.environment, node) : undefined),
+          sublabel: target ? target.kind : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.environment, node) : undefined),
           team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
+          targetStep: node.kind === "target" ? targetStep(targetDepth(box.id)) : undefined,
           twoLine: !containers.has(box.id) && box.height > NODE_SIZES[node.kind].height,
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
           onToggle,
@@ -416,7 +424,7 @@ function KeepBesidePanel({ selected, animate, drawingWidth }: { selected: string
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
-  const { node, type, sublabel, team, container, twoLine, toggle, onToggle, wayIn, onOpenView, mark, ring, picked, change } = data;
+  const { node, type, sublabel, team, container, targetStep, twoLine, toggle, onToggle, wayIn, onOpenView, mark, ring, picked, change } = data;
   const stop = (e: MouseEvent) => e.stopPropagation();
   const toggleButton = toggle && (
     <button
@@ -454,6 +462,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     `arc-${node.kind}`,
     type ? `arc-t-${type}` : "",
     container ? "arc-container" : "",
+    targetStep ? `arc-target-step-${targetStep}` : "",
     twoLine ? "arc-two-line" : "",
     node.external ? "arc-external" : "",
     selected ? "arc-selected" : "",

@@ -6,7 +6,7 @@ targets:
     targets:
       cluster:
         name: Kubernetes cluster
-        kind: cluster
+        kind: k8s
 #endregion
 
 #region deployments
