@@ -23,7 +23,7 @@ const ROUTE_PREFIX = "#/view/";
 export const VIEW_ROUTE = {
   prefix: ROUTE_PREFIX,
   syntax: `${ROUTE_PREFIX}<view-id>`,
-  does: "Opens the View with this id: `c2`, a Generated View such as `c2/payments:payments` or `deployment/prod`, or a Saved View's qualified id. An empty route opens the Service Landscape, `c2`.",
+  does: "Opens the View with this id: `c2`, a Generated View such as `c2/payments:payments` or `deployment/prod`, or a Saved View's qualified id. An empty route opens the top-most View, the C1 Landscape `c1`.",
 } as const;
 
 /** A query parameter the viewer reads from its URL. */
@@ -95,8 +95,8 @@ export interface Place {
   adr: string | null;
 }
 
-/** Where an empty or unreadable hash lands: the C2 Landscape, every System collapsed. */
-export const HOME: Place = { view: "c2", open: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
+/** Where an empty or unreadable hash lands: the top-most View, the C1 Landscape. */
+export const HOME: Place = { view: "c1", open: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
 
 /** The route, then the View id up to the first `?`, then the query. */
 const ROUTE_PATTERN = new RegExp(`^${ROUTE_PREFIX}([^?]*)(?:\\?(.*))?$`);

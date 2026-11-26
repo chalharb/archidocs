@@ -49,11 +49,12 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error
 
 /**
  * A PR preview site opened at its root (no View in the URL) starts with
- * Compare "base → PR" on the C2 Landscape; a link to a place opens as is.
+ * Compare "base → PR" on the C2 Landscape, not on home (C1): a PR mostly adds
+ * or changes Services, which C1 doesn't show. A link to a place opens as is.
  */
 function openPreview(timeline: Timeline) {
   const base = timeline.previewBase();
-  if (base && !isPlaceHash(window.location.hash)) go({ ...HOME, vs: pointLabel(base) }, { replace: true });
+  if (base && !isPlaceHash(window.location.hash)) go({ ...HOME, view: "c2", vs: pointLabel(base) }, { replace: true });
 }
 
 export function App() {
@@ -226,6 +227,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       if (open) return go({ ...place, open, selected: id, adr: null }, { replace: open.length === place.open.length });
       const element = workspace.byId.get(id);
       const home = element?.kind === "component" ? ownViewId(workspace.bundle, element.parent!) : element?.kind === "person" ? "c1" : ownViewId(workspace.bundle, id);
+      // An Element outside any System has no View of its own; it sits on the C2 Landscape, which C1 (home) leaves out.
       go(viewPlace(home ?? "c2", id, place.lens, place));
     },
     [place, workspace],
@@ -299,7 +301,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   if (!view) {
     return (
       <Message title={`No View ${place.view}`}>
-        <a href={formatPlace({ ...HOME, at: place.at, vs: place.vs })}>Open the C2 Landscape</a>
+        <a href={formatPlace({ ...HOME, at: place.at, vs: place.vs })}>Open the C1 Landscape</a>
       </Message>
     );
   }
