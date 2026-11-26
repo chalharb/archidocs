@@ -38,7 +38,7 @@ export default defineConfig({
       title: "Archidocs",
       description: "Git-native architecture as code: one Model in YAML, a diagram viewer for people and MCP tools for agents.",
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/chalharb/archidocs" }],
-      editLink: { baseUrl: "https://github.com/chalharb/archidocs/edit/main/website/" },
+      editLink: { baseUrl: "https://github.com/chalharb/archidocs/edit/beta/website/" },
       // The mark from assets/brand/: the dark tile on the light theme, the light tile on the dark one.
       logo: { light: "../assets/brand/archidocs-mark-dark.svg", dark: "../assets/brand/archidocs-mark-light.svg" },
       // /favicon.svg is the viewer's own favicon (src/pages/favicon.svg.ts).

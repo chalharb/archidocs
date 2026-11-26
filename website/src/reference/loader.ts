@@ -44,7 +44,7 @@ export function referenceLoader(docs: Loader): Loader {
             title: page.title,
             ...(page.description ? { description: plain(page.description) } : {}),
             sidebar: { ...(page.order !== undefined ? { order: page.order } : {}), ...(page.label ? { label: page.label } : {}) },
-            editUrl: `${GITHUB_URL}/edit/main/${page.source}`,
+            editUrl: `${GITHUB_URL}/edit/beta/${page.source}`,
             generated: true,
           },
         });
