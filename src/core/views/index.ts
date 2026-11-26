@@ -8,6 +8,7 @@ export { compareView } from "./compare.ts";
 export { saveAsView, type Screen, type SavedScreen, type SavedViewDefinition } from "./save-as-view.ts";
 export { parseViewId, formatViewId, ownViewId, type ViewRef } from "./ids.ts";
 export { describeLens } from "./lens.ts";
+export { instancesChip, isScaled } from "./deployment.ts";
 export { stepViews, dynamicViewsUsing, type DynamicResolution, type DynamicProblem, type ResolvedDynamicView, type ResolvedStep, type StepKind } from "./dynamic.ts";
 export type { SavedResolution, BadExpand, UnresolvedPath } from "./saved.ts";
 export {

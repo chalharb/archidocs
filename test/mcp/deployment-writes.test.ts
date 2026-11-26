@@ -229,6 +229,30 @@ deployments:
 `);
   });
 
+  it("round-trips instances: a fixed count and an autoscale range, written and read back", async () => {
+    const { call, read } = await setup();
+    const triple = { project: "shop", service: "web", environment: "prod", target: "platform:eks-prod" };
+    const fixed = await call("upsert_deployment", { ...triple, fields: { instances: 3 } });
+    expect(fixed.isError).toBeFalsy();
+    expect(await read("shop/deploy.yaml")).toContain("    url: https://shop.example.com # public\n    instances: 3\n");
+    expect((await call("get_deployments", { service: "shop:web" })).structuredContent).toMatchObject({ deployments: [{ environment: "prod", instances: 3 }] });
+
+    await call("upsert_deployment", { ...triple, fields: { instances: { min: 2, max: 10 } } });
+    expect((await call("get_deployments", { service: "shop:web" })).structuredContent).toMatchObject({ deployments: [{ instances: { min: 2, max: 10 } }] });
+
+    await call("upsert_deployment", { ...triple, fields: { instances: null } });
+    expect(await read("shop/deploy.yaml")).not.toContain("instances");
+    expect((await call("get_deployments", { service: "shop:web" })).structuredContent).toMatchObject({ deployments: [{ instances: 1 }] });
+  });
+
+  it("refuses instances with max below min, writing nothing", async () => {
+    const { call, read } = await setup();
+    const before = await read("shop/deploy.yaml");
+    const result = await call("upsert_deployment", { project: "shop", service: "web", environment: "prod", target: "platform:eks-prod", fields: { instances: { min: 5, max: 2 } } });
+    expect(result.structuredContent).toMatchObject({ code: "validation_failed", issues: [expect.objectContaining({ rule: "invalid-value", message: expect.stringContaining("`max` must be at least `min`") })] });
+    expect(await read("shop/deploy.yaml")).toBe(before);
+  });
+
   it("refuses a Deployment to an unknown Environment with the issue", async () => {
     const { call, read } = await setup();
     const before = await read("shop/deploy.yaml");

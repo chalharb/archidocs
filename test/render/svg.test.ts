@@ -197,3 +197,40 @@ describe("a Deployment View", () => {
     expect(t).toEqual(expect.arrayContaining(["AWS eu-west-1 · region", "EKS eu · cluster", "shop namespace · namespace", "Checkout · System", "Web", "Deployment · Next.js", "Stripe", "External Service"]));
   });
 });
+
+describe("a scaled Deployment", () => {
+  /** The Deployment View fixture with Web fixed at 3 and Cart autoscaling 2–10 in the shop namespace. */
+  const scaled: Files = {
+    ...deploymentViewWorkspace,
+    "shop/model.yaml": deploymentViewWorkspace["shop/model.yaml"]!
+      .replace("target: platform:ns-shop, url: https://shop.example.com }", "target: platform:ns-shop, url: https://shop.example.com, instances: 3 }")
+      .replace("{ service: cart, environment: prod, target: platform:ns-shop }", "{ service: cart, environment: prod, target: platform:ns-shop, instances: { min: 2, max: 10 } }"),
+  };
+
+  async function renderView(files: Files) {
+    const { bundle, issues } = await loadWorkspace(files);
+    expect(issues.filter((i) => i.severity === "error")).toEqual([]);
+    const view = structuralView(bundle, "deployment/prod")!;
+    return renderSvg({ bundle, view, layout: await layoutView(view, { direction: view.direction }), source });
+  }
+
+  it("draws exactly as its golden file", async () => {
+    await expect(await renderView(scaled)).toMatchFileSnapshot("golden/deployment-scaled.svg");
+  });
+
+  it("draws a count chip, `×3` fixed and `2–10` autoscale, two copies behind each scaled box, and a Key row", async () => {
+    const svg = await renderView(scaled);
+    const t = texts(svg);
+
+    expect(t.filter((s) => s === "×3" || s === "2–10").sort()).toEqual(["2–10", "×3"]);
+    expect(t).toContain("Stacked: scaled (×3 fixed, 2–10 autoscale)");
+    expect(svg.split("<g>").filter((g) => /<rect [^>]*width="\d+(\.\d+)?" height="68"/.test(g))).toHaveLength(2);
+  });
+
+  it("leaves the chip and the Key row out of a View with no scaled Deployment", async () => {
+    const t = texts(await renderView(deploymentViewWorkspace));
+
+    expect(t.some((s) => s.startsWith("Stacked"))).toBe(false);
+    expect(t.some((s) => s.startsWith("×"))).toBe(false);
+  });
+});

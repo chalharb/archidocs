@@ -52,6 +52,8 @@ export const BundleDeployment = z.object({
   target: z.string(),
   url: z.string().nullable(),
   endpoints: z.array(z.object({ name: z.string(), url: z.string() })),
+  /** How many copies run: a fixed count, or an autoscale range. 1 when the Deployment sets none. */
+  instances: z.union([z.number(), z.object({ min: z.number(), max: z.number() })]).default(1),
   owner: z.string(),
   source: Source,
 });

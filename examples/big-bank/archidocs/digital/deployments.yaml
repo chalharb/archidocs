@@ -11,6 +11,7 @@ deployments:
     environment: prod
     target: platform:eks-prod
     url: https://api.bigbank.example
+    instances: { min: 2, max: 10 }
     endpoints:
       - name: health
         url: https://api.bigbank.example/actuator/health

@@ -178,6 +178,30 @@ export const Endpoint = z
   })
   .describe("A further named URL of the Service in this Environment.");
 
+const InstanceCount = z
+  .number({ error: "must be a whole number of at least 1" })
+  .int({ error: "must be a whole number of at least 1" })
+  .min(1, { error: "must be a whole number of at least 1" });
+
+/** How many interchangeable copies of a Deployment run: a fixed count, or an autoscale range. */
+export const Instances = z
+  .union(
+    [
+      InstanceCount.describe("A fixed number of instances, such as `3`."),
+      z
+        .strictObject({
+          min: InstanceCount.describe("The fewest instances the autoscaler runs."),
+          max: InstanceCount.describe("The most instances the autoscaler runs. At least `min`."),
+        })
+        .refine((r) => r.max >= r.min, { error: "`max` must be at least `min`", path: ["max"] })
+        .describe("An autoscale range, such as `{ min: 2, max: 10 }`."),
+    ],
+    { error: "must be a whole number of at least 1, or `{ min, max }` for an autoscale range" },
+  )
+  .describe(
+    "How many interchangeable copies of the Service run on this Deployment Target: a whole number for a fixed count, such as `3`, or `{ min, max }` for an autoscale range, such as `{ min: 2, max: 10 }`. Use it for identical workers on one Target, such as an App Service plan running N instances. When where each copy runs matters, such as one per availability zone or VM, declare separate Deployments on separate Targets instead. Default: 1.",
+  );
+
 /** One Service running in one Environment on one Deployment Target. */
 export const Deployment = z
   .strictObject({
@@ -186,6 +210,7 @@ export const Deployment = z
     target: Ref.describe("The Deployment Target it runs on: an id in this Project, or `project:id` for one another Project declares."),
     url: z.url().optional().describe("The Service's main URL in this Environment. A full URL, such as `https://cart.example.com`."),
     endpoints: z.array(Endpoint).optional().describe("Further named URLs of the Service in this Environment, such as a health check or an admin console."),
+    instances: Instances.optional(),
   })
   .describe("A Deployment: one Service running in one Environment on one Deployment Target. The three together name it, so the same three can appear only once.");
 

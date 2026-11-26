@@ -1,6 +1,6 @@
 import ElkBundled from "elkjs/lib/elk.bundled.js";
 import type { ELK, ElkExtendedEdge, ElkNode, LayoutOptions } from "elkjs/lib/elk-api.js";
-import type { ResolvedView, ViewNode } from "../core/views/index.ts";
+import { instancesChip, type ResolvedView, type ViewNode } from "../core/views/index.ts";
 import { textWidth } from "./text.ts";
 
 /** Which way a View's edges flow: top to bottom, bottom to top, left to right or right to left. */
@@ -64,7 +64,12 @@ const WAY_IN_CHROME = 30;
 /** The room a box of this kind and state needs beside its name. */
 function headChrome(n: ViewNode): number {
   const opens = n.kind === "system" || (n.kind === "service" && n.collapsed);
-  return HEAD_CHROME + (n.collapsed && opens ? TOGGLE_CHROME : 0) + (n.kind === "person" ? 12 : 0);
+  return HEAD_CHROME + (n.collapsed && opens ? TOGGLE_CHROME : 0) + (n.kind === "person" ? 12 : 0) + (n.instances === undefined ? 0 : chipWidth(instancesChip(n.instances)) + 8);
+}
+
+/** A scaled Deployment's count chip, `×3` or `2–10`, as wide as the viewer and the SVG draw it. */
+export function chipWidth(chip: string): number {
+  return Math.ceil(textWidth(chip, 10, 700)) + 12;
 }
 
 /** The width a box of `width` leaves for its name. */

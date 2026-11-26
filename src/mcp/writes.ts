@@ -177,7 +177,9 @@ export function registerWriteTools(
     {
       title: "Add or update a Deployment",
       description: [
-        "Adds a Deployment, or updates the fields (url, endpoints) of the one its (service, environment, target) triple names, in this Project's YAML; comments and formatting are kept.",
+        "Adds a Deployment, or updates the fields (url, endpoints, instances) of the one its (service, environment, target) triple names, in this Project's YAML; comments and formatting are kept.",
+        "`instances` is a whole number for a fixed count, such as 3, or {min, max} for an autoscale range, such as {min: 2, max: 10}; leave it out for one instance.",
+        "Use it for interchangeable copies on one Target (an App Service plan running N workers); when placement matters (one per availability zone or VM), add separate Deployments on separate Targets instead.",
         "A new one goes into `file` (relative to the Project's folder), else beside the Project's other Deployments, else into `model.yaml`.",
       ].join(" "),
       input: z.object({

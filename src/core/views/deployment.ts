@@ -11,6 +11,12 @@ export interface DeploymentScope {
   keep?: (service: string) => boolean;
 }
 
+/** True when a Deployment runs, or may run, more than one instance. */
+export const isScaled = (instances: BundleDeployment["instances"]): boolean => (typeof instances === "number" ? instances > 1 : instances.max > 1);
+
+/** A scaled Deployment's chip text: `×3` for a fixed count, `2–10` for an autoscale range. */
+export const instancesChip = (instances: BundleDeployment["instances"]): string => (typeof instances === "number" ? `×${instances}` : `${instances.min}–${instances.max}`);
+
 /** A Deployment's node id: its Service and Target, as `<service>@<target>`. */
 const deploymentNodeId = (d: Pick<BundleDeployment, "service" | "target">): string => `${d.service}@${d.target}`;
 
@@ -49,7 +55,17 @@ export function resolveDeployment(bundle: Bundle, model: ModelIndex, head: { id:
       nodes.set(parent, { id: parent, kind: "system", name: s.name, parent: d.target, element: system, collapsed: false, external: "external" in s && s.external });
     }
     const service = model.byId.get(d.service)!;
-    nodes.set(deploymentNodeId(d), { id: deploymentNodeId(d), kind: "deployment", name: service.name, parent, element: d.service, target: d.target, collapsed: false, external: "external" in service && service.external });
+    nodes.set(deploymentNodeId(d), {
+      id: deploymentNodeId(d),
+      kind: "deployment",
+      name: service.name,
+      parent,
+      element: d.service,
+      target: d.target,
+      ...(isScaled(d.instances) ? { instances: d.instances } : {}),
+      collapsed: false,
+      external: "external" in service && service.external,
+    });
     byService.set(d.service, [...(byService.get(d.service) ?? []), { d, chain }]);
   }
 

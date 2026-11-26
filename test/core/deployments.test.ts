@@ -43,6 +43,7 @@ describe("Deployments", () => {
       target: "platform:eks-prod",
       url: "https://shop.example.com",
       endpoints: [{ name: "health", url: "https://shop.example.com/healthz" }],
+      instances: 1,
       owner: "storefront-team",
       source: { file: "archidocs/shop/model.yaml", line: 10 },
     });
@@ -141,5 +142,42 @@ describe("Deployment declarations", () => {
       ["archidocs/shop/zz-more.yaml", 3, "missing-field", 'Missing required field "target"'],
       ["archidocs/shop/zz-more.yaml", 3, "unknown-field", 'Unknown field "targett"; did you mean "target"?'],
     ]);
+  });
+});
+
+describe("instances", () => {
+  const withInstances = (instances: string) => ({
+    "payments/api.yaml": `services:
+  payments-api:
+    name: Payments API
+    owner: storefront-team
+deployments:
+  - service: payments-api
+    environment: prod
+    target: platform:eks-prod
+    instances: ${instances}
+`,
+  });
+  const instancesOf = (bundle: { deployments: { service: string; instances: unknown }[] }, service: string) => bundle.deployments.find((d) => d.service === service)?.instances;
+
+  it("loads a fixed count and an autoscale range onto the Bundle's Deployment, and 1 when absent", async () => {
+    const fixed = await loadWorkspace({ ...deploymentWorkspace, ...withInstances("3") });
+    expect(fixed.issues).toEqual([]);
+    expect(instancesOf(fixed.bundle, "payments:payments-api")).toBe(3);
+    expect(instancesOf(fixed.bundle, "shop:web")).toBe(1);
+
+    const range = await loadWorkspace({ ...deploymentWorkspace, ...withInstances("{ min: 2, max: 10 }") });
+    expect(range.issues).toEqual([]);
+    expect(instancesOf(range.bundle, "payments:payments-api")).toEqual({ min: 2, max: 10 });
+  });
+
+  it.each([
+    ["0", 'Invalid value for "instances": must be a whole number of at least 1'],
+    ["2.5", 'Invalid value for "instances": must be a whole number of at least 1, or `{ min, max }` for an autoscale range'],
+    ["many", 'Invalid value for "instances": must be a whole number of at least 1, or `{ min, max }` for an autoscale range'],
+    ["{ min: 0, max: 4 }", 'Invalid value for "instances.min": must be a whole number of at least 1'],
+    ["{ min: 5, max: 2 }", 'Invalid value for "instances.max": `max` must be at least `min`'],
+  ])("reports instances: %s as an error", async (instances, message) => {
+    expect(await issuesOf(withInstances(instances))).toEqual([["archidocs/payments/api.yaml", 9, "invalid-value", message]]);
   });
 });

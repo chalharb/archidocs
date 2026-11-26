@@ -24,6 +24,7 @@ describe("getDeployments", () => {
       ],
       url: "https://shop.example.com",
       endpoints: [{ name: "health", url: "https://shop.example.com/healthz" }],
+      instances: 1,
       owner: "storefront-team",
       source: { file: "archidocs/shop/model.yaml", line: 10 },
     });

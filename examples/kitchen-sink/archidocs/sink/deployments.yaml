@@ -19,6 +19,7 @@ deployments:
     environment: prod
     target: cluster
     url: https://api.sink.example
+    instances: 3
     endpoints:
       - name: health
         url: https://api.sink.example/healthz
