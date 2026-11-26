@@ -266,7 +266,7 @@ export const commands = {
   },
   mcp: {
     name: "mcp",
-    synopsis: ["mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]", "mcp --http [--host <loopback>] [--port <n>] [--allow-writes] [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]"],
+    synopsis: ["mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>] [--check]", "mcp --http [--host <loopback>] [--port <n>] [--allow-writes] [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]"],
     description: "Serve the Model to AI agents over MCP, from a Workspace checkout or a published Bundle, on stdio or local HTTP.",
     arguments: [],
     flags: {
@@ -277,12 +277,14 @@ export const commands = {
       host: { type: "string", value: "<loopback>", defaultText: "127.0.0.1", description: "With `--http`: the loopback address to listen on, `127.0.0.1`, `localhost` or `::1`." },
       port: { type: "string", value: "<n>", defaultText: "3737", description: "With `--http`: the port to serve on." },
       "allow-writes": { type: "boolean", default: false, description: "With `--http`: allow the write tools, which are off over HTTP by default." },
+      check: { type: "boolean", default: false, description: "Check the server instead of serving: run it behind an in-process client, print what it serves, and exit 0, or 2 with the reason." },
     },
     examples: [
       {
         command: "archidocs mcp --workspace archidocs",
         description: "Serve a Workspace checkout over stdio, with the read and write tools. This is the command to register with a coding agent, which starts it from the repo root.",
       },
+      { command: "archidocs mcp --workspace archidocs --check", description: "Check the server that command starts: print what it serves and how many tools it has, then exit." },
       { command: "archidocs mcp --bundle https://big-bank.archidocs.dev/workspace.bundle.json", description: "Serve a published Bundle, here the Big Bank demo's, with the read tools only." },
       {
         command: "archidocs mcp --bundle https://architecture.example.com/workspace.bundle.json --viewer-url https://architecture.example.com/",
@@ -292,10 +294,10 @@ export const commands = {
       { command: "archidocs mcp --http --allow-writes --workspace archidocs", description: "Serve over HTTP with the write tools on." },
     ],
     exitCodes: [
-      { code: EXIT.ok, meaning: "Over stdio, the client closed the connection." },
+      { code: EXIT.ok, meaning: "Over stdio, the client closed the connection. With `--check`, the server started and answered." },
       {
         code: EXIT.couldNotRun,
-        meaning: `It could not start: ${USAGE_ERROR}, flags that don't go together, a \`--viewer-url\` that is not a URL, a \`--port\` that is not a port or is in use, a \`--host\` that is not a loopback address, or no Workspace found when \`--bundle\` is not given.`,
+        meaning: `It could not start: ${USAGE_ERROR}, flags that don't go together, a \`--viewer-url\` that is not a URL, a \`--port\` that is not a port or is in use, a \`--host\` that is not a loopback address, no Workspace found when \`--bundle\` is not given, or, with \`--check\`, a server that could not read its source.`,
       },
     ],
     exitNote:

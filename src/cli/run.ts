@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +8,7 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitTopLevel } from "../git.ts";
 import { findCheckout, type Checkout } from "../workspace/index.ts";
 import { build, buildHistory, check, diff, exportViews } from "../commands/index.ts";
-import { bundleSource, checkoutSource, createServer, DEFAULT_PORT, serveHttp } from "../mcp/index.ts";
+import { bundleSource, checkoutSource, checkServer, createServer, DEFAULT_PORT, serveHttp, startupLine } from "../mcp/index.ts";
 import { authoringGuide } from "../guide/index.ts";
 import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
@@ -139,7 +139,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     const port = values.port === undefined ? DEFAULT_DEV_PORT : Number(values.port);
     if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`--port "${values.port}" is not a port.`);
     if (!existsSync(join(VIEWER_DIR, "index.html"))) throw new Error(viewerMissing(VIEWER_DIR));
-    const checkout = await checkoutFrom(values.workspace === undefined ? io.cwd : resolve(io.cwd, values.workspace));
+    const checkout = await checkoutFrom(workspaceFolder(io.cwd, values.workspace));
     const color = useColor(io);
     const dev = await serveDev({
       checkout,
@@ -225,6 +225,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     const viewerUrl = values["viewer-url"];
     if (viewerUrl !== undefined && !URL.canParse(viewerUrl)) throw new UsageError(`--viewer-url "${viewerUrl}" is not a URL.`);
     if (values.workspace !== undefined && values.bundle !== undefined) throw new UsageError("Give --workspace or --bundle, not both.");
+    if (values.http && values.check) throw new UsageError("--check runs the stdio server; leave out --http.");
     if (!values.http && values["allow-writes"]) throw new UsageError("--allow-writes only applies with --http; over stdio a checkout already takes writes.");
     if (!values.http && (values.host !== undefined || values.port !== undefined)) throw new UsageError("--host and --port only apply with --http.");
     const port = values.port === undefined ? DEFAULT_PORT : Number(values.port);
@@ -233,15 +234,27 @@ async function main(argv: string[], io: Io): Promise<number> {
     const source =
       values.bundle !== undefined
         ? bundleSource({ location: /^https?:\/\//i.test(values.bundle) ? values.bundle : resolve(io.cwd, values.bundle) })
-        : checkoutSource({ root: (await checkoutFrom(values.workspace === undefined ? io.cwd : resolve(io.cwd, values.workspace))).root });
-    const options = { source, ...(viewerUrl === undefined ? {} : { viewerUrl }) };
+        : checkoutSource({ root: (await checkoutFrom(workspaceFolder(io.cwd, values.workspace))).root });
+    const { version } = JSON.parse(await readFile(PACKAGE_JSON, "utf8")) as { version: string };
+    const log = (line: string) => void io.stderr.write(`${line}\n`);
+    const options = { source, version, log, logReads: io.env["ARCHIDOCS_LOG"] === "debug", ...(viewerUrl === undefined ? {} : { viewerUrl }) };
+    if (values.check) {
+      const result = await checkServer(options);
+      io.stdout.write(result.lines.join("\n") + "\n");
+      if (!result.ok) io.stderr.write(`archidocs: ${result.error}\n`);
+      return result.ok ? OK : COULD_NOT_RUN;
+    }
     if (values.http) {
+      const writesAllowed = values["allow-writes"] && source.writesAllowed;
       const http = await serveHttp({ ...options, port, allowWrites: values["allow-writes"], ...(values.host === undefined ? {} : { host: values.host }) });
-      io.stderr.write(`Archidocs MCP server on ${http.url} (writes ${values["allow-writes"] && source.writesAllowed ? "allowed" : "off"})\n`);
+      log(`Archidocs MCP server on ${http.url} (writes ${writesAllowed ? "allowed" : "off"})`);
+      void startupLine({ version, transport: "http", source, writesAllowed }).then(log);
       return OK;
     }
     // The one command bound to the process: stdout carries the protocol; the server runs until the client closes stdin.
+    // It answers the client at once, and says what it serves once the source has loaded.
     serveStdio(() => createServer(options));
+    void startupLine({ version, transport: "stdio", source, writesAllowed: source.writesAllowed }).then(log);
     return OK;
   }
   throw new UsageError(command ? `Unknown command "${command}".` : "No command given.");
@@ -256,6 +269,18 @@ function useColor(io: Io): boolean {
 }
 
 /** The Checkout whose Workspace holds `start`, found by walking up from it. */
+/**
+ * Where to look for the Workspace: the current folder, or the folder
+ * `--workspace` names. A named folder must exist, so a mistyped path fails
+ * instead of finding a Workspace in a folder above it.
+ */
+function workspaceFolder(cwd: string, workspace: string | undefined): string {
+  if (workspace === undefined) return cwd;
+  const folder = resolve(cwd, workspace);
+  if (!existsSync(folder) || !statSync(folder).isDirectory()) throw new Error(`--workspace "${workspace}" is not a folder.`);
+  return folder;
+}
+
 async function checkoutFrom(start: string): Promise<Checkout> {
   const checkout = await findCheckout(start);
   if (!checkout) throw new UsageError(NO_WORKSPACE);

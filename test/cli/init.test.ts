@@ -140,3 +140,64 @@ describe("archidocs init from a global bin", () => {
     expect(stdout).toContain("archidocs mcp --workspace ../architecture/archidocs");
   });
 });
+
+describe("archidocs init registers the MCP server", () => {
+  const entry = (command: string, ...args: string[]) => ({ type: "stdio", command, args: [...args, "mcp", "--workspace", "archidocs"] });
+  const json = async (repo: string, path: string) => JSON.parse(await read(repo, path)) as Record<string, Record<string, unknown>>;
+
+  it("writes .mcp.json with the command for this repo, and prints the matching --check line", async () => {
+    const repo = await emptyRepo();
+    const { stdout } = await archidocs(repo, viaNpx, "init");
+    expect(await json(repo, ".mcp.json")).toEqual({ mcpServers: { archidocs: entry("npx", "-y", `archidocs@${version}`) } });
+    expect(stdout).toContain("Wrote .mcp.json\n");
+    expect(stdout).toContain(`  npx -y archidocs@${version} mcp --workspace archidocs --check\n`);
+    expect(stdout).not.toContain("Register the Archidocs MCP server");
+    expect(existsSync(join(repo, ".cursor"))).toBe(false);
+    expect(existsSync(join(repo, ".vscode"))).toBe(false);
+  });
+
+  it("replaces only its own entry, keeps other servers, and updates Cursor's and VS Code's files only when they exist", async () => {
+    const repo = await emptyRepo();
+    await writeFile(join(repo, "package.json"), JSON.stringify({ dependencies: { archidocs: "^1.3.0" } }));
+    const other = { command: "other-server", args: [] };
+    await writeFile(join(repo, ".mcp.json"), JSON.stringify({ mcpServers: { other, archidocs: { command: "archidocs", args: ["mcp", "--workspace", "archidocs"] } } }));
+    await mkdir(join(repo, ".cursor"));
+    await writeFile(join(repo, ".cursor/mcp.json"), JSON.stringify({ mcpServers: { other } }));
+    await mkdir(join(repo, ".vscode"));
+    await writeFile(join(repo, ".vscode/mcp.json"), JSON.stringify({ servers: { other }, inputs: [] }));
+
+    const { stdout } = await archidocs(repo, globalBin, "init");
+    expect(await json(repo, ".mcp.json")).toEqual({ mcpServers: { other, archidocs: entry("npx", "archidocs") } });
+    expect(await json(repo, ".cursor/mcp.json")).toEqual({ mcpServers: { other, archidocs: entry("npx", "archidocs") } });
+    expect(await json(repo, ".vscode/mcp.json")).toEqual({ servers: { other, archidocs: entry("npx", "archidocs") }, inputs: [] });
+    for (const file of [".mcp.json", ".cursor/mcp.json", ".vscode/mcp.json"]) expect(stdout).toContain(`Updated ${file}\n`);
+    expect(await read(repo, ".mcp.json")).toMatch(/^{\n {2}"mcpServers": {\n/);
+
+    const again = await archidocs(repo, globalBin, "init");
+    expect(again.stdout).not.toMatch(/(Wrote|Updated) .*mcp\.json/);
+  });
+
+  it("leaves a config it can't parse as JSON alone and prints the entry to add by hand", async () => {
+    const repo = await emptyRepo();
+    await mkdir(join(repo, ".vscode"));
+    const jsonc = '{\n  // my servers\n  "servers": {}\n}\n';
+    await writeFile(join(repo, ".vscode/mcp.json"), jsonc);
+    const { stdout } = await archidocs(repo, globalBin, "init");
+    expect(await read(repo, ".vscode/mcp.json")).toBe(jsonc);
+    expect(stdout).toContain("Could not read .vscode/mcp.json as JSON; add this to its \"servers\" by hand:");
+    expect(stdout).toContain('"archidocs": {');
+    expect(await json(repo, ".mcp.json")).toEqual({ mcpServers: { archidocs: entry("archidocs") } });
+  });
+
+  it("--skill writes the config only when --workspace names the checkout", async () => {
+    const without = await emptyRepo();
+    const { stdout } = await archidocs(without, globalBin, "init", "--skill");
+    expect(existsSync(join(without, ".mcp.json"))).toBe(false);
+    expect(stdout).toContain("archidocs mcp --workspace <path-to-workspace-checkout>");
+
+    const withPath = await emptyRepo();
+    const named = await archidocs(withPath, globalBin, "init", "--skill", "--workspace", "../architecture/archidocs");
+    expect(await json(withPath, ".mcp.json")).toEqual({ mcpServers: { archidocs: { type: "stdio", command: "archidocs", args: ["mcp", "--workspace", "../architecture/archidocs"] } } });
+    expect(named.stdout).toContain("  archidocs mcp --workspace ../architecture/archidocs --check\n");
+  });
+});

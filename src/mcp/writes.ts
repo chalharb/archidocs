@@ -35,7 +35,12 @@ const WriteOutput = z.object({
  * They never touch git. With `readOnly` set (a Bundle source, or HTTP
  * without --allow-writes) each returns `read_only` with that reason.
  */
-export function registerWriteTools(server: McpServer, source: Source, readOnly: string | undefined): void {
+export function registerWriteTools(
+  server: McpServer,
+  source: Source,
+  readOnly: string | undefined,
+  logged: (name: string, write: boolean, handle: (raw: unknown) => Promise<CallToolResult>) => (raw: unknown) => Promise<CallToolResult>,
+): void {
   const fs = nodeFileSystem();
 
   const writeTool = <I extends z.ZodObject>(name: string, config: { title: string; description: string; input: I; destructive?: boolean; idempotent?: boolean }, toRequest: (args: z.output<I>) => WriteRequest) => {
@@ -48,7 +53,7 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
         outputSchema: WriteOutput,
         annotations: { readOnlyHint: false, destructiveHint: config.destructive ?? false, idempotentHint: config.idempotent ?? true, openWorldHint: false },
       },
-      async (raw: unknown): Promise<CallToolResult> => {
+      logged(name, true, async (raw: unknown): Promise<CallToolResult> => {
         if (readOnly !== undefined || source.kind !== "checkout") return toResult({ ok: false, code: "read_only", message: readOnly ?? "Write tools need a checkout." });
         if (takesAt(raw)) return toResult({ ok: false, code: "invalid_input", message: atRefused });
         const args = config.input.safeParse(raw ?? {});
@@ -61,7 +66,7 @@ export function registerWriteTools(server: McpServer, source: Source, readOnly: 
           return toResult({ ok: false, code: "source_unavailable", message: `Could not write the Workspace at ${source.root}: ${error instanceof Error ? error.message : String(error)}` });
         }
         return toResult(outcome(result));
-      },
+      }),
     );
   };
 

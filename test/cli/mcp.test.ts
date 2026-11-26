@@ -42,7 +42,86 @@ async function serveHttp(cwd: string, ...args: string[]) {
   return { client, url };
 }
 
+const { version } = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
+
+/** Like `serve`, keeping what the server writes to stderr; `env` is added to the server's environment. */
+async function serveLogged(cwd: string, env: Record<string, string>, ...args: string[]) {
+  const transport = new StdioClientTransport({ command: process.execPath, args: [cli, "mcp", ...args], cwd, env: { ...(process.env as Record<string, string>), ...env }, stderr: "pipe" });
+  let stderr = "";
+  transport.stderr!.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
+  const client = new Client({ name: "archidocs-test", version: "0.0.0" });
+  await client.connect(transport);
+  onTestFinished(() => client.close());
+  /** Resolves with stderr once it has a line matching `re`. */
+  const waitFor = async (re: RegExp) => {
+    for (let i = 0; i < 200 && !re.test(stderr); i++) await new Promise((r) => setTimeout(r, 25));
+    expect(stderr).toMatch(re);
+    return stderr;
+  };
+  return { client, stderr: () => stderr, waitFor };
+}
+
 const run = (cwd: string, ...args: string[]) => promisify(execFile)(process.execPath, [cli, "mcp", ...args], { cwd });
+
+describe("archidocs mcp says it is up", () => {
+  it("announces on stderr, once loaded, the version, the Workspace, its size and check results", async () => {
+    const { repoRoot, root } = await writeWorkspace(validWorkspace);
+    const { client, waitFor } = await serveLogged(repoRoot, {});
+    const line = await waitFor(/MCP server/);
+    expect(line).toContain(`archidocs ${version} MCP server (stdio): Workspace ${await realpath(root)} — 2 Projects, 4 Elements; check: 0 errors, 0 warnings; writes on\n`);
+    expect(client.getServerVersion()).toMatchObject({ name: "archidocs", version });
+  });
+
+  it("reports a source it can't load, and keeps serving", async () => {
+    const missing = join(await mkdtemp(join(tmpdir(), "archidocs-site-")), "nothing-here");
+    const { client, waitFor } = await serveLogged(tmpdir(), {}, "--bundle", missing);
+    const line = await waitFor(/can't load/);
+    expect(line).toContain(`archidocs ${version} MCP server (stdio): Bundle `);
+    expect(line).toMatch(/Bundle .*nothing-here.* can't load it: .+; tools return source_unavailable until it loads\n/);
+    expect((await client.callTool({ name: "get_workspace_info", arguments: {} })).structuredContent).toMatchObject({ code: "source_unavailable" });
+  });
+
+  it("logs each write tool call, and read calls only with ARCHIDOCS_LOG=debug", async () => {
+    const { repoRoot } = await writeWorkspace(validWorkspace);
+    const quiet = await serveLogged(repoRoot, {});
+    await quiet.waitFor(/MCP server/);
+    await quiet.client.callTool({ name: "get_element", arguments: { id: "shop:web" } });
+    await quiet.client.callTool({ name: "upsert_element", arguments: { project: "shop", kind: "service", id: "cart", fields: { name: "Cart" }, file: "services.yaml" } });
+    await quiet.client.callTool({ name: "upsert_element", arguments: { project: "shop", kind: "service", id: "bad", fields: { name: "Bad", owner: "no-such-team" } } });
+    const log = await quiet.waitFor(/upsert_element shop:bad/);
+    expect(log).toContain("upsert_element shop:cart: created archidocs/shop/services.yaml\n");
+    expect(log).toMatch(/upsert_element shop:bad: refused \(validation_failed\)\n/);
+    expect(log).not.toContain("get_element");
+
+    const debug = await serveLogged(repoRoot, { ARCHIDOCS_LOG: "debug" });
+    await debug.client.callTool({ name: "get_element", arguments: { id: "shop:web" } });
+    await debug.waitFor(/get_element shop:web: ok\n/);
+  });
+});
+
+describe("archidocs mcp --check", () => {
+  it("runs the server it would start against an in-process client, and exits 0", async () => {
+    const { repoRoot, root } = await writeWorkspace(validWorkspace);
+    const { stdout } = await run(repoRoot, "--workspace", "archidocs", "--check");
+    expect(stdout).toContain(`archidocs ${version} MCP server (check): Workspace ${await realpath(root)} — 2 Projects, 4 Elements; check: 0 errors, 0 warnings; writes on\n`);
+    expect(stdout).toMatch(/^ok: \d+ tools; list_teams answered\n/m);
+  });
+
+  it("exits 2 with the reason when the server can't serve its source", async () => {
+    const missing = join(await mkdtemp(join(tmpdir(), "archidocs-site-")), "nothing-here");
+    await expect(run(tmpdir(), "--bundle", missing, "--check")).rejects.toMatchObject({ code: 2, stderr: expect.stringMatching(/list_teams failed: source_unavailable: .+/) });
+  });
+
+  it("exits 2 for a --workspace folder that doesn't exist, rather than finding a Workspace above it", async () => {
+    const { repoRoot } = await writeWorkspace(validWorkspace);
+    await expect(run(repoRoot, "--workspace", "archidocs/nope", "--check")).rejects.toMatchObject({ code: 2, stderr: expect.stringContaining('--workspace "archidocs/nope" is not a folder') });
+  });
+
+  it("exits 2 with --http", async () => {
+    const { repoRoot } = await writeWorkspace(validWorkspace);
+    await expect(run(repoRoot, "--http", "--check")).rejects.toMatchObject({ code: 2, stderr: expect.stringContaining("--check runs the stdio server; leave out --http") });
+  });
+});
 
 describe("archidocs mcp", () => {
   it("serves the Workspace found from the current folder over stdio", async () => {

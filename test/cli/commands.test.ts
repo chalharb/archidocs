@@ -34,7 +34,7 @@ describe("CLI command definitions", () => {
         archidocs export --all-saved --out <dir> [--format svg|png] [--direction TB|BT|LR|RL] [--theme light|dark] [--label <text>]
         archidocs diff <from> [<to>] [--format text|json|markdown]
         archidocs history build [--since <ref|date|time>]
-        archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
+        archidocs mcp [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>] [--check]
         archidocs mcp --http [--host <loopback>] [--port <n>] [--allow-writes] [--workspace <dir> | --bundle <url|path>] [--viewer-url <url>]
       "
     `);

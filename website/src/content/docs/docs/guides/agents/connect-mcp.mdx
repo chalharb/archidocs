@@ -16,13 +16,15 @@ Register the Archidocs MCP server with your coding agent, so it can answer archi
 
 ## 1. Register the server
 
-The server is one command, run from the repo root. `archidocs init` prints it for your repo, in the form that runs there. Without a global install, it starts with `npx`, as in `npx -y archidocs@1.2.0 mcp --workspace archidocs`; put that in place of `archidocs mcp` below. From a code repo, the path differs: see [In a code repo](#in-a-code-repo).
+`archidocs init` has already done this for most agents. It writes the server into `.mcp.json` at the repo root, which Claude Code, VS Code and Copilot read, and updates `.cursor/mcp.json` or `.vscode/mcp.json` when the repo has one. It replaces only its own `archidocs` entry and keeps your other servers. Commit `.mcp.json`, so everyone who clones the repo gets the server. Run `init` again after you change how you install Archidocs, and it updates the entry.
+
+The entry runs one command from the repo root, in the form that runs there: `archidocs mcp --workspace archidocs` with a global install, `npx archidocs mcp --workspace archidocs` with a dev dependency, or `npx -y archidocs@1.2.0 mcp --workspace archidocs` on demand. From a code repo, the path differs: see [In a code repo](#in-a-code-repo).
 
 ```bash
 archidocs mcp --workspace archidocs
 ```
 
-Pick your coding agent, and add the command where it reads MCP servers.
+To register it by hand, or with an agent `init` doesn't write for, pick your coding agent and add the command where it reads MCP servers.
 
 <Tabs syncKey="mcp-client">
 <TabItem label="Claude Code">
@@ -113,25 +115,34 @@ If the CLI isn't installed globally, run it with npx. Set `"command"` to `"npx"`
 
 ## Check it worked
 
-Ask the agent what breaks if one of your databases goes down: "what breaks if the Orders DB goes down?". It calls [`get_impact`](/docs/reference/mcp/get_impact/) and answers from the Model. It lists each affected [Element](/docs/reference/glossary/#term-element), a Service or other part of the Model, with its [Owner](/docs/reference/glossary/#term-owner).
+Run the command from your config with `--check` added, from the repo root. It starts the server, connects to it as an agent would, and exits:
+
+```bash
+archidocs mcp --workspace archidocs --check
+```
+
+```text
+archidocs 1.2.0 MCP server (check): Workspace /home/me/shop/archidocs — 1 Projects, 3 Elements; check: 0 errors, 0 warnings; writes on
+ok: 32 tools; list_teams answered
+```
+
+When the agent starts the server, it prints the same first line to stderr once it has loaded the Workspace, and one line for each write. Your agent shows that in its MCP log: `claude --debug` in Claude Code, **MCP: List Servers** › **Show Output** in VS Code, and the **MCP Logs** output channel in Cursor. Set `ARCHIDOCS_LOG=debug` in the server's environment to log every read call too.
+
+Then ask the agent what breaks if one of your databases goes down: "what breaks if the Orders DB goes down?". It calls [`get_impact`](/docs/reference/mcp/get_impact/) and answers from the Model. It lists each affected [Element](/docs/reference/glossary/#term-element), a Service or other part of the Model, with its [Owner](/docs/reference/glossary/#term-owner).
 
 ## If it didn't
 
-If the server fails to start, run its command yourself from the repo root:
-
-```bash
-archidocs mcp --workspace archidocs
-```
-
-When the path is wrong, it prints why and exits:
+Run the `--check` command above. When the path is wrong, it prints why and exits with 2:
 
 ```text
-archidocs: No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.
+archidocs: --workspace "archidcos" is not a folder.
 ```
+
+A folder that exists but holds no Workspace, and no Workspace above it, prints `No workspace.yaml found in this folder, its archidocs/ folder, or any folder above.` instead.
 
 Correct `--workspace` in your config. The path is relative to the folder the coding agent starts the server in, usually the repo root.
 
-When the command works, it waits for input with no output. Stop it with Ctrl+C.
+When the Workspace loads but has problems, the first line counts the check errors; run `archidocs check` to see them. A published Bundle that can't be read is reported as `can't load it: …`, with the reason.
 
 ## In a code repo
 
@@ -141,7 +152,7 @@ An agent working on a Service's code can keep the Model in step from there. Clon
 archidocs mcp --workspace ../architecture/archidocs
 ```
 
-In `args`, that is `["mcp", "--workspace", "../architecture/archidocs"]`. `archidocs init --skill --workspace ../architecture/archidocs` installs the skill in the code repo and prints the same command. See [Install the agent skill](/docs/guides/agents/install-skill/).
+In `args`, that is `["mcp", "--workspace", "../architecture/archidocs"]`. `archidocs init --skill --workspace ../architecture/archidocs` installs the skill in the code repo and writes that entry into its `.mcp.json`. Without `--workspace`, it writes no config. See [Install the agent skill](/docs/guides/agents/install-skill/).
 
 ## From a published site, read-only
 
