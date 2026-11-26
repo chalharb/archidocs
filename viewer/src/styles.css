@@ -1054,6 +1054,21 @@ select.arc-tool option {
   list-style: none;
 }
 
+/* The icons the View draws, two to a row, each beside the kind it names; a rule parts them from the marks below. */
+.arc-key ul.arc-key-icons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.arc-key-icons .arc-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
 .arc-key li {
   display: flex;
   align-items: center;

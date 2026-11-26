@@ -219,6 +219,8 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
     });
   }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks, hovered, edgeZ]);
 
+  const keyIcons = useMemo(() => iconsOn(nodes.map((n) => n.data.type ?? n.data.node.kind)), [nodes]);
+
   const edgeChanges = useMemo(() => new Map(view.edges.map((e) => [`${e.from}>${e.to}`, e.change])), [view]);
   const tooltips = useMemo(() => {
     const names = new Map(view.nodes.map((n) => [n.id, n.name]));
@@ -276,7 +278,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       onPaneClick={() => onSelect(null)}
     >
       <Panel position="bottom-left" className="arc-key-panel">
-        <Key lens={lensed !== undefined} />
+        <Key lens={lensed !== undefined} icons={keyIcons} />
       </Panel>
       {view.nodes.length > MINIMAP_MIN_NODES && <MiniMap position="top-right" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeStrokeWidth={0} />}
       <Controls position="bottom-right" showInteractive={false} />
@@ -287,8 +289,29 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
   );
 }
 
-/** The map key: what every mark on the canvas means, and the canvas's gestures. It folds away and stays folded. */
-function Key({ lens }: { lens: boolean }) {
+/** The Key's icon rows, in reading order, each with the kind name it stands for. */
+const KEY_ICONS: { kind: string; label: string }[] = [
+  { kind: "person", label: KIND_LABEL.person },
+  { kind: "system", label: KIND_LABEL.system },
+  { kind: "service", label: KIND_LABEL.service },
+  { kind: "datastore", label: "Datastore" },
+  { kind: "broker", label: "Broker" },
+  { kind: "component", label: KIND_LABEL.component },
+  { kind: "deployment", label: KIND_LABEL.deployment },
+  { kind: "target", label: KIND_LABEL.target },
+];
+
+/** The icon rows for the kinds a View actually draws, so a C1 Key lists no datastore or Target. */
+function iconsOn(kinds: string[]): { icon: IconName; label: string }[] {
+  const drawn = new Set(kinds);
+  return KEY_ICONS.filter((k) => drawn.has(k.kind)).map((k) => ({ icon: KIND_ICON[k.kind]!, label: k.label }));
+}
+
+/**
+ * The map key: what every mark and icon on the canvas means, and the canvas's gestures.
+ * It starts folded so it never covers the drawing; a visitor's own toggle is remembered.
+ */
+function Key({ lens, icons }: { lens: boolean; icons: { icon: IconName; label: string }[] }) {
   const [open, setOpen] = useState(() => readKeyOpen());
   return (
     <details
@@ -303,6 +326,16 @@ function Key({ lens }: { lens: boolean }) {
       }}
     >
       <summary>Key</summary>
+      {icons.length > 0 && (
+        <ul className="arc-key-icons" aria-label="Icons">
+          {icons.map(({ icon, label }) => (
+            <li key={icon} data-key-icon={icon}>
+              <Icon name={icon} />
+              {label}
+            </li>
+          ))}
+        </ul>
+      )}
       <ul>
         <li>
           <span className="arc-key-swatch arc-key-team" aria-hidden="true">
@@ -348,14 +381,12 @@ function Key({ lens }: { lens: boolean }) {
   );
 }
 
-/** Open by default only where the canvas has room for it beside the drawing; afterwards it stays as the visitor left it. */
+/** Folded by default on every screen; afterwards it stays as the visitor left it. */
 function readKeyOpen(): boolean {
-  const roomy = window.innerWidth >= 1200 && window.innerHeight >= 760;
   try {
-    const stored = window.localStorage.getItem("archidocs.key");
-    return stored === null ? roomy : stored === "open";
+    return window.localStorage.getItem("archidocs.key") === "open";
   } catch {
-    return roomy;
+    return false;
   }
 }
 
@@ -363,7 +394,7 @@ function writeKeyOpen(open: boolean) {
   try {
     window.localStorage.setItem("archidocs.key", open ? "open" : "closed");
   } catch {
-    // The key simply opens again next time.
+    // The key simply starts folded again next time.
   }
 }
 
