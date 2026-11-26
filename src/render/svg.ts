@@ -104,7 +104,7 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
 }
 
 const marker = (id: string, fill: string) =>
-  `<marker id="${id}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${fill}"/></marker>`;
+  `<marker id="${id}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${fill}"/></marker>`;
 
 /** A broker's vertical stripes, in the rule colour. */
 const brokerPattern = (c: Palette) => `<pattern id="broker" width="12" height="12" patternUnits="userSpaceOnUse"><rect x="8" width="4" height="12" fill="${c.rule}"/></pattern>`;
