@@ -3,6 +3,7 @@ import { type ResolvedDynamicView } from "../../src/core/index.ts";
 import { dynamicView } from "../support/views.ts";
 import { layoutSequence, sequenceMessages, SEQUENCE, type SequenceLayout } from "../../src/render/index.ts";
 import type { Bundle } from "../../src/schema/bundle.ts";
+import { textWidth } from "../../src/render/text.ts";
 import { checkoutScenarioWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace } from "../support/workspace.ts";
 
@@ -46,6 +47,15 @@ describe("sequence layout of the 46-Step full checkout", () => {
     }
     const last = layout.columns.at(-1)!;
     expect(layout.width).toBeGreaterThanOrEqual(last.x + last.width / 2);
+  });
+
+  it("makes each header wide enough for its whole name, however long", () => {
+    const long = "Customer Identity and Access Management Server";
+    expect(long.length).toBeGreaterThanOrEqual(40);
+    const layout = layoutSequence(view, { name: (id) => (id === api ? long : names(id)) });
+
+    expect(columnOf(layout, api).width).toBeGreaterThanOrEqual(textWidth(long, SEQUENCE.nameSize, 700) + SEQUENCE.headerPad);
+    for (const col of layout.columns) expect(col.width, col.id).toBeGreaterThanOrEqual(textWidth(col.id === api ? long : names(col.id), SEQUENCE.nameSize, 700) + SEQUENCE.headerPad);
   });
 
   it("leaves every label room between the two lifelines it joins", () => {

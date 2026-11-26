@@ -4,7 +4,7 @@ Findings from manually testing the viewer and `archidocs dev` against a real Wor
 
 | # | Ticket | Status |
 | - | ------ | ------ |
-| 01 | [Sequence headers fit their names](issues/01-sequence-headers-fit-names.md) | ready-for-agent |
+| 01 | [Sequence headers fit their names](issues/01-sequence-headers-fit-names.md) | done |
 | 02 | [Export a Dynamic View from the viewer](issues/02-export-dynamic-views.md) | ready-for-agent |
 | 03 | [Show that a Deployment is scaled](issues/03-scaled-deployments.md) | needs-triage |
 | 04 | [Batch dev reloads during agent edits](issues/04-batch-dev-reloads.md) | ready-for-agent |
