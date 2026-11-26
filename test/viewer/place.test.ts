@@ -93,7 +93,7 @@ describe("parsing and formatting", () => {
 });
 
 describe("what existing URLs mean", () => {
-  it("lands an empty or foreign hash on the C2 Landscape", () => {
+  it("lands an empty or foreign hash on the C1 Landscape", () => {
     expect(parsePlace("")).toEqual(HOME);
     expect(parsePlace("#/elsewhere/c3")).toEqual(HOME);
     expect(parsePlace("#/view/")).toEqual(HOME);
@@ -114,7 +114,7 @@ describe("what existing URLs mean", () => {
 
   it("ignores an unknown direction, a step that isn't a positive whole number, and other mode and brokers values", () => {
     const place = parsePlace("#/view/c2?dir=UP&step=0&mode=sequence&brokers=yes");
-    expect(place).toEqual({ ...HOME });
+    expect(place).toEqual({ ...HOME, view: "c2" });
     expect(parsePlace("#/view/c2?step=2.5").step).toBeNull();
   });
 
