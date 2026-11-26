@@ -97,7 +97,7 @@ export function changelogPage(): GeneratedPage {
     title: "Changelog",
     order: 2,
     description: "What changed in each release.",
-    source: exists ? "CHANGELOG.md" : "release-please-config.json",
+    source: exists ? "CHANGELOG.md" : "release.config.mjs",
     body: exists ? rewriteLinks(splitTitle(readRepoFile("CHANGELOG.md")).rest, "CHANGELOG.md") : `Release notes are on [GitHub Releases](${releases}) until the changelog starts with the next release.\n`,
   };
 }

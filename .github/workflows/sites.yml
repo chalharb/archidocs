@@ -2,12 +2,12 @@ name: Sites
 
 # Builds the docs site (website/) and the example sites (examples/*) and deploys them
 # to Cloudflare Workers (static assets, configured in each wrangler.jsonc):
-#   - a push to main deploys the docs to next.archidocs.dev and the demos to production
-#     (big-bank.archidocs.dev, kitchen-sink.archidocs.dev)
+#   - a push to main deploys the docs to next.archidocs.dev; the demos' production
+#     (big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys from a release, in publish.yml
 #   - each PR gets a Worker Preview named pr-<number> per site, listed in one PR comment
 #   - closing the PR deletes its Previews
-# Docs production (archidocs.dev) deploys only from a release tag, in publish.yml,
-# because the site documents the released CLI.
+# Production (archidocs.dev and the demos) deploys only from a release tag, in publish.yml,
+# because the sites document and show the released CLI.
 #
 # Needs two repository secrets: CLOUDFLARE_API_TOKEN (Account › Workers Scripts › Edit,
 # Zone › Workers Routes › Edit and Zone › DNS › Edit on archidocs.dev) and
@@ -55,8 +55,8 @@ jobs:
       matrix:
         include:
           - { site: docs, dir: website, build: "docs:build", main: "wrangler deploy --env next" }
-          - { site: big-bank, dir: examples/big-bank, build: "demo:big-bank", main: "wrangler deploy" }
-          - { site: kitchen-sink, dir: examples/kitchen-sink, build: "demo:kitchen-sink", main: "wrangler deploy" }
+          - { site: big-bank, dir: examples/big-bank, build: "demo:big-bank" }
+          - { site: kitchen-sink, dir: examples/kitchen-sink, build: "demo:kitchen-sink" }
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -80,7 +80,7 @@ jobs:
       - run: pnpm "${{ matrix.build }}"
 
       - name: Deploy main
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && matrix.main
         run: pnpm exec ${{ matrix.main }} --cwd "$DIR"
 
       - name: Deploy the PR Preview
