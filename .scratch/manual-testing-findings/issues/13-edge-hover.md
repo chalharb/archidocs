@@ -1,6 +1,6 @@
 # 13: Hovering an edge highlights it and its ends
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

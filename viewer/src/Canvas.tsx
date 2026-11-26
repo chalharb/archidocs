@@ -14,9 +14,9 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import type { CompareMark, ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views/index.ts";
-import type { BundleElement } from "../../src/schema/bundle.ts";
+import type { BundleElement, BundleRelationship } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
 import { NODE_SIZES } from "../../src/render/layout.ts";
@@ -119,6 +119,8 @@ interface BoxData extends Record<string, unknown> {
   picked: boolean;
   /** Set while Comparing: how this node changed between the two Revisions. */
   change: CompareMark | undefined;
+  /** Set while an edge is hovered: whether this box is one of its two ends, or fades with the rest. */
+  hover: "end" | "faded" | undefined;
 }
 
 interface RouteData extends Record<string, unknown> {
@@ -129,6 +131,9 @@ interface RouteData extends Record<string, unknown> {
   change: CompareMark | undefined;
   from: string;
   to: string;
+  /** What the edge carries, one Relationship a line: its tooltip. */
+  tooltip: string;
+  onHover: (id: string, on: boolean) => void;
 }
 
 const KIND_LABEL: Record<ViewNode["kind"], string> = { person: "Person", system: "System", service: "Service", component: "Component", target: "Deployment Target", deployment: "Deployment" };
@@ -149,6 +154,22 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
 
   const marks = useMemo(() => new Map(lensed?.nodes.map((n) => [n.id, n.mark]) ?? []), [lensed]);
   const litEdges = useMemo(() => (lensed ? new Map(lensed.edges.map((e) => [`${e.from}>${e.to}`, e.lit === true])) : undefined), [lensed]);
+
+  // The hovered edge, while it is still on screen: it lights over any Lens or selection, which return when it is left.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const hovered = useMemo(() => layout.edges.find((e) => `${e.from}>${e.to}` === hoveredId), [layout, hoveredId]);
+  const onHover = useCallback((id: string, on: boolean) => setHoveredId((current) => (on ? id : current === id ? null : current)), []);
+
+  // Stacking, bottom to top: open boxes by depth, then every edge, then the boxes with nothing open inside them.
+  // Edges sit over the open boxes they cross, so those never take the pointer from an edge's hover target.
+  const edgeZ = useMemo(() => {
+    const byId = new Map(view.nodes.map((n) => [n.id, n]));
+    const depth = (id: string): number => {
+      const parent = byId.get(id)?.parent ?? null;
+      return parent === null ? 0 : 1 + depth(parent);
+    };
+    return 1 + Math.max(0, ...view.nodes.map((n) => depth(n.id)));
+  }, [view]);
 
   const nodes = useMemo<Node<BoxData>[]>(() => {
     const byId = new Map(view.nodes.map((n) => [n.id, n]));
@@ -173,7 +194,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         style: { width: box.width, height: box.height },
         // A rebuilt node without `measured` loses its handle bounds, and React Flow hides its edges until it measures it again.
         measured: { width: box.width, height: box.height },
-        zIndex: depth(box.id),
+        zIndex: containers.has(box.id) ? depth(box.id) : edgeZ + 1,
         selected: box.id === selected,
         draggable: false,
         connectable: false,
@@ -192,32 +213,42 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
           ring,
           picked: picks.includes(box.id),
           change: node.change,
+          hover: hovered ? (box.id === hovered.from || box.id === hovered.to ? "end" : "faded") : undefined,
         },
       };
     });
-  }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks]);
+  }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks, hovered, edgeZ]);
 
   const edgeChanges = useMemo(() => new Map(view.edges.map((e) => [`${e.from}>${e.to}`, e.change])), [view]);
-  const edges = useMemo<Edge<RouteData>[]>(
-    () =>
-      layout.edges.map((e) => ({
+  const tooltips = useMemo(() => {
+    const names = new Map(view.nodes.map((n) => [n.id, n.name]));
+    return new Map(view.edges.map((e) => [`${e.from}>${e.to}`, edgeTooltip(names.get(e.from) ?? e.from, names.get(e.to) ?? e.to, e.relationships)]));
+  }, [view]);
+  const edges = useMemo<Edge<RouteData>[]>(() => {
+    const drawn = layout.edges.map(
+      (e): Edge<RouteData> => ({
         id: `${e.from}>${e.to}`,
         source: e.from,
         target: e.to,
         type: "route",
         markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
         selectable: false,
+        zIndex: edgeZ,
         data: {
           points: e.points,
           faded: selected !== null && e.from !== selected && e.to !== selected,
-          lit: litEdges?.get(`${e.from}>${e.to}`),
+          lit: hovered ? e === hovered : litEdges?.get(`${e.from}>${e.to}`),
           change: edgeChanges.get(`${e.from}>${e.to}`),
           from: e.from,
           to: e.to,
+          tooltip: tooltips.get(`${e.from}>${e.to}`) ?? "",
+          onHover,
         },
-      })),
-    [layout, selected, litEdges, edgeChanges],
-  );
+      }),
+    );
+    // The hovered edge draws last, over the others.
+    return hovered ? [...drawn.filter((e) => e.data!.lit !== true), ...drawn.filter((e) => e.data!.lit === true)] : drawn;
+  }, [layout, selected, litEdges, edgeChanges, tooltips, hovered, onHover, edgeZ]);
 
   return (
     <ReactFlow
@@ -416,7 +447,9 @@ function KeepBesidePanel({ selected, animate, drawingWidth }: { selected: string
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
-  const { node, type, sublabel, team, container, twoLine, toggle, onToggle, wayIn, onOpenView, mark, ring, picked, change } = data;
+  const { node, type, sublabel, team, container, twoLine, toggle, onToggle, wayIn, onOpenView, mark: lensMark, ring, picked, change, hover } = data;
+  // A hovered edge's ends light, and everything else fades, over a Lens's marks.
+  const mark = hover ? undefined : lensMark;
   const stop = (e: MouseEvent) => e.stopPropagation();
   const toggleButton = toggle && (
     <button
@@ -463,6 +496,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     mark?.hit && node.collapsed ? "arc-holds-hit" : "",
     picked ? "arc-picked" : "",
     change ? `arc-${change}` : "",
+    hover === "end" ? "arc-hover-end" : hover === "faded" ? "arc-dim" : "",
   ];
   return (
     <div
@@ -474,6 +508,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
       data-distance={mark?.distance}
       data-picked={picked ? "true" : undefined}
       data-change={change}
+      data-hover={hover}
       aria-selected={selected ? "true" : "false"}
       title={change && change !== "unchanged" ? `${node.name}: ${change === "changed" && node.collapsed ? "changed, or something inside changed" : change}` : mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
     >
@@ -530,7 +565,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
 
 function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
   const d = data!.points.map((p, i) => `${i === 0 ? "M" : "L"}${round(p.x)} ${round(p.y)}`).join(" ");
-  const { faded, lit, change } = data!;
+  const { faded, lit, change, from, to, tooltip, onHover } = data!;
   // While a Lens is on it decides which edges stand out; selection fades edges only without one.
   const classes = ["arc-edge", (lit === undefined ? faded : !lit) ? "arc-faded" : "", lit ? "arc-lit" : "", change ? `arc-${change}` : ""];
   const path = (
@@ -545,11 +580,24 @@ function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
       data-change={change}
     />
   );
-  if (change !== "added" && change !== "changed") return path;
+  // A wide, unseen stroke over the line, so a 1.5px edge is easy to hover.
+  const hit = (
+    <path className="arc-edge-hit" d={d} data-edge-hit={`${from}>${to}`} onMouseEnter={() => onHover(`${from}>${to}`, true)} onMouseLeave={() => onHover(`${from}>${to}`, false)}>
+      <title>{tooltip}</title>
+    </path>
+  );
+  if (change !== "added" && change !== "changed")
+    return (
+      <>
+        {path}
+        {hit}
+      </>
+    );
   const mid = midpoint(data!.points);
   return (
     <>
       {path}
+      {hit}
       {change === "added" ? (
         <text className="arc-edge-added" x={mid.x} y={mid.y} dy="0.35em" textAnchor="middle" aria-hidden="true">
           +
@@ -559,6 +607,12 @@ function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
       )}
     </>
   );
+}
+
+/** An edge's tooltip: what each of its Relationships says and runs on, else just which two boxes it joins. */
+function edgeTooltip(from: string, to: string, relationships: readonly BundleRelationship[]): string {
+  const lines = relationships.map((r) => [r.description, r.technology && `[${r.technology}]`].filter(Boolean).join(" ")).filter(Boolean);
+  return [`${from} → ${to}`, ...lines].join("\n");
 }
 
 /** The point halfway along a polyline. */
