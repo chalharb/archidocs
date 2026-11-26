@@ -1,6 +1,6 @@
 # 05: Website and tests call commands in-process
 
-Status: ready-for-agent
+Status: done
 Blocked by: 04
 Spec: [Workspace checkout](../spec.md)
 

@@ -20,6 +20,9 @@ import { tmpdir } from "node:os";
 import { extname, join, normalize, relative } from "node:path";
 import { promisify } from "node:util";
 import { chromium, type Browser } from "@playwright/test";
+import { build } from "../../../src/commands/index.ts";
+import { DEFAULT_KEEP } from "../../../src/history/index.ts";
+import { checkoutAt } from "../../../src/workspace/index.ts";
 import { SHOTS } from "../screenshots.ts";
 import { findDiagramSource, isDemo, THEMES, type Theme } from "./examples.ts";
 import { repoPath } from "./repo.ts";
@@ -69,7 +72,7 @@ function ensureViewer(): Promise<unknown> {
 }
 
 /**
- * Builds an example's site into a temp folder with the repo's own CLI, and
+ * Builds an example's site into a temp folder with the repo's own `build` command, and
  * returns the folder. Big Bank is built as its demo is, with its dated
  * history; any other example is built from a copy outside git, so its site
  * holds the example's files and nothing of this repo's history. `without`
@@ -77,7 +80,6 @@ function ensureViewer(): Promise<unknown> {
  */
 export async function buildExampleSite(example: Shot["example"], { without = [] }: { without?: readonly string[] } = {}): Promise<string> {
   await ensureViewer();
-  const cli = repoPath("src/cli/main.ts");
   const tmp = await mkdtemp(join(tmpdir(), `archidocs-shots-${example}-`));
   const site = join(tmp, "site");
   try {
@@ -87,7 +89,8 @@ export async function buildExampleSite(example: Shot["example"], { without = [] 
       const copy = join(tmp, "workspace");
       cpSync(repoPath(`examples/${example}`), copy, { recursive: true, filter: (path) => !/[/\\]site$/.test(path) });
       for (const path of without) await rm(join(copy, path), { force: true, recursive: true });
-      await run(process.execPath, [cli, "build", "--out", site], { cwd: copy });
+      const result = await build(checkoutAt(join(copy, "archidocs")), { out: site, viewerDir: repoPath("dist/viewer/"), keep: DEFAULT_KEEP, bundleOnly: false });
+      if (result.kind !== "site") throw new Error(`Building ${example}'s site failed: ${JSON.stringify(result)}`);
       await rm(copy, { recursive: true, force: true });
     }
   } catch (error) {

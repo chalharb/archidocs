@@ -1,13 +1,11 @@
-import { execFile } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
+import { check } from "../../src/commands/index.ts";
+import { findCheckout } from "../../src/workspace/index.ts";
 import { repoPath } from "../src/lib/repo.ts";
 import { extractRegion, fillSamples, sampleFences, sampleTitle } from "../src/lib/samples.ts";
-
-const run = promisify(execFile);
 
 /** Every file under `dir` (absolute) whose name ends with one of `exts`. */
 const filesUnder = (dir: string, exts: string[]): string[] =>
@@ -32,12 +30,10 @@ function sampleWorkspace(file: string): string {
 
 /** The rule ids `archidocs check` reports for the Workspace in `dir`. */
 async function checkRules(dir: string): Promise<string[]> {
-  const cli = repoPath("src/cli/main.ts");
-  const result = await run(process.execPath, [cli, "check", "--format", "json"], { cwd: dir }).catch((error: { stdout: string; code: number }) => {
-    if (error.code !== 1) throw error;
-    return { stdout: error.stdout };
-  });
-  return (JSON.parse(result.stdout) as { issues: { rule: string }[] }).issues.map((i) => i.rule);
+  const checkout = await findCheckout(dir);
+  if (!checkout) throw new Error(`${dir} holds no Workspace.`);
+  const { issues } = await check(checkout);
+  return issues.map((i) => i.rule);
 }
 
 const failing = handWritten.flatMap((page) => sampleFences(page.text).flatMap((fence) => (fence.fails ? [{ page, fence }] : [])));

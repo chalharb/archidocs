@@ -3,11 +3,13 @@ import { dirname, join, relative, sep } from "node:path";
 import { changedIds, countChanges, diff, load, serializeBundle } from "../core/index.ts";
 import { Bundle, SCHEMA_VERSION } from "../schema/bundle.ts";
 import { git } from "../git.ts";
-import { BUNDLES_DIR, INDEX_PATH, INDEX_VERSION, isPastBundleFile, pastBundleFile, type PreviewMark, type RevisionEntry, type RevisionIndex } from "../revisions/index.ts";
-import { commitInfo, defaultBranch, firstParentCommitsTouching, gitFileSystem, isDate, joinRepo, resolvePoint, tagsByCommit, type CommitInfo } from "./git.ts";
+import { BUNDLES_DIR, INDEX_PATH, INDEX_VERSION, isPastBundleFile, pastBundleFile, timeSpan, type PreviewMark, type RevisionEntry, type RevisionIndex } from "../revisions/index.ts";
+import { commitInfo, defaultBranch, firstParentCommitsTouching, gitFileSystem, joinRepo, tagsByCommit, type CommitInfo } from "./git.ts";
+import { pointMessage, resolvePoint } from "./points.ts";
 
 export { migrateBundle, migrations, type Migration } from "../revisions/index.ts";
-export { resolvePoint, isDate, type CommitInfo } from "./git.ts";
+export { type CommitInfo } from "./git.ts";
+export { resolvePoint, pointMessage, type PointFailure, type ResolvedPoint } from "./points.ts";
 
 /** The cache a checkout keeps past Bundles and their index entries in, under the repo root. */
 export const CACHE_DIR = join(".archidocs", "cache");
@@ -140,12 +142,13 @@ export async function buildHistory(h: History, options: { since?: string } = {})
   return { revisions: inScope.length, built };
 }
 
+/** Where `--since` starts: a day's start, a time as given (UTC without a zone), else the commit date of the commit the point names. */
 async function sinceTime(h: History, since: string): Promise<number> {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(since)) return Date.parse(`${since}T00:00:00Z`);
-  if (isDate(since)) return Date.parse(since);
-  const sha = await resolvePoint(h.repoRoot, since);
-  if (!sha) throw new HistoryError(`Unknown ref or date "${since}".`);
-  return Date.parse((await commitInfo(h.repoRoot, sha)).date);
+  const own = timeSpan(since);
+  if (own) return own.start;
+  const point = await resolvePoint(h, since);
+  if (!point.ok) throw new HistoryError(pointMessage(since, point));
+  return Date.parse((await commitInfo(h.repoRoot, point.sha)).date);
 }
 
 /** Past Bundles a published site keeps by default: the latest 200 Revisions, plus every tagged one. */

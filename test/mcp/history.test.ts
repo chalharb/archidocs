@@ -35,6 +35,32 @@ describe("`at` on a checkout", () => {
     expect((await call("get_workspace_info", { at: second })).structuredContent).toMatchObject({ commit: second, counts: { elements: 5 } });
     expect((await call("get_workspace_info", { at: "2026-01-31" })).structuredContent).toMatchObject({ commit: first, counts: { elements: 4 } });
   });
+
+  it("names the last Revision for a date, not a later docs-only commit, while a ref to that commit still answers", async () => {
+    const { repo, call, third } = await checkout();
+    const docs = await repo.commit("Docs", "2026-03-20T12:00:00Z", { "README.md": "# Shop\n" });
+    await repo.commit("Rename search", "2026-04-10T12:00:00Z", { "archidocs/shop/services.yaml": v2["archidocs/shop/services.yaml"].replace("name: Search", "name: Find") });
+    expect((await call("get_workspace_info", { at: "2026-03-31" })).structuredContent).toMatchObject({ commit: third });
+    expect((await call("get_workspace_info", { at: "2026-03-31T12:00:00" })).structuredContent).toMatchObject({ commit: third });
+    expect((await call("get_workspace_info", { at: "HEAD~1" })).structuredContent).toMatchObject({ commit: docs, counts: { elements: 5 } });
+  });
+
+  it("reports a date before the first Revision as not_found, naming the first Revision", async () => {
+    const { call, first } = await checkout();
+    const result = await call("get_workspace_info", { at: "2026-01-01" });
+    expect(result.structuredContent).toMatchObject({ code: "not_found", message: expect.stringContaining(`The first Revision is ${first.slice(0, 7)}, 2026-01-10T12:00:00Z.`) });
+  });
+
+  it("reports a sha prefix of several Revisions as not_found, with the candidates", async () => {
+    const { repo, call, third } = await checkout();
+    const prefix = third.slice(0, 4);
+    const fourth = await repo.commitStartingWith(prefix, "Rename search", "2026-04-10T12:00:00Z", { "archidocs/shop/services.yaml": v2["archidocs/shop/services.yaml"].replace("name: Search", "name: Find") });
+    expect((await call("get_workspace_info", { at: prefix })).structuredContent).toEqual({
+      code: "not_found",
+      message: `"${prefix}" is the start of 2 Revisions' shas; give more of it.`,
+      suggestions: [fourth, third],
+    });
+  });
 });
 
 describe("`at` on a checkout's edges", () => {
