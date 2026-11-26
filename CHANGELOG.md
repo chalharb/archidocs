@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/chalharb/archidocs/compare/v1.3.2...v1.3.3) (2026-11-26)
+
+### Bug fixes
+
+* **dev:** batch rebuilds and swap the Bundle in place ([6f87a53](https://github.com/chalharb/archidocs/commit/6f87a536ec0702aaf6cb232b1970a6b412c2f233))
+* **viewer:** open the C1 Landscape as home ([7f1f367](https://github.com/chalharb/archidocs/commit/7f1f36766a2c7b944f16a87e9623874a91227b63))
+
 ## [1.3.2](https://github.com/chalharb/archidocs/compare/v1.3.1...v1.3.2) (2026-11-26)
 
 
