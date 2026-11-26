@@ -43,10 +43,13 @@ export const SEQUENCE = {
   nameSize: 13,
   labelSize: 12,
   subSize: 11,
-  /** Room in a header beside its name: the Team stripe, code and padding. */
-  headerPad: 64,
+  /**
+   * Room in a header beside its name: the border, padding, the gaps either
+   * side of the name, and the widest Team code tile (three capitals). Headers
+   * have no maximum width, so a name is never cut.
+   */
+  headerPad: 88,
   minColumn: 116,
-  maxColumn: 200,
   margin: 24,
 } as const;
 
@@ -142,7 +145,7 @@ export function layoutSequence(view: ResolvedDynamicView, options: SequenceOptio
   const messages = sequenceMessages(view, options);
   const ids = sequenceParticipants(view, options);
   const index = new Map(ids.map((id, i) => [id, i]));
-  const widths = ids.map((id) => Math.min(S.maxColumn, Math.max(S.minColumn, textWidth(options.name(id), S.nameSize, 700) + S.headerPad)));
+  const widths = ids.map((id) => Math.max(S.minColumn, textWidth(options.name(id), S.nameSize, 700) + S.headerPad));
 
   const labelWidths = messages.map((m) => {
     const via = viaLine(m, options.name);
