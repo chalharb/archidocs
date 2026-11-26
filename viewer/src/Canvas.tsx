@@ -244,7 +244,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         source: e.from,
         target: e.to,
         type: "route",
-        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, orient: "auto" },
         selectable: false,
         zIndex: edgeZ,
         data: {
