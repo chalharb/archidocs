@@ -7,7 +7,7 @@ name: CI
 # so a PR that touches only these never waits on a check that didn't run.
 on:
   push:
-    branches: [main]
+    branches: [main, beta]
     paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**", "docs/**", "AGENTS.md"]
   pull_request:
     paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**", "docs/**", "AGENTS.md"]

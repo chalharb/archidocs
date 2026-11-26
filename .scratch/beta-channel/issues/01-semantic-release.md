@@ -1,6 +1,6 @@
 # 01: Release both branches with semantic-release
 
-Status: ready-for-agent
+Status: done
 Blocked by: [chalharb/archidocs#105](https://github.com/chalharb/archidocs/pull/105) merged (1.3.2 released and tagged `v1.3.2` by release-please)
 Spec: [Beta channel](../spec.md)
 
@@ -18,7 +18,7 @@ semantic-release replaces release-please and releases `main` (stable, `latest`) 
 - **`publish.yml`**, rewritten (keep the style of its header comment, describing the new flow):
   - `on: push: branches: [main, beta]`; `concurrency: { group: release-${{ github.ref_name }}, cancel-in-progress: false }`.
   - `release` job: `environment: npm`; permissions `contents: write`, `issues: write`, `pull-requests: write`, `id-token: write`. Checkout with `fetch-depth: 0` and `token: ${{ secrets.RELEASE_TOKEN }}`. A first step fails with `::error::` naming `RELEASE_TOKEN` when the secret is empty. Node 24, `npm install -g npm@latest` (trusted publishing needs ≥ 11.5.1), `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, then `pnpm exec semantic-release` with `GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}`. Outputs `published` and `version`.
-  - `smoke` job (needs `release`, if `published == 'true'`): retry `npm view archidocs@$VERSION version` until it answers (up to ~5 minutes), then `npx -y archidocs@$VERSION --version` must print `$VERSION` exactly.
+  - `smoke` job (needs `release`, if `published == 'true'`): retry `npm view archidocs@$VERSION version` until it answers (up to ~5 minutes), then `npx -y archidocs@$VERSION version --format json` must report `$VERSION` (the CLI has no `--version` flag).
   - `major-tag` job (needs `smoke`, `main` only): today's job, moving `v<major>` to `v$VERSION`.
   - `docs` job (needs `smoke`, `main` only): today's job, checking out `v$VERSION`.
   - `demos` job (needs `smoke`, `main` only): a matrix over `big-bank` and `kitchen-sink`, checking out `v$VERSION`, building with `pnpm demo:<site>` and running `wrangler deploy --cwd examples/<site>`, as `sites.yml`'s deploy job does today. Skip with a notice when the Cloudflare secrets are missing, as `sites.yml` does.
@@ -33,9 +33,16 @@ semantic-release replaces release-please and releases `main` (stable, `latest`) 
 
 ## Acceptance criteria
 
-- [ ] No file mentions release-please except `CHANGELOG.md`'s history and the docs that ticket 03 rewrites.
-- [ ] The dry runs show the right version and sections on both branches.
-- [ ] On `beta`, nothing commits back, `v1` isn't moved and no production site deploys (by `if:` on each job).
-- [ ] The release job fails early with a clear message when `RELEASE_TOKEN` is missing.
-- [ ] `actionlint`, `pnpm test`, `pnpm typecheck` and `pnpm lint` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] No file mentions release-please except `CHANGELOG.md`'s history and the docs that ticket 03 rewrites.
+- [x] The dry runs show the right version and sections on both branches.
+- [x] On `beta`, nothing commits back, `v1` isn't moved and no production site deploys (by `if:` on each job).
+- [x] The release job fails early with a clear message when `RELEASE_TOKEN` is missing.
+- [x] `actionlint`, `pnpm test`, `pnpm typecheck` and `pnpm lint` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.
+
+## Comments
+
+- Pinned semantic-release 25 rather than 26: 26.0.x (released 2026-11-16) depends on beta versions of its own plugins. `@semantic-release/npm` 13.1.0+ publishes with npm trusted publishing (OIDC), so the plugin path was taken, not the `npmPublish: false` fallback.
+- `conventional-changelog-conventionalcommits` is pinned to 9: 10 needs `conventional-changelog-writer` 9, and `release-notes-generator` 14 ships writer 8 (the dry run failed with "Missing helper").
+- semantic-release fetches tags without `--force`, so a floating `v1` that moved on the remote fails the run ("would clobber existing tag"). The release job deletes local `vN` tags before running it.
+- `website/src/reference/text-sources.ts` named the deleted `release-please-config.json`; it now names `release.config.mjs` here rather than in ticket 03, so no file points at something that no longer exists.
