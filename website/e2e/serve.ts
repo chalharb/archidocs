@@ -7,7 +7,7 @@ import { createReadStream, mkdtempSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOCS_PORT } from "./port.ts";
 
@@ -34,9 +34,9 @@ const isFile = async (file: string) => (await stat(file).catch(() => undefined))
 
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url ?? "/", "http://host").pathname);
-  const rel = normalize(path).replace(/^\/+/, "");
-  if (rel.startsWith("..")) return void res.writeHead(400).end();
-  let file = join(root, rel);
+  let file = resolve(root, normalize(path).replace(/^\/+/, ""));
+  // Nothing outside the site: a path that climbs out of it is refused.
+  if (file !== root && !file.startsWith(root + sep)) return void res.writeHead(400).end();
   if (!(await isFile(file))) {
     if (await isFile(join(file, "index.html"))) {
       if (!path.endsWith("/")) return void res.writeHead(307, { location: `${path}/` }).end();

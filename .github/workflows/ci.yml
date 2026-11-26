@@ -164,7 +164,7 @@ jobs:
           for id in $ids; do test -f "$SITE/views/$id.svg"; done
           test "$(jq -c '[.revisions[] | [.subject, .tags, .bundle]]' "$SITE/bundles/index.json")" = \
             '[["Add Wishlist, rename Web, retire Legacy",[],true],["Add the Legacy shop",["v1"],true],["First model",[],false]]'
-          test "$(ls "$SITE/bundles" | wc -l)" -eq 3
+          test "$(find "$SITE/bundles" -mindepth 1 -maxdepth 1 | wc -l)" -eq 3
 
       - name: A failed check
         id: broken
