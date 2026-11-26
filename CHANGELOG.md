@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/chalharb/archidocs/compare/v1.3.1...v1.3.2) (2026-11-26)
+
+
+### Bug fixes
+
+* **init:** write commands that run without a global install ([#104](https://github.com/chalharb/archidocs/issues/104)) ([c8b4af6](https://github.com/chalharb/archidocs/commit/c8b4af66a5baa393affafde09c490b5242c602f1))
+
 ## [1.3.1](https://github.com/chalharb/archidocs/compare/v1.3.0...v1.3.1) (2026-11-26)
 
 
