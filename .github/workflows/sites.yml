@@ -3,7 +3,9 @@ name: Sites
 # Builds the docs site (website/) and the example sites (examples/*) and deploys them
 # to Cloudflare Workers (static assets, configured in each wrangler.jsonc):
 #   - a push to beta deploys each site to its staging Worker (`--env staging`): beta.archidocs.dev,
-#     beta.big-bank.archidocs.dev and beta.kitchen-sink.archidocs.dev, public but marked noindex
+#     beta.big-bank.archidocs.dev and beta.kitchen-sink.archidocs.dev, public but marked noindex.
+#     "Run workflow" on beta (Actions → Sites) does the same, for when a push skipped it: a push
+#     that touches only ignored paths, or the push that created the branch.
 #   - each PR gets a Worker Preview named pr-<number> per site, listed in one PR comment
 #   - closing the PR deletes its Previews
 # Production (archidocs.dev, big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys only from
@@ -14,6 +16,7 @@ name: Sites
 # CLOUDFLARE_ACCOUNT_ID. Without them (forks, Dependabot, before setup) the deploy
 # jobs are skipped rather than failed.
 on:
+  workflow_dispatch:
   push:
     branches: [beta]
     paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**", "docs/**", "AGENTS.md"]
@@ -48,7 +51,10 @@ jobs:
 
   deploy:
     needs: credentials
-    if: needs.credentials.outputs.ready == 'true' && github.event.action != 'closed'
+    # A manual run deploys staging, which shows the beta branch, so it runs only from beta.
+    if: >-
+      needs.credentials.outputs.ready == 'true' && github.event.action != 'closed'
+      && (github.event_name != 'workflow_dispatch' || github.ref_name == 'beta')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -82,10 +88,10 @@ jobs:
         env:
           # The staging docs say they document the beta branch rather than the last release
           # (website/src/lib/channel.ts). Empty for PR Previews, which keep the release line.
-          ARCHIDOCS_DOCS_CHANNEL: ${{ github.event_name == 'push' && 'beta' || '' }}
+          ARCHIDOCS_DOCS_CHANNEL: ${{ github.event_name != 'pull_request' && 'beta' || '' }}
 
       - name: Deploy staging
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         env:
           ASSETS: ${{ matrix.dir }}/${{ matrix.assets }}
         run: |
