@@ -2,12 +2,12 @@ name: Sites
 
 # Builds the docs site (website/) and the example sites (examples/*) and deploys them
 # to Cloudflare Workers (static assets, configured in each wrangler.jsonc):
-#   - a push to main deploys the docs to next.archidocs.dev; the demos' production
-#     (big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys from a release, in publish.yml
+#   - a push to beta deploys each site to its staging Worker (`--env staging`): beta.archidocs.dev,
+#     beta.big-bank.archidocs.dev and beta.kitchen-sink.archidocs.dev, public but marked noindex
 #   - each PR gets a Worker Preview named pr-<number> per site, listed in one PR comment
 #   - closing the PR deletes its Previews
-# Production (archidocs.dev and the demos) deploys only from a release tag, in publish.yml,
-# because the sites document and show the released CLI.
+# Production (archidocs.dev, big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys only from
+# a stable release tag, in publish.yml, because the sites document and show the released CLI.
 #
 # Needs two repository secrets: CLOUDFLARE_API_TOKEN (Account › Workers Scripts › Edit,
 # Zone › Workers Routes › Edit and Zone › DNS › Edit on archidocs.dev) and
@@ -15,7 +15,7 @@ name: Sites
 # jobs are skipped rather than failed.
 on:
   push:
-    branches: [main]
+    branches: [beta]
     paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**", "docs/**", "AGENTS.md"]
   pull_request:
     types: [opened, synchronize, reopened, closed]
@@ -54,9 +54,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { site: docs, dir: website, build: "docs:build", main: "wrangler deploy --env next" }
-          - { site: big-bank, dir: examples/big-bank, build: "demo:big-bank" }
-          - { site: kitchen-sink, dir: examples/kitchen-sink, build: "demo:kitchen-sink" }
+          # `assets` is the folder each wrangler.jsonc serves, relative to `dir`.
+          - { site: docs, dir: website, build: "docs:build", assets: dist }
+          - { site: big-bank, dir: examples/big-bank, build: "demo:big-bank", assets: site }
+          - { site: kitchen-sink, dir: examples/kitchen-sink, build: "demo:kitchen-sink", assets: site }
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -78,10 +79,20 @@ jobs:
       - if: matrix.site == 'docs'
         run: pnpm exec playwright install --with-deps chromium
       - run: pnpm "${{ matrix.build }}"
+        env:
+          # The staging docs say they document the beta branch rather than the last release
+          # (website/src/lib/channel.ts). Empty for PR Previews, which keep the release line.
+          ARCHIDOCS_DOCS_CHANNEL: ${{ github.event_name == 'push' && 'beta' || '' }}
 
-      - name: Deploy main
-        if: github.event_name == 'push' && matrix.main
-        run: pnpm exec ${{ matrix.main }} --cwd "$DIR"
+      - name: Deploy staging
+        if: github.event_name == 'push'
+        env:
+          ASSETS: ${{ matrix.dir }}/${{ matrix.assets }}
+        run: |
+          # Staging is public but kept out of search: Cloudflare marks only workers.dev Previews
+          # noindex, not Custom Domains. Appended, so a site's own _headers rules still apply.
+          printf '\n/*\n  X-Robots-Tag: noindex\n' >> "$ASSETS/_headers"
+          pnpm exec wrangler deploy --env staging --cwd "$DIR"
 
       - name: Deploy the PR Preview
         if: github.event_name == 'pull_request'

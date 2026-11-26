@@ -1,6 +1,6 @@
 # 02: Staging sites on `beta.` hosts
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Beta channel](../spec.md)
 
@@ -31,8 +31,14 @@ Every push to `beta` deploys the docs and both demos to a persistent staging Wor
 
 ## Acceptance criteria
 
-- [ ] Each `wrangler.jsonc` has an `env.staging` on its `beta.` Custom Domain; `env.next` is gone.
-- [ ] `grep -rn "next\.archidocs" --exclude-dir=node_modules --exclude-dir=.scratch .` finds nothing.
-- [ ] A push to `beta` deploys all three to staging with `X-Robots-Tag: noindex`; a push to `main` deploys nothing from `sites.yml`.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm docs:test` and `pnpm docs:build` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] Each `wrangler.jsonc` has an `env.staging` on its `beta.` Custom Domain; `env.next` is gone.
+- [x] `grep -rn "next\.archidocs" --exclude-dir=node_modules --exclude-dir=.scratch .` finds nothing.
+- [x] A push to `beta` deploys all three to staging with `X-Robots-Tag: noindex`; a push to `main` deploys nothing from `sites.yml`.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm docs:test` and `pnpm docs:build` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.
+
+## Comments
+
+- The footer logic is `website/src/lib/channel.ts` (`releaseLine`, unit-tested in `website/test/channel.test.ts`). A docs build with `ARCHIDOCS_DOCS_CHANNEL=beta` printed "Documents the beta branch at 36e7f31, ahead of the latest release, v1.3.2."; without it the line is unchanged.
+- The docs already ship a `public/_headers`; the staging step appends the `noindex` block, so its `Content-Type` rules still apply. `wrangler deploy --env staging --dry-run` passed for all three sites.
+- "A push to `beta` deploys all three" is checked by reading the workflow; it first runs for real once the `beta` branch exists (ticket 04).
