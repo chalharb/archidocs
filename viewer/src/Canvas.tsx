@@ -342,7 +342,9 @@ function besidePanel(width: number): number {
 }
 
 /**
- * Fits the drawing to the screen when a new Layout arrives, then reports it settled once any transition has finished.
+ * Fits the drawing to the screen when a new Layout arrives for a new fitKey, then reports it settled once any
+ * transition has finished. A new Layout under the same fitKey (a new Bundle swapped in by `archidocs dev`) keeps
+ * the camera where the reader left it.
  * The fit uses the whole canvas unless something is selected (the Element panel then takes the right edge), never
  * zooms past 1:1, and never below MIN_FIT_ZOOM: a View too big for that opens at its start and pans for the rest.
  */
@@ -351,20 +353,27 @@ function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: La
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
   const first = useRef(true);
+  const fitted = useRef<string>(undefined);
   const sized = width > 0 && height > 0;
 
   useEffect(() => {
     if (!sized) return;
     const { layout } = laidOut;
-    const room = selected === null ? width : besidePanel(width);
-    const fit = Math.min(1, (room - 2 * FIT_PAD) / Math.max(layout.width, 1), (height - 2 * FIT_PAD) / Math.max(layout.height, 1));
-    const zoom = Math.max(MIN_FIT_ZOOM, fit);
-    // Centred when the whole drawing fits; otherwise from its top-left corner, where a View starts reading.
-    const x = layout.width * zoom <= room - 2 * FIT_PAD ? (room - layout.width * zoom) / 2 : FIT_PAD;
-    const y = layout.height * zoom <= height - 2 * FIT_PAD ? (height - layout.height * zoom) / 2 : FIT_PAD;
-    const duration = animate && !first.current ? DURATION : 0;
-    first.current = false;
-    void setViewport({ x, y, zoom }, { duration });
+    // Same place, new Bundle: the camera stays where the reader left it.
+    const refit = fitted.current !== fitKey;
+    fitted.current = fitKey;
+    let duration = 0;
+    if (refit) {
+      const room = selected === null ? width : besidePanel(width);
+      const fit = Math.min(1, (room - 2 * FIT_PAD) / Math.max(layout.width, 1), (height - 2 * FIT_PAD) / Math.max(layout.height, 1));
+      const zoom = Math.max(MIN_FIT_ZOOM, fit);
+      // Centred when the whole drawing fits; otherwise from its top-left corner, where a View starts reading.
+      const x = layout.width * zoom <= room - 2 * FIT_PAD ? (room - layout.width * zoom) / 2 : FIT_PAD;
+      const y = layout.height * zoom <= height - 2 * FIT_PAD ? (height - layout.height * zoom) / 2 : FIT_PAD;
+      duration = animate && !first.current ? DURATION : 0;
+      first.current = false;
+      void setViewport({ x, y, zoom }, { duration });
+    }
     // React Flow draws an edge only once both its nodes are measured, so wait for every edge too.
     let frame = 0;
     const whenDrawn = () => {
@@ -376,7 +385,7 @@ function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: La
       window.clearTimeout(timer);
       window.cancelAnimationFrame(frame);
     };
-    // A new Layout or fitKey refits; a resize or a new selection alone keeps the drawing where it is,
+    // A new fitKey refits; a resize or a new selection alone keeps the drawing where it is,
     // so width, height and selected are read, not watched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laidOut, fitKey, sized]);
