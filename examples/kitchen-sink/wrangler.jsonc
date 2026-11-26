@@ -1,7 +1,7 @@
 // The kitchen-sink demo site: a static-assets-only Worker on Cloudflare.
 // Build it first from the repo root with `pnpm demo:kitchen-sink`, which writes ./site.
 // .github/workflows/sites.yml deploys each PR to a Preview and the beta branch to beta.kitchen-sink.archidocs.dev
-// (`--env staging`); .github/workflows/publish.yml deploys production from a stable release tag.
+// (`--env staging`); .github/workflows/publish.yml deploys production on every push to main that passes CI.
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "archidocs-kitchen-sink",

@@ -8,8 +8,8 @@ name: Sites
 #     that touches only ignored paths, or the push that created the branch.
 #   - each PR gets a Worker Preview named pr-<number> per site, listed in one PR comment
 #   - closing the PR deletes its Previews
-# Production (archidocs.dev, big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys only from
-# a stable release tag, in publish.yml, because the sites document and show the released CLI.
+# Production (archidocs.dev, big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys from `main`,
+# which holds only released code, in publish.yml, once CI passes and any release it made is published.
 #
 # Needs two repository secrets: CLOUDFLARE_API_TOKEN (Account › Workers Scripts › Edit,
 # Zone › Workers Routes › Edit and Zone › DNS › Edit on archidocs.dev) and
