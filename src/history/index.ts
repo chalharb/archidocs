@@ -7,7 +7,7 @@ import { BUNDLES_DIR, INDEX_PATH, INDEX_VERSION, isPastBundleFile, pastBundleFil
 import { commitInfo, defaultBranch, firstParentCommitsTouching, gitFileSystem, joinRepo, tagsByCommit, type CommitInfo } from "./git.ts";
 import { pointMessage, resolvePoint } from "./points.ts";
 
-export { migrateBundle, migrations, type Migration } from "./migrate.ts";
+export { migrateBundle, migrations, type Migration } from "../revisions/index.ts";
 export { type CommitInfo } from "./git.ts";
 export { resolvePoint, pointMessage, type PointFailure, type ResolvedPoint } from "./points.ts";
 

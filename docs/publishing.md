@@ -177,7 +177,7 @@ Recommended cache headers:
 | `workspace.bundle.json` | `no-cache` |
 | `index.html` | `no-cache` |
 
-No headers are required. MCP's `--bundle <url>` re-checks `index.json` at most every 60 seconds, with `If-None-Match` or `If-Modified-Since` when the host gives an ETag or `Last-Modified`.
+No headers are required. MCP's `--bundle <url>` re-checks `index.json` and `workspace.bundle.json` at most every 60 seconds, each with `If-None-Match` or `If-Modified-Since` when the host gives an ETag or `Last-Modified`.
 
 ### S3-style buckets
 

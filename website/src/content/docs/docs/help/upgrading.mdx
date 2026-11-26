@@ -32,7 +32,7 @@ Viewer URLs will drop `/#/` in a 1.x release, so the hash form, such as `#/view/
 
 ## What carries no promise
 
-The [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one file the viewer and MCP server read, has no promise. Its format and its `schemaVersion` are internal, and can change in any release. Sites and caches rebuild the Workspace Bundle from git, so a new format needs no action from you. The Changelog says when the format changes.
+The [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one file the viewer and MCP server read, has no promise. Its format and its `schemaVersion` are internal, and can change in any release. Sites and caches rebuild the Workspace Bundle from git, so a new format needs no action from you. The viewer and the MCP server's `--bundle` read a site built by an older Archidocs by migrating its Bundles, but not one built by a newer Archidocs. For that, rebuild the site, or use an `archidocs` at least as new as the one that built it. The Changelog says when the format changes.
 
 ## The Action's tags
 

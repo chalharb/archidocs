@@ -1,9 +1,8 @@
-import { readFile, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
 import type { Issue } from "../core/index.ts";
 import { checkoutAt, type Checkout } from "../workspace/index.ts";
-import { Bundle } from "../schema/bundle.ts";
-import { LATEST_BUNDLE_PATH } from "../revisions/index.ts";
+import type { Bundle } from "../schema/bundle.ts";
+import { openSite, type Site } from "../revisions/index.ts";
+import { siteAt } from "./site.ts";
 
 /** The Bundle the server answers from, with the issues Load found building it. */
 export interface Snapshot {
@@ -36,6 +35,8 @@ export interface BundleSource extends SourceBase {
   readonly kind: "bundle";
   /** The Bundle file's URL or absolute path. */
   readonly location: string;
+  /** The site the Bundle is read from, which also holds its Revision index and past Bundles. */
+  readonly site: Site;
 }
 
 /**
@@ -61,87 +62,35 @@ export function checkoutSource({ root }: { root: string }): CheckoutSource {
   };
 }
 
-/** How long a fetched Bundle is trusted before the source is asked again. */
+/** How long the site's latest Bundle and index are trusted before the site is asked again. */
 const RECHECK_MS = 60_000;
-
-const BUNDLE_FILE = LATEST_BUNDLE_PATH;
 
 /**
  * A published Workspace Bundle, read-only. `location` is a URL or a path,
  * naming either the Bundle file or the site (folder) that holds
- * `workspace.bundle.json`. The source is re-checked at most every 60 s; over
- * HTTP the re-check is a conditional request when the host gave an ETag or
- * Last-Modified, so an unchanged Bundle costs a 304. A source that can't be
- * read, or doesn't hold a valid Bundle, rejects and the tool returns
- * `source_unavailable`; the next call tries again.
+ * `workspace.bundle.json`. The Bundle and the site's Revision index are
+ * re-checked at most every 60 s; over HTTP the re-check is a conditional
+ * request when the host gave an ETag or Last-Modified, so an unchanged file
+ * costs a 304. A Bundle from an older Archidocs is migrated. A source that
+ * can't be read, or doesn't hold a Bundle this version can read, rejects and
+ * the tool returns `source_unavailable`; the next call tries again.
  */
 export function bundleSource({ location }: { location: string }): BundleSource {
-  const url = /^https?:\/\//i.test(location) ? bundleUrl(location) : undefined;
-  let path: string | undefined;
-  let cached: { snapshot: Snapshot; checkedAt: number; etag?: string; lastModified?: string; fileKey?: string } | undefined;
-
-  const fetchUrl = async (href: string) => {
-    const headers: Record<string, string> = { accept: "application/json" };
-    if (cached?.etag) headers["if-none-match"] = cached.etag;
-    if (cached?.lastModified) headers["if-modified-since"] = cached.lastModified;
-    const response = await fetch(href, { headers, cache: "no-store" });
-    if (response.status === 304 && cached) return cached;
-    if (!response.ok) throw new Error(`${href} answered ${response.status} ${response.statusText}`.trim());
-    return {
-      snapshot: parse(await response.text(), href),
-      checkedAt: 0,
-      etag: response.headers.get("etag") ?? undefined,
-      lastModified: response.headers.get("last-modified") ?? undefined,
-    };
-  };
-
-  const readPath = async () => {
-    path ??= await bundlePath(location);
-    const s = await stat(path);
-    const fileKey = `${s.mtimeMs}\0${s.size}`;
-    if (cached?.fileKey === fileKey) return cached;
-    return { snapshot: parse(await readFile(path, "utf8"), path), checkedAt: 0, fileKey };
-  };
-
+  const { reader, bundle } = siteAt(location);
+  const site = openSite(reader, { recheckMs: RECHECK_MS, bundle });
+  let held: Snapshot | undefined;
   return {
     kind: "bundle",
+    site,
     get location() {
-      return url ?? path ?? resolve(location);
+      return site.location;
     },
     writesAllowed: false,
     async snapshot() {
-      const now = Date.now();
-      if (cached && now - cached.checkedAt < RECHECK_MS) return cached.snapshot;
-      const next = url ? await fetchUrl(url) : await readPath();
-      cached = { ...next, checkedAt: now };
-      return cached.snapshot;
+      const latest = await site.latest();
+      // A Bundle is only ever published from a Workspace with no errors; check's warnings aren't kept in it.
+      if (held?.bundle !== latest) held = { bundle: latest, issues: [] };
+      return held;
     },
   };
-}
-
-/** A site root URL becomes its `workspace.bundle.json`; a URL to a `.json` file is used as given. */
-function bundleUrl(location: string): string {
-  const url = new URL(location);
-  if (url.pathname.endsWith(".json")) return url.href;
-  if (!url.pathname.endsWith("/")) url.pathname += "/";
-  return new URL(BUNDLE_FILE, url).href;
-}
-
-/** A folder becomes its `workspace.bundle.json`; a file is used as given. */
-async function bundlePath(location: string): Promise<string> {
-  const path = resolve(location);
-  return (await stat(path)).isDirectory() ? join(path, BUNDLE_FILE) : path;
-}
-
-function parse(text: string, from: string): Snapshot {
-  let json: unknown;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new Error(`${from} is not JSON.`);
-  }
-  const bundle = Bundle.safeParse(json);
-  if (!bundle.success) throw new Error(`${from} is not a Workspace Bundle this version can read.`);
-  // A Bundle is only ever published from a Workspace with no errors; check's warnings aren't kept in it.
-  return { bundle: bundle.data, issues: [] };
 }
