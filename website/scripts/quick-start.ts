@@ -24,8 +24,8 @@ export const QUICK_START: Walkthrough = {
   name: "quick start",
   page: "website/src/content/docs/docs/start/quick-start.mdx",
   example: "examples/quick-start/",
-  // Installing from npm, and the dev server.
-  skipped: [/^npm install --global archidocs$/, /^archidocs dev$/],
+  // The dev server.
+  skipped: [/^archidocs dev$/],
   // The page starts in the repo that will hold the Workspace: here, a new and empty one.
   before: ["git init --quiet shop", "cd shop"],
 };

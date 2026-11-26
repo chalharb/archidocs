@@ -34,21 +34,15 @@ The questions it's built to answer:
 
 From an empty repo to your first System in the viewer, in about five minutes. Archidocs needs Node.js 22.18 or later.
 
-**1. Install the CLI.** With pnpm, use `pnpm add --global archidocs`. To install nothing, put `npx` before each command, as in `npx archidocs check`.
+**1. Create a Workspace.** There is nothing to install: `npx` runs the CLI. In the repo that will hold the Workspace (a new, empty one is fine):
 
 ```bash
-npm install --global archidocs
+npx archidocs init
 ```
 
-**2. Create a Workspace.** In the repo that will hold it (a new, empty one is fine):
+This writes a starter `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. The skill and the MCP command it prints use the same `npx` form, so agents never need a global install. To keep a version in the repo, run `npm install --save-dev archidocs` first; to use a bare `archidocs` anywhere, run `npm install --global archidocs`. Run `init` again after either, and it updates the commands it wrote.
 
-```bash
-archidocs init
-```
-
-This writes a starter `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents.
-
-**3. Add three files.** Replace `archidocs/workspace.yaml`, which defines Teams and Environments, with:
+**2. Add three files.** Replace `archidocs/workspace.yaml`, which defines Teams and Environments, with:
 
 ```yaml
 teams:
@@ -92,20 +86,20 @@ systems:
         technology: Node.js
 ```
 
-**4. Check it.**
+**3. Check it.**
 
 ```bash
-archidocs check
+npx archidocs check
 ```
 
 ```text
 0 errors, 0 warnings
 ```
 
-**5. Open the viewer.**
+**4. Open the viewer.**
 
 ```bash
-archidocs dev
+npx archidocs dev
 ```
 
 Open <http://localhost:4321>. The viewer starts on the C2 Landscape, which shows the Shopper and the Online Shop; select the arrow button on the Online Shop box to see the two Services inside it. The viewer reloads as you edit the files.

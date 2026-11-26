@@ -24,7 +24,7 @@ describe("get_authoring_guide", () => {
     const { call } = await connect(validWorkspace);
     const { text } = (await call("get_authoring_guide")).structuredContent as { text: string };
     const frontmatter = (s: string) => /^---\n[\s\S]*?\n---\n/.exec(s)![0];
-    expect(frontmatter(skillStub)).toBe(frontmatter(text));
+    expect(frontmatter(skillStub("archidocs"))).toBe(frontmatter(text));
   });
 
   it("returns one topic's reference file", async () => {

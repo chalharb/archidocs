@@ -71,7 +71,8 @@ async function main(argv: string[], io: Io): Promise<number> {
     if (values.workspace !== undefined && !values.skill) throw new UsageError("--workspace only applies with --skill; without it, init uses or creates this repo's Workspace.");
     const cwd = await realpath(io.cwd);
     const repoRoot = (await gitTopLevel(cwd)) ?? cwd;
-    const lines = await init({ repoRoot, cwd, skillOnly: values.skill, ...(values.workspace === undefined ? {} : { workspace: values.workspace }) });
+    const { version } = JSON.parse(await readFile(PACKAGE_JSON, "utf8")) as { version: string };
+    const lines = await init({ repoRoot, cwd, skillOnly: values.skill, env: io.env, version, ...(values.workspace === undefined ? {} : { workspace: values.workspace }) });
     io.stdout.write(lines.join("\n") + "\n");
     return OK;
   }
