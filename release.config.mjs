@@ -1,5 +1,5 @@
-// semantic-release, run by .github/workflows/publish.yml on every push to `main` or `beta`
-// (docs/adr/0002-beta-branch-with-semantic-release.md).
+// semantic-release, run by .github/workflows/publish.yml once CI passes for a push to `main` or `beta`
+// (docs/adr/0002-beta-branch-with-semantic-release.md, docs/adr/0003-release-gated-on-ci.md).
 //
 // - `main` releases X.Y.Z to the npm `latest` dist-tag, writes CHANGELOG.md and commits it with
 //   package.json as `chore(release): X.Y.Z [skip ci]`, so the tag (and the `v1` Action tag the

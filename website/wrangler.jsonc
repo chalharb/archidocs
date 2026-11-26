@@ -1,7 +1,7 @@
 // The docs site, archidocs.dev: a static-assets-only Worker on Cloudflare.
 // Build it first from the repo root with `pnpm docs:build`, which writes ./dist.
 // .github/workflows/sites.yml deploys each PR to a Preview and the beta branch to beta.archidocs.dev
-// (`--env staging`); .github/workflows/publish.yml deploys production from a stable release tag.
+// (`--env staging`); .github/workflows/publish.yml deploys production on every push to main that passes CI.
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "archidocs-docs",

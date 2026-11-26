@@ -1,38 +1,48 @@
 name: Release
 
-# Every push to `main` or `beta` runs semantic-release (release.config.mjs; why in
-# docs/adr/0002-beta-branch-with-semantic-release.md). It reads the Conventional Commit titles
-# since the branch's last release (fix → patch, feat → minor, `!` or BREAKING CHANGE → major) and,
-# if any calls for one, releases:
+# Runs when CI passes for a push to `main` or `beta`, on the commit CI tested; why in
+# docs/adr/0003-release-gated-on-ci.md. CI is the gate, so this workflow only builds and releases.
+# semantic-release (release.config.mjs; why in docs/adr/0002-beta-branch-with-semantic-release.md)
+# reads the Conventional Commit titles since the branch's last release (fix → patch, feat → minor,
+# `!` or BREAKING CHANGE → major) and, if any calls for one, releases:
 #   - `beta`: X.Y.Z-beta.N to the npm `beta` dist-tag, a vX.Y.Z-beta.N tag and a GitHub
 #     prerelease. Nothing is committed back, `v1` stays put and no production site deploys.
 #   - `main`: X.Y.Z to `latest`, CHANGELOG.md and package.json committed back as
 #     `chore(release): X.Y.Z [skip ci]`, the vX.Y.Z tag on that commit and a GitHub Release.
 #     Once the published package passes the smoke check, `v1` moves to it (the docs tell people to
-#     use the Action as `chalharb/archidocs@v1` and the GitLab template from `v1`), the docs and
-#     demo sites deploy to production, and a PR merges `main` back into `beta`.
+#     use the Action as `chalharb/archidocs@v1` and the GitLab template from `v1`) and a PR merges
+#     `main` back into `beta`.
+# Every passing push to `main` deploys the docs and demo sites to production, from the release tag
+# when one was published (after its smoke check), otherwise from the commit CI tested.
+#
+# A workflow_run workflow runs from the default branch's copy of this file (`beta`), and
+# `github.ref` is always `refs/heads/beta`, even for `main`: the branch being released is
+# `github.event.workflow_run.head_branch`.
 #
 # npm authenticates with trusted publishing (OIDC), so the repo holds no npm token. The release job
-# runs in the `npm` environment, which only `main` and `beta` may deploy to; on npmjs.com the
-# archidocs Trusted Publisher names repository chalharb/archidocs, workflow publish.yml and that
-# environment.
+# runs in the `npm` environment; on npmjs.com the archidocs Trusted Publisher names repository
+# chalharb/archidocs, workflow publish.yml and that environment.
 #
 # RELEASE_TOKEN (a GitHub App token or fine-grained PAT with contents and pull-requests write) is
 # required: it pushes the release commit past `main`'s ruleset, and PRs it opens trigger CI,
 # which GITHUB_TOKEN's don't.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main, beta]
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
 jobs:
   release:
+    # Only a push that passed CI: a PR's CI run (even one from `main`, the back-merge) never releases.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     environment: npm
     permissions:
@@ -40,7 +50,11 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write # OIDC for trusted publishing and provenance
+    env:
+      BRANCH: ${{ github.event.workflow_run.head_branch }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
     outputs:
+      current: ${{ steps.current.outputs.current }}
       published: ${{ steps.release.outputs.published }}
       version: ${{ steps.release.outputs.version }}
     steps:
@@ -54,28 +68,41 @@ jobs:
           fi
       - uses: actions/checkout@v7
         with:
-          # semantic-release reads every tag and commit since the last release. `pnpm typecheck` runs
-          # `astro check`, which builds the MCP tool pages; their examples read the git history too.
+          # The branch, not the bare commit: semantic-release releases a branch, and pushes to it.
+          ref: ${{ github.event.workflow_run.head_branch }}
+          # semantic-release reads every tag and commit since the last release.
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN }}
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - name: Check the branch is still at the commit CI tested
+        id: current
+        run: |
+          if [ "$(git rev-parse HEAD)" = "$SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$BRANCH has moved on since ${SHA:0:7}; the CI run for its newer commit releases both."
+          fi
+      - if: steps.current.outputs.current == 'true'
+        uses: pnpm/action-setup@v6
+      - if: steps.current.outputs.current == 'true'
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
+      - if: steps.current.outputs.current == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.current.outputs.current == 'true'
+        run: pnpm build
       # semantic-release fetches tags without --force, so a floating major tag (v1) that moved on the
       # remote since checkout fails the run with "would clobber existing tag". Dropping the local
       # copies lets that fetch recreate them.
       - name: Drop local floating major tags
+        if: steps.current.outputs.current == 'true'
         run: git tag -l | grep -E '^v[0-9]+$' | xargs -r git tag -d
       - id: release
-        run: pnpm exec semantic-release
+        if: steps.current.outputs.current == 'true'
+        # semantic-release (through env-ci) and release.config.mjs read the branch from GITHUB_REF and
+        # GITHUB_REF_NAME, which say `beta` on every workflow_run: they're set here to the branch CI tested.
+        run: GITHUB_REF="refs/heads/$BRANCH" GITHUB_REF_NAME="$BRANCH" pnpm exec semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
@@ -108,7 +135,7 @@ jobs:
   major-tag:
     # Moved only after the smoke check passed, so `@v1` never points at a release that doesn't install.
     needs: [release, smoke]
-    if: github.ref_name == 'main'
+    if: github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -126,11 +153,15 @@ jobs:
           git push --force origin "refs/tags/$major"
 
   sites:
-    # The docs site documents the released CLI and the demos show its viewer, so production deploys
-    # only here, from the release tag. Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see
-    # sites.yml); each wrangler.jsonc holds its Worker and Custom Domains.
+    # Every passing push to `main` deploys production. After a release, it waits for the smoke check
+    # and deploys the release tag, whose commit carries the new version; otherwise it deploys the
+    # commit CI tested. Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see sites.yml); each
+    # wrangler.jsonc holds its Worker and Custom Domains.
     needs: [release, smoke]
-    if: github.ref_name == 'main'
+    if: >-
+      always() && github.event.workflow_run.head_branch == 'main' && needs.release.result == 'success'
+      && needs.release.outputs.current == 'true'
+      && (needs.smoke.result == 'success' || (needs.smoke.result == 'skipped' && needs.release.outputs.published != 'true'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -156,7 +187,7 @@ jobs:
       - if: steps.credentials.outputs.ready == 'true'
         uses: actions/checkout@v7
         with:
-          ref: v${{ needs.release.outputs.version }}
+          ref: ${{ needs.release.outputs.published == 'true' && format('v{0}', needs.release.outputs.version) || github.event.workflow_run.head_sha }}
           # Full history: each docs page's "Last updated" date is the date of its file's last commit.
           fetch-depth: 0
       - if: steps.credentials.outputs.ready == 'true'
@@ -180,7 +211,7 @@ jobs:
     # `main` now has commits `beta` lacks (the release commit, and any hotfix). A PR brings them over;
     # it must be merged with a merge commit, or the next promotion from `beta` conflicts.
     needs: [release, smoke]
-    if: github.ref_name == 'main'
+    if: github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Open a PR from main into beta
