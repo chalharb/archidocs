@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
+import { run } from "../../src/cli/run.ts";
 import { commandList, NO_WORKSPACE, parseCommandLine, type CommandDefinition } from "../../src/cli/commands.ts";
 import type { Files } from "../../src/core/files.ts";
 import { ruleAreas, rules } from "../../src/core/rules.ts";
@@ -87,10 +88,15 @@ async function cliIssueLines(files: Files): Promise<string[]> {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), text);
   }
-  const { stdout } = await promisify(execFile)(process.execPath, [repoPath("src/cli/main.ts"), "check"], { cwd: root }).catch((error: { stdout: string; code: number }) => {
-    if (error.code !== 1) throw error;
-    return error;
+  let stdout = "";
+  let stderr = "";
+  const code = await run(["check"], {
+    cwd: root,
+    env: {},
+    stdout: { write: (chunk: string) => (stdout += chunk) },
+    stderr: { write: (chunk: string) => (stderr += chunk) },
   });
+  if (code !== 0 && code !== 1) throw new Error(`archidocs check exited ${code}: ${stderr}`);
   // The issue lines come first; the count ("1 error, 0 warnings") ends them.
   const lines = stdout.split("\n");
   return lines.slice(0, lines.findIndex((line) => /^\d+ errors?, \d+ warnings?$/.test(line))).filter((line) => line !== "");

@@ -2,14 +2,14 @@
  * The example Workspaces in `examples/*` and their diagrams: every Saved View
  * of a demo, and the Generated Views named by a Workspace that pages show
  * but that is not deployed. Diagrams are exported at build time with the
- * repo's own CLI, in both themes, and served from
+ * repo's own `export` command, in both themes, and served from
  * `/diagrams/<example>/<theme>/<file>.svg`; they are never committed.
  */
-import { execFile } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
+import { exportViews, type ExportedFile, type ExportOptions } from "../../../src/commands/index.ts";
+import { findCheckout } from "../../../src/workspace/index.ts";
 import { repoPath, VERSION } from "./repo.ts";
 
 /** A Workspace in `examples/` that pages show diagrams of. */
@@ -75,7 +75,6 @@ export const isDemo = (source: DiagramSource): source is Example => "demo" in so
 /** Every exported diagram: `<example>/<theme>/<file>` → SVG text. */
 export type Diagrams = ReadonlyMap<string, string>;
 
-const run = promisify(execFile);
 let exported: Promise<Diagrams> | undefined;
 
 /** Exports every Workspace's Saved Views, and the Generated Views it names, in both themes, once per build. */
@@ -84,8 +83,13 @@ export function exportDiagrams(): Promise<Diagrams> {
   return exported;
 }
 
+/**
+ * Runs every example × theme at once, in this process. That is safe: the
+ * shared ELK instance matches each layout's reply by its own id and lays out
+ * one graph at a time in-thread, and exporting SVG reads no cache (no history,
+ * no PNG renderer).
+ */
 async function exportAll(): Promise<Diagrams> {
-  const cli = repoPath("src/cli/main.ts");
   const dir = await mkdtemp(join(tmpdir(), "archidocs-diagrams-"));
   const diagrams = new Map<string, string>();
   try {
@@ -93,14 +97,22 @@ async function exportAll(): Promise<Diagrams> {
       DIAGRAM_SOURCES.flatMap((example) =>
         THEMES.map(async (theme) => {
           const out = join(dir, example.slug, theme);
-          const cwd = repoPath(`examples/${example.slug}/`);
-          const style = ["--theme", theme, "--label", diagramLabel(example)];
-          await run(process.execPath, [cli, "export", "--all-saved", "--out", out, ...style], { cwd });
-          for (const view of example.views ?? []) {
-            await run(process.execPath, [cli, "export", view, "--out", join(out, `${diagramFile(view)}.svg`), ...style], { cwd });
+          // Found from the example's folder as the CLI finds it: the folder or its archidocs/.
+          const checkout = await findCheckout(repoPath(`examples/${example.slug}/`));
+          if (!checkout) throw new Error(`examples/${example.slug}/ holds no Workspace.`);
+          const style = { format: "svg", theme, label: diagramLabel(example), out } as const;
+          const runs: Pick<ExportOptions, "views" | "file">[] = [
+            { views: "all-saved" },
+            ...(example.views ?? []).map((view) => ({ views: [view], file: join(out, `${diagramFile(view)}.svg`) })),
+          ];
+          const files: ExportedFile[] = [];
+          for (const options of runs) {
+            const result = await exportViews(checkout, { ...style, ...options });
+            if (result.kind !== "written") throw new Error(`Exporting ${example.slug} (${theme}) failed: ${JSON.stringify(result)}`);
+            files.push(...result.files);
           }
-          for (const file of (await readdir(out)).filter((f) => f.endsWith(".svg")).sort()) {
-            diagrams.set(`${example.slug}/${theme}/${file.slice(0, -".svg".length)}`, await readFile(join(out, file), "utf8"));
+          for (const name of files.map(({ view }) => diagramFile(view)).sort()) {
+            diagrams.set(`${example.slug}/${theme}/${name}`, await readFile(join(out, `${name}.svg`), "utf8"));
           }
         }),
       ),
