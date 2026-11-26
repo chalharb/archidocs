@@ -14,6 +14,7 @@ import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
 import { HOME, formatPlace, isPlaceHash, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
+import { acceptLiveBundles } from "./live.ts";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
 import { SITE_FILE_PATH, type RevisionEntry } from "../../src/revisions/index.ts";
 import { loadTimeline, pointLabel, site, type Timeline } from "./revisions.ts";
@@ -41,6 +42,8 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error
       })
       .catch((e: unknown) => setState({ error: e instanceof Error ? e.message : String(e) }));
   }, []);
+  // Under `archidocs dev`, a new Bundle replaces the latest in place.
+  useEffect(() => acceptLiveBundles((latest) => setState((s) => (s.latest ? { ...s, latest } : s))), []);
   return state;
 }
 
@@ -99,6 +102,12 @@ interface ScreenProps {
   loading: boolean;
 }
 
+/**
+ * The place each resolved View on screen was resolved for, bar the Bundle, so
+ * a Layout of a new Bundle at the same place keeps the camera.
+ */
+const resolvedFor = new WeakMap<object, string>();
+
 function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenProps) {
   const place = usePlace();
   const openKey = place.open.join(",");
@@ -114,6 +123,9 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   /** The direction on screen: the one the viewer turned it to, else the View's own. */
   const direction = place.direction ?? view?.direction;
   const { laidOut, error } = useLayout(view, direction);
+  if (view) resolvedFor.set(view, `${place.view}|${openKey}|${place.at ?? ""}|${place.vs ?? ""}`);
+  // Keyed by what its Layout was made for, not the place now, so a Layout still in flight never takes the new place's key.
+  const fitKey = laidOut && `${resolvedFor.get(laidOut.view) ?? ""}|${laidOut.layout.direction}`;
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
   const ready = !loading && laidOut !== undefined && settled === laidOut && laidOut.view === view && laidOut.layout.direction === direction;
@@ -346,7 +358,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               laidOut={laidOut}
               selected={place.selected}
               open={place.open}
-              fitKey={`${place.view}|${direction}`}
+              fitKey={fitKey!}
               lensed={lensed}
               picks={place.picks}
               ring={place.lens !== null && "team" in place.lens}
