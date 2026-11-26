@@ -1,15 +1,21 @@
 # 12: Drilling down from C1 goes one level
 
-Status: needs-triage
+Status: ready-for-agent
 Blocked by: 11
 
 ## Problem
 
-On the C1 Landscape, the arrow tile on Sitecore XM Platform opens `#/view/c2/sitecore-xm:sitecore`, the System's own View, skipping the C2 Landscape. The breadcrumb then reads `C1 → C2 (Sitecore XM)` with no Landscape between.
+On the C1 Landscape, the arrow tile on Sitecore XM Platform opens `#/view/c2/sitecore-xm:sitecore`, the System's own View, skipping the C2 Landscape.
 
-## Notes
+## Decision
 
-The arrow tile opens a box's own View by design (Key: "opens the box's own View"); for a System that's `c2/<system>`. Whether that is a skip depends on 11:
+Drill-down goes one rung at a time: C1 → C2 Landscape → the System's View → C3.
 
-- If C2 Landscape opens every System, the arrow from C1 could open C2 Landscape with that System selected, and the arrow there opens `c2/<system>`.
-- If the C2 Landscape is dropped, today's behaviour is already right and this closes.
+- On the **C1 Landscape**, a System's arrow tile (and double-click) opens the **C2 Landscape** with that System selected and the camera on it.
+- On the **C2 Landscape**, a System's arrow tile opens its own View, `c2/<system>`, as today.
+- Elsewhere the arrow tile is unchanged. A Person or external Element on C1 has no arrow tile change.
+- Update the Key's arrow-tile wording if it no longer reads right ("opens the box's own View").
+
+## Tests
+
+- e2e: from `#/view/c1`, the arrow tile on a System lands on `#/view/c2?sel=<system>` with the System in view; from there, its arrow tile lands on `#/view/c2/<system>`.

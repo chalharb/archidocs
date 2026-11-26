@@ -1,19 +1,22 @@
 # 09: Drop the `#` from viewer URLs
 
-Status: needs-triage
+Status: wontfix
 
 ## Request
 
 `http://127.0.0.1:4321/#/view/c2` → `http://127.0.0.1:4321/view/c2`.
 
-## Why it's a hash today
+## Decision: keep hash routing
 
-A deliberate v1 choice: `.scratch/archidocs-v1/spec.md` story 123, "hash routing and relative URLs, so that the site works under any base path with no server rewrites". A built site is static files on any host (GitHub Pages, Cloudflare, S3, a CI artifact), and a path route 404s on reload or deep link unless the host rewrites to `index.html`.
+Vite's history-mode support lives in Vite's own dev and preview servers, which send `index.html` for any unknown path. A built Archidocs site is plain files, so a path route depends on the host:
 
-## Options
+- GitHub Pages (what the Action deploys to) and GitLab Pages have no rewrites; the `404.html` workaround serves every deep link with a 404 status.
+- S3-style buckets under a prefix need a CloudFront error-page rule.
+- The PR preview artifact is unzipped and opened from `file://`, where path routing cannot work.
+- The viewer is built once and shipped in the npm package with `base: "./"`, so it works under any prefix. With path routing, `/repo/view/c2/x` resolves `./assets/…` against the wrong folder, so the base would need to be known at build time or detected at runtime, and `archidocs build` doesn't know where the site will be deployed.
 
-- Keep the hash (wontfix).
-- Path routing in `archidocs dev` only (it's our server, so it can rewrite) while built sites keep the hash. Two URL shapes for one link is a cost: copied dev links wouldn't work on the site.
-- Path routing everywhere, plus a `404.html` copy of `index.html` and documented rewrite rules per host. Breaks every existing deep link unless the viewer also accepts the old `#/view/…` form and redirects.
+`docs/publishing.md` promises "any static host … under any base path, with no rewrites" (v1 spec story 123). One URL shape that works everywhere is worth more than a cleaner URL.
 
-If this goes ahead, record it as an ADR superseding story 123.
+## If revisited
+
+An opt-in `archidocs build --routing path` (writes `404.html` and a `<base>` tag) and path URLs in `archidocs dev`, with the hash staying the default and the viewer accepting both forms.
