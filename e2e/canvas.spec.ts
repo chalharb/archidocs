@@ -152,6 +152,24 @@ test.describe("edge hover", () => {
     await expect(node(page, "shop:cart")).toHaveAttribute("aria-selected", "true");
   });
 
+  test("an edge inside open boxes can be hovered: they never cover it", async ({ page }) => {
+    await open(page, "#/view/deployment/prod");
+    // Every edge has a point along its line where the pointer finds its hover target, not a box drawn over it.
+    const reachable = await page.locator(".arc-edge-hit").evaluateAll((paths) =>
+      (paths as SVGPathElement[]).map((p) => {
+        const length = p.getTotalLength();
+        const found = [0.2, 0.35, 0.5, 0.65, 0.8].some((f) => {
+          const at = p.getPointAtLength(length * f);
+          const { x, y } = new DOMPoint(at.x, at.y).matrixTransform(p.getScreenCTM()!);
+          return x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && document.elementFromPoint(x, y) === p;
+        });
+        return { id: p.getAttribute("data-edge-hit")!, inside: document.querySelector(`[data-node="${p.getAttribute("data-edge-hit")!.split(">")[0]}"]`)?.getAttribute("data-parent") !== "", found };
+      }),
+    );
+    expect(reachable.filter((e) => e.inside).length).toBeGreaterThan(0);
+    expect(reachable.filter((e) => !e.found).map((e) => e.id)).toEqual([]);
+  });
+
   test("the tooltip names the two ends and what the Relationship says", async ({ page }) => {
     await open(page, "#/view/c2?open=shop:checkout");
     const titles = await page.locator(".arc-edge-hit title").allTextContents();

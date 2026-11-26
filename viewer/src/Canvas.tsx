@@ -160,6 +160,17 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
   const hovered = useMemo(() => layout.edges.find((e) => `${e.from}>${e.to}` === hoveredId), [layout, hoveredId]);
   const onHover = useCallback((id: string, on: boolean) => setHoveredId((current) => (on ? id : current === id ? null : current)), []);
 
+  // Stacking, bottom to top: open boxes by depth, then every edge, then the boxes with nothing open inside them.
+  // Edges sit over the open boxes they cross, so those never take the pointer from an edge's hover target.
+  const edgeZ = useMemo(() => {
+    const byId = new Map(view.nodes.map((n) => [n.id, n]));
+    const depth = (id: string): number => {
+      const parent = byId.get(id)?.parent ?? null;
+      return parent === null ? 0 : 1 + depth(parent);
+    };
+    return 1 + Math.max(0, ...view.nodes.map((n) => depth(n.id)));
+  }, [view]);
+
   const nodes = useMemo<Node<BoxData>[]>(() => {
     const byId = new Map(view.nodes.map((n) => [n.id, n]));
     const containers = new Set(view.nodes.map((n) => n.parent).filter((p) => p !== null));
@@ -183,7 +194,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         style: { width: box.width, height: box.height },
         // A rebuilt node without `measured` loses its handle bounds, and React Flow hides its edges until it measures it again.
         measured: { width: box.width, height: box.height },
-        zIndex: depth(box.id),
+        zIndex: containers.has(box.id) ? depth(box.id) : edgeZ + 1,
         selected: box.id === selected,
         draggable: false,
         connectable: false,
@@ -206,7 +217,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         },
       };
     });
-  }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks, hovered]);
+  }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks, hovered, edgeZ]);
 
   const edgeChanges = useMemo(() => new Map(view.edges.map((e) => [`${e.from}>${e.to}`, e.change])), [view]);
   const tooltips = useMemo(() => {
@@ -222,6 +233,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         type: "route",
         markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
         selectable: false,
+        zIndex: edgeZ,
         data: {
           points: e.points,
           faded: selected !== null && e.from !== selected && e.to !== selected,
@@ -236,7 +248,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
     );
     // The hovered edge draws last, over the others.
     return hovered ? [...drawn.filter((e) => e.data!.lit !== true), ...drawn.filter((e) => e.data!.lit === true)] : drawn;
-  }, [layout, selected, litEdges, edgeChanges, tooltips, hovered, onHover]);
+  }, [layout, selected, litEdges, edgeChanges, tooltips, hovered, onHover, edgeZ]);
 
   return (
     <ReactFlow
