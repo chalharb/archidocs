@@ -131,7 +131,7 @@ const DIRECTION_SHORT: Record<Direction, string> = { LR: "→", RL: "←", TB: "
 export const COMPACT_TOOLS = "(max-width: 1279px)";
 
 /** Export: the whole View, or the picks once there are any, as SVG or PNG. */
-function ExportMenu({ picks, onExport }: { picks: number; onExport: LocationBarProps["onExport"] }) {
+export function ExportMenu({ picks, onExport }: { picks: number; onExport: LocationBarProps["onExport"] }) {
   const [open, setOpen] = useState(false);
   const root = useDismiss(open, () => setOpen(false));
   const items: (readonly [string, "view" | "picks", ExportFormat])[] = [
