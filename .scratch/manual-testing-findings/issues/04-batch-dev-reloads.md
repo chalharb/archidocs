@@ -1,6 +1,6 @@
 # 04: Batch dev reloads during agent edits
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

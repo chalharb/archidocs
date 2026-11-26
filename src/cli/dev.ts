@@ -13,6 +13,14 @@ export const DEFAULT_DEV_PORT = 4321;
 /** The path the page listens on for reloads; under `__archidocs/` so it can't clash with a site file. */
 const EVENTS = "/__archidocs/events";
 
+/**
+ * How long the Workspace must be quiet before it is read again, so an agent's
+ * run of MCP edits, seconds apart, makes one new Bundle, not one per edit.
+ */
+export const QUIET_MS = 1000;
+/** The longest a burst of changes holds a rebuild back, so a long agent session still shows progress. */
+export const MAX_WAIT_MS = 5000;
+
 export interface DevOptions {
   /** The Workspace to serve. Its root is watched for changes, and its name is how the viewer's exports name the Workspace, as `site.json` does in a built site. */
   checkout: Checkout;
@@ -45,14 +53,19 @@ const TYPES: Record<string, string> = {
 };
 
 /**
- * The page's side of dev mode: reload on a new Bundle (hash routing keeps the
- * place), and show the Workspace's errors in a banner while they last.
+ * The page's side of dev mode: on a new Bundle, have the viewer swap it in
+ * place (keeping the camera, selection and open boxes), or reload the page
+ * when it can't (hash routing keeps the place); and show the Workspace's
+ * errors in a banner while they last.
  */
 const CLIENT = `<script>
 (() => {
   let banner;
   const events = new EventSource(".${EVENTS}");
-  events.addEventListener("reload", () => location.reload());
+  events.addEventListener("reload", async () => {
+    const swapped = await Promise.resolve(window.__archidocsSwap?.()).catch(() => false);
+    if (!swapped) location.reload();
+  });
   events.addEventListener("errors", (e) => {
     banner ??= Object.assign(document.body.appendChild(document.createElement("pre")), { id: "archidocs-dev-errors" });
     banner.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;margin:0;max-height:40vh;overflow:auto;padding:12px 14px;border-radius:8px;background:#2b0f12;color:#ffd7d9;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;box-shadow:0 6px 24px rgba(0,0,0,.35)";
@@ -98,17 +111,23 @@ export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port =
     } else if (hadErrors) broadcast("ok");
   };
 
-  // Several saves in a burst (an editor's write-then-rename, a git checkout) make one reload.
+  // Changes in a burst (an editor's write-then-rename, a git checkout, an agent's
+  // run of MCP edits) make one rebuild once the Workspace has been quiet for
+  // QUIET_MS, or MAX_WAIT_MS after the burst's first change at the latest.
   let timer: NodeJS.Timeout | undefined;
+  let burstStart: number | undefined;
   let running: Promise<void> = Promise.resolve();
   const schedule = () => {
     clearTimeout(timer);
+    burstStart ??= Date.now();
+    const wait = Math.max(0, Math.min(QUIET_MS, burstStart + MAX_WAIT_MS - Date.now()));
     timer = setTimeout(() => {
+      burstStart = undefined;
       running = running.then(rebuild).catch((e: unknown) => {
         errors = e instanceof Error ? e.message : String(e);
         broadcast("errors", errors);
       });
-    }, 80);
+    }, wait);
   };
 
   await rebuild();
