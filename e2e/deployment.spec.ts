@@ -28,6 +28,14 @@ test.describe("Solutions Architect: where is a Service deployed?", () => {
     for (let i = 0; i + 1 < chain.length; i++) expect(inside(boxes.get(chain[i]!)!, boxes.get(chain[i + 1]!)!), `${chain[i]} in ${chain[i + 1]}`).toBe(true);
     await expect(node(page, "platform:eks-prod")).toContainText("cluster");
 
+    // A Target's header shows its kind alone, and each nesting level sits on a ground one step off its parent's.
+    await expect(node(page, "platform:eks-prod").getByTestId("sublabel")).toHaveText("cluster");
+    await expect(node(page, "platform:eks-prod")).not.toContainText(/deployment target/i);
+    await expect(node(page, "platform:aws-eu")).toHaveClass(/\barc-target-step-1\b/);
+    await expect(node(page, "platform:eks-prod")).toHaveClass(/\barc-target-step-2\b/);
+    const ground = (id: string) => node(page, id).evaluate((e) => getComputedStyle(e).backgroundColor);
+    expect(await ground("platform:eks-prod")).not.toBe(await ground("platform:aws-eu"));
+
     // Selecting the Deployment shows its Service, with the URL for that Environment.
     await node(page, "shop:cart@platform:eks-prod").click();
     await expect(panel(page).getByRole("heading", { name: "Cart" })).toBeVisible();

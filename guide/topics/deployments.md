@@ -6,7 +6,8 @@ A **Deployment Target** is where Services run (a region, a cluster in it, a name
 
 1. **Environment.** `list_environments`. Environments are defined once in `workspace.yaml`; add a missing one with `upsert_environment(id, fields: {name})` only after the user confirms it, because every Project shares it.
 2. **Targets.** `upsert_target(project, id, fields, parent?, file?)`:
-   - `fields`: `name`, `kind` (required: `region`, `cluster`, `namespace`, `platform`, ...), `description`, `owner`, `tags`, `links`.
+   - `fields`: `name`, `kind` (required), `description`, `owner`, `tags`, `links`.
+   - `kind` is printed as written in the Target's header, so use a short form: `region`, `az`, `vnet`, `snet`, `vm`, `aks`, `ns`, `asp`. Not `availability-zone`, `subnet` or `app-service-plan`.
    - `parent` nests it in the parent's file. A Target can't be moved; remove it and add it again.
    - Target ids share the Project's id namespace with Elements. Reuse a Target from another Project as `project:id`, resolved with `search_elements` or `get_deployments`.
 3. **Deployment.** `upsert_deployment(project, service, environment, target, fields, file?)`:
@@ -32,7 +33,7 @@ targets:
     targets:
       eks-main:
         name: Main EKS
-        kind: cluster
+        kind: eks
 deployments:
   - service: cart
     environment: prod

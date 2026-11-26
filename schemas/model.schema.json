@@ -671,7 +671,7 @@
         },
         "kind": {
           "type": "string",
-          "description": "What the Deployment Target is, in a word you choose, such as `region`, `cluster`, `namespace` or `platform`."
+          "description": "What the Deployment Target is, in a short word you choose, printed as written in its header: prefer short forms such as `region`, `az`, `vnet`, `snet`, `vm`, `aks`, `ns` or `asp` over long names like `availability-zone` or `subnet`."
         },
         "description": {
           "description": "What the Deployment Target is, in a sentence or two.",

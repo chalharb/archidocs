@@ -140,7 +140,7 @@ export const System = z
 
 const targetFields = {
   name: z.string().describe("The Deployment Target's display name."),
-  kind: z.string().describe("What the Deployment Target is, in a word you choose, such as `region`, `cluster`, `namespace` or `platform`."),
+  kind: z.string().describe("What the Deployment Target is, in a short word you choose, printed as written in its header: prefer short forms such as `region`, `az`, `vnet`, `snet`, `vm`, `aks`, `ns` or `asp` over long names like `availability-zone` or `subnet`."),
   description: z.string().optional().describe("What the Deployment Target is, in a sentence or two."),
   owner: Id.optional().describe("The Team that owns the Deployment Target: the id of a Team in `workspace.yaml`. Default: the Project's `owner`."),
   tags: z.array(z.string()).optional().describe("Free-form labels for the Deployment Target."),

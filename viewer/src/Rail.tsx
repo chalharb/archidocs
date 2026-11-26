@@ -12,7 +12,7 @@ export interface RailProps {
   workspace: Workspace;
   view: string;
   selected: string | null;
-  /** Where the logo leads: the C2 Landscape, keeping the Revision and any Compare being looked at. */
+  /** Where the logo leads: the C1 Landscape, keeping the Revision and any Compare being looked at. */
   home: string;
   onPickElement: (id: string) => void;
   onPickView: (id: string) => void;
@@ -55,7 +55,7 @@ export function Rail({ workspace, view, selected, home, onPickElement, onPickVie
     <>
       <nav className="arc-rail" aria-label="Rail">
         {/* The Archidocs mark, "Doorway tile": the tile takes the rail's ink, so it follows light and dark mode. */}
-        {/* It goes home: the C2 Landscape with nothing selected, opened or filtered, as an ordinary link. */}
+        {/* It goes home: the C1 Landscape with nothing selected, opened or filtered, as an ordinary link. */}
         <a className="arc-logo-link" href={home} aria-label="Archidocs home" title="Archidocs home">
           <svg className="arc-logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
             <path className="arc-logo-tile" d="M17 4H47A13 13 0 0 1 60 17V47A13 13 0 0 1 47 60H42V38A10 10 0 0 0 22 38V60H17A13 13 0 0 1 4 47V17A13 13 0 0 1 17 4Z" />

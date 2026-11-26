@@ -14,6 +14,7 @@ import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
 import { HOME, formatPlace, isPlaceHash, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
+import { acceptLiveBundles } from "./live.ts";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
 import { SITE_FILE_PATH, type RevisionEntry } from "../../src/revisions/index.ts";
 import { loadTimeline, pointLabel, site, type Timeline } from "./revisions.ts";
@@ -41,16 +42,19 @@ function useSite(): { latest?: Bundle; timeline?: Timeline; name?: string; error
       })
       .catch((e: unknown) => setState({ error: e instanceof Error ? e.message : String(e) }));
   }, []);
+  // Under `archidocs dev`, a new Bundle replaces the latest in place.
+  useEffect(() => acceptLiveBundles((latest) => setState((s) => (s.latest ? { ...s, latest } : s))), []);
   return state;
 }
 
 /**
  * A PR preview site opened at its root (no View in the URL) starts with
- * Compare "base → PR" on the C2 Landscape; a link to a place opens as is.
+ * Compare "base → PR" on the C2 Landscape, not on home (C1): a PR mostly adds
+ * or changes Services, which C1 doesn't show. A link to a place opens as is.
  */
 function openPreview(timeline: Timeline) {
   const base = timeline.previewBase();
-  if (base && !isPlaceHash(window.location.hash)) go({ ...HOME, vs: pointLabel(base) }, { replace: true });
+  if (base && !isPlaceHash(window.location.hash)) go({ ...HOME, view: "c2", vs: pointLabel(base) }, { replace: true });
 }
 
 export function App() {
@@ -99,6 +103,12 @@ interface ScreenProps {
   loading: boolean;
 }
 
+/**
+ * The place each resolved View on screen was resolved for, bar the Bundle, so
+ * a Layout of a new Bundle at the same place keeps the camera.
+ */
+const resolvedFor = new WeakMap<object, string>();
+
 function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenProps) {
   const place = usePlace();
   const openKey = place.open.join(",");
@@ -114,6 +124,9 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   /** The direction on screen: the one the viewer turned it to, else the View's own. */
   const direction = place.direction ?? view?.direction;
   const { laidOut, error } = useLayout(view, direction);
+  if (view) resolvedFor.set(view, `${place.view}|${openKey}|${place.at ?? ""}|${place.vs ?? ""}`);
+  // Keyed by what its Layout was made for, not the place now, so a Layout still in flight never takes the new place's key.
+  const fitKey = laidOut && `${resolvedFor.get(laidOut.view) ?? ""}|${laidOut.layout.direction}`;
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
   const ready = !loading && laidOut !== undefined && settled === laidOut && laidOut.view === view && laidOut.layout.direction === direction;
@@ -214,6 +227,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
       if (open) return go({ ...place, open, selected: id, adr: null }, { replace: open.length === place.open.length });
       const element = workspace.byId.get(id);
       const home = element?.kind === "component" ? ownViewId(workspace.bundle, element.parent!) : element?.kind === "person" ? "c1" : ownViewId(workspace.bundle, id);
+      // An Element outside any System has no View of its own; it sits on the C2 Landscape, which C1 (home) leaves out.
       go(viewPlace(home ?? "c2", id, place.lens, place));
     },
     [place, workspace],
@@ -287,7 +301,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   if (!view) {
     return (
       <Message title={`No View ${place.view}`}>
-        <a href={formatPlace({ ...HOME, at: place.at, vs: place.vs })}>Open the C2 Landscape</a>
+        <a href={formatPlace({ ...HOME, at: place.at, vs: place.vs })}>Open the C1 Landscape</a>
       </Message>
     );
   }
@@ -346,7 +360,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               laidOut={laidOut}
               selected={place.selected}
               open={place.open}
-              fitKey={`${place.view}|${direction}`}
+              fitKey={fitKey!}
               lensed={lensed}
               picks={place.picks}
               ring={place.lens !== null && "team" in place.lens}

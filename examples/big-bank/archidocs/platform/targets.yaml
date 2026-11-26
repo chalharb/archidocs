@@ -5,21 +5,21 @@ targets:
     targets:
       eks-prod:
         name: EKS prod
-        kind: cluster
+        kind: eks
       eks-staging:
         name: EKS staging
-        kind: cluster
+        kind: eks
       msk-prod:
         name: MSK prod
-        kind: platform
+        kind: msk
   london-dc:
     name: London data center
-    kind: region
+    kind: dc
     owner: core-banking
     targets:
       zos-prod:
         name: z/OS production LPAR
-        kind: platform
+        kind: lpar
       zos-test:
         name: z/OS test LPAR
-        kind: platform
+        kind: lpar
