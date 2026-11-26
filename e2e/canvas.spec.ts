@@ -112,6 +112,55 @@ test.describe("selection", () => {
   });
 });
 
+test.describe("edge hover", () => {
+  test("lights the hovered edge and its two ends, fades the rest, and restores the selection on leave", async ({ page }) => {
+    await open(page, "#/view/c2?open=shop:checkout");
+    await node(page, "shop:cart").click();
+    const edges = page.locator("path[data-edge-from]");
+    const before = await edges.evaluateAll((paths) => paths.map((p) => `${p.getAttribute("data-edge-from")}>${p.getAttribute("data-edge-to")} ${p.getAttribute("class")}`).sort());
+
+    // An edge that doesn't touch the selected Cart, hovered at a point along its line that nothing covers.
+    const spot = await page.locator(".arc-edge-hit:not([data-edge-hit*='shop:cart'])").evaluateAll((paths) => {
+      for (const p of paths as SVGPathElement[]) {
+        const at = p.getPointAtLength(p.getTotalLength() / 2);
+        const { x, y } = new DOMPoint(at.x, at.y).matrixTransform(p.getScreenCTM()!);
+        if (document.elementFromPoint(x, y) === p) return { id: p.getAttribute("data-edge-hit")!, x, y };
+      }
+      return null;
+    });
+    expect(spot).not.toBeNull();
+    const [from, to] = spot!.id.split(">") as [string, string];
+    await page.mouse.move(spot!.x, spot!.y);
+
+    const hovered = page.locator(`path[data-edge-from="${from}"][data-edge-to="${to}"]`);
+    await expect(hovered).toHaveClass(/arc-lit/);
+    await expect(node(page, from)).toHaveAttribute("data-hover", "end");
+    await expect(node(page, to)).toHaveAttribute("data-hover", "end");
+    await expect(node(page, "shop:cart")).toHaveAttribute("data-hover", "faded");
+    const others = await edges.evaluateAll((paths, id) => paths.filter((p) => `${p.getAttribute("data-edge-from")}>${p.getAttribute("data-edge-to")}` !== id).map((p) => p.getAttribute("class")), `${from}>${to}`);
+    expect(others.length).toBeGreaterThan(0);
+    for (const c of others) expect(c).toContain("arc-faded");
+    // The lit edge draws over the others.
+    expect(await edges.evaluateAll((paths) => paths.at(-1)?.getAttribute("data-edge-from") + ">" + paths.at(-1)?.getAttribute("data-edge-to"))).toBe(`${from}>${to}`);
+
+    await page.mouse.move(2, 2);
+    await expect(node(page, from)).not.toHaveAttribute("data-hover", /.*/);
+    await expect(async () => {
+      const after = await edges.evaluateAll((paths) => paths.map((p) => `${p.getAttribute("data-edge-from")}>${p.getAttribute("data-edge-to")} ${p.getAttribute("class")}`).sort());
+      expect(after).toEqual(before);
+    }).toPass();
+    await expect(node(page, "shop:cart")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("the tooltip names the two ends and what the Relationship says", async ({ page }) => {
+    await open(page, "#/view/c2?open=shop:checkout");
+    const titles = await page.locator(".arc-edge-hit title").allTextContents();
+    expect(titles.length).toBeGreaterThan(0);
+    for (const t of titles) expect(t).toMatch(/.+ → .+/);
+    expect(titles.some((t) => t.includes("\n"))).toBe(true);
+  });
+});
+
 test.describe("direction", () => {
   test("defaults to LR and redraws the View in the direction picked", async ({ page }) => {
     await open(page, "#/view/c1");
