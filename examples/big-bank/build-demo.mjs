@@ -22,9 +22,9 @@ const out = resolve(process.argv[2] ?? join(here, "site"));
 
 // The build replaces `out`, so a mistyped path must not cost a folder: it must sit in this repo or the temp folder,
 // and only a missing or empty folder, or an earlier site, is cleared.
-const root = resolve(here, "../..");
 const temp = resolve(tmpdir());
-if (!(out.startsWith(root + sep) || out.startsWith(temp + sep))) {
+const base = out.startsWith(temp + sep) ? temp : resolve(here, "../..");
+if (!out.startsWith(base + sep)) {
   process.stderr.write(`${out} is outside this repo and the temp folder, so the demo will not build there.\n`);
   process.exit(1);
 }
