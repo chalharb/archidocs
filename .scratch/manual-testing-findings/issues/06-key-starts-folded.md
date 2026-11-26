@@ -1,6 +1,6 @@
 # 06: Key starts folded
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 
