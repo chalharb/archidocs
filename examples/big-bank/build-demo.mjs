@@ -10,15 +10,25 @@
 // Usage: node examples/big-bank/build-demo.mjs [out-dir]   (default: examples/big-bank/site)
 
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, resolve, sep } from "node:path";
 import process from "node:process";
 import { URL, fileURLToPath } from "node:url";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const cli = resolve(here, "../../src/cli/main.ts");
 const out = resolve(process.argv[2] ?? join(here, "site"));
+
+// The build replaces `out`, so a mistyped path must not cost a folder. It is normalized and must sit in this repo or the
+// temp folder (a throw, not process.exit, so every use below is guarded), and only a missing or empty folder, or an
+// earlier site, is cleared.
+const temp = resolve(tmpdir());
+const base = out.startsWith(temp + sep) ? temp : resolve(here, "../..");
+if (!out.startsWith(base + sep)) throw new Error(`${out} is outside this repo and the temp folder, so the demo will not build there.`);
+if (existsSync(out) && readdirSync(out).length > 0 && !existsSync(join(out, "workspace.bundle.json"))) {
+  throw new Error(`${out} is not empty and is not an archidocs site, so the demo will not replace it. Pass an empty or new folder.`);
+}
 
 /** Each stage starts from today's model, drops what didn't exist yet, then lays older files over it. */
 const stages = [
