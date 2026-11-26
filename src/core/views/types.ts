@@ -1,4 +1,4 @@
-import type { BundleElement, BundleLens, BundleRelationship } from "../../schema/bundle.ts";
+import type { BundleDeployment, BundleElement, BundleLens, BundleRelationship } from "../../schema/bundle.ts";
 
 /** The most nodes a View may have before `oversized-view` warns. */
 export const MAX_VIEW_NODES = 150;
@@ -23,6 +23,8 @@ export interface ViewNode {
   element?: string;
   /** A Deployment's Deployment Target. */
   target?: string;
+  /** A scaled Deployment's `instances` (a count above 1, or an autoscale range); absent for one instance. */
+  instances?: BundleDeployment["instances"];
   /** The nearest ancestor that is itself a node of this View, else null. */
   parent: string | null;
   /** True when the Element has children in the Model that this View hides inside it. */

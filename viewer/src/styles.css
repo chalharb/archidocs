@@ -984,6 +984,47 @@ select.arc-tool option {
   background: transparent;
 }
 
+/* A scaled Deployment: two framed copies of its box behind it, down and to the right, as the SVG export draws them. */
+.arc-stack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.arc-stack::before,
+.arc-stack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  background: var(--paper);
+  border: 1.5px solid var(--nodeline);
+}
+
+.arc-stack::before {
+  transform: translate(10px, 10px);
+}
+
+.arc-stack::after {
+  transform: translate(5px, 5px);
+}
+
+.arc-stack-faint::before,
+.arc-stack-faint::after {
+  background: var(--ground);
+  border-color: var(--line);
+}
+
+/* A scaled Deployment's count, `×3` or `2–10`, beside the Team code. */
+.arc-instances {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  background: var(--paper);
+  font: 700 10px/14px var(--sans);
+  white-space: nowrap;
+}
+
 /* Selected: an ink frame inside the yellow you-are-here ring. */
 .arc-box.arc-selected {
   box-shadow:
@@ -1088,6 +1129,18 @@ select.arc-tool option {
 
 .arc-key-broker {
   background-image: repeating-linear-gradient(90deg, transparent 0 4px, var(--line) 4px 7px);
+}
+
+/* Three small frames, back to front, as a scaled Deployment stacks. */
+.arc-key-stacked {
+  width: 22px;
+  height: 12px;
+  margin: 0 6px 4px 0;
+  box-shadow:
+    3px 3px 0 -1.5px var(--paper),
+    3px 3px 0 0 var(--ink),
+    6px 6px 0 -1.5px var(--paper),
+    6px 6px 0 0 var(--ink);
 }
 
 .arc-key-origin {

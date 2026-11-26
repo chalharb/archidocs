@@ -1,7 +1,7 @@
-import { describeLens, type ResolvedView, type ViewEdge, type ViewNode } from "../core/views/index.ts";
+import { describeLens, instancesChip, type ResolvedView, type ViewEdge, type ViewNode } from "../core/views/index.ts";
 import type { Bundle, BundleElement, BundleLens } from "../schema/bundle.ts";
 import { FONT_FAMILY, FONTS } from "./font.ts";
-import type { Layout, LaidOutNode } from "./layout.ts";
+import { chipWidth, type Layout, type LaidOutNode } from "./layout.ts";
 import { teamStyles, type TeamStyle } from "./teams.ts";
 import { cut, fmt, text, textWidth } from "./text.ts";
 import { flatten, PALETTES, type Palette, type Theme } from "./tokens.ts";
@@ -62,7 +62,7 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
 
   const title = view.title;
   const subtitle = sourceLine(source, label);
-  const key = drawKey(c, bundle, view.lens);
+  const key = drawKey(c, bundle, view.lens, view.nodes.some((n) => n.instances !== undefined));
   const width = Math.ceil(Math.max(layout.width, key.width, textWidth(title, 20, 700), textWidth(subtitle, 12)) + 2 * PAD);
   const height = Math.ceil(HEADER + layout.height + PAD + KEY);
 
@@ -174,10 +174,13 @@ function drawNode(c: Palette, n: ViewNode, box: LaidOutNode, element: BundleElem
   const dash = n.external ? ` stroke-dasharray="6 4"` : "";
   const frameWidth = system ? 2 : FRAME;
   const tileWidth = team ? textWidth(team.code, 10, 700) + 16 + 8 : 0;
+  const chip = n.instances === undefined ? undefined : instancesChip(n.instances);
+  const chipRoom = chip === undefined ? 0 : chipWidth(chip) + 8;
   const left = x + EDGE + (n.kind === "person" ? 12 : 8);
   const right = n.kind === "person" ? x + w - 16 : x + w - 10;
   return [
     `<g>`,
+    ...(chip === undefined ? [] : stack(l, x, y, w, h)),
     ...(l.ring ? [`<path d="${shape(x - 4, y - 4, w + 8, h + 8, r ? [r + 4, r + 4, r + 4, r + 4] : type === "datastore" ? [0, 0, 16, 16] : [0, 0, 0, 0])}" fill="${l.ring}"/>`] : []),
     `<clipPath id="${clip}"><path d="${d}"/></clipPath>`,
     `<path d="${d}" fill="${l.fill}"/>`,
@@ -185,12 +188,31 @@ function drawNode(c: Palette, n: ViewNode, box: LaidOutNode, element: BundleElem
     `<path d="${d}" fill="none" stroke="${l.frame}" stroke-width="${frameWidth}"${dash}/>`,
     ...(l.double ? [`<path d="${shape(x + 3, y + 3, w - 6, h - 6, [0, 0, type === "datastore" ? 9 : 0, type === "datastore" ? 9 : 0])}" fill="none" stroke="${l.frame}" stroke-width="${FRAME}"/>`] : []),
     `<rect x="${fmt(x - 1)}" y="${fmt(y - 1)}" width="${EDGE + 1}" height="${fmt(h + 2)}" fill="${l.edge}" clip-path="url(#${clip})"/>`,
-    text(left, y + h / 2 - 4, cut(n.name, 13, right - left - tileWidth, 700), { size: 13, fill: l.name, weight: 700 }),
+    text(left, y + h / 2 - 4, cut(n.name, 13, right - left - tileWidth - chipRoom, 700), { size: 13, fill: l.name, weight: 700 }),
     text(left, y + h / 2 + 13, cut(subLabel(n, element), 11, right - left), { size: 11, fill: l.sub }),
     ...(team ? [codeTile(c, team, right, y + 8)] : []),
+    ...(chip === undefined ? [] : [countChip(c, l, chip, right - tileWidth, y + 8)]),
     ...badge(c, n, box),
     ...(n.mark?.hit && n.collapsed ? [`<rect x="${fmt(x + w - 42)}" y="${fmt(y + h - 18)}" width="10" height="10" fill="${c.ink}" stroke="${c.paper}" stroke-width="2"/>`] : []),
     `</g>`,
+  ].join("");
+}
+
+/** How far each copy behind a scaled Deployment sits from the one in front, down and to the right. */
+export const STACK_OFFSET = 5;
+
+/** A scaled Deployment's two copies behind its box, back to front, each framed like the box. */
+function stack(l: Look, x: number, y: number, w: number, h: number): string[] {
+  return [2, 1].map((i) => `<rect x="${fmt(x + i * STACK_OFFSET)}" y="${fmt(y + i * STACK_OFFSET)}" width="${fmt(w)}" height="${fmt(h)}" fill="${l.fill}" stroke="${l.frame}" stroke-width="${FRAME}"/>`);
+}
+
+/** A scaled Deployment's count chip, `×3` or `2–10`, framed in ink, its right edge at `right`. */
+function countChip(c: Palette, l: Look, chip: string, right: number, top: number): string {
+  const w = chipWidth(chip);
+  const x = right - w;
+  return [
+    `<rect x="${fmt(x)}" y="${fmt(top)}" width="${fmt(w)}" height="16" fill="${c.paper}" stroke="${l.frame}" stroke-width="1"/>`,
+    text(x + 6, top + 12, chip, { size: 10, fill: l.name, weight: 700 }),
   ].join("");
 }
 
@@ -223,8 +245,8 @@ function drawEdge(c: Palette, points: { x: number; y: number }[], edge: ViewEdge
   return `<path d="${d}" fill="none" stroke="${c.edge}" stroke-width="${FRAME}" marker-end="url(#arrow)"/>`;
 }
 
-/** The key, in the canvas's own vocabulary: the Team tile, External, broker, and the Lens if there is one. */
-function drawKey(c: Palette, bundle: Bundle, lens: BundleLens | undefined): { parts: string[]; width: number } {
+/** The key, in the canvas's own vocabulary: the Team tile, External, broker, the stack when a Deployment is scaled, and the Lens if there is one. */
+function drawKey(c: Palette, bundle: Bundle, lens: BundleLens | undefined, scaled: boolean): { parts: string[]; width: number } {
   const parts: string[] = [];
   let x = 0;
   const label = (s: string) => {
@@ -243,6 +265,11 @@ function drawKey(c: Palette, bundle: Bundle, lens: BundleLens | undefined): { pa
   parts.push(`<rect x="${fmt(x)}" y="4" width="28" height="16" fill="${c.paper}"/><rect x="${fmt(x)}" y="4" width="28" height="16" fill="url(#broker)" stroke="${c.ink}" stroke-width="${FRAME}"/>`);
   x += 36;
   label("Broker");
+  if (scaled) {
+    for (const i of [2, 1, 0]) parts.push(`<rect x="${fmt(x + i * 3)}" y="${fmt(1 + i * 3)}" width="22" height="12" fill="${c.paper}" stroke="${c.ink}" stroke-width="${FRAME}"/>`);
+    x += 36;
+    label("Stacked: scaled (×3 fixed, 2–10 autoscale)");
+  }
   if (lens) {
     if ("impact" in lens) {
       swatch(`fill="${c.herebg}" stroke="${c.here}" stroke-width="2.5"`);

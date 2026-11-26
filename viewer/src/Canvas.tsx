@@ -15,7 +15,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import type { CompareMark, ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views/index.ts";
+import { instancesChip, type CompareMark, type ImpactSide, type NodeMark, type ResolvedView, type ViewNode } from "../../src/core/views/index.ts";
 import type { BundleElement } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
@@ -245,7 +245,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       onPaneClick={() => onSelect(null)}
     >
       <Panel position="bottom-left" className="arc-key-panel">
-        <Key lens={lensed !== undefined} />
+        <Key lens={lensed !== undefined} scaled={view.nodes.some((n) => n.instances !== undefined)} />
       </Panel>
       {view.nodes.length > MINIMAP_MIN_NODES && <MiniMap position="top-right" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeStrokeWidth={0} />}
       <Controls position="bottom-right" showInteractive={false} />
@@ -257,7 +257,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
 }
 
 /** The map key: what every mark on the canvas means, and the canvas's gestures. It folds away and stays folded. */
-function Key({ lens }: { lens: boolean }) {
+function Key({ lens, scaled }: { lens: boolean; scaled: boolean }) {
   const [open, setOpen] = useState(() => readKeyOpen());
   return (
     <details
@@ -291,6 +291,12 @@ function Key({ lens }: { lens: boolean }) {
           <span className="arc-key-swatch arc-key-broker" aria-hidden="true" />
           Striped: broker
         </li>
+        {scaled && (
+          <li data-testid="key-scaled">
+            <span className="arc-key-swatch arc-key-stacked" aria-hidden="true" />
+            Stacked: scaled (×3 fixed, 2–10 autoscale)
+          </li>
+        )}
         {lens && (
           <>
             <li>
@@ -464,67 +470,78 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     picked ? "arc-picked" : "",
     change ? `arc-${change}` : "",
   ];
+  // A scaled Deployment: two framed copies behind the box, and its count chip beside the Team code.
+  const chip = node.instances === undefined ? undefined : instancesChip(node.instances);
+  const faint = (mark !== undefined && !mark.hit) || change === "unchanged" || change === "removed";
   return (
-    <div
-      className={classes.filter(Boolean).join(" ")}
-      style={team ? ({ "--team": team.color } as CSSProperties) : undefined}
-      data-node={node.id}
-      data-parent={node.parent ?? ""}
-      data-hit={mark ? String(mark.hit) : undefined}
-      data-distance={mark?.distance}
-      data-picked={picked ? "true" : undefined}
-      data-change={change}
-      aria-selected={selected ? "true" : "false"}
-      title={change && change !== "unchanged" ? `${node.name}: ${change === "changed" && node.collapsed ? "changed, or something inside changed" : change}` : mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
-    >
-      <Handle type="target" position={Position.Left} isConnectable={false} className="arc-handle" />
-      <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
-      {/* As the Variant D prototype draws it: [+] glyph Name TEAM on one row, the sub-label under it. */}
-      <div className="arc-box-head">
-        {toggleButton}
-        <Icon name={KIND_ICON[type ?? node.kind]!} className="arc-kind-glyph" />
-        <span className="arc-name" data-testid="name">
-          {node.name}
-        </span>
-        {/* An open box's sub-label sits in its head row, after the name, and gives way to it when space runs out. */}
-        {container && (
-          <span className="arc-sublabel arc-csub" data-testid="sublabel" title={sublabel}>
-            {sublabel}
+    <>
+      {chip !== undefined && <div className={["arc-stack", faint ? "arc-stack-faint" : ""].filter(Boolean).join(" ")} data-testid="stack" aria-hidden="true" />}
+      <div
+        className={classes.filter(Boolean).join(" ")}
+        style={team ? ({ "--team": team.color } as CSSProperties) : undefined}
+        data-node={node.id}
+        data-parent={node.parent ?? ""}
+        data-hit={mark ? String(mark.hit) : undefined}
+        data-distance={mark?.distance}
+        data-picked={picked ? "true" : undefined}
+        data-change={change}
+        aria-selected={selected ? "true" : "false"}
+        title={change && change !== "unchanged" ? `${node.name}: ${change === "changed" && node.collapsed ? "changed, or something inside changed" : change}` : mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
+      >
+        <Handle type="target" position={Position.Left} isConnectable={false} className="arc-handle" />
+        <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
+        {/* As the Variant D prototype draws it: [+] glyph Name TEAM on one row, the sub-label under it. */}
+        <div className="arc-box-head">
+          {toggleButton}
+          <Icon name={KIND_ICON[type ?? node.kind]!} className="arc-kind-glyph" />
+          <span className="arc-name" data-testid="name">
+            {node.name}
           </span>
-        )}
-        {team && (
-          <span className="arc-team" data-testid="team" title={`Owner: ${team.code}`}>
-            {team.code}
-          </span>
-        )}
-        {container && wayInButton}
-      </div>
-      {!container && (
-        <div className="arc-box-foot">
-          <div className="arc-sublabel" data-testid="sublabel" title={sublabel}>
-            {sublabel}
-          </div>
-          {wayInButton}
+          {/* An open box's sub-label sits in its head row, after the name, and gives way to it when space runs out. */}
+          {container && (
+            <span className="arc-sublabel arc-csub" data-testid="sublabel" title={sublabel}>
+              {sublabel}
+            </span>
+          )}
+          {chip !== undefined && (
+            <span className="arc-instances" data-testid="instances" title={typeof node.instances === "number" ? `${node.instances} instances` : `Autoscales from ${chip.replace("–", " to ")} instances`}>
+              {chip}
+            </span>
+          )}
+          {team && (
+            <span className="arc-team" data-testid="team" title={`Owner: ${team.code}`}>
+              {team.code}
+            </span>
+          )}
+          {container && wayInButton}
         </div>
-      )}
-      {mark?.distance !== undefined && !(container && !node.collapsed) && (
-        <span className={`arc-badge arc-badge-${mark.side ?? "distance"}`}>
-          {mark.side && <Icon name={SIDE_ICON[mark.side]} className="arc-badge-icon" />}
-          {mark.side && mark.side !== "origin" && `${SIDE_LABEL[mark.side]} `}
-          {mark.side === "origin" && SIDE_LABEL.origin}
-          <span className={mark.side === "origin" ? "arc-visually-hidden" : undefined} data-testid="distance" aria-label={`distance ${mark.distance}`}>
-            {mark.distance}
+        {!container && (
+          <div className="arc-box-foot">
+            <div className="arc-sublabel" data-testid="sublabel" title={sublabel}>
+              {sublabel}
+            </div>
+            {wayInButton}
+          </div>
+        )}
+        {mark?.distance !== undefined && !(container && !node.collapsed) && (
+          <span className={`arc-badge arc-badge-${mark.side ?? "distance"}`}>
+            {mark.side && <Icon name={SIDE_ICON[mark.side]} className="arc-badge-icon" />}
+            {mark.side && mark.side !== "origin" && `${SIDE_LABEL[mark.side]} `}
+            {mark.side === "origin" && SIDE_LABEL.origin}
+            <span className={mark.side === "origin" ? "arc-visually-hidden" : undefined} data-testid="distance" aria-label={`distance ${mark.distance}`}>
+              {mark.distance}
+            </span>
           </span>
-        </span>
-      )}
-      {mark?.hit && node.collapsed && <span className="arc-holds" aria-hidden="true" />}
-      {change === "added" && (
-        <span className="arc-added-mark" data-testid="added" aria-label="added">
-          +
-        </span>
-      )}
-      {change === "changed" && <span className="arc-changed-mark" data-testid="changed" aria-label="changed" />}
-    </div>
+        )}
+        {mark?.hit && node.collapsed && <span className="arc-holds" aria-hidden="true" />}
+        {change === "added" && (
+          <span className="arc-added-mark" data-testid="added" aria-label="added">
+            +
+          </span>
+        )}
+        {change === "changed" && <span className="arc-changed-mark" data-testid="changed" aria-label="changed" />}
+      </div>
+    </>
   );
 });
 

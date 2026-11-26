@@ -21,7 +21,7 @@ import {
   type ImpactRing,
 } from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
-import { describeLens, listViews, resolveView, type ResolvedStep, type ViewNode } from "../core/views/index.ts";
+import { describeLens, isScaled, listViews, resolveView, type ResolvedStep, type ViewNode } from "../core/views/index.ts";
 import { listAdrs, type ListedAdr } from "../core/adrs.ts";
 import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
@@ -299,7 +299,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get Deployments",
       description:
-        "Where a Service runs: each Deployment's Environment, its full Deployment Target chain (outermost first), main url and named endpoints. Pass `environment` for one Environment, e.g. a Service's URL in staging.",
+        "Where a Service runs: each Deployment's Environment, its full Deployment Target chain (outermost first), main url, named endpoints and `instances` (a count, or {min, max} for autoscale). Pass `environment` for one Environment, e.g. a Service's URL in staging.",
       input: z.object({
         service: QualifiedId.describe("The Service's qualified id, project:id"),
         environment: z.string().min(1).optional().describe("An Environment id, such as prod or staging"),
@@ -332,7 +332,7 @@ export function createServer(options: ServerOptions): McpServer {
           ...items.map((d) => {
             const chain = d.targetPath.length ? d.targetPath.map((t) => t.id).join(" › ") : d.target;
             const urls = [d.url ?? "no URL", ...d.endpoints.map((e) => `${e.name}: ${e.url}`)].join("; ");
-            return `- ${d.environment} on ${chain}: ${urls}`;
+            return `- ${d.environment} on ${chain}${instancesLabel(d.instances)}: ${urls}`;
           }),
         ].join("\n"),
       );
@@ -425,6 +425,7 @@ export function createServer(options: ServerOptions): McpServer {
               name: z.string(),
               element: z.string().optional(),
               target: z.string().optional(),
+              instances: BundleDeployment.shape.instances.optional(),
               parent: z.string().nullable(),
               collapsed: z.boolean(),
               external: z.boolean(),
@@ -924,7 +925,7 @@ const ViewSummary = z.object({ id: z.string(), kind: ViewKind, title: z.string()
 
 const nodeKind = (n: ViewNode) => (n.kind === "deployment" ? `Deployment of ${n.element}` : n.kind === "target" ? "Deployment Target" : kindName[n.kind]);
 const nodeLine = (n: ViewNode) =>
-  `- ${label(n)}: ${nodeKind(n)}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}${n.mark.side === undefined || n.mark.side === "origin" ? "" : ` ${n.mark.side}`}` : ""}`;
+  `- ${label(n)}: ${nodeKind(n)}${n.instances === undefined ? "" : instancesLabel(n.instances)}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}${n.mark.side === undefined || n.mark.side === "origin" ? "" : ` ${n.mark.side}`}` : ""}`;
 
 /** A Step as one line: a return drawn dashed (⇠), an event with its broker and channel. */
 const stepLine = (s: ResolvedStep) => {
@@ -956,9 +957,13 @@ const deploymentResult = (d: DeploymentDetail) => ({
   targetPath: d.targetPath,
   url: d.url,
   endpoints: d.endpoints,
+  instances: d.instances,
   owner: d.owner,
   source: d.source,
 });
+
+/** ` (×3)` or ` (2–10 instances)`; empty for a single instance. */
+const instancesLabel = (i: BundleDeployment["instances"]) => (!isScaled(i) ? "" : typeof i === "number" ? ` (×${i})` : ` (${i.min}–${i.max} instances)`);
 
 const summary = (e: BundleElement) => ({ id: e.id, kind: e.kind, name: e.name });
 const label = (e: { id: string; name: string }) => `${e.id} (${e.name})`;
