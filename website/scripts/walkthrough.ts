@@ -56,8 +56,12 @@ export function shellLines(fence: Fence): string[] {
     .replace(/\\\n\s*/g, " ")
     .split("\n")
     .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith("#"));
+    .filter((l) => l && !l.startsWith("#"))
+    .map((l) => l.replace(NPX_ARCHIDOCS, "archidocs "));
 }
+
+/** `npx archidocs …`, as a page may run it: the walkthrough runs this repo's CLI in its place. */
+const NPX_ARCHIDOCS = /^npx\s+(?:(?:-y|--yes)\s+)?archidocs(?:@\S+)?\s+/;
 
 /** The page as one shell script: its shell blocks, and a heredoc for each file it shows. */
 export function pageScript(page: string, { name, example, skipped, before = [] }: Walkthrough): PageScript {
