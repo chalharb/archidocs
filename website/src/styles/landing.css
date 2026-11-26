@@ -146,6 +146,16 @@ pre {
   width: 28px;
   height: 28px;
 }
+/* On beta.archidocs.dev only (src/lib/channel.ts): the same framed tile as beside the docs' title. */
+.channel-badge {
+  /* Pulled in from the bar's 24px gap, to sit with the name as it does in the docs. */
+  margin-left: -14px;
+  padding: 3px 7px 1px;
+  border: 1.5px solid currentColor;
+  font: 800 11px/1.4 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .top nav {
   display: flex;
   gap: 4px;
