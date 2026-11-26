@@ -189,7 +189,10 @@ export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port =
       clearTimeout(timer);
       watcher.close();
       for (const res of clients) res.end();
-      await new Promise<void>((done) => server.close(() => done()));
+      const closed = new Promise<void>((done) => server.close(() => done()));
+      // A browser holds idle keep-alive sockets open; without this, close waits on them.
+      server.closeAllConnections();
+      await closed;
     },
   };
 }
