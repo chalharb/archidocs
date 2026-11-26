@@ -30,6 +30,7 @@ import { POINT_GRAMMAR, touching, type Span } from "../revisions/index.ts";
 import { pastOf, type Past } from "./history.ts";
 import type { ErrorCode } from "./errors.ts";
 import { registerWriteTools } from "./writes.ts";
+import { callLine, type Log } from "./announce.ts";
 import { authoringGuide, topics } from "../guide/index.ts";
 
 export interface ServerOptions {
@@ -42,6 +43,11 @@ export interface ServerOptions {
    * source that takes them: a Bundle never does.
    */
   allowWrites?: boolean;
+  /** The archidocs version, reported to clients. */
+  version?: string;
+  /** Where to log tool calls: every write call, and read calls too with `logReads`. */
+  log?: Log;
+  logReads?: boolean;
 }
 
 
@@ -62,7 +68,7 @@ const fail = (code: ErrorCode, message: string, suggestions?: string[]): ToolOut
  */
 export function createServer(options: ServerOptions): McpServer {
   const { source } = options;
-  const server = new McpServer({ name: "archidocs", version: "0.0.0" }, { capabilities: { tools: {} } });
+  const server = new McpServer({ name: "archidocs", version: options.version ?? "0.0.0" }, { capabilities: { tools: {} } });
   const writesAllowed = source.writesAllowed && options.allowWrites !== false;
   const readOnlyReason =
     source.kind === "bundle"
@@ -70,6 +76,15 @@ export function createServer(options: ServerOptions): McpServer {
       : "Write tools are off over HTTP; restart the server with --allow-writes to allow them.";
 
   const past = pastOf(source);
+
+  /** Wraps a tool handler so its call is logged: always for a write, for a read only with `logReads`. */
+  const logged =
+    (name: string, write: boolean, handle: (raw: unknown) => Promise<CallToolResult>) =>
+    async (raw: unknown): Promise<CallToolResult> => {
+      const result = await handle(raw);
+      if (options.log && (write || options.logReads)) options.log(callLine(name, raw, result));
+      return result;
+    };
 
   /**
    * Registers a tool. A read tool also takes `at` (a ref or a date) and runs
@@ -90,7 +105,7 @@ export function createServer(options: ServerOptions): McpServer {
         outputSchema: config.output,
         annotations: { readOnlyHint: !config.write, openWorldHint: false },
       },
-      async (raw: unknown): Promise<CallToolResult> => {
+      logged(name, config.write === true, async (raw: unknown): Promise<CallToolResult> => {
         if (config.write && !writesAllowed) return toResult(fail("read_only", readOnlyReason));
         if (config.write && takesAt(raw)) return toResult(fail("invalid_input", atRefused));
         const args = input.safeParse(raw ?? {});
@@ -109,7 +124,7 @@ export function createServer(options: ServerOptions): McpServer {
           snapshot = then.snapshot;
         }
         return toResult(await run(rest as z.output<I>, snapshot, { past, at, current }));
-      },
+      }),
     );
   };
 
@@ -835,7 +850,7 @@ export function createServer(options: ServerOptions): McpServer {
     },
   );
 
-  registerWriteTools(server, source, writesAllowed ? undefined : readOnlyReason);
+  registerWriteTools(server, source, writesAllowed ? undefined : readOnlyReason, logged);
   return server;
 }
 

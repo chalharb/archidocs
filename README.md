@@ -206,7 +206,7 @@ A failed check deploys nothing, so the last good site stays up. GitLab Pages, PR
 archidocs mcp --workspace ./archidocs
 ```
 
-`archidocs init` installs the authoring skill into `.agents/skills`, `.claude/skills` and `.github/skills`. The full guide is in [guide/SKILL.md](guide/SKILL.md) with task topics in [guide/topics](guide/topics).
+`archidocs init` registers that server in the repo's `.mcp.json`, which Claude Code, VS Code and Copilot read, and prints a `--check` command that runs the server once and reports what it serves. Once running, the server prints one line to stderr saying what it loaded, and logs each write. `init` also installs the authoring skill into `.agents/skills`, `.claude/skills` and `.github/skills`. The full guide is in [guide/SKILL.md](guide/SKILL.md) with task topics in [guide/topics](guide/topics).
 
 ## Examples
 

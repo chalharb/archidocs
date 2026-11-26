@@ -101,16 +101,74 @@ export async function init({ repoRoot, cwd, skillOnly, workspace, env, version }
   if (await writePointer(join(repoRoot, "AGENTS.md"), pointer, { create: true })) wrote(join(repoRoot, "AGENTS.md"), "Updated");
   if (await writePointer(join(repoRoot, "CLAUDE.md"), pointer, { create: false })) wrote(join(repoRoot, "CLAUDE.md"), "Updated");
 
-  const mcpPath = workspace ?? where ?? "<path-to-workspace-checkout>";
-  out.push(
-    "",
-    "Register the Archidocs MCP server with your coding agent, started from the repo root:",
-    "",
-    `  ${runner} mcp --workspace ${mcpPath}`,
-    "",
-    ...(workspaceDir === undefined ? ["Point --workspace at a local checkout of the Workspace repo, relative to where the coding agent starts the server."] : []),
-  );
+  const checkoutNote = workspaceDir === undefined ? ["Point --workspace at a local checkout of the Workspace repo, relative to where the coding agent starts the server."] : [];
+  const mcpPath = workspace ?? where;
+  if (mcpPath === undefined) {
+    out.push("", "Register the Archidocs MCP server with your coding agent, started from the repo root:", "", `  ${runner} mcp --workspace <path-to-workspace-checkout>`, "", ...checkoutNote);
+    return out;
+  }
+
+  const [command, ...runnerArgs] = runner.split(" ");
+  const entry: McpEntry = { type: "stdio", command: command!, args: [...runnerArgs, "mcp", "--workspace", mcpPath] };
+  const manual: string[] = [];
+  for (const config of MCP_CONFIGS) {
+    const path = join(repoRoot, config.path);
+    const result = await registerServer(path, config.key, entry, { create: config.create });
+    if (result === "wrote" || result === "updated") wrote(path, result === "wrote" ? "Wrote" : "Updated");
+    if (result === "unreadable") {
+      const snippet = JSON.stringify({ [SERVER_NAME]: entry }, null, 2).split("\n").slice(1, -1);
+      manual.push("", `Could not read ${config.path} as JSON; add this to its "${config.key}" by hand:`, "", ...snippet);
+    }
+  }
+  out.push(...manual, "", "Check the server your coding agent will start:", "", `  ${runner} mcp --workspace ${mcpPath} --check`, "", ...checkoutNote);
   return out;
+}
+
+/** The name the server is registered under in every config. */
+const SERVER_NAME = "archidocs";
+
+interface McpEntry {
+  type: "stdio";
+  command: string;
+  args: string[];
+}
+
+/**
+ * The project MCP configs init writes the server into, as ADR 0002 decides:
+ * the repo-root `.mcp.json` (Claude Code, VS Code, Copilot) always, and
+ * Cursor's and VS Code's own files only when the repo already has them.
+ */
+const MCP_CONFIGS = [
+  { path: ".mcp.json", key: "mcpServers", create: true },
+  { path: ".cursor/mcp.json", key: "mcpServers", create: false },
+  { path: ".vscode/mcp.json", key: "servers", create: false },
+] as const;
+
+/**
+ * Adds or replaces the archidocs entry under `key` in an MCP config, keeping
+ * every other server and field, and rewrites the file as 2-space JSON. A file
+ * that isn't plain JSON (comments, say) is left alone.
+ */
+async function registerServer(path: string, key: string, entry: McpEntry, { create }: { create: boolean }): Promise<"wrote" | "updated" | "unchanged" | "skipped" | "unreadable"> {
+  if (!existsSync(path)) {
+    if (!create) return "skipped";
+    await writeFile(path, `${JSON.stringify({ [key]: { [SERVER_NAME]: entry } }, null, 2)}\n`);
+    return "wrote";
+  }
+  let config: unknown;
+  try {
+    config = JSON.parse(await readFile(path, "utf8"));
+  } catch {
+    return "unreadable";
+  }
+  const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+  if (!isObject(config)) return "unreadable";
+  const servers = config[key] ?? {};
+  if (!isObject(servers)) return "unreadable";
+  if (JSON.stringify(servers[SERVER_NAME]) === JSON.stringify(entry)) return "unchanged";
+  config[key] = { ...servers, [SERVER_NAME]: entry };
+  await writeFile(path, `${JSON.stringify(config, null, 2)}\n`);
+  return "updated";
 }
 
 const POINTER_HEADING = "## Architecture model";

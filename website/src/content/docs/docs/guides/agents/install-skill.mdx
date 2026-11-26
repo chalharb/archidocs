@@ -27,13 +27,14 @@ Wrote .agents/skills/archidocs-authoring/SKILL.md
 Wrote .claude/skills/archidocs-authoring/SKILL.md
 Wrote .github/skills/archidocs-authoring/SKILL.md
 Updated AGENTS.md
+Wrote .mcp.json
 
-Register the Archidocs MCP server with your coding agent, started from the repo root:
+Check the server your coding agent will start:
 
-  archidocs mcp --workspace archidocs
+  archidocs mcp --workspace archidocs --check
 ```
 
-It writes the skill into each folder where coding agents look for skills. It adds an "Architecture model" section to `AGENTS.md`, and to `CLAUDE.md` if there is one.
+It writes the skill into each folder where coding agents look for skills. It adds an "Architecture model" section to `AGENTS.md`, and to `CLAUDE.md` if there is one. It registers the MCP server in `.mcp.json`, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/) explains.
 
 ## 2. Install it in a code repo
 
@@ -48,15 +49,16 @@ Wrote .agents/skills/archidocs-authoring/SKILL.md
 Wrote .claude/skills/archidocs-authoring/SKILL.md
 Wrote .github/skills/archidocs-authoring/SKILL.md
 Updated AGENTS.md
+Wrote .mcp.json
 
-Register the Archidocs MCP server with your coding agent, started from the repo root:
+Check the server your coding agent will start:
 
-  archidocs mcp --workspace ../architecture/archidocs
+  archidocs mcp --workspace ../architecture/archidocs --check
 
 Point --workspace at a local checkout of the Workspace repo, relative to where the coding agent starts the server.
 ```
 
-`--workspace` is the path to the Workspace checkout. Register the command it prints, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/#in-a-code-repo) shows.
+`--workspace` is the path to the Workspace checkout, written into the code repo's `.mcp.json`. See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/#in-a-code-repo).
 
 ## 3. Keep it current
 
