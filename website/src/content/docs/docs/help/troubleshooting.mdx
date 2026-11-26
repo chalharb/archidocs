@@ -42,7 +42,7 @@ Wrote archidocs/workspace.yaml
 **Symptom:** the published viewer shows only the latest [Revision](/docs/reference/glossary/#term-revision), the Workspace as it was at one commit. Or `archidocs diff` in CI stops on a ref that exists:
 
 ```text
-archidocs: Unknown ref or date "HEAD~1"; a date resolves to the last default-branch commit at or before it.
+archidocs: Unknown ref or date "HEAD~1"; a date names the last Revision at or before it.
 ```
 
 **Cause:** the CI checkout is shallow. `actions/checkout` fetches only the latest commit by default, and GitLab only the latest few. Git then has no older commits to read.

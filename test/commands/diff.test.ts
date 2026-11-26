@@ -19,8 +19,9 @@ describe("diff", () => {
   it("returns unknown-point for a ref that names no commit", async () => {
     const { checkout, model } = await twoCommits();
 
-    expect(await diff(checkout, { from: "nope" })).toEqual({ kind: "unknown-point", point: "nope" });
-    expect(await diff(checkout, { from: model, to: "nope" })).toEqual({ kind: "unknown-point", point: "nope" });
+    const unknown = { kind: "unknown-point", point: "nope", failure: { ok: false, kind: "not_found", tags: [] } };
+    expect(await diff(checkout, { from: "nope" })).toEqual(unknown);
+    expect(await diff(checkout, { from: model, to: "nope" })).toEqual(unknown);
   });
 
   it("returns the Changes between two refs", async () => {

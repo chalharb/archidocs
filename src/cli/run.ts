@@ -14,7 +14,7 @@ import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
-import { DEFAULT_KEEP } from "../history/index.ts";
+import { DEFAULT_KEEP, pointMessage } from "../history/index.ts";
 import { LATEST_BUNDLE_PATH } from "../revisions/index.ts";
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat } from "./diff-format.ts";
@@ -204,7 +204,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     if (extra.length > 0) throw new UsageError(`Give at most two points; got ${positionals.join(", ")}.`);
     const result = await diff(await checkoutFrom(io.cwd), toPoint === undefined ? { from: fromPoint } : { from: fromPoint, to: toPoint });
     if (result.kind === "not-in-git") throw new UsageError(NOT_IN_GIT);
-    if (result.kind === "unknown-point") throw new UsageError(`Unknown ref or date "${result.point}"; a date resolves to the last default-branch commit at or before it.`);
+    if (result.kind === "unknown-point") throw new UsageError(pointMessage(result.point, result.failure));
     io.stdout.write(formatDiff(result.changes, result.from, result.to, format));
     return OK;
   }

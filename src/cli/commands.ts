@@ -229,8 +229,8 @@ export const commands = {
     synopsis: ["diff <from> [<to>] [--format text|json|markdown]"],
     description: "Show what changed in the Model between two points in the Workspace's history.",
     arguments: [
-      { name: "<from>", description: "A git ref, or a date, which means the last default-branch commit at or before it." },
-      { name: "[<to>]", description: "A ref or date like `<from>`; with none, the working tree." },
+      { name: "<from>", description: "A git ref, or a date or time, which names the last Revision at or before it." },
+      { name: "[<to>]", description: "A ref, date or time like `<from>`; with none, the working tree." },
     ],
     flags: {
       format: { type: "string", value: "text|json|markdown", default: "text", description: "Print the changes as text, JSON, or Markdown for a PR comment." },
@@ -238,21 +238,21 @@ export const commands = {
     examples: [
       { command: "archidocs diff HEAD", description: "Show what your uncommitted edits change, against the last commit." },
       { command: "archidocs diff origin/main HEAD", description: "Show what a branch changes against the default branch, as a reviewer of its pull request will see it." },
-      { command: "archidocs diff 2026-01-01 2026-06-30", description: "Show the Changes between two dates; each date means the last default-branch commit at or before it." },
+      { command: "archidocs diff 2026-01-01 2026-06-30", description: "Show the Changes between two dates; each date names the last Revision at or before it." },
       { command: "archidocs diff origin/main HEAD --format markdown", description: "Write the Changes as Markdown, to post as a pull request comment." },
     ],
     exitCodes: [
       { code: EXIT.ok, meaning: "The Changes were printed. It exits 0 whether or not anything changed, so a script that asks whether the Model changed must read the output, not the exit code." },
-      { code: EXIT.couldNotRun, meaning: `It could not run: ${USAGE_ERROR}, an unknown format, no point or more than two, an unknown ref or date, no Workspace found, or a Workspace outside git.` },
+      { code: EXIT.couldNotRun, meaning: `It could not run: ${USAGE_ERROR}, an unknown format, no point or more than two, an unknown ref or date, a date before the first Revision, a sha prefix of several Revisions, no Workspace found, or a Workspace outside git.` },
     ],
   },
   "history build": {
     name: "history build",
-    synopsis: ["history build [--since <ref|date>]"],
+    synopsis: ["history build [--since <ref|date|time>]"],
     description: "Build and cache the Bundle of every past Revision, so later builds and diffs don't have to. Safe to re-run.",
     arguments: [],
     flags: {
-      since: { type: "string", value: "<ref|date>", defaultText: "every Revision", description: "Only build Revisions at or after this ref's commit time or the start of this date." },
+      since: { type: "string", value: "<ref|date|time>", defaultText: "every Revision", description: "Only build Revisions at or after this ref's commit time, the start of this date, or this time (UTC unless it gives a zone)." },
     },
     examples: [
       { command: "archidocs history build", description: "Build and cache the Bundle of every past Revision, so the next `build` or `diff` reads them from the cache." },

@@ -104,23 +104,4 @@ export async function tagsByCommit(repoRoot: string): Promise<Map<string, string
   return map;
 }
 
-/** Whether `point` is a date (`YYYY-MM-DD` or a full ISO 8601 time) rather than a ref. */
-export const isDate = (point: string) => /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(point);
-
-/** A bare date means the end of that day (UTC); a time is taken as given. */
-const endOf = (date: string) => (/^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T23:59:59Z` : date);
-
-/**
- * Resolves a point in time to a commit sha: a date to the last first-parent
- * default-branch commit at or before it, anything else as a git ref.
- * Undefined when there is no such commit.
- */
-export async function resolvePoint(repoRoot: string, point: string): Promise<string | undefined> {
-  if (isDate(point)) {
-    const sha = (await git(repoRoot, "rev-list", "-1", "--first-parent", `--before=${endOf(point)}`, await defaultBranch(repoRoot)).catch(() => "")).trim();
-    return sha || undefined;
-  }
-  return (await git(repoRoot, "rev-parse", "--verify", "--quiet", "--end-of-options", `${point}^{commit}`).catch(() => "")).trim() || undefined;
-}
-
 export const joinRepo = (repoRoot: string, rel: string) => (rel === "" ? repoRoot : join(repoRoot, rel));

@@ -33,7 +33,7 @@ A [Change](/docs/reference/glossary/#term-change) is one item of the Model added
 archidocs diff v1.0.0 main
 ```
 
-With one point, it compares that point with your working tree, so you can see what an edit changes before you commit. A date means the last default-branch commit at or before it. See [Review changes with diff](/docs/guides/review/diff/).
+With one point, it compares that point with your working tree, so you can see what an edit changes before you commit. A date means the last Revision at or before it; a time without a zone is UTC, and a date before the first Revision names nothing. See [Review changes with diff](/docs/guides/review/diff/).
 
 ## History in the viewer and MCP
 
@@ -47,7 +47,7 @@ Over MCP, [`list_history`](/docs/reference/mcp/list_history/) lists the Revision
 
 - **Git is the history.** The Model is already in git, so Archidocs keeps no database of its own to back up or keep in step. Any past commit can be read again.
 - **Bundles are build outputs, not archives.** A Bundle can always be rebuilt from git. Losing the cache costs only build time: any Revision missing from it is built again.
-- **Only the default branch.** A date picks the last commit on the default branch at or before it, following first parents. Commits on merged pull request branches aren't points of their own, so the history reads as the architecture people actually had.
+- **Only the default branch.** A date picks the last Revision on the default branch at or before it, following first parents. Commits on merged pull request branches aren't points of their own, so the history reads as the architecture people actually had.
 - **A kept number of Revisions.** One Bundle per Revision grows with every commit. Keeping the latest 200 and every tag bounds the published site, while tagged releases stay comparable for good.
 
 ## Related
