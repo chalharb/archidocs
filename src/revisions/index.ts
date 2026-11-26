@@ -57,6 +57,7 @@ export const pastBundleFile = (sha: string): string => `${sha}.json`;
 export const isPastBundleFile = (name: string): boolean => /^[0-9a-f]{40,64}\.json$/.test(name);
 
 export { find, span, timeSpan, POINT_GRAMMAR, type Dated, type Found, type Span } from "./find.ts";
+export { touching } from "./touching.ts";
 export { migrateBundle, migrations, type Migration } from "./migrate.ts";
 export {
   fetchReader,

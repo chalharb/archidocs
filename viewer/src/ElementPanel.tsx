@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { listAdrs } from "../../src/core/adrs.ts";
 import { getDeployments } from "../../src/core/deployments.ts";
+import { scopeMatcher } from "../../src/core/history-scope.ts";
 import { getImpact, type ImpactRing } from "../../src/core/impact.ts";
 import { ownViewId } from "../../src/core/views/index.ts";
+import { touching } from "../../src/revisions/index.ts";
 import type { BundleRelationship } from "../../src/schema/bundle.ts";
 import type { Comparison } from "./App.tsx";
 import { AdrStatusBadge } from "./AdrReader.tsx";
@@ -281,15 +283,7 @@ function Compared({ comparison, id }: { comparison: Comparison; id: string }) {
  * Revision before.
  */
 function History({ workspace, id, timeline, onTime }: { workspace: Workspace; id: string; timeline: Timeline; onTime: (time: Pick<Place, "at" | "vs">) => void }) {
-  const revisions = useMemo(() => {
-    const ids = new Set<string>();
-    const add = (e: string) => {
-      ids.add(e);
-      for (const child of workspace.children(e)) add(child.id);
-    };
-    add(id);
-    return timeline.touching(ids);
-  }, [workspace, id, timeline]);
+  const revisions = useMemo(() => touching(timeline.revisions, scopeMatcher({ kind: "element", id }, [workspace.bundle])), [workspace, id, timeline]);
   if (timeline.revisions.length === 0) return <p className="arc-empty">This site has no history.</p>;
   if (revisions.length === 0) return <p className="arc-empty">No Revision changed it.</p>;
   return (

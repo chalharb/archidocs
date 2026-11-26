@@ -38,11 +38,6 @@ export class Timeline {
   isLatest(revision: RevisionEntry): boolean {
     return this.revisions[0] === revision;
   }
-
-  /** The Revisions whose changed ids hold any of these ids, newest first. */
-  touching(ids: ReadonlySet<string>): RevisionEntry[] {
-    return this.revisions.filter((r) => r.changedIds.some((id) => ids.has(id)));
-  }
 }
 
 /** How a Revision reads in the URL and on chips: its first tag, else its short sha. */
