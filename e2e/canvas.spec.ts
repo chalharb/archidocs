@@ -194,3 +194,33 @@ test.describe("Teams and zoom", () => {
     await expect(node(page, "shop:web")).toContainText("Web");
   });
 });
+
+test.describe("the Key", () => {
+  test("starts folded on a roomy screen and remembers a visitor's own toggle", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "#/view/c1");
+    const key = page.locator(".arc-key");
+    await expect(key).not.toHaveAttribute("open");
+
+    await key.locator("summary").click();
+    await expect(key).toHaveAttribute("open");
+    await page.reload();
+    await settled(page);
+    await expect(page.locator(".arc-key")).toHaveAttribute("open");
+  });
+
+  test("lists the icons the View draws: a Person and a System on C1, no Deployment Target", async ({ page }) => {
+    await open(page, "#/view/c1");
+    await page.locator(".arc-key summary").click();
+    const icons = page.getByRole("list", { name: "Icons" });
+    await expect(icons.getByRole("listitem").filter({ hasText: "Person" })).toBeVisible();
+    await expect(icons.getByRole("listitem").filter({ hasText: /^System$/ })).toBeVisible();
+    await expect(icons.locator('[data-key-icon="target"]')).toHaveCount(0);
+  });
+
+  test("a Deployment View's Key lists the Deployment Target icon", async ({ page }) => {
+    await open(page, "#/view/deployment/prod");
+    await page.locator(".arc-key summary").click();
+    await expect(page.getByRole("list", { name: "Icons" }).locator('[data-key-icon="target"]')).toHaveText("Deployment Target");
+  });
+});
