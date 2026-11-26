@@ -170,10 +170,67 @@ describe("a Deployment View", () => {
     await expect(await renderDeployment()).toMatchFileSnapshot("golden/deployment-prod.svg");
   });
 
+  it("fills each Target with the Target Depth ground of its nesting level, capped at the last step", async () => {
+    const files: Files = {
+      ...deploymentViewWorkspace,
+      "platform/targets.yaml": deploymentViewWorkspace["platform/targets.yaml"]!.replace(
+        "    kind: datacentre\n",
+        "    kind: dc\n    targets:\n      d2:\n        name: Depth two\n        kind: room\n        targets:\n          d3:\n            name: Depth three\n            kind: rack\n            targets:\n              d4:\n                name: Depth four\n                kind: host\n                targets:\n                  d5:\n                    name: Depth five\n                    kind: vm\n",
+      ),
+      "shop/model.yaml": deploymentViewWorkspace["shop/model.yaml"]!.replace("target: platform:dc }", "target: platform:d5 }"),
+    };
+    const { bundle } = await loadWorkspace(files);
+    const view = structuralView(bundle, "deployment/prod")!;
+    const svg = renderSvg({ bundle, view, layout: await layoutView(view, { direction: view.direction }), source });
+    /** The fill of the frame drawn in the same group as the header that starts with `name · `. */
+    const fillOf = (name: string) => /^<rect [^>]*fill="(#[0-9a-f]+)"/.exec(svg.split("<g>").find((g) => g.includes(`>${name} · `))!)![1];
+    const { "target-1": one, "target-2": two, "target-3": three } = PALETTES.light;
+
+    expect(new Set([one, two, three]).size).toBe(3);
+    expect(["Data centre", "Depth two", "Depth three", "Depth four", "Depth five"].map(fillOf)).toEqual([one, two, three, three, three]);
+  });
+
   it("labels Targets with their kind, System boxes as Systems and Deployments as Deployments", async () => {
     const t = texts(await renderDeployment());
 
     expect(t[0]).toBe("Production (Deployment)");
     expect(t).toEqual(expect.arrayContaining(["AWS eu-west-1 · region", "EKS eu · cluster", "shop namespace · namespace", "Checkout · System", "Web", "Deployment · Next.js", "Stripe", "External Service"]));
+  });
+});
+
+describe("a scaled Deployment", () => {
+  /** The Deployment View fixture with Web fixed at 3 and Cart autoscaling 2–10 in the shop namespace. */
+  const scaled: Files = {
+    ...deploymentViewWorkspace,
+    "shop/model.yaml": deploymentViewWorkspace["shop/model.yaml"]!
+      .replace("target: platform:ns-shop, url: https://shop.example.com }", "target: platform:ns-shop, url: https://shop.example.com, instances: 3 }")
+      .replace("{ service: cart, environment: prod, target: platform:ns-shop }", "{ service: cart, environment: prod, target: platform:ns-shop, instances: { min: 2, max: 10 } }"),
+  };
+
+  async function renderView(files: Files) {
+    const { bundle, issues } = await loadWorkspace(files);
+    expect(issues.filter((i) => i.severity === "error")).toEqual([]);
+    const view = structuralView(bundle, "deployment/prod")!;
+    return renderSvg({ bundle, view, layout: await layoutView(view, { direction: view.direction }), source });
+  }
+
+  it("draws exactly as its golden file", async () => {
+    await expect(await renderView(scaled)).toMatchFileSnapshot("golden/deployment-scaled.svg");
+  });
+
+  it("draws a count chip, `×3` fixed and `2–10` autoscale, two copies behind each scaled box, and a Key row", async () => {
+    const svg = await renderView(scaled);
+    const t = texts(svg);
+
+    expect(t.filter((s) => s === "×3" || s === "2–10").sort()).toEqual(["2–10", "×3"]);
+    expect(t).toContain("Stacked: scaled (×3 fixed, 2–10 autoscale)");
+    expect(svg.split("<g>").filter((g) => /<rect [^>]*width="\d+(\.\d+)?" height="68"/.test(g))).toHaveLength(2);
+  });
+
+  it("leaves the chip and the Key row out of a View with no scaled Deployment", async () => {
+    const t = texts(await renderView(deploymentViewWorkspace));
+
+    expect(t.some((s) => s.startsWith("Stacked"))).toBe(false);
+    expect(t.some((s) => s.startsWith("×"))).toBe(false);
   });
 });

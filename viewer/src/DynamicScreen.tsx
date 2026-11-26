@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { dynamicViewsUsing, stepViews, type ResolvedDynamicView, type ResolvedStep } from "../../src/core/views/index.ts";
 import { layoutSequence, type MessageStyle } from "../../src/render/sequence.ts";
 import { go } from "./history.ts";
-import { CopyLink, RecentMenu } from "./LocationBar.tsx";
+import { fileName, save, sequencePicture } from "./export.ts";
+import { CopyLink, ExportMenu, RecentMenu } from "./LocationBar.tsx";
 import type { Place } from "./place.ts";
 import { SequenceChart } from "./SequenceChart.tsx";
 import { StepGraph } from "./StepGraph.tsx";
@@ -154,6 +155,10 @@ export function DynamicScreen({ workspace, view, place, keys, onOpenStepView, on
             </div>
             <RecentMenu />
             <CopyLink />
+            <ExportMenu
+              picks={0}
+              onExport={(_, format) => void sequencePicture(workspace, view, place.brokers, format).then((blob) => save(blob, fileName(view.id, format)))}
+            />
           </div>
         </header>
         <div className="arc-canvas" data-canvas data-state={ready ? "ready" : "busy"}>

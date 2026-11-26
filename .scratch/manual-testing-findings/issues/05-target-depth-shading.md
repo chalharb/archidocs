@@ -1,6 +1,6 @@
 # 05: Shade nested Deployment Targets by depth
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

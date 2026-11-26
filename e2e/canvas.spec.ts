@@ -136,6 +136,73 @@ test.describe("selection", () => {
   });
 });
 
+test.describe("edge hover", () => {
+  test("lights the hovered edge and its two ends, fades the rest, and restores the selection on leave", async ({ page }) => {
+    await open(page, "#/view/c2?open=shop:checkout");
+    await node(page, "shop:cart").click();
+    const edges = page.locator("path[data-edge-from]");
+    const before = await edges.evaluateAll((paths) => paths.map((p) => `${p.getAttribute("data-edge-from")}>${p.getAttribute("data-edge-to")} ${p.getAttribute("class")}`).sort());
+
+    // An edge that doesn't touch the selected Cart, hovered at a point along its line that nothing covers.
+    const spot = await page.locator(".arc-edge-hit:not([data-edge-hit*='shop:cart'])").evaluateAll((paths) => {
+      for (const p of paths as SVGPathElement[]) {
+        const at = p.getPointAtLength(p.getTotalLength() / 2);
+        const { x, y } = new DOMPoint(at.x, at.y).matrixTransform(p.getScreenCTM()!);
+        if (document.elementFromPoint(x, y) === p) return { id: p.getAttribute("data-edge-hit")!, x, y };
+      }
+      return null;
+    });
+    expect(spot).not.toBeNull();
+    const [from, to] = spot!.id.split(">") as [string, string];
+    await page.mouse.move(spot!.x, spot!.y);
+
+    const hovered = page.locator(`path[data-edge-from="${from}"][data-edge-to="${to}"]`);
+    await expect(hovered).toHaveClass(/arc-lit/);
+    await expect(node(page, from)).toHaveAttribute("data-hover", "end");
+    await expect(node(page, to)).toHaveAttribute("data-hover", "end");
+    await expect(node(page, "shop:cart")).toHaveAttribute("data-hover", "faded");
+    const others = await edges.evaluateAll((paths, id) => paths.filter((p) => `${p.getAttribute("data-edge-from")}>${p.getAttribute("data-edge-to")}` !== id).map((p) => p.getAttribute("class")), `${from}>${to}`);
+    expect(others.length).toBeGreaterThan(0);
+    for (const c of others) expect(c).toContain("arc-faded");
+    // The lit edge draws over the others.
+    expect(await edges.evaluateAll((paths) => paths.at(-1)?.getAttribute("data-edge-from") + ">" + paths.at(-1)?.getAttribute("data-edge-to"))).toBe(`${from}>${to}`);
+
+    await page.mouse.move(2, 2);
+    await expect(node(page, from)).not.toHaveAttribute("data-hover", /.*/);
+    await expect(async () => {
+      const after = await edges.evaluateAll((paths) => paths.map((p) => `${p.getAttribute("data-edge-from")}>${p.getAttribute("data-edge-to")} ${p.getAttribute("class")}`).sort());
+      expect(after).toEqual(before);
+    }).toPass();
+    await expect(node(page, "shop:cart")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("an edge inside open boxes can be hovered: they never cover it", async ({ page }) => {
+    await open(page, "#/view/deployment/prod");
+    // Every edge has a point along its line where the pointer finds its hover target, not a box drawn over it.
+    const reachable = await page.locator(".arc-edge-hit").evaluateAll((paths) =>
+      (paths as SVGPathElement[]).map((p) => {
+        const length = p.getTotalLength();
+        const found = [0.2, 0.35, 0.5, 0.65, 0.8].some((f) => {
+          const at = p.getPointAtLength(length * f);
+          const { x, y } = new DOMPoint(at.x, at.y).matrixTransform(p.getScreenCTM()!);
+          return x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && document.elementFromPoint(x, y) === p;
+        });
+        return { id: p.getAttribute("data-edge-hit")!, inside: document.querySelector(`[data-node="${p.getAttribute("data-edge-hit")!.split(">")[0]}"]`)?.getAttribute("data-parent") !== "", found };
+      }),
+    );
+    expect(reachable.filter((e) => e.inside).length).toBeGreaterThan(0);
+    expect(reachable.filter((e) => !e.found).map((e) => e.id)).toEqual([]);
+  });
+
+  test("the tooltip names the two ends and what the Relationship says", async ({ page }) => {
+    await open(page, "#/view/c2?open=shop:checkout");
+    const titles = await page.locator(".arc-edge-hit title").allTextContents();
+    expect(titles.length).toBeGreaterThan(0);
+    for (const t of titles) expect(t).toMatch(/.+ → .+/);
+    expect(titles.some((t) => t.includes("\n"))).toBe(true);
+  });
+});
+
 test.describe("direction", () => {
   test("defaults to LR and redraws the View in the direction picked", async ({ page }) => {
     await open(page, "#/view/c1");
@@ -216,5 +283,35 @@ test.describe("Teams and zoom", () => {
     await expect(subLabel).toBeHidden();
     await expect(team).toBeHidden();
     await expect(node(page, "shop:web")).toContainText("Web");
+  });
+});
+
+test.describe("the Key", () => {
+  test("starts folded on a roomy screen and remembers a visitor's own toggle", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "#/view/c1");
+    const key = page.locator(".arc-key");
+    await expect(key).not.toHaveAttribute("open");
+
+    await key.locator("summary").click();
+    await expect(key).toHaveAttribute("open");
+    await page.reload();
+    await settled(page);
+    await expect(page.locator(".arc-key")).toHaveAttribute("open");
+  });
+
+  test("lists the icons the View draws: a Person and a System on C1, no Deployment Target", async ({ page }) => {
+    await open(page, "#/view/c1");
+    await page.locator(".arc-key summary").click();
+    const icons = page.getByRole("list", { name: "Icons" });
+    await expect(icons.getByRole("listitem").filter({ hasText: "Person" })).toBeVisible();
+    await expect(icons.getByRole("listitem").filter({ hasText: /^System$/ })).toBeVisible();
+    await expect(icons.locator('[data-key-icon="target"]')).toHaveCount(0);
+  });
+
+  test("a Deployment View's Key lists the Deployment Target icon", async ({ page }) => {
+    await open(page, "#/view/deployment/prod");
+    await page.locator(".arc-key summary").click();
+    await expect(page.getByRole("list", { name: "Icons" }).locator('[data-key-icon="target"]')).toHaveText("Deployment Target");
   });
 });

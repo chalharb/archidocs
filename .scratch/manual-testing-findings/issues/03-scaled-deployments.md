@@ -1,6 +1,6 @@
 # 03: Show that a Deployment is scaled
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

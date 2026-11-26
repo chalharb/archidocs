@@ -1,6 +1,6 @@
 import { basename, dirname, join, relative, sep } from "node:path";
 import { Bundle, SCHEMA_VERSION, type BundleDeployment, type BundleElement, type BundleRelationship, type BundleSelector, type BundleStructuralView, type BundleTarget, type BundleView } from "../schema/bundle.ts";
-import { DynamicView, ProjectFile, StructuralView, WorkspaceFile, type LensInput, type SelectorInput, childKindOf, collectionOf, kindOfCollection, lensSchemaFor, selectorSchemaFor, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
+import { DynamicView, Instances, ProjectFile, StructuralView, WorkspaceFile, type LensInput, type SelectorInput, childKindOf, collectionOf, kindOfCollection, lensSchemaFor, selectorSchemaFor, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
 import type { FileSystem } from "./fs.ts";
 import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
 import { indexByQualifiedId, qualified, qualify, referenceResolver } from "./refs.ts";
@@ -404,6 +404,7 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
     target: qualify(d.data.target, d.project) ?? String(d.data.target ?? ""),
     url: str(d.data.url),
     endpoints: Array.isArray(d.data.endpoints) ? d.data.endpoints.map(asRecord).map((e) => ({ name: String(e.name ?? ""), url: String(e.url ?? "") })) : [],
+    instances: instancesOf(d.data.instances),
     owner: d.service ? ownerOf(d.service) : (d.project.owner ?? ""),
     source: source(d),
   }));
@@ -495,3 +496,9 @@ const asRecord = (v: unknown): Record<string, unknown> =>
   v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/** A Deployment's `instances` as the Bundle carries it: 1 when absent or invalid (Load has already reported an invalid one). */
+function instancesOf(value: unknown): number | { min: number; max: number } {
+  const parsed = Instances.safeParse(value);
+  return parsed.success ? parsed.data : 1;
+}

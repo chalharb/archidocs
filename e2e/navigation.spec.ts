@@ -57,27 +57,28 @@ test.describe("the URL holds the screen", () => {
     await expect(node(page, "shop:checkout-ui")).toBeVisible();
   });
 
-  test("an empty hash opens the C2 Landscape", async ({ page }) => {
+  test("an empty hash opens the C1 Landscape", async ({ page }) => {
     await page.goto("./");
     await settled(page);
-    await expect(page.getByRole("navigation", { name: "Breadcrumbs" })).toContainText("C2 Landscape");
+    // The hash stays empty; the screen is the C1 Landscape all the same.
+    await expect(page.getByRole("navigation", { name: "Breadcrumbs" })).toHaveText("C1");
     expect(await nodeIds(page)).toContain("shop:checkout");
   });
 
   test("an unknown View says so and links home", async ({ page }) => {
     await page.goto("./#/view/c2/shop:nope");
     await expect(page.getByText("No View c2/shop:nope")).toBeVisible();
-    await page.getByRole("link", { name: "Open the C2 Landscape" }).click();
+    await page.getByRole("link", { name: "Open the C1 Landscape" }).click();
     await settled(page);
-    expect(hash(page)).toBe("#/view/c2");
+    expect(hash(page)).toBe("#/view/c1");
   });
 
-  test("the logo goes home to the C2 Landscape, and Back returns", async ({ page }) => {
+  test("the logo goes home to the C1 Landscape, and Back returns", async ({ page }) => {
     await open(page, "#/view/c2?open=shop:checkout&sel=shop:cart&impact=shop:cart&way=both");
     const before = hash(page);
     await page.getByRole("link", { name: "Archidocs home" }).click();
     await settled(page);
-    expect(hash(page)).toBe("#/view/c2");
+    expect(hash(page)).toBe("#/view/c1");
     await page.goBack();
     await settled(page);
     expect(hash(page)).toBe(before);

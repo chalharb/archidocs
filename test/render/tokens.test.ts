@@ -41,7 +41,9 @@ describe.each(["big-bank", "kitchen-sink"])("exports of examples/%s", async (exa
   });
 
   it.each(themes)("draws every Saved View in %s with no element below full opacity, and only the theme's colours", async (theme) => {
-    const allowed = new Set([...Object.values(PALETTES[theme]), flatten(PALETTES[theme].container, PALETTES[theme].ground), ...teamColours, "none"].map((c) => c.toLowerCase()));
+    const p = PALETTES[theme];
+    const grounds = [p.ground, p["target-1"], p["target-2"], p["target-3"]];
+    const allowed = new Set([...Object.values(p), ...grounds.map((g) => flatten(p.container, g)), ...teamColours, "none"].map((c) => c.toLowerCase()));
     for (const { id } of bundle.views) {
       const svg = await draw(id, theme);
       const opacities = [...svg.matchAll(/(?:^|[\s"])(?:fill-|stroke-)?opacity[=:]\s*"?([\d.]+)/g)].map((m) => Number(m[1]));

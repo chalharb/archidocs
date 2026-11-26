@@ -84,6 +84,10 @@
   --origin: var(--ink);
   --originbg: var(--herebg);
   --container: rgba(232, 234, 229, 0.6);
+  /* Target Depth: a Deployment Target's ground, one step darker per level it nests, capped at the third. */
+  --target-1: #ebede8;
+  --target-2: #e2e5df;
+  --target-3: #d9ddd6;
   --radius: 0;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --sans: "Overpass", ui-sans-serif, system-ui, sans-serif;
@@ -132,6 +136,9 @@
     --edge: #8f99a5;
     --edge-faint: #646d78;
     --container: rgba(35, 44, 56, 0.55);
+    --target-1: #0d1117;
+    --target-2: #0a0d12;
+    --target-3: #06080c;
     --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 8.5 6 12l7.5-8' fill='none' stroke='%2310151c' stroke-width='2.25'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
@@ -978,10 +985,62 @@ select.arc-tool option {
   text-align: right;
 }
 
-/* A Deployment Target is a solid, quiet frame, so the dashed System boxes inside it read as grouping only. */
+/* A Deployment Target is a solid, quiet frame on its Target Depth ground, one step off its parent's, so nesting reads at a glance. */
 .arc-box.arc-target.arc-container {
   border: 1.5px solid var(--line);
-  background: transparent;
+}
+
+.arc-box.arc-target.arc-container.arc-target-step-1 {
+  background: var(--target-1);
+}
+
+.arc-box.arc-target.arc-container.arc-target-step-2 {
+  background: var(--target-2);
+}
+
+.arc-box.arc-target.arc-container.arc-target-step-3 {
+  background: var(--target-3);
+}
+
+/* A scaled Deployment: two framed copies of its box behind it, down and to the right, as the SVG export draws them. */
+.arc-stack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.arc-stack::before,
+.arc-stack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  background: var(--paper);
+  border: 1.5px solid var(--nodeline);
+}
+
+.arc-stack::before {
+  transform: translate(10px, 10px);
+}
+
+.arc-stack::after {
+  transform: translate(5px, 5px);
+}
+
+.arc-stack-faint::before,
+.arc-stack-faint::after {
+  background: var(--ground);
+  border-color: var(--line);
+}
+
+/* A scaled Deployment's count, `×3` or `2–10`, beside the Team code. */
+.arc-instances {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  background: var(--paper);
+  font: 700 10px/14px var(--sans);
+  white-space: nowrap;
 }
 
 /* Selected: an ink frame inside the yellow you-are-here ring. */
@@ -1054,6 +1113,21 @@ select.arc-tool option {
   list-style: none;
 }
 
+/* The icons the View draws, two to a row, each beside the kind it names; a rule parts them from the marks below. */
+.arc-key ul.arc-key-icons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.arc-key-icons .arc-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
 .arc-key li {
   display: flex;
   align-items: center;
@@ -1088,6 +1162,18 @@ select.arc-tool option {
 
 .arc-key-broker {
   background-image: repeating-linear-gradient(90deg, transparent 0 4px, var(--line) 4px 7px);
+}
+
+/* Three small frames, back to front, as a scaled Deployment stacks. */
+.arc-key-stacked {
+  width: 22px;
+  height: 12px;
+  margin: 0 6px 4px 0;
+  box-shadow:
+    3px 3px 0 -1.5px var(--paper),
+    3px 3px 0 0 var(--ink),
+    6px 6px 0 -1.5px var(--paper),
+    6px 6px 0 0 var(--ink);
 }
 
 .arc-key-origin {
@@ -1138,7 +1224,17 @@ select.arc-tool option {
 .arc-edge {
   stroke: var(--edge);
   stroke-width: 1.5;
-  transition: opacity 150ms var(--ease);
+  transition:
+    opacity 150ms var(--ease),
+    stroke 150ms var(--ease);
+}
+
+/* An edge's hover target: a wide, unseen stroke over the line. */
+.arc-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  pointer-events: stroke;
 }
 
 .arc-edge.arc-faded {
@@ -1177,7 +1273,8 @@ select.arc-tool option {
 .arc-animate .arc-edge {
   transition:
     d 300ms var(--ease),
-    opacity 150ms var(--ease);
+    opacity 150ms var(--ease),
+    stroke 150ms var(--ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1629,6 +1726,12 @@ select.arc-tool option {
   border-left-color: var(--team, var(--nodeline));
   background-color: var(--paper);
   box-shadow: 0 0 0 4px var(--team, var(--ink));
+}
+
+/* The two ends of a hovered edge. */
+.arc-box.arc-hover-end {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--ink);
 }
 
 /* Picked for export: a solid frame and a check tile on the corner. */
