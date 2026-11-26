@@ -15,7 +15,7 @@ Steps, in this order (each opens the right page or runs the `gh` command, and ch
 3. Make `beta` the default branch (`gh repo edit --default-branch beta`).
 4. Rulesets (Settings → Rules, or `gh api`):
    - `beta`: pull request required; allowed merge methods squash and merge.
-   - `main`: pull request required; allowed merge method merge only; bypass for the identity behind `RELEASE_TOKEN`.
+   - `main`: edit the existing `main` ruleset (it has no bypass actors and requires linear history today). Turn **off** "Require linear history", which blocks the merge commit every promotion needs; set the allowed merge method to merge only; add the identity behind `RELEASE_TOKEN` as a bypass actor (the **Repository admin** role for a PAT, or the App itself), so the `chore(release)` commit can be pushed.
    - Repo settings: allow merge commits (currently off) as well as squash.
 5. Create the `npm` environment with deployment branches `main` and `beta` only.
 6. On npmjs.com, archidocs → Settings → Trusted Publisher: set the environment to `npm` on the existing GitHub Actions publisher (repository `chalharb/archidocs`, workflow `publish.yml`).
