@@ -101,10 +101,11 @@ interface ScreenProps {
 
 function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenProps) {
   const place = usePlace();
-  const openKey = place.open.join(",");
+  const openKey = `${place.open.join(",")}|${place.closed.join(",")}`;
+  const boxes = { expand: place.open, collapse: place.closed };
   const view = useMemo(
-    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { expand: place.open, lens: "none" }) : structuralView(workspace.bundle, place.view, { expand: place.open, lens: "none" })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open, so the View is only resolved again when it changes.
+    () => (comparison ? compareView(comparison.before, comparison.after, place.view, { ...boxes, lens: "none" }) : structuralView(workspace.bundle, place.view, { ...boxes, lens: "none" })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey stands for place.open and place.closed, so the View is only resolved again when they change.
     [workspace, comparison, place.view, openKey],
   );
   const dynamic = useMemo(() => {
@@ -114,14 +115,19 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   /** The direction on screen: the one the viewer turned it to, else the View's own. */
   const direction = place.direction ?? view?.direction;
   const { laidOut, error } = useLayout(view, direction);
+  /** The boxes that show a − to close them: those opened, and on the C2 Landscape every open System. */
+  const closable = useMemo(() => {
+    const systems = (view?.nodes ?? []).filter((n) => !n.collapsed && landscapeSystem(workspace, place.view, n.id) && workspace.children(n.id).length > 0).map((n) => n.id);
+    return [...new Set([...place.open, ...systems])];
+  }, [view, workspace, place.view, place.open]);
   const [settled, setSettled] = useState<LaidOut>();
   // Ready once the Layout of exactly this screen is drawn and still; tests and screenshots wait for it.
   const ready = !loading && laidOut !== undefined && settled === laidOut && laidOut.view === view && laidOut.layout.direction === direction;
   const title = workspace.title(place.view);
   const lensKey = place.lens ? JSON.stringify(place.lens) : "";
   // The Lens is drawn over the Layout of the plain View, so turning it on never moves a node.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey and lensKey stand for place.open and place.lens.
-  const lensed = useMemo(() => (place.lens ? structuralView(workspace.bundle, place.view, { expand: place.open, lens: place.lens }) : undefined), [workspace, place.view, openKey, lensKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- openKey and lensKey stand for place.open, place.closed and place.lens.
+  const lensed = useMemo(() => (place.lens ? structuralView(workspace.bundle, place.view, { ...boxes, lens: place.lens }) : undefined), [workspace, place.view, openKey, lensKey]);
   const [finding, setFinding] = useState(false);
   /** The start of a Connect to… waiting for its end node. */
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
@@ -136,7 +142,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   /** Turns a Lens on, off or to another; a path Lens picks the nodes on its paths. */
   const setLens = useCallback(
     (lens: Lens | null) => {
-      const picks = lens && "path" in lens ? (structuralView(workspace.bundle, place.view, { expand: place.open, lens })?.nodes.filter((n) => n.mark?.hit).map((n) => n.id) ?? []) : place.picks;
+      const picks = lens && "path" in lens ? (structuralView(workspace.bundle, place.view, { expand: place.open, collapse: place.closed, lens })?.nodes.filter((n) => n.mark?.hit).map((n) => n.id) ?? []) : place.picks;
       go({ ...place, lens, picks });
     },
     [place, workspace],
@@ -179,28 +185,32 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   /** Opens an ADR in the reader, or closes it with null; like selection, it replaces the history entry. */
   const openAdr = useCallback((adr: string | null) => go({ ...place, adr }, { replace: true }), [place]);
 
-  const toggle = useCallback(
-    (id: string, open: boolean) => {
-      if (open) return go({ ...place, open: [...place.open, id] });
-      const inside = (other: string) => other === id || workspace.ancestors(other).includes(id);
-      go({ ...place, open: place.open.filter((o) => !inside(o)), selected: place.selected !== null && workspace.ancestors(place.selected).includes(id) ? null : place.selected });
-    },
-    [place, workspace],
-  );
-
+  /** Closes boxes and everything opened inside them; on the C2 Landscape a System closes into `closed`. */
   const collapse = useCallback(
     (ids: string[]) => {
       const closing = (other: string) => ids.some((id) => other === id || workspace.ancestors(other).includes(id));
       const selectedHidden = place.selected !== null && workspace.ancestors(place.selected).some((a) => ids.includes(a));
-      go({ ...place, open: place.open.filter((o) => !closing(o)), selected: selectedHidden ? null : place.selected });
+      const systems = ids.filter((id) => landscapeSystem(workspace, place.view, id) && !place.closed.includes(id));
+      go({ ...place, open: place.open.filter((o) => !closing(o)), closed: [...place.closed, ...systems], selected: selectedHidden ? null : place.selected });
     },
     [place, workspace],
+  );
+
+  /** Opens a box, or closes it with everything opened inside it; on the C2 Landscape a System opens and closes through `closed`. */
+  const toggle = useCallback(
+    (id: string, open: boolean) => {
+      if (open) return go(landscapeSystem(workspace, place.view, id) ? { ...place, closed: place.closed.filter((c) => c !== id) } : { ...place, open: [...place.open, id] });
+      collapse([id]);
+    },
+    [place, workspace, collapse],
   );
 
   const openView = useCallback(
     (node: string) => {
       // A Deployment or a Target's System box opens the View of the Element it draws.
       const id = view?.nodes.find((n) => n.id === node)?.element ?? node;
+      // Down one rung at a time: a System on the C1 Landscape opens the C2 Landscape, there selected.
+      if (place.view === "c1" && workspace.byId.get(id)?.kind === "system") return go(viewPlace("c2", id, place.lens, place));
       const target = ownViewId(workspace.bundle, id);
       if (target !== undefined && target !== place.view) go(viewPlace(target, null, place.lens, place));
     },
@@ -210,8 +220,8 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   /** Focuses an Element, closing any ADR: in the current View when opening its boxes shows it there, else in its own View. */
   const focus = useCallback(
     (id: string) => {
-      const open = opening(workspace, place, id);
-      if (open) return go({ ...place, open, selected: id, adr: null }, { replace: open.length === place.open.length });
+      const boxes = opening(workspace, place, id);
+      if (boxes) return go({ ...place, ...boxes, selected: id, adr: null }, { replace: boxes.open.length === place.open.length && boxes.closed.length === place.closed.length });
       const element = workspace.byId.get(id);
       const home = element?.kind === "component" ? ownViewId(workspace.bundle, element.parent!) : element?.kind === "person" ? "c1" : ownViewId(workspace.bundle, id);
       go(viewPlace(home ?? "c2", id, place.lens, place));
@@ -239,11 +249,11 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   const openStepView = useCallback(
     (target: string, step: ResolvedStep) => {
       const ends = [step.relationship.from, step.relationship.to];
-      let open: string[] = [];
-      for (const id of ends) open = opening(workspace, { ...viewPlace(target), open }, id) ?? open;
-      const shown = new Set(structuralView(workspace.bundle, target, { expand: open, lens: "none" })?.nodes.map((n) => n.id) ?? []);
+      let boxes: Pick<Place, "open" | "closed"> = { open: [], closed: [] };
+      for (const id of ends) boxes = opening(workspace, { ...viewPlace(target), ...boxes }, id) ?? boxes;
+      const shown = new Set(structuralView(workspace.bundle, target, { expand: boxes.open, collapse: boxes.closed, lens: "none" })?.nodes.map((n) => n.id) ?? []);
       const selected = [ends[0]!, ...workspace.ancestors(ends[0]!).reverse()].find((id) => shown.has(id)) ?? null;
-      go({ ...viewPlace(target, null, null, place), open, selected });
+      go({ ...viewPlace(target, null, null, place), ...boxes, selected });
     },
     [workspace, place],
   );
@@ -325,7 +335,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
         {saving && (
           <SaveAsView
             workspace={workspace}
-            screen={{ view: place.view, open: place.open, lens: place.lens, picks: place.picks, direction: place.direction }}
+            screen={{ view: place.view, open: place.open, closed: place.closed, lens: place.lens, picks: place.picks, direction: place.direction }}
             title={title ?? view.title}
             onClose={() => setSaving(false)}
           />
@@ -345,7 +355,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               workspace={workspace}
               laidOut={laidOut}
               selected={place.selected}
-              open={place.open}
+              open={closable}
               fitKey={`${place.view}|${direction}`}
               lensed={lensed}
               picks={place.picks}
@@ -392,19 +402,26 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
 }
 
 /**
- * The open boxes that show `id` in the current View: those already open plus
- * each ancestor the View shows collapsed on the way down; undefined when the
+ * The open and closed boxes that show `id` in the current View: those already
+ * open plus each ancestor the View shows collapsed on the way down (on the C2
+ * Landscape a closed System opens by leaving `closed`); undefined when the
  * View can't show it.
  */
-function opening(workspace: Workspace, place: Place, id: string): string[] | undefined {
+function opening(workspace: Workspace, place: Place, id: string): Pick<Place, "open" | "closed"> | undefined {
   const open = [...place.open];
+  let closed = [...place.closed];
   for (const a of [...workspace.ancestors(id), id]) {
-    const nodes = structuralView(workspace.bundle, place.view, { expand: open, lens: "none" })?.nodes ?? [];
-    if (nodes.some((n) => n.id === id)) return open;
-    if (a !== id && !open.includes(a) && nodes.some((n) => n.id === a)) open.push(a);
+    const nodes = structuralView(workspace.bundle, place.view, { expand: open, collapse: closed, lens: "none" })?.nodes ?? [];
+    if (nodes.some((n) => n.id === id)) return { open, closed };
+    if (a === id || !nodes.some((n) => n.id === a)) continue;
+    if (closed.includes(a)) closed = closed.filter((c) => c !== a);
+    else if (!open.includes(a)) open.push(a);
   }
   return undefined;
 }
+
+/** Whether a box is a System on the C2 Landscape, which opens it unless it is in `closed`. */
+const landscapeSystem = (workspace: Workspace, view: string, id: string) => view === "c2" && workspace.byId.get(id)?.kind === "system";
 
 function Message({ title, children }: { title: string; children?: React.ReactNode }) {
   return (

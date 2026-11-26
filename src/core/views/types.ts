@@ -82,6 +82,12 @@ export interface ResolveOptions {
    */
   expand?: readonly string[];
   /**
+   * Systems the C2 Landscape shows closed; it opens every other System.
+   * Viewer state, like `expand`, and read by no other View. A System that is
+   * also in `expand` is open.
+   */
+  collapse?: readonly string[];
+  /**
    * The Lens over the View, which marks nodes and lights edges without
    * changing which nodes the View holds: `"own"` (the default) is a Saved
    * View's own Lens and none on any other View, `"none"` is no Lens, and a

@@ -2935,7 +2935,7 @@ button.arc-change:focus-visible {
   padding: 10px 14px;
 }
 
-/* The way in: a reversed arrow tile at the end of the head row opens the box's own View.
+/* The way in: a reversed arrow tile at the end of the head row: the box's own View, or from C1 the C2 Landscape.
    The + beside the name opens the box here; the tile goes down a level. */
 .arc-way-in {
   flex: none;

@@ -46,17 +46,36 @@ describe("the C1 Landscape", () => {
 });
 
 describe("the C2 Landscape", () => {
-  it("starts with every System collapsed", async () => {
+  it("opens every System, showing its Services, with Persons and Elements outside any System around them", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
     const view = structuralView(bundle, "c2");
 
     expect(view).toMatchObject({ id: "c2", kind: "c2", title: "C2 Landscape" });
-    expect(shape(view)).toEqual(shape(structuralView(bundle, "c1")));
+    expect(shape(view)).toEqual({
+      nodes: [
+        ["payments:payments", null, false],
+        ["payments:payments-api", "payments:payments", true],
+        ["shop:cart", "shop:checkout", true],
+        ["shop:cart-db", "shop:checkout", false],
+        ["shop:checkout", null, false],
+        ["shop:events", null, false],
+        ["shop:order-history", "shop:checkout", false],
+        ["shop:shopper", null, false],
+        ["shop:web", null, false],
+      ],
+      edges: [
+        ["shop:cart", "payments:payments-api", 2],
+        ["shop:cart", "shop:cart-db", 1],
+        ["shop:order-history", "payments:payments-api", 1],
+        ["shop:shopper", "shop:web", 1],
+        ["shop:web", "shop:cart", 1],
+      ],
+    });
   });
 
-  it("opens the Systems it is asked to expand, deriving edges to their Services", async () => {
+  it("closes the Systems in collapse, deriving edges to them", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = structuralView(bundle, "c2", { expand: ["shop:checkout"] });
+    const view = structuralView(bundle, "c2", { collapse: ["payments:payments"] });
 
     expect(shape(view)).toEqual({
       nodes: [
@@ -79,15 +98,38 @@ describe("the C2 Landscape", () => {
     });
   });
 
-  it("opens a Service with Components once its System is open, and ignores it while the System is closed", async () => {
+  it("with every System closed, draws what the C1 Landscape draws", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const open = structuralView(bundle, "c2", { expand: ["shop:checkout", "shop:cart"] });
-    const closed = structuralView(bundle, "c2", { expand: ["shop:cart"] });
+    const view = structuralView(bundle, "c2", { collapse: ["shop:checkout", "payments:payments"] });
+
+    expect(shape(view)).toEqual(shape(structuralView(bundle, "c1")));
+  });
+
+  it("opens a Service with Components, and ignores it while its System is closed", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const open = structuralView(bundle, "c2", { expand: ["shop:cart"] });
+    const closed = structuralView(bundle, "c2", { expand: ["shop:cart"], collapse: ["shop:checkout"] });
 
     expect(open?.nodes.filter((n) => n.parent === "shop:cart").map((n) => n.id)).toEqual(["shop:checkout-ui"]);
     expect(open?.nodes.find((n) => n.id === "shop:cart")?.collapsed).toBe(false);
-    expect(open?.edges.map((e) => [e.from, e.to])).toContainEqual(["shop:checkout-ui", "payments:payments"]);
-    expect(shape(closed)).toEqual(shape(structuralView(bundle, "c2")));
+    expect(open?.edges.map((e) => [e.from, e.to])).toContainEqual(["shop:checkout-ui", "payments:payments-api"]);
+    expect(shape(closed)).toEqual(shape(structuralView(bundle, "c2", { collapse: ["shop:checkout"] })));
+  });
+
+  it("opens a System in both expand and collapse", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+    const view = structuralView(bundle, "c2", { expand: ["shop:checkout"], collapse: ["shop:checkout"] });
+
+    expect(shape(view)).toEqual(shape(structuralView(bundle, "c2")));
+  });
+});
+
+describe("collapse on other Views", () => {
+  it("leaves the C1 Landscape and a System's own View as they are", async () => {
+    const { bundle } = await loadWorkspace(relationshipWorkspace);
+
+    expect(shape(structuralView(bundle, "c1", { collapse: ["shop:checkout"] }))).toEqual(shape(structuralView(bundle, "c1")));
+    expect(shape(structuralView(bundle, "c2/shop:checkout", { collapse: ["shop:checkout"] }))).toEqual(shape(structuralView(bundle, "c2/shop:checkout")));
   });
 });
 
@@ -192,7 +234,7 @@ describe("listing Generated Views", () => {
   it("lists the Views that contain an Element as a node", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
 
-    expect(listViews(bundle, { element: "shop:cart-db" }).map((v) => v.id)).toEqual(["c2/shop:checkout", "c3/shop:cart"]);
+    expect(listViews(bundle, { element: "shop:cart-db" }).map((v) => v.id)).toEqual(["c2", "c2/shop:checkout", "c3/shop:cart"]);
     expect(listViews(bundle, { element: "shop:web" }).map((v) => v.id)).toEqual(["c1", "c2", "c2/shop:checkout", "c3/shop:cart"]);
     expect(listViews(bundle, { element: "payments:charges" }).map((v) => v.id)).toEqual(["c3/payments:payments-api"]);
   });
@@ -210,6 +252,7 @@ describe("the oversized-view warning", () => {
 
   it("is reported at the System when its C2 View has more than 150 nodes", async () => {
     const over = await loadWorkspace(workspace(150));
+    // The C2 Landscape opens the System too, so it is as big.
     expect(over.issues).toEqual([
       {
         file: "archidocs/shop/model.yaml",
@@ -217,6 +260,13 @@ describe("the oversized-view warning", () => {
         rule: "oversized-view",
         severity: "warning",
         message: 'Generated View "c2/shop:big" has 151 nodes, more than the 150 a diagram stays readable at',
+      },
+      {
+        file: "archidocs/workspace.yaml",
+        line: 1,
+        rule: "oversized-view",
+        severity: "warning",
+        message: 'Generated View "c2" has 151 nodes, more than the 150 a diagram stays readable at',
       },
     ]);
     expect((await loadWorkspace(workspace(149))).issues).toEqual([]);
@@ -226,7 +276,7 @@ describe("the oversized-view warning", () => {
     const { issues } = await loadWorkspace(workspace(1, 150));
     expect(issues.map((i) => [i.file, i.line, i.message])).toEqual([
       ["archidocs/workspace.yaml", 1, 'Generated View "c1" has 151 nodes, more than the 150 a diagram stays readable at'],
-      ["archidocs/workspace.yaml", 1, 'Generated View "c2" has 151 nodes, more than the 150 a diagram stays readable at'],
+      ["archidocs/workspace.yaml", 1, 'Generated View "c2" has 152 nodes, more than the 150 a diagram stays readable at'],
     ]);
   });
 });
@@ -266,7 +316,7 @@ describe("a Lens over a Generated View", () => {
 
   it("marks a collapsed box when anything inside it is hit, with the nearest distance", async () => {
     const { bundle } = await loadWorkspace(relationshipWorkspace);
-    const view = structuralView(bundle, "c2", { lens: { impact: "shop:cart", direction: "upstream" } });
+    const view = structuralView(bundle, "c2", { collapse: ["shop:checkout", "payments:payments"], lens: { impact: "shop:cart", direction: "upstream" } });
 
     expect(marks(view)).toMatchObject({ "shop:checkout": { hit: true, distance: 0 }, "payments:payments": { hit: false } });
   });

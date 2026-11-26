@@ -5,9 +5,12 @@ test.describe("the URL holds the screen", () => {
   test("opening a copied link restores the same View, open boxes, selection and direction", async ({ page, context, browser }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await open(page, "#/view/c2");
-    await page.getByRole("button", { name: "Expand Checkout" }).click();
+    await page.getByRole("button", { name: "Collapse Payments" }).click();
     await settled(page);
-    await node(page, "shop:cart").click();
+    await page.getByRole("button", { name: "Expand Cart" }).click();
+    await settled(page);
+    // Open, Cart holds its Components; its name is clear of them.
+    await node(page, "shop:cart").getByTestId("name").click();
     await page.getByLabel("Direction").selectOption("TB");
     await settled(page);
     await page.getByRole("button", { name: "Copy link" }).click();
@@ -19,7 +22,9 @@ test.describe("the URL holds the screen", () => {
 
     expect(link).toBe(page.url());
     expect(await nodeIds(other)).toEqual(await nodeIds(page));
-    await expect(other.getByRole("region", { name: "Open boxes" }).getByRole("button", { name: "Close Checkout" })).toBeVisible();
+    expect(link).toContain("closed=payments:payments");
+    await expect(other.getByRole("region", { name: "Open boxes" }).getByRole("button", { name: "Close Cart" })).toBeVisible();
+    await expect(node(other, "payments:payments-api")).toHaveCount(0);
     await expect(node(other, "shop:cart")).toHaveAttribute("aria-selected", "true");
     await expect(other.getByLabel("Direction")).toHaveValue("TB");
     await other.close();
@@ -27,11 +32,12 @@ test.describe("the URL holds the screen", () => {
 
   test("back and forward walk View and open-box changes, while selection replaces the current entry", async ({ page }) => {
     await open(page, "#/view/c2");
-    await page.getByRole("button", { name: "Expand Checkout" }).click();
+    await page.getByRole("button", { name: "Expand Cart" }).click();
     await settled(page);
-    await node(page, "shop:cart").click();
+    // Open, Cart holds its Components; its name is clear of them.
+    await node(page, "shop:cart").getByTestId("name").click();
     const openWithCart = hash(page);
-    await node(page, "shop:cart").dblclick();
+    await node(page, "shop:cart").getByTestId("name").dblclick();
     await settled(page);
     expect(hash(page)).toMatch(/^#\/view\/c3\/shop:cart/);
 
@@ -43,12 +49,12 @@ test.describe("the URL holds the screen", () => {
     await page.goBack();
     await settled(page);
     expect(hash(page)).toBe("#/view/c2");
-    await expect(node(page, "shop:cart")).toHaveCount(0);
+    await expect(node(page, "shop:checkout-ui")).toHaveCount(0);
 
     await page.goForward();
     await settled(page);
     expect(hash(page)).toBe(openWithCart);
-    await expect(node(page, "shop:cart")).toBeVisible();
+    await expect(node(page, "shop:checkout-ui")).toBeVisible();
   });
 
   test("an empty hash opens the C2 Landscape", async ({ page }) => {
@@ -133,25 +139,33 @@ test.describe("where am I", () => {
   });
 
   test("chips show the open boxes; ✕ closes one, Collapse all closes them all", async ({ page }) => {
-    await open(page, "#/view/c2?open=shop:checkout,payments:payments");
+    await open(page, "#/view/c2?open=shop:cart,payments:payments-api");
     const chips = page.getByRole("region", { name: "Open boxes" });
-    await expect(chips.getByRole("button", { name: /^Close / })).toHaveText(["Checkout", "Payments"]);
+    await expect(chips.getByRole("button", { name: /^Close / })).toHaveText(["Cart", "Payments API"]);
 
-    await chips.getByRole("button", { name: "Close Payments" }).click();
+    await chips.getByRole("button", { name: "Close Payments API" }).click();
     await settled(page);
-    expect(hash(page)).toBe("#/view/c2?open=shop:checkout");
-    await expect(node(page, "payments:payments-api")).toHaveCount(0);
+    expect(hash(page)).toBe("#/view/c2?open=shop:cart");
+    await expect(node(page, "payments:charges")).toHaveCount(0);
 
     await chips.getByRole("button", { name: "Collapse all" }).click();
     await settled(page);
     expect(hash(page)).toBe("#/view/c2");
     await expect(chips).toBeHidden();
   });
+
+  test("on the C2 Landscape a System's chip closes it into closed=", async ({ page }) => {
+    await open(page, "#/view/c2?open=payments:payments");
+    await page.getByRole("region", { name: "Open boxes" }).getByRole("button", { name: "Close Payments" }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2?closed=payments:payments");
+    await expect(node(page, "payments:payments-api")).toHaveCount(0);
+  });
 });
 
 test.describe("the rail", () => {
   test("the Model tree groups by kind, nests Services in Systems, and focuses a pick", async ({ page }) => {
-    await open(page, "#/view/c2");
+    await open(page, "#/view/c2?closed=shop:checkout");
     await page.getByRole("button", { name: "Model" }).click();
     const flyout = page.getByRole("dialog", { name: "Model" });
     const tree = flyout.getByRole("tree");
@@ -163,7 +177,8 @@ test.describe("the rail", () => {
 
     await expect(flyout).toBeHidden();
     await settled(page);
-    expect(hash(page)).toBe("#/view/c2?open=shop:checkout&sel=shop:fraud-check");
+    // Picking it opens its closed System again.
+    expect(hash(page)).toBe("#/view/c2?sel=shop:fraud-check");
     await expect(node(page, "shop:fraud-check")).toHaveAttribute("aria-selected", "true");
   });
 

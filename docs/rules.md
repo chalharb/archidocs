@@ -1118,7 +1118,7 @@ systems:
       s150: { name: S150 }
 ```
 
-**Fix:** Split the System, or group top-level Services and Systems, so each Generated View stays within the limit; narrow a Saved View's selectors or raise its `level`.
+**Fix:** Split the System, or group top-level Services and Systems, so each Generated View stays within the limit; narrow a Saved View's selectors or raise its `level`. The C2 Landscape opens every System, so it stays within the limit only while the Workspace's Systems, Services and Persons do.
 
 **Fixed**
 
@@ -1203,7 +1203,6 @@ systems:
       s72: { name: S72 }
       s73: { name: S73 }
       s74: { name: S74 }
-      s75: { name: S75 }
   more:
     name: More
     services:
@@ -1281,7 +1280,6 @@ systems:
       s147: { name: S147 }
       s148: { name: S148 }
       s149: { name: S149 }
-      s150: { name: S150 }
 ```
 
 ## `duplicate-view-id`

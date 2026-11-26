@@ -1,6 +1,6 @@
 # 12: Drilling down from C1 goes one level
 
-Status: ready-for-agent
+Status: done
 Blocked by: 11
 
 ## Problem

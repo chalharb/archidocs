@@ -7,6 +7,7 @@ import { formatPlace, HOME, parsePlace, URL_PARAMETERS, VIEW_ROUTE } from "../..
  */
 const samples: Record<string, string> = {
   open: "open=shop:checkout,payments:payments",
+  closed: "closed=shop:checkout,payments:payments",
   sel: "sel=shop:cart",
   dir: "dir=LR",
   impact: "impact=shop:cart&way=both",
@@ -116,6 +117,14 @@ describe("what existing URLs mean", () => {
     const place = parsePlace("#/view/c2?dir=UP&step=0&mode=sequence&brokers=yes");
     expect(place).toEqual({ ...HOME });
     expect(parsePlace("#/view/c2?step=2.5").step).toBeNull();
+  });
+
+  it("round-trips closed Systems beside open boxes, and keeps them apart", () => {
+    const h = "#/view/c2?open=shop:cart&closed=payments:payments,shop:legacy&sel=shop:cart";
+    const place = parsePlace(h);
+    expect(place).toMatchObject({ open: ["shop:cart"], closed: ["payments:payments", "shop:legacy"] });
+    expect(formatPlace(place)).toBe(h);
+    expect(parsePlace("#/view/c2?closed=a,,a").closed).toEqual(["a"]);
   });
 
   it("drops repeated and empty ids from lists, and decodes the View id", () => {

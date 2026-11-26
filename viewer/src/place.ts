@@ -45,6 +45,7 @@ const POINT = POINT_GRAMMAR.charAt(0).toUpperCase() + POINT_GRAMMAR.slice(1);
 
 export const URL_PARAMETERS = [
   { name: "open", values: "Element ids, separated by commas", does: "Opens these boxes to show what is inside them, in the order they were opened." },
+  { name: "closed", values: "System ids, separated by commas", does: "Closes these Systems on the C2 Landscape, which opens every other System. Read on no other View." },
   { name: "sel", values: "An Element id", does: "Selects this node and shows it in the Element panel." },
   { name: "dir", values: oneOf(directions), does: "Lays the View out in this direction. Left out, the View's own direction." },
   { name: "impact", values: "An Element id", does: "Turns on the Impact Lens around this Element." },
@@ -69,7 +70,7 @@ export const isPlaceHash = (hash: string): boolean => hash.startsWith(VIEW_ROUTE
 
 /**
  * Everything on screen, as the URL holds it: the View, its open boxes (in the
- * order they were opened), the selected node, the direction (null for the
+ * order they were opened) and, on the C2 Landscape, its closed Systems, the selected node, the direction (null for the
  * View's default), the Lens and the picked nodes; on a Dynamic View also the
  * selected Step, the Sequence | Graph mode and whether brokers are shown;
  * and the ADR open in the reader.
@@ -77,6 +78,8 @@ export const isPlaceHash = (hash: string): boolean => hash.startsWith(VIEW_ROUTE
 export interface Place {
   view: string;
   open: string[];
+  /** Systems closed on the C2 Landscape, which opens every other System; read on no other View. */
+  closed: string[];
   selected: string | null;
   direction: Direction | null;
   lens: Lens | null;
@@ -96,13 +99,13 @@ export interface Place {
 }
 
 /** Where an empty or unreadable hash lands: the C2 Landscape, every System collapsed. */
-export const HOME: Place = { view: "c2", open: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
+export const HOME: Place = { view: "c2", open: [], closed: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
 
 /** The route, then the View id up to the first `?`, then the query. */
 const ROUTE_PATTERN = new RegExp(`^${ROUTE_PREFIX}([^?]*)(?:\\?(.*))?$`);
 
 /**
- * Reads a place from a hash such as `#/view/c2?open=shop:checkout&sel=shop:cart&dir=TB`.
+ * Reads a place from a hash such as `#/view/c2?open=shop:cart&closed=payments:payments&sel=shop:cart&dir=TB`.
  * A Lens is `impact=<id>&way=upstream|downstream|both`, `team=<id>` or
  * `from=<id>&to=<id>&paths=shortest|4`; picks are `picks=a,b`. A Dynamic
  * View adds `step=<n>`, `mode=graph` and `brokers=1`; an open ADR is `adr=<id>`.
@@ -118,6 +121,7 @@ export function parsePlace(hash: string): Place {
   return {
     view: decodeURIComponent(match[1]!) || HOME.view,
     open: list("open"),
+    closed: list("closed"),
     selected: get("sel") || null,
     direction: dir !== null && directions.includes(dir) ? dir : null,
     lens: parseLens(get),
@@ -166,6 +170,7 @@ function formatLens(lens: Lens): string[] {
 export function formatPlace(place: Place): string {
   const query: string[] = [];
   if (place.open.length > 0) query.push(pair("open", place.open.map(encode).join(",")));
+  if (place.closed.length > 0) query.push(pair("closed", place.closed.map(encode).join(",")));
   if (place.selected !== null) query.push(pair("sel", encode(place.selected)));
   if (place.direction !== null) query.push(pair("dir", place.direction));
   if (place.lens !== null) query.push(...formatLens(place.lens));
@@ -182,13 +187,14 @@ export function formatPlace(place: Place): string {
 const encode = (s: string) => encodeURIComponent(s).replace(/%3A/gi, ":").replace(/%2F/gi, "/").replace(/%40/gi, "@");
 
 /**
- * Opens a View afresh: nothing open, nothing selected or picked, its default
+ * Opens a View afresh: nothing opened or closed, nothing selected or picked, its default
  * direction, no ADR; a Lens carries over when given, and `at` and `vs` from
  * the place it is opened from, so moving around stays at the same Revisions.
  */
 export const viewPlace = (view: string, selected: string | null = null, lens: Lens | null = null, from?: Pick<Place, "at" | "vs">): Place => ({
   view,
   open: [],
+  closed: [],
   selected,
   direction: null,
   lens,

@@ -53,6 +53,15 @@ describe("archidocs export", () => {
     expect(texts(svg).slice(0, 2)).toEqual(["Checkout (C2)", `${basename(repoRoot)} · ${sha.slice(0, 7)} · ${date}`]);
   });
 
+  it("draws the C2 Landscape with its Systems open, their Services inside", async () => {
+    const { repoRoot } = await committedLandscape();
+    await archidocs(repoRoot, "export", "c1", "--format", "svg", "--out", "c1.svg");
+    await archidocs(repoRoot, "export", "c2", "--format", "svg", "--out", "c2.svg");
+
+    expect(texts(await readFile(join(repoRoot, "c1.svg"), "utf8"))).not.toContain("Cart DB");
+    expect(texts(await readFile(join(repoRoot, "c2.svg"), "utf8"))).toEqual(expect.arrayContaining(["C2 Landscape", "Cart DB", "Payments API"]));
+  });
+
   it("gives byte-identical SVG for the same View at the same commit", async () => {
     const { repoRoot } = await committedLandscape();
     await archidocs(repoRoot, "export", "c1", "--format", "svg", "--out", "a.svg");

@@ -24,7 +24,7 @@ describe("list_views", () => {
     const { call } = await connect(relationshipWorkspace);
     const result = await call("list_views", { element: "shop:cart-db" });
 
-    expect(result.structuredContent).toMatchObject({ total: 2, views: [{ id: "c2/shop:checkout" }, { id: "c3/shop:cart" }] });
+    expect(result.structuredContent).toMatchObject({ total: 3, views: [{ id: "c2" }, { id: "c2/shop:checkout" }, { id: "c3/shop:cart" }] });
   });
 
   it("pages with limit", async () => {
@@ -44,6 +44,15 @@ describe("list_views", () => {
 });
 
 describe("get_view", () => {
+  it("returns the C2 Landscape with every System open, its Services inside", async () => {
+    const { call } = await connect(relationshipWorkspace);
+    const nodes = ((await call("get_view", { id: "c2" })).structuredContent as { nodes: { id: string; parent: string | null; collapsed: boolean }[] }).nodes;
+
+    expect(nodes.find((n) => n.id === "shop:checkout")?.collapsed).toBe(false);
+    expect(nodes.find((n) => n.id === "shop:cart")?.parent).toBe("shop:checkout");
+    expect(nodes.find((n) => n.id === "payments:payments-api")?.parent).toBe("payments:payments");
+  });
+
   it("returns a View as nodes and derived edges", async () => {
     const { call, text } = await connect(relationshipWorkspace);
     const result = await call("get_view", { id: "c3/payments:payments-api" });
