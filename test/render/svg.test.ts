@@ -170,6 +170,26 @@ describe("a Deployment View", () => {
     await expect(await renderDeployment()).toMatchFileSnapshot("golden/deployment-prod.svg");
   });
 
+  it("fills each Target with the Target Depth ground of its nesting level, capped at the last step", async () => {
+    const files: Files = {
+      ...deploymentViewWorkspace,
+      "platform/targets.yaml": deploymentViewWorkspace["platform/targets.yaml"]!.replace(
+        "    kind: datacentre\n",
+        "    kind: dc\n    targets:\n      d2:\n        name: Depth two\n        kind: room\n        targets:\n          d3:\n            name: Depth three\n            kind: rack\n            targets:\n              d4:\n                name: Depth four\n                kind: host\n                targets:\n                  d5:\n                    name: Depth five\n                    kind: vm\n",
+      ),
+      "shop/model.yaml": deploymentViewWorkspace["shop/model.yaml"]!.replace("target: platform:dc }", "target: platform:d5 }"),
+    };
+    const { bundle } = await loadWorkspace(files);
+    const view = structuralView(bundle, "deployment/prod")!;
+    const svg = renderSvg({ bundle, view, layout: await layoutView(view, { direction: view.direction }), source });
+    /** The fill of the frame drawn in the same group as the header that starts with `name · `. */
+    const fillOf = (name: string) => /^<rect [^>]*fill="(#[0-9a-f]+)"/.exec(svg.split("<g>").find((g) => g.includes(`>${name} · `))!)![1];
+    const { "target-1": one, "target-2": two, "target-3": three } = PALETTES.light;
+
+    expect(new Set([one, two, three]).size).toBe(3);
+    expect(["Data centre", "Depth two", "Depth three", "Depth four", "Depth five"].map(fillOf)).toEqual([one, two, three, three, three]);
+  });
+
   it("labels Targets with their kind, System boxes as Systems and Deployments as Deployments", async () => {
     const t = texts(await renderDeployment());
 

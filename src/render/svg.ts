@@ -4,7 +4,7 @@ import { FONT_FAMILY, FONTS } from "./font.ts";
 import type { Layout, LaidOutNode } from "./layout.ts";
 import { teamStyles, type TeamStyle } from "./teams.ts";
 import { cut, fmt, text, textWidth } from "./text.ts";
-import { flatten, PALETTES, type Palette, type Theme } from "./tokens.ts";
+import { flatten, PALETTES, targetStep, type Palette, type Theme } from "./tokens.ts";
 
 /** Where a picture comes from, for its source line: the Workspace's name, the commit and its date (both null before the first commit). */
 export interface RenderSource {
@@ -69,13 +69,21 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
   const depth = (n: ViewNode): number => (n.parent === null ? 0 : 1 + depth(view.nodes.find((p) => p.id === n.parent)!));
   const byDepth = view.nodes.map((n) => ({ n, d: depth(n) })).sort((a, b) => a.d - b.d).map(({ n }) => n);
   const ring = view.lens !== undefined && "team" in view.lens;
+  const byId = new Map(view.nodes.map((n) => [n.id, n]));
+  const targetDepth = (n: ViewNode): number => (n.kind !== "target" ? 0 : 1 + (n.parent === null ? 0 : targetDepth(byId.get(n.parent)!)));
+  /** What a box is drawn on: its nearest enclosing Target's Target Depth ground, else the canvas. */
+  const groundOf = (n: ViewNode): string => {
+    const parent = n.parent === null ? undefined : byId.get(n.parent);
+    return parent === undefined ? c.ground : parent.kind === "target" ? c[`target-${targetStep(targetDepth(parent))}`] : groundOf(parent);
+  };
+  const targetGround = (n: ViewNode) => c[`target-${targetStep(targetDepth(n))}`];
   let clips = 0;
   const drawn = (n: ViewNode) => {
     const box = boxes.get(n.id)!;
     const element = elements.get(n.element ?? n.id);
     const target = n.kind === "target" ? targets.get(n.id) : undefined;
     const team = teams.get(element?.owner ?? target?.owner ?? "");
-    return containers.has(n.id) ? drawContainer(c, n, box, team, target?.kind) : drawNode(c, n, box, element, team, ring, `clip-${clips++}`);
+    return containers.has(n.id) ? drawContainer(c, n, box, team, groundOf(n), n.kind === "target" ? targetGround(n) : undefined, target?.kind) : drawNode(c, n, box, element, team, ring, `clip-${clips++}`);
   };
 
   return [
@@ -194,13 +202,17 @@ function drawNode(c: Palette, n: ViewNode, box: LaidOutNode, element: BundleElem
   ].join("");
 }
 
-/** An open box: a quiet line frame on the open-box tint, its head row at the top; a Deployment Target is a quiet frame with no fill. */
-function drawContainer(c: Palette, n: ViewNode, box: LaidOutNode, team: TeamStyle | undefined, targetKind?: string): string {
+/**
+ * An open box: a quiet line frame on the open-box tint (flattened onto `under`,
+ * what it sits on), its head row at the top. A Deployment Target is a quiet
+ * frame on its Target Depth ground, headed by its name and kind alone.
+ */
+function drawContainer(c: Palette, n: ViewNode, box: LaidOutNode, team: TeamStyle | undefined, under: string, targetGround: string | undefined, targetKind?: string): string {
   const { x, y, width: w, height: h } = box;
   const target = n.kind === "target";
   const dimmed = n.mark && !n.mark.hit;
   const frame = n.external ? c.ink : c.line;
-  const fill = target || dimmed ? "none" : flatten(c.container, c.ground);
+  const fill = targetGround ?? (dimmed ? "none" : flatten(c.container, under));
   const dash = n.external ? ` stroke-dasharray="6 4"` : "";
   const tileWidth = team ? textWidth(team.code, 10, 700) + 16 + 8 : 0;
   const left = x + (target ? 12 : EDGE + 10);

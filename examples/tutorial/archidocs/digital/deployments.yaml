@@ -5,10 +5,10 @@ targets:
     targets:
       eks-prod:
         name: EKS prod
-        kind: cluster
+        kind: eks
       eks-staging:
         name: EKS staging
-        kind: cluster
+        kind: eks
 deployments:
   - service: api
     environment: prod

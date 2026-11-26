@@ -141,6 +141,7 @@ export function registerWriteTools(
       description: [
         "Adds a Deployment Target, or updates the fields of an existing one (name, kind, description, owner, tags, links); comments and formatting are kept.",
         "A new Target nests under `parent` in the parent's file. A new top-level one goes into `file` (relative to the Project's folder), else `model.yaml`.",
+        "`kind` is free text printed as written in the Target's header, so keep it short: `region`, `az`, `vnet`, `snet`, `vm`, `aks`, `ns`, `asp`, not `availability-zone` or `subnet`.",
       ].join(" "),
       input: z.object({
         project: Project,
