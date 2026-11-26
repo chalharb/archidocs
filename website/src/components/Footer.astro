@@ -1,16 +1,19 @@
 ---
 /**
  * Starlight's page footer (edit link, last-updated date, previous and next)
- * with one line added: the release the site documents. The site builds from
- * the repo, so the version is the root `package.json`'s. The line is the
- * same on every page, so search leaves it out.
+ * with one line added: the release the site documents (src/lib/channel.ts).
+ * The site builds from the repo, so that is the root `package.json`'s version,
+ * or the beta branch on the staging site. The line is the same on every page,
+ * so search leaves it out.
  */
 import Default from "@astrojs/starlight/components/Footer.astro";
-import { VERSION } from "../lib/repo.ts";
+import { currentRelease, releaseLine } from "../lib/channel.ts";
+
+const line = releaseLine(currentRelease());
 ---
 
 <Default><slot /></Default>
-<p class="release" data-pagefind-ignore>Documents Archidocs v{VERSION}, the latest release.</p>
+<p class="release" data-pagefind-ignore>{line}</p>
 
 <style>
   .release {
