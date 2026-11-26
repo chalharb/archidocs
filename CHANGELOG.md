@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.1](https://github.com/chalharb/archidocs/compare/v1.3.0...v1.3.1) (2026-11-26)
+
+
+### Bug fixes
+
+* **dev:** reload only when a Workspace file changes ([#92](https://github.com/chalharb/archidocs/issues/92)) ([b69cfb8](https://github.com/chalharb/archidocs/commit/b69cfb8d111eab59b8df7f863a56b7117303edef))
+* **examples:** build-demo only replaces an empty folder or an earlier site ([#102](https://github.com/chalharb/archidocs/issues/102)) ([4343c52](https://github.com/chalharb/archidocs/commit/4343c521cb41aa5e92cade63b8b04bf3b0614748))
+* **history:** a date on a checkout names the last Revision ([#97](https://github.com/chalharb/archidocs/issues/97)) ([c52a9f1](https://github.com/chalharb/archidocs/commit/c52a9f112158f1f0a6036635214826288d86ef52))
+* **history:** one point grammar for the viewer and MCP on a site ([#94](https://github.com/chalharb/archidocs/issues/94)) ([0dc94bf](https://github.com/chalharb/archidocs/commit/0dc94bfbbffc34eccb76d2ed9573a856c8e4a992))
+* **history:** one site reader for MCP and the viewer ([#98](https://github.com/chalharb/archidocs/issues/98)) ([198598b](https://github.com/chalharb/archidocs/commit/198598b2dad1999cc720590b19a1cf3e50254694))
+
 ## [1.3.0](https://github.com/chalharb/archidocs/compare/v1.2.0...v1.3.0) (2026-11-25)
 
 
