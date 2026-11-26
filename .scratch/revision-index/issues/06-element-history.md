@@ -1,6 +1,6 @@
 # 06: The viewer's Element history through `scopeMatcher`
 
-Status: ready-for-agent
+Status: done
 Blocked by: 03
 Spec: [Revision index](../spec.md)
 

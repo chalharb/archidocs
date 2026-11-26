@@ -26,7 +26,7 @@ import { listAdrs, type ListedAdr } from "../core/adrs.ts";
 import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
 import type { Snapshot, Source } from "./source.ts";
-import { POINT_GRAMMAR, type Span } from "../revisions/index.ts";
+import { POINT_GRAMMAR, touching, type Span } from "../revisions/index.ts";
 import { pastOf, type Past } from "./history.ts";
 import type { ErrorCode } from "./errors.ts";
 import { registerWriteTools } from "./writes.ts";
@@ -769,8 +769,7 @@ export function createServer(options: ServerOptions): McpServer {
         const found = resolveScope(scope, [bundle], scope_kind, listed.revisions.flatMap((r) => r.changedIds));
         if (!found.ok) return scopeFailure(scope, found);
         resolved = found.scope;
-        const touched = scopeMatcher(resolved, [bundle]);
-        revisions = revisions.filter((r) => touched(r.changedIds));
+        revisions = touching(revisions, scopeMatcher(resolved, [bundle]));
       }
       const { items, total, truncated } = page(
         revisions.map(({ sha, date, subject, author, tags, counts, bundle: kept }) => ({ sha, date, subject, author, tags, counts, bundle: kept })),
