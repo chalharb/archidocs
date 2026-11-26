@@ -59,11 +59,26 @@ The other commands, the page templates and the style rules are in [website/READM
 
 ## Open a pull request
 
-1. Branch from `main`.
+1. Branch from `beta`, the default branch. Unreleased work lands there; `main` holds only what is released.
 2. Make one change per pull request, with tests for it.
 3. Run the checks above that cover what you changed.
 4. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and `CHANGELOG.md` are made from them. Don't edit the changelog by hand.
-5. Open the pull request against `main`. Say what changed and why, and link the issue or ticket it closes.
+5. Open the pull request against `beta`. Say what changed and why, and link the issue or ticket it closes. It is squash-merged, so its title becomes the commit message.
+
+## How releases work
+
+Releases are made by [semantic-release](https://semantic-release.gitbook.io/) (`release.config.mjs`, run by `.github/workflows/publish.yml`), from the commit types since the last release: `fix` makes a patch, `feat` a minor, and `!` or `BREAKING CHANGE` a major. The reasons for this setup are in [ADR 0002](docs/adr/0002-beta-branch-with-semantic-release.md).
+
+- **Every merge into `beta` publishes a beta**, such as `1.4.0-beta.1`, to the npm `beta` dist-tag, with a GitHub prerelease. It also deploys the docs and the demos to [beta.archidocs.dev](https://beta.archidocs.dev), [beta.big-bank.archidocs.dev](https://beta.big-bank.archidocs.dev) and [beta.kitchen-sink.archidocs.dev](https://beta.kitchen-sink.archidocs.dev). A beta never moves the Action's `v1` tag.
+- **A promotion releases it.** A pull request from `beta` into `main`, merged with a **merge commit**, publishes the stable version to `latest`, updates `CHANGELOG.md`, moves `v1` and deploys the production sites.
+- **An urgent fix goes to `main` directly**, as a pull request into `main`. After each stable release, a bot opens a pull request that merges `main` back into `beta`. Merge it with a **merge commit** too, not a squash, so the next promotion doesn't conflict.
+
+### Try a beta
+
+- **CLI:** `npx archidocs@beta`, or `npm install --global archidocs@beta`.
+- **GitHub Action:** keep `chalharb/archidocs@v1` and set `version: beta`.
+- **GitLab template:** set the `version` input to `beta`.
+- **Docs:** [beta.archidocs.dev](https://beta.archidocs.dev) documents the `beta` branch; its footer names the commit.
 
 ## How work is tracked
 

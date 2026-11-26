@@ -1,6 +1,6 @@
 ---
 title: Upgrading
-description: What an Archidocs version number promises, how to upgrade the CLI and CI together, and how to read the Changelog.
+description: What an Archidocs version number promises, how to upgrade the CLI and CI together, how to try a beta, and how to read the Changelog.
 sidebar:
   order: 3
 ---
@@ -36,7 +36,7 @@ The [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one
 
 ## The Action's tags
 
-- **`@v1`:** a moving tag that each 1.x release moves to itself, so `chalharb/archidocs@v1` always runs the newest 1.x release.
+- **`@v1`:** a moving tag that each 1.x release moves to itself, so `chalharb/archidocs@v1` always runs the newest 1.x release. A beta never moves it.
 - **`@v1.2.0`:** a fixed tag that pins one release.
 
 The GitLab template's URL uses the same tags. There the tag picks only the template file. The template's `version` input picks the CLI it runs.
@@ -103,9 +103,56 @@ archidocs check
 
 Within a major, a Workspace that passed still has no errors. A new rule can add a warning, and the warning's line links the rule's page. With `archidocs check --strict`, a warning fails the check, so fix it before you upgrade CI.
 
+## Try a beta
+
+Before a release, its changes ship as betas, such as `1.4.0-beta.1`, under the npm `beta` tag. A beta can change, or be replaced by the next one, before its release. Try one in a branch or a scratch repo, not in the pipeline your team relies on.
+
+<Tabs syncKey="ci">
+<TabItem label="CLI">
+
+Run a beta once without installing it:
+
+```bash
+npx archidocs@beta check
+```
+
+Or install it in place of the release, and go back with `archidocs@latest`:
+
+```bash
+npm install --global archidocs@beta
+```
+
+</TabItem>
+<TabItem label="GitHub Actions">
+
+Keep `@v1` and set the `version` input to `beta`:
+
+```yaml title=".github/workflows/architecture.yml"
+      - uses: chalharb/archidocs@v1
+        with:
+          version: beta
+```
+
+</TabItem>
+<TabItem label="GitLab CI">
+
+Set the template's `version` input to `beta`:
+
+```yaml title=".gitlab-ci.yml"
+include:
+  - remote: https://raw.githubusercontent.com/chalharb/archidocs/v1/templates/gitlab/archidocs.gitlab-ci.yml
+    inputs:
+      version: beta
+```
+
+</TabItem>
+</Tabs>
+
+The docs for the betas are at [beta.archidocs.dev](https://beta.archidocs.dev). Each beta's notes are on [GitHub Releases](https://github.com/chalharb/archidocs/releases), marked as a pre-release. The Changelog lists only releases.
+
 ## Read the Changelog
 
-The [Changelog](/docs/reference/changelog/) lists every release, newest first. release-please writes it from the type of each commit message. The type decides the section and the version number:
+The [Changelog](/docs/reference/changelog/) lists every release, newest first. semantic-release writes it from the type of each commit message. The type decides the section and the version number:
 
 | Commit type | Changelog section | Release |
 | --- | --- | --- |

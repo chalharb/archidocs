@@ -1,6 +1,6 @@
 # 03: Document the beta channel
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01, 02
 Spec: [Beta channel](../spec.md)
 
@@ -25,7 +25,13 @@ The new text must pass the site's wording rules (`pnpm docs:test`).
 
 ## Acceptance criteria
 
-- [ ] `grep -rn -i "release-please" --exclude-dir=node_modules --exclude-dir=.scratch --exclude=CHANGELOG.md .` finds nothing except ADR 0002.
-- [ ] `CONTRIBUTING.md` names `beta` as the PR base and explains promotion, hotfixes and trying a beta.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm docs:test` and `pnpm docs:build` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `grep -rn -i "release-please" --exclude-dir=node_modules --exclude-dir=.scratch --exclude=CHANGELOG.md .` finds nothing except ADR 0002.
+- [x] `CONTRIBUTING.md` names `beta` as the PR base and explains promotion, hotfixes and trying a beta.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm docs:test` and `pnpm docs:build` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.
+
+## Comments
+
+- The generated reference pages had their own edit link (`website/src/reference/loader.ts:47`, `edit/main/<source>`); it points at `beta` too, so every page's "Edit page" opens the branch a PR would target.
+- `release-please` is still named in two places on purpose: ADR 0002, which records the switch, and a comment in `release.config.mjs` saying where its release-notes sections came from.
+- The Try a beta section uses `chalharb/archidocs@v1` with `version: beta`, not `@beta`: `website/test/release-refs.test.ts` requires every Action ref in the docs to be the major tag.
