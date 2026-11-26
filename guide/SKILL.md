@@ -9,6 +9,8 @@ The Model is YAML in a Workspace: `workspace.yaml` defines Teams and Environment
 
 Load the topic for the task before you write: `get_authoring_guide(topic)`, or `archidocs guide <topic>` without MCP.
 
+The CLI commands in this guide, such as `archidocs check`, assume a global install. When there is none, run them the way the repo's AGENTS.md says, such as `npx archidocs check`.
+
 ## The Model
 
 - **Elements**: Person, System, Service, Component. Nesting is strict: System › Service › Component; a Service may sit outside any System; Persons are top-level. Every Element has `name`, and optionally `description`, `owner`, `tags`, `links`.

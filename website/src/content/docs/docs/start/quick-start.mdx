@@ -9,27 +9,19 @@ import Screenshot from "../../../../components/Screenshot.astro";
 
 In about five minutes you go from an empty repo to the viewer showing a small Model: a Shopper who uses an Online Shop made of two Services. Every file you need is on this page.
 
-## 1. Install the CLI
+## 1. Create a Workspace
 
-Archidocs needs Node.js 22.18 or later. Install it with npm:
-
-```bash
-npm install --global archidocs
-```
-
-[Installation](/docs/start/installation/) covers pnpm, npx, a dev dependency and checking the install.
-
-## 2. Create a Workspace
+Archidocs needs Node.js 22.18 or later. There is nothing to install: `npx` runs the CLI. [Installation](/docs/start/installation/) covers a global install and a dev dependency instead.
 
 A [Workspace](/docs/reference/glossary/#term-workspace) is one git repo that holds the whole architecture. In the repo that will hold yours (a new, empty one is fine), run:
 
 ```bash
-archidocs init
+npx archidocs init
 ```
 
-This writes a starter `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. Everything Archidocs reads lives under `archidocs/`.
+This writes a starter `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. The skill and the MCP command `init` prints run Archidocs the same way you ran `init`, so agents need no global install either. Everything Archidocs reads lives under `archidocs/`.
 
-## 3. Add three files
+## 2. Add three files
 
 Save each file at the path in its title.
 
@@ -50,10 +42,10 @@ Every other `.yaml` file in the folder declares Elements and their Relationships
 
 Each Relationship sits under the Element that depends on the other one, and its `description` reads as a sentence: "Web places orders through API".
 
-## 4. Check it
+## 3. Check it
 
 ```bash
-archidocs check
+npx archidocs check
 ```
 
 ```text
@@ -62,10 +54,10 @@ archidocs check
 
 `archidocs check` validates every file and every reference between them. When something is wrong, it names the file, the line and the [rule](/docs/reference/rules/) that was broken.
 
-## 5. Open the viewer
+## 4. Open the viewer
 
 ```bash
-archidocs dev
+npx archidocs dev
 ```
 
 Open `http://localhost:4321`. The viewer starts on the C2 Landscape, which shows the Shopper and the Online Shop:

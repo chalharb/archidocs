@@ -52,16 +52,17 @@ export async function authoringGuide(topic?: string): Promise<GuideResult> {
 }
 
 /**
- * The thin SKILL.md that `archidocs init` installs in a repo. It only points
- * at the served guide, so it never goes stale, and uses only the portable
- * frontmatter fields.
+ * The thin SKILL.md that `archidocs init` installs in a repo, naming the
+ * command that runs archidocs there (`runner`, such as `npx archidocs`). It
+ * only points at the served guide, so it never goes stale, and uses only the
+ * portable frontmatter fields.
  */
-export const skillStub = `---
+export const skillStub = (runner: string) => `---
 name: ${SKILL_NAME}
 description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.
 ---
 
 # Archidocs authoring
 
-Before editing the Model, load the full guide: call the \`get_authoring_guide\` tool of the Archidocs MCP server, or run \`archidocs guide\` when no Archidocs MCP server is connected. It lists the topics; load the one for the task with \`get_authoring_guide(topic)\` or \`archidocs guide <topic>\`, and follow it.
+Before editing the Model, load the full guide: call the \`get_authoring_guide\` tool of the Archidocs MCP server, or run \`${runner} guide\` when no Archidocs MCP server is connected. It lists the topics; load the one for the task with \`get_authoring_guide(topic)\` or \`${runner} guide <topic>\`, and follow it.${runner === "archidocs" ? "" : ` In this repo, run every \`archidocs\` command as \`${runner}\`.`}
 `;

@@ -11,12 +11,12 @@ Register the Archidocs MCP server with your coding agent, so it can answer archi
 
 ## Before you start
 
-- The Archidocs CLI is installed. See the [Quick start](/docs/start/quick-start/).
+- Node.js 22.18 or later. A global install is optional. See [Installation](/docs/start/installation/).
 - The repo has a [Workspace](/docs/reference/glossary/#term-workspace), the `archidocs/` folder. The [Quick start](/docs/start/quick-start/) creates one.
 
 ## 1. Register the server
 
-The server is one command, run from the repo root. `archidocs init` prints it for your repo. From a code repo, the path differs: see [In a code repo](#in-a-code-repo).
+The server is one command, run from the repo root. `archidocs init` prints it for your repo, in the form that runs there. Without a global install, it starts with `npx`, as in `npx -y archidocs@1.2.0 mcp --workspace archidocs`; put that in place of `archidocs mcp` below. From a code repo, the path differs: see [In a code repo](#in-a-code-repo).
 
 ```bash
 archidocs mcp --workspace archidocs

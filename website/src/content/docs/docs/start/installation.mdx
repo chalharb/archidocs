@@ -16,7 +16,9 @@ Archidocs is one command-line tool, `archidocs`, published to npm. The same pack
 
 ## Install
 
-Install it globally to use `archidocs` in any repo. Or add it as a dev dependency of the Workspace repo, so everyone who clones the repo runs the same version.
+You don't have to install it: `npx archidocs` runs it on demand. Install it globally to use a bare `archidocs` in any repo. Or add it as a dev dependency of the Workspace repo, so everyone who clones the repo runs the same version.
+
+`archidocs init` writes the agent skill and prints the MCP server command in the form that runs in your repo: `npx archidocs` when `package.json` lists archidocs, `npx -y archidocs@<version>` when you ran `init` through npx or pnpm dlx, and a bare `archidocs` from a global install. Run `init` again after you change how you install it.
 
 <Tabs syncKey="package-manager">
 <TabItem label="npm">
@@ -55,7 +57,7 @@ Run a dev dependency with `pnpm exec`, as in `pnpm exec archidocs check`.
 </TabItem>
 <TabItem label="npx">
 
-There is nothing to install. Put `npx` before each command, as in `npx archidocs check`. The first time, npx downloads the latest version. It then runs that copy from its cache.
+There is nothing to install. Put `npx` before each command, as in `npx archidocs check`. The first time, npx downloads the latest version. It then runs that copy from its cache. `npx archidocs init` pins the version it ran in the commands it writes for agents, as in `npx -y archidocs@1.2.0 mcp`.
 
 To run one version, name it:
 
