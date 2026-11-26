@@ -6,7 +6,7 @@ import type { Bundle } from "../../src/schema/bundle.ts";
 import { loadWorkspace, type Files } from "../support/workspace.ts";
 import { deploymentViewWorkspace, landscapeWorkspace } from "../support/fixtures.ts";
 
-const screen = (s: Partial<Screen> & Pick<Screen, "view">): Screen => ({ open: [], lens: null, picks: [], direction: null, ...s });
+const screen = (s: Partial<Screen> & Pick<Screen, "view">): Screen => ({ open: [], closed: [], lens: null, picks: [], direction: null, ...s });
 const ids = (view: ReturnType<typeof structuralView>) => view?.nodes.map((n) => n.id) ?? [];
 
 /** Saves the screen, writes its YAML into the shop Project and loads it again: the Saved View as the core engine resolves it. */
@@ -15,24 +15,35 @@ async function saved(s: Screen, files: Files = landscapeWorkspace) {
   const out = saveAsView(bundle, s, { project: "shop", id: "saved", title: "Saved" });
   const reloaded = await loadWorkspace({ ...files, "shop/saved.yaml": out.yaml });
   expect(reloaded.issues.filter((i) => i.severity === "error")).toEqual([]);
-  return { ...out, bundle, view: structuralView(reloaded.bundle, "shop:saved"), screenView: structuralView(bundle, s.view, { expand: s.open, ...(s.lens ? { lens: s.lens } : {}) }) };
+  return { ...out, bundle, view: structuralView(reloaded.bundle, "shop:saved"), screenView: structuralView(bundle, s.view, { expand: s.open, collapse: s.closed, ...(s.lens ? { lens: s.lens } : {}) }) };
 }
 
 describe("Save as View", () => {
-  it("turns open boxes into expand, and resolves to the screen's nodes", async () => {
-    const { definition, view } = await saved(screen({ view: "c2", open: ["shop:checkout"] }));
-    expect(definition).toMatchObject({ title: "Saved", level: "c2", expand: ["checkout"] });
-    expect(ids(view)).toEqual([
-      "payments:payments",
-      "shop:cart",
-      "shop:cart-db",
-      "shop:checkout",
-      "shop:events",
-      "shop:fraud-check",
-      "shop:order-history",
-      "shop:shopper",
-      "shop:web",
-    ]);
+  it("saves the whole C2 Landscape as level: c2, resolving to the screen's nodes", async () => {
+    const { definition, view, screenView } = await saved(screen({ view: "c2" }));
+    expect(definition).toEqual({ title: "Saved", level: "c2" });
+    expect(ids(view)).toEqual(ids(screenView));
+    expect(ids(view)).toContain("payments:payments-api");
+  });
+
+  it("turns a System closed on the C2 Landscape into collapse", async () => {
+    const { definition, view, screenView } = await saved(screen({ view: "c2", closed: ["payments:payments"] }));
+    expect(definition).toEqual({ title: "Saved", level: "c2", collapse: ["payments:payments"] });
+    expect(ids(view)).toEqual(ids(screenView));
+    expect(ids(view)).not.toContain("payments:payments-api");
+  });
+
+  it("turns open boxes on the C2 Landscape into expand", async () => {
+    const { definition, view, screenView } = await saved(screen({ view: "c2", open: ["shop:cart"], closed: ["payments:payments"] }));
+    expect(definition).toEqual({ title: "Saved", level: "c2", expand: ["cart"], collapse: ["payments:payments"] });
+    expect(ids(view)).toEqual(ids(screenView));
+    expect(ids(view)).toContain("shop:checkout-ui");
+  });
+
+  it("turns open boxes into expand on a System's View, and resolves to the screen's nodes", async () => {
+    const { definition, view, screenView } = await saved(screen({ view: "c2/shop:checkout", open: ["shop:cart"] }));
+    expect(definition).toMatchObject({ title: "Saved", level: "c2", expand: ["cart"] });
+    expect(ids(view)).toEqual(ids(screenView));
   });
 
   it("writes the YAML under views: structural: and the matching upsert_view call", async () => {

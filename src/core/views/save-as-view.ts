@@ -6,10 +6,12 @@ import { pickedView, resolveStructural } from "./resolve.ts";
 import { resolveSaved } from "./saved.ts";
 import type { ViewDirection, ViewKind } from "./types.ts";
 
-/** What the viewer shows, as its URL holds it: the View, its open boxes, the Lens, the picks and a turned direction. */
+/** What the viewer shows, as its URL holds it: the View, its open and closed boxes, the Lens, the picks and a turned direction. */
 export interface Screen {
   view: string;
   open: readonly string[];
+  /** Systems closed on the C2 Landscape, which opens every other System. */
+  closed: readonly string[];
   lens: BundleLens | null;
   picks: readonly string[];
   /** The direction the viewer turned the View to; null keeps the View's own. */
@@ -33,8 +35,11 @@ const levelDepth: Record<Level, number> = { c1: 1, c2: 2, c3: 3 };
 
 /**
  * Save as View: turns the screen into a Saved View definition that the core
- * engine resolves to the same nodes. The picks (with their open containers),
- * or else every node, become ids; open boxes whose children are all kept
+ * engine resolves to the same nodes. The whole C2 Landscape, with no picks or
+ * Lens, is `level: c2` with no `include`, its closed Systems as `collapse`
+ * and its open boxes as `expand`. Otherwise the picks (with their open
+ * containers), or else every node, become ids; open boxes (on the C2
+ * Landscape, every System not closed too) whose children are all kept
  * become `expand`; the Lens becomes an include selector (an Impact Lens
  * `upstream`/`downstream: all`, a Team Lens `{team}`, Connect to… a path
  * selector) and is kept as `lens:`. Nodes the Lens selector would add beyond
@@ -43,7 +48,7 @@ const levelDepth: Record<Level, number> = { c1: 1, c2: 2, c3: 3 };
  */
 export function saveAsView(bundle: Bundle, screen: Screen, target: { project: string; id: string; title: string }): SavedScreen {
   const model = new ModelIndex(bundle);
-  const view = resolveStructural(bundle, model, screen.view, { expand: screen.open });
+  const view = resolveStructural(bundle, model, screen.view, { expand: screen.open, collapse: screen.closed });
   if (!view) throw new Error(`No View ${screen.view} to save.`);
   const own = bundle.views.find((v): v is BundleStructuralView => v.id === screen.view && v.kind === "structural");
   const direction = screen.direction ?? own?.direction ?? null;
@@ -65,9 +70,11 @@ export function saveAsView(bundle: Bundle, screen: Screen, target: { project: st
     const kept = new Set((screen.picks.length === 0 ? view : pickedView(view, screen.picks)).nodes.map((n) => n.id));
 
     const depthOf = (id: string) => model.ancestry(id).length;
-    const expand = screen.open
-      .filter((id) => kept.has(id) && model.children(id).length > 0 && model.children(id).every((c) => kept.has(c.id)))
-      .sort((a, b) => depthOf(a) - depthOf(b));
+    const opens = (id: string) => kept.has(id) && model.children(id).length > 0 && model.children(id).every((c) => kept.has(c.id));
+    // On the C2 Landscape every System is open unless closed, as `resolveGenerated` opens them.
+    const landscape = !own && view.id === "c2";
+    const systems = landscape ? model.elements.filter((e) => e.kind === "system" && !screen.closed.includes(e.id)).map((e) => e.id) : [];
+    const expand = [...new Set([...systems, ...screen.open])].filter(opens).sort((a, b) => depthOf(a) - depthOf(b));
     const byExpand = new Set(expand.flatMap((id) => model.children(id).map((c) => c.id)));
     const ids = [...kept].filter((id) => !byExpand.has(id)).sort();
     const deepest = ids.reduce((d, id) => Math.max(d, levelDepth[kindLevel[model.byId.get(id)!.kind]!]), levelDepth[view.kind as Level]);
@@ -76,6 +83,11 @@ export function saveAsView(bundle: Bundle, screen: Screen, target: { project: st
     const plain = { level, include: ids, ...nonEmpty({ expand }) };
     const selector = screen.lens ? lensSelector(screen.lens) : undefined;
     body = plain;
+    if (landscape && screen.picks.length === 0 && !selector) {
+      // The whole Landscape: every Element at `c2`, which opens every System, less those closed.
+      const collapse = screen.closed.filter((id) => kept.has(id) && model.children(id).length > 0 && !screen.open.includes(id));
+      body = { level: "c2", ...nonEmpty({ expand: expand.filter((id) => !systems.includes(id)), collapse }) };
+    }
     if (selector) {
       const reached = nodesOf(bundle, model, { level, include: [selector] });
       const include = [selector, ...ids.filter((id) => !reached.has(id))];

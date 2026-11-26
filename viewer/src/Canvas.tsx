@@ -111,11 +111,14 @@ interface BoxData extends Record<string, unknown> {
   targetStep: number | undefined;
   /** The box was laid out a line taller, for a name too long for the widest box. */
   twoLine: boolean;
-  /** `+` when collapsed with children to show, `−` when opened by the viewer, else neither. */
+  /** `+` when collapsed with children to show, `−` when opened by the viewer or an open System on the C2 Landscape, else neither. */
   toggle: "expand" | "collapse" | null;
   onToggle: (id: string, open: boolean) => void;
-  /** Set when the box is the way into its own View, other than the one on screen. */
-  wayIn: boolean;
+  /**
+   * Where the box's arrow tile goes, a level down, when it has one: `own`, its own View, other than the one on
+   * screen; `landscape`, the C2 Landscape, for a System on the C1 Landscape.
+   */
+  wayIn: "own" | "landscape" | null;
   onOpenView: (id: string) => void;
   mark: NodeMark | undefined;
   ring: boolean;
@@ -215,7 +218,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
           twoLine: !containers.has(box.id) && box.height > NODE_SIZES[node.kind].height,
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
           onToggle,
-          wayIn: element !== undefined && workspace.wayIn(element.id) !== undefined && workspace.wayIn(element.id) !== view.id,
+          wayIn: element === undefined || workspace.wayIn(element.id) === undefined || workspace.wayIn(element.id) === view.id ? null : view.id === "c1" && element.kind === "system" ? "landscape" : "own",
           onOpenView,
           mark: marks.get(box.id),
           ring,
@@ -353,7 +356,7 @@ function Key({ lens, icons, scaled }: { lens: boolean; icons: { icon: IconName; 
         </li>
         <li>
           <span className="arc-key-swatch arc-key-way-in" aria-hidden="true" />
-          Arrow tile: opens the box's own View
+          Arrow tile: goes a level down
         </li>
         <li>
           <span className="arc-key-swatch arc-key-external" aria-hidden="true" />
@@ -390,7 +393,7 @@ function Key({ lens, icons, scaled }: { lens: boolean; icons: { icon: IconName; 
           </>
         )}
       </ul>
-      <p className="arc-key-gestures">+ shows what is inside, here · the arrow tile (or a double-click) opens a box's own View · Shift-click picks for export · / finds</p>
+      <p className="arc-key-gestures">+ shows what is inside, here · the arrow tile (or a double-click) goes a level down · Shift-click picks for export · / finds</p>
     </details>
   );
 }
@@ -422,7 +425,8 @@ function besidePanel(width: number): number {
  * transition has finished. A new Layout under the same fitKey (a new Bundle swapped in by `archidocs dev`) keeps
  * the camera where the reader left it.
  * The fit uses the whole canvas unless something is selected (the Element panel then takes the right edge), never
- * zooms past 1:1, and never below MIN_FIT_ZOOM: a View too big for that opens at its start and pans for the rest.
+ * zooms past 1:1, and never below MIN_FIT_ZOOM: a View too big for that opens on its selected box, or else at its
+ * start, and pans for the rest.
  */
 function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: LaidOut; fitKey: string; selected: string | null; animate: boolean; onSettled: (laidOut: LaidOut) => void }) {
   const { setViewport } = useReactFlow();
@@ -443,9 +447,16 @@ function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: La
       const room = selected === null ? width : besidePanel(width);
       const fit = Math.min(1, (room - 2 * FIT_PAD) / Math.max(layout.width, 1), (height - 2 * FIT_PAD) / Math.max(layout.height, 1));
       const zoom = Math.max(MIN_FIT_ZOOM, fit);
-      // Centred when the whole drawing fits; otherwise from its top-left corner, where a View starts reading.
-      const x = layout.width * zoom <= room - 2 * FIT_PAD ? (room - layout.width * zoom) / 2 : FIT_PAD;
-      const y = layout.height * zoom <= height - 2 * FIT_PAD ? (height - layout.height * zoom) / 2 : FIT_PAD;
+      // Centred when the whole drawing fits; otherwise on the selected box, or else from the drawing's top-left corner,
+      // where a View starts reading. The drawing's edges never come in past the padding.
+      const box = selected === null ? undefined : layout.nodes.find((n) => n.id === selected);
+      const along = (span: number, size: number, at: number | undefined, boxSize: number) => {
+        if (size * zoom <= span - 2 * FIT_PAD) return (span - size * zoom) / 2;
+        if (at === undefined) return FIT_PAD;
+        return Math.min(FIT_PAD, Math.max(span - FIT_PAD - size * zoom, span / 2 - (at + boxSize / 2) * zoom));
+      };
+      const x = along(room, layout.width, box?.x, box?.width ?? 0);
+      const y = along(height, layout.height, box?.y, box?.height ?? 0);
       duration = animate && !first.current ? DURATION : 0;
       first.current = false;
       void setViewport({ x, y, zoom }, { duration });
@@ -525,8 +536,8 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     <button
       type="button"
       className="arc-way-in nodrag nopan"
-      aria-label={`Open ${node.name}'s View`}
-      title={`Open ${node.name}'s own View`}
+      aria-label={wayIn === "landscape" ? `Open ${node.name} on the C2 Landscape` : `Open ${node.name}'s View`}
+      title={wayIn === "landscape" ? `Open the C2 Landscape at ${node.name}` : `Open ${node.name}'s own View`}
       onClick={(e) => {
         stop(e);
         onOpenView(node.id);

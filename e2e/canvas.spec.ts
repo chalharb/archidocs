@@ -4,24 +4,37 @@ import { SITES } from "./sites.ts";
 import { hash, node, nodeIds, open, renderedGeometry, settled } from "./support.ts";
 
 test.describe("expand and collapse", () => {
-  test("+ opens a System to show its Services, − closes it", async ({ page }) => {
+  test("the C2 Landscape opens every System; − closes one into closed=, which a reload keeps, and + opens it again", async ({ page }) => {
     await open(page, "#/view/c2");
-    await page.getByRole("button", { name: "Expand Checkout" }).click();
-    await settled(page);
-    expect(hash(page)).toBe("#/view/c2?open=shop:checkout");
     for (const id of ["shop:cart", "shop:cart-db", "shop:fraud-check", "shop:order-history"]) await expect(node(page, id)).toHaveAttribute("data-parent", "shop:checkout");
+    await expect(node(page, "payments:payments-api")).toHaveAttribute("data-parent", "payments:payments");
 
     await page.getByRole("button", { name: "Collapse Checkout" }).click();
     await settled(page);
-    expect(hash(page)).toBe("#/view/c2");
+    expect(hash(page)).toBe("#/view/c2?closed=shop:checkout");
     await expect(node(page, "shop:cart")).toHaveCount(0);
+    await expect(node(page, "payments:payments-api")).toHaveCount(1);
+
+    await page.reload();
+    await settled(page);
+    await expect(node(page, "shop:cart")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Expand Checkout" }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2");
+    await expect(node(page, "shop:cart")).toHaveAttribute("data-parent", "shop:checkout");
+  });
+
+  test("an old link that opens a System on the C2 Landscape still shows it open", async ({ page }) => {
+    await open(page, "#/view/c2?open=shop:checkout");
+    await expect(node(page, "shop:cart")).toHaveAttribute("data-parent", "shop:checkout");
   });
 
   test("a Service with Components opens inside an open System", async ({ page }) => {
-    await open(page, "#/view/c2?open=shop:checkout");
+    await open(page, "#/view/c2");
     await page.getByRole("button", { name: "Expand Cart" }).click();
     await settled(page);
-    expect(hash(page)).toBe("#/view/c2?open=shop:checkout,shop:cart");
+    expect(hash(page)).toBe("#/view/c2?open=shop:cart");
     await expect(node(page, "shop:checkout-ui")).toHaveAttribute("data-parent", "shop:cart");
   });
 
@@ -34,8 +47,15 @@ test.describe("expand and collapse", () => {
 });
 
 test.describe("the way in", () => {
-  test("a box's arrow tile opens its own View, and only boxes with one show it", async ({ page }) => {
+  test("a System's arrow tile goes down one level: C1 to the C2 Landscape, there to its own View", async ({ page }) => {
     await open(page, "#/view/c1");
+    await expect(node(page, "shop:shopper").getByRole("button", { name: /^Open / })).toHaveCount(0);
+    await node(page, "shop:checkout").getByRole("button", { name: "Open Checkout on the C2 Landscape" }).click();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2?sel=shop:checkout");
+    await expect(node(page, "shop:checkout")).toHaveClass(/arc-selected/);
+    await expect(node(page, "shop:checkout")).toBeInViewport();
+
     await node(page, "shop:checkout").getByRole("button", { name: "Open Checkout's View" }).click();
     await settled(page);
     expect(hash(page)).toBe("#/view/c2/shop:checkout");
@@ -59,15 +79,19 @@ test.describe("the way in", () => {
 });
 
 test.describe("double-click", () => {
-  test("opens a System's C2 View", async ({ page }) => {
+  test("opens a System on C1 in the C2 Landscape, selected, and on the C2 Landscape in its own View", async ({ page }) => {
     await open(page, "#/view/c1");
     await node(page, "shop:checkout").dblclick();
+    await settled(page);
+    expect(hash(page)).toBe("#/view/c2?sel=shop:checkout");
+
+    await node(page, "shop:checkout").getByTestId("name").dblclick();
     await settled(page);
     expect(hash(page)).toBe("#/view/c2/shop:checkout");
   });
 
   test("opens a Service with Components in its C3 View, and one without in its System's C2 View", async ({ page }) => {
-    await open(page, "#/view/c2?open=payments:payments");
+    await open(page, "#/view/c2");
     await node(page, "payments:payments-api").dblclick();
     await settled(page);
     expect(hash(page)).toBe("#/view/c3/payments:payments-api");
@@ -199,7 +223,7 @@ test.describe("direction", () => {
 
 test.describe("rendered geometry meets the layout rules", () => {
   test.use({ reducedMotion: "reduce" });
-  const places = ["#/view/c1", "#/view/c2", "#/view/c2?open=shop:checkout,payments:payments,shop:cart", "#/view/c2/shop:checkout?open=shop:cart", "#/view/c3/shop:cart", "#/view/c2?open=shop:checkout&dir=TB", "#/view/c2/shop:checkout?dir=RL", "#/view/c3/shop:cart?dir=BT"];
+  const places = ["#/view/c1", "#/view/c2", "#/view/c2?closed=shop:checkout", "#/view/c2?open=shop:checkout,payments:payments,shop:cart", "#/view/c2/shop:checkout?open=shop:cart", "#/view/c3/shop:cart", "#/view/c2?open=shop:checkout&dir=TB", "#/view/c2/shop:checkout?dir=RL", "#/view/c3/shop:cart?dir=BT"];
   for (const place of places)
     test(place, async ({ page }) => {
       await open(page, place);

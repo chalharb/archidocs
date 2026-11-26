@@ -61,7 +61,7 @@ test.describe("Developer: what decisions are behind this Element?", () => {
     await expect(reader(page).getByText("EKS prod")).toBeVisible();
     await reader(page).getByRole("button", { name: "Cart", exact: true }).click();
     await settled(page);
-    expect(hash(page)).toBe("#/view/c2?open=shop:checkout&sel=shop:cart");
+    expect(hash(page)).toBe("#/view/c2?sel=shop:cart");
     await expect(panel(page)).toBeVisible();
   });
 

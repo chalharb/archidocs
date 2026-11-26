@@ -34,7 +34,7 @@ test.describe("Product Owner: what is upstream and downstream of an outage?", ()
   });
 
   test("a collapsed box is marked when anything inside it is hit, with the nearest distance", async ({ page }) => {
-    await open(page, "#/view/c2?impact=shop:cart&way=downstream");
+    await open(page, "#/view/c2?closed=shop:checkout,payments:payments&impact=shop:cart&way=downstream");
     await expect(node(page, "shop:checkout")).toHaveAttribute("data-hit", "true");
     await expect(node(page, "shop:checkout").getByTestId("distance")).toHaveText("0");
     await expect(node(page, "payments:payments")).toHaveAttribute("data-hit", "true");
@@ -64,7 +64,7 @@ test.describe("Product Owner: what is upstream and downstream of an outage?", ()
 
 test.describe("Enterprise Architect: how are two Services connected?", () => {
   test("Connect to… lights the shortest paths to the node clicked next and picks the nodes on them", async ({ page }) => {
-    await open(page, "#/view/c2");
+    await open(page, "#/view/c2?closed=shop:checkout,payments:payments");
     await node(page, "shop:web").click();
     await panel(page).getByRole("button", { name: "Connect to…" }).click();
     await expect(page.getByRole("status")).toContainText("Pick the node to connect Web to");
@@ -100,22 +100,22 @@ test.describe("Enterprise Architect: how are two Services connected?", () => {
 
 test.describe("Developer: what does my Team own?", () => {
   test("a Team Lens from the Teams list rings owned nodes, and collapsed boxes holding them", async ({ page }) => {
-    await open(page, "#/view/c2");
+    await open(page, "#/view/c2?closed=shop:checkout,payments:payments");
     await page.getByRole("navigation", { name: "Rail" }).getByRole("button", { name: "Teams" }).click();
     await page.getByRole("dialog", { name: "Teams" }).getByRole("button", { name: /Payments/ }).click();
     await settled(page);
 
-    expect(hash(page)).toBe("#/view/c2?team=payments-team");
+    expect(hash(page)).toBe("#/view/c2?closed=shop:checkout,payments:payments&team=payments-team");
     await expect(page.getByRole("region", { name: "Lens" })).toContainText("Team Payments");
     expect(await hits(page)).toEqual(["payments:payments", "shop:checkout"]);
     await expect(node(page, "payments:payments")).toHaveClass(/arc-ringed/);
   });
 
   test("the Owner chip in the Element panel opens the Team Lens", async ({ page }) => {
-    await open(page, "#/view/c2?open=shop:checkout&sel=shop:fraud-check");
+    await open(page, "#/view/c2?sel=shop:fraud-check");
     await panel(page).getByRole("button", { name: "Team lens: Payments" }).click();
     await settled(page);
-    expect(await hits(page)).toEqual(["payments:payments", "shop:fraud-check"]);
+    expect(await hits(page)).toEqual(["payments:payments", "payments:payments-api", "shop:fraud-check"]);
   });
 });
 
@@ -129,7 +129,7 @@ test.describe("QA Tester: what is a Service's URL in an Environment?", () => {
     await options.first().click();
     await settled(page);
     await expect(node(page, "shop:cart")).toHaveAttribute("aria-selected", "true");
-    expect(hash(page)).toBe("#/view/c2?open=shop:checkout&sel=shop:cart");
+    expect(hash(page)).toBe("#/view/c2?sel=shop:cart");
 
     await panel(page).getByRole("tab", { name: "URLs" }).click();
     const prod = panel(page).getByRole("region", { name: "Production" });
@@ -191,7 +191,7 @@ test.describe("the Element panel", () => {
 });
 
 test("a lit edge stays lit while a node is selected", async ({ page }) => {
-  await open(page, "#/view/c2?sel=shop:web&from=shop:web&to=payments:payments");
+  await open(page, "#/view/c2?closed=shop:checkout,payments:payments&sel=shop:web&from=shop:web&to=payments:payments");
   await expect(page.locator('path[data-edge-from="shop:checkout"][data-edge-to="payments:payments"]')).not.toHaveClass(/arc-faded/);
   await expect(page.locator('path[data-edge-from="shop:shopper"][data-edge-to="shop:web"]')).toHaveClass(/arc-faded/);
 });

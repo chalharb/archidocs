@@ -8,11 +8,13 @@ import type { ResolvedView, ViewKind, ViewSummary } from "./types.ts";
  * Resolves a Generated View by id: `c1`, `c2`, `c2/<system>`, `c3/<service>`
  * (only for a Service with Components) or `deployment/<env>`. Undefined for
  * any other id, and for one naming an Element or Environment that isn't there.
+ * The C2 Landscape opens every System but those in `collapse`; `collapse`
+ * applies to no other View.
  */
-export function resolveGenerated(bundle: Bundle, model: ModelIndex, id: string, expand: readonly string[]): ResolvedView | undefined {
+export function resolveGenerated(bundle: Bundle, model: ModelIndex, id: string, expand: readonly string[], collapse: readonly string[] = []): ResolvedView | undefined {
   const ref = parseViewId(id);
   if (ref === undefined || ref.form === "saved") return undefined;
-  if (ref.form === "landscape") return landscape(model, ref.level, ref.level === "c1" ? "C1 Landscape" : "C2 Landscape", ref.level === "c1" ? [] : expand);
+  if (ref.form === "landscape") return ref.level === "c1" ? landscape(model, "c1", "C1 Landscape", []) : landscape(model, "c2", "C2 Landscape", [...systemsOpen(model, collapse), ...expand]);
   if (ref.form === "deployment") {
     const env = bundle.environments.find((e) => e.id === ref.environment);
     return env ? resolveDeployment(bundle, model, { id, title: `${env.name} (Deployment)` }, env.id) : undefined;
@@ -42,6 +44,12 @@ export function summarise(id: string, bundle: Bundle): ViewSummary & { kind: Vie
   if (ref.form === "deployment") return { id, kind: "deployment", title: `${bundle.environments.find((e) => e.id === ref.environment)!.name} (Deployment)` };
   if (ref.form === "saved") throw new Error(`"${id}" is not a Generated View id`);
   return { id, kind: ref.level, title: `${bundle.elements.find((e) => e.id === ref.element)!.name} (${ref.level.toUpperCase()})` };
+}
+
+/** Every System not in `collapse`: the boxes the C2 Landscape opens before its `expand`. */
+function systemsOpen(model: ModelIndex, collapse: readonly string[]): string[] {
+  const closed = new Set(collapse);
+  return model.elements.filter((e) => e.kind === "system" && !closed.has(e.id)).map((e) => e.id);
 }
 
 /** Every top-level Element, each standing for everything beneath it, with the `expand`ed boxes open. */

@@ -15,7 +15,7 @@ describe("compareView", () => {
   it("lays a View over the union of both sides, marking what was added, removed and changed", async () => {
     const { before, after } = await sides();
 
-    const view = compareView(before, after, "c2")!;
+    const view = compareView(before, after, "c2", { collapse: ["payments:payments", "shop:checkout", "shop:legacy"] })!;
 
     expect(nodeMarks(view)).toEqual({
       "payments:payments": "unchanged",
@@ -37,8 +37,8 @@ describe("compareView", () => {
     const { before, after } = await sides();
     const renamedCart = { ...after, elements: after.elements.map((e) => (e.id === "shop:cart" ? { ...e, name: "Basket" } : e)) };
 
-    const collapsed = compareView(before, renamedCart, "c2")!;
-    const opened = compareView(before, renamedCart, "c2", { expand: ["shop:legacy", "shop:checkout"] })!;
+    const collapsed = compareView(before, renamedCart, "c2", { collapse: ["shop:checkout"] })!;
+    const opened = compareView(before, renamedCart, "c2")!;
 
     expect(nodeMarks(collapsed)["shop:checkout"]).toBe("changed");
     expect(nodeMarks(opened)).toMatchObject({ "shop:checkout": "unchanged", "shop:cart": "changed", "shop:legacy": "removed", "shop:old-cart": "removed" });

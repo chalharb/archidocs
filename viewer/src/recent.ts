@@ -23,8 +23,9 @@ export function readRecent(): RecentPlace[] {
 
 /** Puts a place first, dropping its earlier entry and anything past the last 10. */
 export function remember(place: Place, title: string): void {
-  const key = `${place.view}?${place.open.join(",")}`;
-  const label = place.open.length > 0 ? `${title} · ${place.open.length} open` : title;
+  const key = `${place.view}?${place.open.join(",")}|${place.closed.join(",")}`;
+  const state = [place.open.length > 0 ? `${place.open.length} open` : "", place.closed.length > 0 ? `${place.closed.length} closed` : ""].filter(Boolean);
+  const label = [title, ...state].join(" · ");
   const list = [{ key, hash: formatPlace(place), label }, ...readRecent().filter((r) => r.key !== key)].slice(0, LIMIT);
   try {
     window.localStorage.setItem(storageKey(), JSON.stringify(list));

@@ -1,6 +1,6 @@
 # 11: C1 and C2 Landscapes differ
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 
