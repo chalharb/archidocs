@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { load, nodeFileSystem, serializeBundle } from "../../src/core/index.ts";
+import { load, nodeFileSystem } from "../../src/core/index.ts";
+import { serializeBundle } from "../../src/revisions/index.ts";
 import { loadWorkspace, writeWorkspace } from "../support/workspace.ts";
 import { validWorkspace } from "../support/fixtures.ts";
 

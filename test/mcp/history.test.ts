@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { bundleSource, checkoutSource } from "../../src/mcp/index.ts";
+import { INDEX_PATH, pastBundlePath, serializeIndex, type RevisionIndex } from "../../src/revisions/index.ts";
 import { bundleText, serveBundleSite } from "../support/bundle-site.ts";
 import { validWorkspace } from "../support/fixtures.ts";
 import { inWorkspace, scriptedRepo } from "../support/git-history.ts";
@@ -231,8 +232,8 @@ async function siteFiles(withIndex = true) {
       entry(DROPPED, "2026-01-10T12:00:00Z", ["shop:web", "payments:stripe"], { bundle: false }),
     ],
   };
-  const files: Record<string, string> = { [`bundles/${OLD}.json`]: old, [`bundles/${V2}.json`]: await bundleText(validWorkspace, V2) };
-  if (withIndex) files["bundles/index.json"] = JSON.stringify(index);
+  const files: Record<string, string> = { [pastBundlePath(OLD)]: old, [pastBundlePath(V2)]: await bundleText(validWorkspace, V2) };
+  if (withIndex) files[INDEX_PATH] = serializeIndex(index);
   return { current, files };
 }
 
@@ -285,11 +286,11 @@ describe("history from a published Bundle site", () => {
 
   it("reports a sha prefix that starts several Revisions, even the current commit's, with the candidates", async () => {
     const { current, files } = await siteFiles();
-    const index = JSON.parse(files["bundles/index.json"]!);
+    const index = JSON.parse(files[INDEX_PATH]!) as RevisionIndex;
     // Shares its first 7 characters with NOW, the current commit.
     const twin = `ccccccc${"1".repeat(33)}`;
     index.revisions.splice(1, 0, entry(twin, "2026-04-01T12:00:00Z", []));
-    const served = await serveBundleSite(current, { files: { ...files, "bundles/index.json": JSON.stringify(index) } });
+    const served = await serveBundleSite(current, { files: { ...files, [INDEX_PATH]: serializeIndex(index) } });
     const { call, text } = await connectTo(bundleSource({ location: served.url }));
     const result = await call("get_workspace_info", { at: "ccccccc" });
     expect(result.structuredContent).toMatchObject({ code: "not_found", suggestions: [NOW, twin] });

@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
-import { cp, mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { serializeBundle, type Issue } from "../core/index.ts";
-import { defaultBaseBranch, previewSides, publishHistory, publishPreview, type History, type PreviewSides } from "../history/index.ts";
-import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
+import { cp } from "node:fs/promises";
+import { join } from "node:path";
+import type { Issue } from "../core/index.ts";
+import { defaultBaseBranch, previewSides, publishHistory, publishPreview, writeSite, type History, type PreviewSides } from "../history/index.ts";
+import { INDEX_VERSION, LATEST_BUNDLE_PATH } from "../revisions/index.ts";
 import type { Checkout } from "../workspace/index.ts";
 
 export interface BuildOptions {
@@ -46,27 +46,18 @@ export async function build(checkout: Checkout, options: BuildOptions): Promise<
     const h = repo.history;
     preview = { h, sides: await previewSides(h, options.preview.base ?? (await defaultBaseBranch(h.repoRoot))) };
   }
-  if (!bundleOnly) {
-    if (!existsSync(join(viewerDir, "index.html"))) return { kind: "viewer-missing", viewerDir };
-    await cp(viewerDir, out, { recursive: true });
-    // The viewer's exports name the Workspace as `archidocs export` does: by its repo's folder.
-    await writeFile(join(out, SITE_FILE_PATH), JSON.stringify({ workspace: await checkout.name() }) + "\n");
+  if (bundleOnly) {
+    await writeSite(out, { bundle });
+    return { kind: "bundle", file: join(out, LATEST_BUNDLE_PATH) };
   }
-  await mkdir(out, { recursive: true });
-  const file = join(out, LATEST_BUNDLE_PATH);
-  await writeFile(file, serializeBundle(bundle));
-  if (preview) return { kind: "preview", out, ...(await publishPreview(preview.h, out, preview.sides, bundle)) };
-  if (bundleOnly) return { kind: "bundle", file };
-  await writeSiteHistory(checkout, out, keep);
-  return { kind: "site", out };
-}
-
-/** The site's past Bundles and Revision index; outside git, an empty index, so the viewer knows there is no history. */
-async function writeSiteHistory(checkout: Checkout, out: string, keep: number | "all") {
+  if (!existsSync(join(viewerDir, "index.html"))) return { kind: "viewer-missing", viewerDir };
+  await cp(viewerDir, out, { recursive: true });
+  // The viewer's exports name the Workspace as `archidocs export` does: by its repo's folder.
+  const latest = { bundle, workspace: await checkout.name() };
+  if (preview) return { kind: "preview", out, ...(await publishPreview(preview.h, out, preview.sides, bundle, latest.workspace)) };
   const repo = await checkout.repo();
-  if (repo) await publishHistory(repo.history, out, { keep });
-  else {
-    await mkdir(dirname(join(out, INDEX_PATH)), { recursive: true });
-    await writeFile(join(out, INDEX_PATH), JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: [] }, null, 2) + "\n");
-  }
+  if (repo) await publishHistory(repo.history, out, latest, { keep });
+  // Outside git, an empty index, so the viewer knows there is no history.
+  else await writeSite(out, { ...latest, index: { schemaVersion: INDEX_VERSION, revisions: [] } });
+  return { kind: "site", out };
 }

@@ -3,10 +3,10 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { extname, join, normalize, sep } from "node:path";
-import { serializeBundle, type Issue } from "../core/index.ts";
+import type { Issue } from "../core/index.ts";
 import { formatText } from "./format.ts";
 import { isWorkspaceFile, type Checkout } from "../workspace/index.ts";
-import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, SITE_FILE_PATH } from "../revisions/index.ts";
+import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, serializeBundle, serializeIndex, serializeSiteFile, SITE_FILE_PATH } from "../revisions/index.ts";
 
 export const DEFAULT_DEV_PORT = 4321;
 
@@ -113,8 +113,8 @@ export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port =
 
   await rebuild();
   const index = (await readFile(join(viewerDir, "index.html"), "utf8")).replace("</body>", `${CLIENT}</body>`);
-  const site = JSON.stringify({ workspace: await checkout.name() }) + "\n";
-  const noHistory = JSON.stringify({ schemaVersion: INDEX_VERSION, revisions: [] }) + "\n";
+  const site = serializeSiteFile(await checkout.name());
+  const noHistory = serializeIndex({ schemaVersion: INDEX_VERSION, revisions: [] });
 
   const server = createServer((req, res) => {
     void (async () => {

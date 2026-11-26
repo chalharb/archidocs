@@ -71,3 +71,4 @@ export {
   type UnavailableReason,
   type Validators,
 } from "./site.ts";
+export { serializeBundle, serializeIndex, serializeSiteFile } from "./text.ts";
