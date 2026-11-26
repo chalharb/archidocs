@@ -1,6 +1,6 @@
 # 10: Home is the top-most View
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 
