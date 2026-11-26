@@ -55,7 +55,7 @@ jobs:
       - run: pnpm test:e2e
         env:
           E2E_PROJECT: website
-          E2E_DOCS_DIST: website/dist
+          E2E_DOCS_PREBUILT: "1"
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
