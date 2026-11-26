@@ -18,7 +18,7 @@ Register the Archidocs MCP server with your coding agent, so it can answer archi
 
 `archidocs init` has already done this for most agents. It writes the server into `.mcp.json` at the repo root, which Claude Code, VS Code and Copilot read, and updates `.cursor/mcp.json` or `.vscode/mcp.json` when the repo has one. It replaces only its own `archidocs` entry and keeps your other servers. Commit `.mcp.json`, so everyone who clones the repo gets the server. Run `init` again after you change how you install Archidocs, and it updates the entry.
 
-The entry runs one command from the repo root, in the form that runs there: `archidocs mcp --workspace archidocs` with a global install, `npx archidocs mcp …` with a dev dependency, or `npx -y archidocs@1.2.0 mcp …` on demand. From a code repo, the path differs: see [In a code repo](#in-a-code-repo).
+The entry runs one command from the repo root, in the form that runs there: `archidocs mcp --workspace archidocs` with a global install, `npx archidocs mcp --workspace archidocs` with a dev dependency, or `npx -y archidocs@1.2.0 mcp --workspace archidocs` on demand. From a code repo, the path differs: see [In a code repo](#in-a-code-repo).
 
 ```bash
 archidocs mcp --workspace archidocs

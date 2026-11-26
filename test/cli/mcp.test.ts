@@ -76,7 +76,8 @@ describe("archidocs mcp says it is up", () => {
     const missing = join(await mkdtemp(join(tmpdir(), "archidocs-site-")), "nothing-here");
     const { client, waitFor } = await serveLogged(tmpdir(), {}, "--bundle", missing);
     const line = await waitFor(/can't load/);
-    expect(line).toMatch(new RegExp(`archidocs ${version} MCP server \\(stdio\\): Bundle .*nothing-here.* can't load it: .+; tools return source_unavailable until it loads`));
+    expect(line).toContain(`archidocs ${version} MCP server (stdio): Bundle `);
+    expect(line).toMatch(/Bundle .*nothing-here.* can't load it: .+; tools return source_unavailable until it loads\n/);
     expect((await client.callTool({ name: "get_workspace_info", arguments: {} })).structuredContent).toMatchObject({ code: "source_unavailable" });
   });
 
