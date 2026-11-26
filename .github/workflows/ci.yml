@@ -8,9 +8,9 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**"]
+    paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**", "docs/**", "AGENTS.md"]
   pull_request:
-    paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**"]
+    paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**", "docs/**", "AGENTS.md"]
 
 permissions:
   contents: read
