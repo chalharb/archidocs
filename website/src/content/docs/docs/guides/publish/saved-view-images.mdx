@@ -27,15 +27,15 @@ On GitLab, set the [template](/docs/guides/publish/gitlab-pages/)'s `images` inp
 
 ## 2. Embed one
 
-Each Saved View is drawn to `views/<view-id>.svg` in the site, with any `:` or `/` in its id turned into `-`. Embed it, and link it to the same View in the viewer so readers can explore it:
+Each Saved View is drawn to `views/<view-id>.svg` in the site, with any `/` in its id turned into `-` and any `:` into `_`. Embed it, and link it to the same View in the viewer so readers can explore it:
 
 ```markdown title="README.md"
-[![Checkout impact](https://<owner>.github.io/<repo>/views/shop-checkout-impact.svg)](https://<owner>.github.io/<repo>/#/view/shop:checkout-impact)
+[![Checkout impact](https://<owner>.github.io/<repo>/views/shop_checkout-impact.svg)](https://<owner>.github.io/<repo>/#/view/shop:checkout-impact)
 ```
 
 ## Check it worked
 
-After the next deploy, open a View's picture, such as `https://<owner>.github.io/<repo>/views/shop-checkout-impact.svg`. The picture is styled like the viewer and drawn for the latest Revision.
+After the next deploy, open a View's picture, such as `https://<owner>.github.io/<repo>/views/shop_checkout-impact.svg`. The picture is styled like the viewer and drawn for the latest Revision.
 
 To see which files CI writes, run the same command locally:
 
@@ -44,16 +44,16 @@ archidocs export --all-saved --out views
 ```
 
 ```text
-Wrote views/digital-mainframe-outage.svg
-Wrote views/digital-prod-deployment.svg
-Wrote views/digital-sign-in.svg
-Wrote views/digital-sign-in-path.svg
-Wrote views/payments-make-a-payment.svg
+Wrote views/digital_mainframe-outage.svg
+Wrote views/digital_prod-deployment.svg
+Wrote views/digital_sign-in.svg
+Wrote views/digital_sign-in-path.svg
+Wrote views/payments_make-a-payment.svg
 ```
 
 ## If it didn't
 
-If the picture's URL is not found, check the file name: `:` and `/` in the View id become `-`. A Generated View, such as `c2`, gets no picture; [save it as a View](/docs/guides/model/save-a-view/) first.
+If the picture's URL is not found, check the file name: `/` in the View id becomes `-` and `:` becomes `_`. A Generated View, such as `c2`, gets no picture; [save it as a View](/docs/guides/model/save-a-view/) first.
 
 ## Related
 

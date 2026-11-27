@@ -86,8 +86,8 @@ describe("archidocs export", () => {
     const { code, stdout } = await archidocs(repoRoot, "export", "c2/shop:checkout");
 
     expect(code).toBe(0);
-    expect(stdout).toBe("Wrote c2-shop-checkout.svg\n");
-    expect(await readFile(join(repoRoot, "c2-shop-checkout.svg"), "utf8")).toMatch(/^<svg /);
+    expect(stdout).toBe("Wrote c2-shop_checkout.svg\n");
+    expect(await readFile(join(repoRoot, "c2-shop_checkout.svg"), "utf8")).toMatch(/^<svg /);
   });
 
   it("draws in the --direction it is given", async () => {
@@ -105,8 +105,8 @@ describe("archidocs export", () => {
     await archidocs(repoRoot, "export", "architecture:purchase", "--direction", "LR", "--out", "lr.svg");
 
     expect(code).toBe(0);
-    expect(stdout).toBe("Wrote architecture-purchase.svg\n");
-    const svg = await readFile(join(repoRoot, "architecture-purchase.svg"), "utf8");
+    expect(stdout).toBe("Wrote architecture_purchase.svg\n");
+    const svg = await readFile(join(repoRoot, "architecture_purchase.svg"), "utf8");
     expect(texts(svg)).toContain("Lens: Impact of Cart, upstream");
     const [tb, lr] = [svgSize(svg), svgSize(await readFile(join(repoRoot, "lr.svg"), "utf8"))];
     expect(tb[0]! / tb[1]!).toBeLessThan(lr[0]! / lr[1]!);
@@ -117,9 +117,9 @@ describe("archidocs export", () => {
     const { code, stdout, stderr } = await archidocs(repoRoot, "export", "--all-saved", "--out", "docs/views", "--format", "png");
 
     expect(code).toBe(0);
-    expect(stdout).toBe("Wrote docs/views/architecture-purchase.png\nWrote docs/views/architecture-runtime.png\nWrote docs/views/architecture-systems.png\n");
+    expect(stdout).toBe("Wrote docs/views/architecture_purchase.png\nWrote docs/views/architecture_runtime.png\nWrote docs/views/architecture_systems.png\n");
     expect(stderr).toBe("");
-    expect((await readdir(join(repoRoot, "docs/views"))).sort()).toEqual(["architecture-purchase.png", "architecture-runtime.png", "architecture-systems.png"]);
+    expect((await readdir(join(repoRoot, "docs/views"))).sort()).toEqual(["architecture_purchase.png", "architecture_runtime.png", "architecture_systems.png"]);
   });
 
   it("draws an Environment's Deployment View top to bottom, with its Targets, System boxes and Deployments", async () => {
@@ -137,8 +137,8 @@ describe("archidocs export", () => {
     const svgRun = await archidocs(repoRoot, "export", "shop:pay");
     const pngRun = await archidocs(repoRoot, "export", "shop:pay", "--format", "png", "--out", "pay.png");
 
-    expect([svgRun.code, svgRun.stdout]).toEqual([0, "Wrote shop-pay.svg\n"]);
-    const svg = await readFile(join(repoRoot, "shop-pay.svg"), "utf8");
+    expect([svgRun.code, svgRun.stdout]).toEqual([0, "Wrote shop_pay.svg\n"]);
+    const svg = await readFile(join(repoRoot, "shop_pay.svg"), "utf8");
     expect(texts(svg)[0]).toBe("Pay for an order");
     expect(texts(svg)).toEqual(expect.arrayContaining(["Checkout API", "Payments API", "Fraud Scorer", "1", "4"]));
     expect(svg.match(/<path data-step=/g)).toHaveLength(4);
@@ -152,7 +152,7 @@ describe("archidocs export", () => {
 
     expect(code).toBe(0);
     expect(stderr).toBe("");
-    expect(stdout).toBe("Wrote views/shop-full-checkout.svg\nWrote views/shop-pay.svg\n");
+    expect(stdout).toBe("Wrote views/shop_full-checkout.svg\nWrote views/shop_pay.svg\n");
   });
 
   it.each([
