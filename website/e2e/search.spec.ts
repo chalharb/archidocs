@@ -42,9 +42,10 @@ test("a partial rule id finds the rule's page first", async ({ page }) => {
  * Flags that are a plain word a guide is titled with, so searching the word
  * fairly finds the guide: `--preview` (PR previews), `--skill` (Install the
  * agent skill), `--bundle` (also part of `--bundle-only`), `--check` (`mcp
- * --check`, but also the `check` command and Check in CI).
+ * --check`, but also the `check` command and Check in CI), `--project` and
+ * `--owner` (`gaps`, but also Workspace and Projects, and Teams and ownership).
  */
-const PLAIN_WORD_FLAGS = new Set(["preview", "skill", "bundle", "check"]);
+const PLAIN_WORD_FLAGS = new Set(["preview", "skill", "bundle", "check", "project", "owner"]);
 
 test("a CLI flag only one command takes finds that command's page first", async ({ page }) => {
   const owners = new Map<string, string[]>();
