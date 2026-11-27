@@ -1,6 +1,6 @@
 ---
 name: archidocs-authoring
-description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.
+description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, proposing an ADR, or finding and filling documentation gaps.
 ---
 
 # Archidocs authoring

@@ -5,7 +5,7 @@ import { bundleSource } from "../../src/mcp/index.ts";
 import { validWorkspace } from "../support/fixtures.ts";
 import { connect, connectTo } from "../support/mcp.ts";
 
-const topics = ["bootstrap", "add-service", "relationships", "deployments", "dynamic-view", "saved-view", "propose-adr", "change", "rules"];
+const topics = ["bootstrap", "add-service", "relationships", "deployments", "dynamic-view", "saved-view", "propose-adr", "fill-gaps", "change", "rules"];
 
 describe("get_authoring_guide", () => {
   it("returns SKILL.md and lists every topic", async () => {

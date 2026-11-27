@@ -21,6 +21,7 @@ export const topics = [
   { id: "dynamic-view", summary: "Draft a scenario as Steps over existing Relationships, adding missing ones." },
   { id: "saved-view", summary: "Save a structural or Deployment View with selectors and a Lens." },
   { id: "propose-adr", summary: "Propose an ADR linked to the Elements and Views it affects." },
+  { id: "fill-gaps", summary: "Interview the user about the fields the Model leaves empty, proposing each value from evidence in the code and writing it as it is confirmed." },
   { id: "change", summary: "Rename, move or remove, working through refused removals by their references." },
   { id: "rules", summary: "Every `check` rule id: what it means, a failing example and the fix." },
 ] as const;
@@ -59,7 +60,7 @@ export async function authoringGuide(topic?: string): Promise<GuideResult> {
  */
 export const skillStub = (runner: string) => `---
 name: ${SKILL_NAME}
-description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.
+description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, proposing an ADR, or finding and filling documentation gaps.
 ---
 
 # Archidocs authoring

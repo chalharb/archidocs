@@ -1,0 +1,103 @@
+---
+title: Fill documentation gaps
+description: Have an agent find what the Model leaves empty and interview you to fill it, proposing each value from evidence in the code.
+sidebar:
+  order: 4
+---
+
+Have a coding agent find the fields your Model leaves empty, such as repository links, API docs, technology and versions, and descriptions. It interviews you to fill them, one Element at a time. Before each question it looks in the code, so most answers are a "yes" to a value it has already found.
+
+:::note[For agents]
+The agent topic for this task is [`fill-gaps`](/docs/reference/agent-guide/fill-gaps/).
+:::
+
+## When to use it
+
+- After a [bootstrap](/docs/guides/agents/bootstrap-from-code/) or a hand-written first draft, to fill in what was left out.
+- Before you publish the viewer to a wider audience, so every box says what it is, where its code lives and where its API is documented.
+- When a Team takes over Services and wants their entries complete.
+
+## Before you start
+
+- The agent has the Archidocs MCP server over a writable [Workspace checkout](/docs/reference/glossary/#term-checkout). See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/).
+- The skill is installed. See [Install the agent skill](/docs/guides/agents/install-skill/).
+- The agent can read the codebases the Workspace describes: the code repos are checked out, or the Workspace lives in the same repo. Without the code, the agent can still find the gaps, but every question comes without a proposed value.
+- `archidocs check` passes. The agent runs it first and fixes any errors before it looks for gaps.
+
+## 1. Ask for it
+
+Start the agent where it can see both the Workspace and the code, and name what to cover:
+
+```text
+Fill the documentation gaps in the Archidocs Project "payments". The Services' code is in ../payments-service and ../fraud-detection.
+```
+
+Leave the Project out to scan the whole Workspace. The skill sends the agent to the `fill-gaps` topic, which it follows from here.
+
+## 2. Agree the scope
+
+The agent builds the Bundle and lists every gap, grouped by Project and Owner Team:
+
+```text
+## payments
+### payments
+- service payments:fraud-detection: repository
+- service payments:payments-service: repository, api-docs
+- relationship payments:fraud-detection -> payments:payments-service: technology
+- deployment payments:fraud-detection in prod on platform:eks-prod: url
+```
+
+The agent flags empty descriptions, technology, repository links, API docs and Deployments. It also flags a Relationship's technology and channel, and a Deployment's URL. Tags, links, metadata and Owners aren't counted as gaps. Tell the agent which Projects or Teams to work through.
+
+## 3. Answer the interview
+
+The agent takes one Element at a time, starting with the Services other Elements call. Each round is a short numbered set of questions about that Element. They come in a fixed order: repository, API docs, technology and version, description, Owner, then its Relationships and Deployments.
+
+Before it asks, the agent looks for the answer: git remotes, `package.json` and lockfiles, `*.csproj`, `pom.xml`, `go.mod`, Dockerfiles, OpenAPI and Swagger specs, Terraform, Helm and CI config. Each question carries the value it found and where it found it:
+
+```text
+1. Repository: `git remote get-url origin` in ../payments-service gives
+   git@github.com:acme/payments-service.git.
+   Set `repository: https://github.com/acme/payments-service`?
+2. API docs: src/main/resources/openapi.yaml is served at /v3/api-docs
+   (springdoc in pom.xml:41). Add an `openapi` endpoint to the prod
+   Deployment, https://payments.acme.example/v3/api-docs?
+3. Technology: pom.xml:12 inherits spring-boot-starter-parent 3.3.4.
+   Set `technology: Spring Boot 3.3`?
+```
+
+Answer "yes" to take a proposed value, give the right one, or say `skip` or `unknown` to leave the field open. Where the agent found nothing, it says where it looked and asks an open question. A vague answer gets a follow-up: "it's the payments thing" isn't a description, so expect to be asked what the Service does and for whom.
+
+The agent writes each round's answers into the YAML as soon as you confirm them, and runs `check`. If you stop halfway, everything you answered is already in the Model.
+
+Once per Project, the agent asks whether your Teams record facts the Model has no field for, such as `tier` or `on-call`. Those go in an Element's `metadata`. An answer that is really a decision, such as why a Service is External, is offered as an [ADR](/docs/guides/model/record-an-adr/).
+
+## 4. Review the pull request
+
+The agent finishes with a summary of what it filled, each value with its source, and what is still open, grouped by Owner Team. The open list is ready to send to each Team. The summary goes into the suggested pull request description. Commit, push, and review it like code.
+
+## Check it worked
+
+In the Workspace checkout:
+
+```bash
+archidocs check
+```
+
+```text
+0 errors, 0 warnings
+```
+
+Then run `archidocs diff main` to list every Element whose fields changed. In the viewer, the Element panel shows each filled repository, link and metadata entry.
+
+## If it didn't
+
+If every question comes without a proposed value, the agent can't see the code. Tell it where each Service's checkout is.
+
+If the agent edits YAML by hand instead of calling the write tools, it isn't connected to the MCP server. Check the server is registered, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/) shows.
+
+## Related
+
+- [The `fill-gaps` topic](/docs/reference/agent-guide/fill-gaps/)
+- [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
+- [Agents and MCP](/docs/concepts/agents-and-mcp/)
