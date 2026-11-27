@@ -7,7 +7,7 @@
 #       inputs:
 #         images: true
 #
-# See docs/publishing.md.
+# See https://archidocs.dev/docs/guides/publish/gitlab-pages/.
 spec:
   inputs:
     working-directory:

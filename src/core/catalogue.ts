@@ -10,7 +10,7 @@ export function ruleCatalogue(rules: readonly RuleDefinition[] = registry): stri
   const out = [
     "# Check rules",
     "",
-    "<!-- Generated from the rule registry in src/core/rules.ts by `pnpm rules:catalogue`. Do not edit by hand. -->",
+    "<!-- Generated from the rule registry in src/core/rules.ts. Do not edit by hand. -->",
     "",
     "`archidocs check` reports each issue with one of these rule ids. Errors fail the check; warnings fail it only with `--strict`.",
     "",
