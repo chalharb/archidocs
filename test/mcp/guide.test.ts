@@ -85,6 +85,18 @@ describe("get_guide", () => {
     expect(result.structuredContent).toMatchObject({ code: "not_found", suggestions: ["relationships"] });
   });
 
+  it("serves consult's SKILL.md, with no topics", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const result = await call("get_guide", { skill: "consult" });
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({ skill: "consult", topic: null });
+    expect(text(result)).toMatch(/^---\nname: archidocs-consult\n/);
+    expect(text(result)).toContain("## Before the change");
+    expect(text(result)).not.toContain("## Topics");
+    const frontmatter = (s: string) => /^---\n[\s\S]*?\n---\n/.exec(s)![0];
+    expect(frontmatter(skillStub("consult", "archidocs"))).toBe(frontmatter(text(result)));
+  });
+
   it("serves the fill-gaps skill, which loads authoring first and scans with list_gaps", async () => {
     const { call, text } = await connect(validWorkspace);
     const result = await call("get_guide", { skill: "fill-gaps" });

@@ -57,6 +57,10 @@ Other skills build on the authoring guide, each with a guide of its own. [`fill-
 
 The guides on this site cover the same tasks for people, and each links its agent topic.
 
+## Consulting the Model while coding
+
+The `consult` skill is for an agent changing a Service's code, not the Model. Before a change that reaches past the Service, such as a public API, a dependency or deployment config, it reads the Model and reports the Service's consumers, the Teams to tell, its Deployments and its ADRs. It stops only when an accepted ADR contradicts the change or the change breaks another Team's consumer. It never writes the Model; when the code and the Model drift apart, it hands off to the authoring guide. `get_guide("consult")` serves it, and `archidocs guide --skill consult` prints it. See [Consult the Model while coding](/docs/guides/agents/consult-while-coding/).
+
 ## Describing an architecture in prose
 
 An agent doesn't need code to build a Model. The `describe` skill, served by `get_guide("describe")`, has it work from your own explanation: you describe how your systems fit together, and it plays back a draft and asks only what is ambiguous, round by round. It never makes up Environments, URLs or Owners, and writes nothing until you approve the first draft. See [Describe an architecture in prose](/docs/guides/agents/describe-in-prose/).
@@ -76,5 +80,6 @@ An agent doesn't need code to build a Model. The `describe` skill, served by `ge
 - [Install the agent skill](/docs/guides/agents/install-skill/)
 - [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
 - [Fill documentation gaps](/docs/guides/agents/fill-gaps/)
+- [Consult the Model while coding](/docs/guides/agents/consult-while-coding/)
 - [Describe an architecture in prose](/docs/guides/agents/describe-in-prose/)
 - [`archidocs mcp`](/docs/reference/cli/mcp/)

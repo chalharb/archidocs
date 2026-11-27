@@ -1,0 +1,88 @@
+---
+title: Consult the Model while coding
+description: Have a coding agent check who depends on a Service, who owns it, where it runs and what was decided, before and after it changes the code.
+sidebar:
+  order: 6
+---
+
+Have a coding agent read the Model while it changes a Service's code. Before it edits, it reports who calls the Service, which Teams to tell, where it runs and which ADRs apply. After the change, it checks the Model still matches the code. It never edits the Model itself: when the Model needs a change, it offers to make it with the authoring skill.
+
+:::note[For agents]
+The skill is `archidocs-consult`. Run `archidocs guide --skill consult` to read its guide, or call [`get_guide`](/docs/reference/mcp/get_guide/) with `skill: "consult"`.
+:::
+
+## When it fires
+
+The agent loads the skill on its own when a change reaches past the Service:
+
+- changing a public API, event or schema;
+- adding or removing a dependency on another Service, datastore or broker;
+- renaming or retiring a Service;
+- changing deployment config.
+
+It also loads it to answer questions such as "who calls the cart API?", "who owns billing?" or "where does checkout run in staging?".
+
+## Before you start
+
+- The agent has the Archidocs MCP server, over a Workspace checkout or a published Bundle. See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/). Read tools are enough.
+- The skill is installed in the code repo. See [Install the agent skill](/docs/guides/agents/install-skill/#2-install-it-in-a-code-repo).
+- The Service is in the Model. If it isn't, the agent says so and carries on; see [If it didn't](#if-it-didnt).
+
+## 1. Ask for the change
+
+Ask for the code change as you normally would:
+
+```text
+Remove the deprecated /v1/cart endpoint from the cart service.
+```
+
+## 2. Read the report
+
+Before it edits, the agent resolves the Service with [`search_elements`](/docs/reference/mcp/search_elements/) and reads its consumers with [`get_impact`](/docs/reference/mcp/get_impact/), their Owners, its Deployments with [`get_deployments`](/docs/reference/mcp/get_deployments/), and its ADRs with [`list_adrs`](/docs/reference/mcp/list_adrs/). It reports in four lines:
+
+```text
+Consumers: web (storefront), checkout (payments) +4 indirect
+Teams to tell: storefront, payments
+Deployments: prod on eks-main (https://cart.example.com), staging on eks-staging
+ADRs: shop:0003 Cart is the only writer of cart state (accepted)
+```
+
+Consumers are the Elements that call the Service directly, each with its Owner Team, plus a count of the ones that reach it through them. Teams to tell are the consumers' Owners other than the Service's own.
+
+## 3. Answer if it stops
+
+The agent carries on with the change unless one of two things is true:
+
+- an accepted ADR contradicts the change. It quotes the ADR and asks whether to change course or [supersede it](/docs/guides/model/record-an-adr/);
+- the change breaks a contract that a consumer owned by another Team uses, such as removing an endpoint `checkout` still calls. It names the consumer and its Owner.
+
+A consumer on your own Team or a proposed ADR is reported, not a reason to stop.
+
+## 4. Update the Model if it drifted
+
+After the change, the agent compares the dependencies it touched with the Service's Relationships in the Model. If the code now calls something the Model doesn't show, or no longer calls something it does, it says so and offers to update the Model. On a yes, it loads the authoring skill and writes the change; review it in the same pull request as the code.
+
+Drift it notices outside the change gets one line suggesting the [`fill-gaps` skill](/docs/guides/agents/fill-gaps/), rather than a fix in this pull request.
+
+## Check it worked
+
+Ask the agent a question the Model answers:
+
+```text
+Who calls the cart service, and who owns them?
+```
+
+It answers from `get_impact` with `project:id`s and Owner Teams, the same Elements the viewer shows upstream of the Service.
+
+## If it didn't
+
+If the agent says the Service isn't in the Model, it finishes the code change and then offers to add the Service with the authoring skill. Or add it yourself: see [Add a Service](/docs/guides/model/add-a-service/).
+
+If the agent greps YAML instead of calling tools, no MCP server is connected. It can still find direct consumers by searching for `to:` references to the Service, but it won't count the indirect ones. Check the server is registered, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/) shows.
+
+## Related
+
+- [Agents and MCP](/docs/concepts/agents-and-mcp/)
+- [Install the agent skill](/docs/guides/agents/install-skill/)
+- [`get_impact`](/docs/reference/mcp/get_impact/) and [`get_deployments`](/docs/reference/mcp/get_deployments/)
+- [Fill documentation gaps](/docs/guides/agents/fill-gaps/)
