@@ -108,17 +108,21 @@ export const commands = {
   },
   guide: {
     name: "guide",
-    synopsis: ["guide [topic]"],
-    description: "Print the authoring guide for agents, or one of its task topics.",
-    arguments: [{ name: "[topic]", description: "A task topic; with none, the guide and the list of topics." }],
-    flags: {},
+    synopsis: ["guide [topic] [--skill <id>]"],
+    description: "Print an agent skill's full guide, or one of its task topics. With no `--skill`, the authoring guide.",
+    arguments: [{ name: "[topic]", description: "A task topic of the skill; with none, the guide and its list of topics." }],
+    flags: {
+      skill: { type: "string", value: "<id>", default: "authoring", description: "The skill whose guide to print: `authoring`, or one that builds on it, such as `fill-gaps`. Only `authoring` has topics." },
+    },
     examples: [
-      { command: "archidocs guide", description: "Print the guide: the Model in brief, the edit loop and the list of task topics." },
+      { command: "archidocs guide", description: "Print the authoring guide: the Model in brief, the edit loop and the list of task topics." },
       { command: "archidocs guide add-service", description: "Print one task topic, here how to add a Service." },
+      { command: "archidocs guide --skill authoring", description: "Name the skill, as a skill's stub does: the same as `archidocs guide`." },
+      { command: "archidocs guide --skill fill-gaps", description: "Print another skill's guide, here the interview that fills what the Model leaves empty." },
     ],
     exitCodes: [
       { code: EXIT.ok, meaning: "The guide or the topic was printed." },
-      { code: EXIT.couldNotRun, meaning: "It could not run: an unknown topic (the message lists the topics there are), more than one topic, or any flag, since it takes none." },
+      { code: EXIT.couldNotRun, meaning: "It could not run: an unknown skill or topic (the message names the closest one and lists them all), a topic on a skill without topics, more than one topic, or an unknown flag." },
     ],
   },
   check: {
@@ -140,6 +144,27 @@ export const commands = {
       { code: EXIT.ok, meaning: "No errors. Warnings are printed and still exit 0, unless `--strict` is given." },
       { code: EXIT.foundErrors, meaning: "The Workspace has at least one error; with `--strict`, at least one error or warning." },
       { code: EXIT.couldNotRun, meaning: `It could not run: ${USAGE_ERROR}, an unknown format, or no Workspace found.` },
+    ],
+  },
+  gaps: {
+    name: "gaps",
+    synopsis: ["gaps [--project <id>] [--owner <team>] [--json]"],
+    description: "List what the Model leaves empty, grouped by Project and Owner Team: the gaps an agent's fill-gaps interview works through.",
+    arguments: [],
+    flags: {
+      project: { type: "string", value: "<id>", description: "Only this Project's gaps." },
+      owner: { type: "string", value: "<team>", description: "Only the gaps of items this Team owns." },
+      json: { type: "boolean", default: false, description: "Print the gaps as JSON, in the shape the `list_gaps` MCP tool returns, instead of Markdown." },
+    },
+    examples: [
+      { command: "archidocs gaps", description: "Print every gap as Markdown: a heading per Project and Owner Team, then a line per Element, Relationship or Deployment naming its empty fields." },
+      { command: "archidocs gaps --owner payments-team", description: "Print only the gaps of what one Team owns, as a backlog to hand to that Team." },
+      { command: "archidocs gaps --project shop --json", description: "Print one Project's gaps as JSON, for a script." },
+    ],
+    exitCodes: [
+      { code: EXIT.ok, meaning: "The gaps were printed, or none were found. It exits 0 either way: a gap is incompleteness, not an error, and `check` never reports one." },
+      { code: EXIT.foundErrors, meaning: "The Workspace has errors. They are printed as `check` prints them, and no gaps are listed." },
+      { code: EXIT.couldNotRun, meaning: `It could not run: ${USAGE_ERROR}, an unknown Project or Team, or no Workspace found.` },
     ],
   },
   build: {

@@ -1,6 +1,6 @@
 # 01: Sequence headers fit their names
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

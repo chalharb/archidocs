@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { PORT, SITES } from "./sites.ts";
 import { hash, settled } from "./support.ts";
@@ -215,5 +216,25 @@ test.describe("Dynamic View screen", () => {
     );
     await page.getByRole("button", { name: "Fit whole chart" }).click();
     expect(await sampling).toBeGreaterThanOrEqual(0.85);
+  });
+  test("Export → SVG downloads the sequence chart with every participant and Step label, and offers no picks", async ({ page }) => {
+    await openDynamic(page, FULL);
+    const names = await page.locator(".arc-seq-name").allTextContents();
+    const labels = await page.getByRole("list", { name: "Steps" }).locator(".arc-outline-label").allTextContents();
+    expect(names).toHaveLength(16);
+    expect(labels).toHaveLength(46);
+
+    await page.getByRole("button", { name: "Export" }).click();
+    const menu = page.getByRole("menu", { name: "Export" });
+    await expect(menu.getByRole("menuitem")).toHaveText(["View as SVG", "View as PNG"]);
+    const [download] = await Promise.all([page.waitForEvent("download"), menu.getByRole("menuitem", { name: "View as SVG" }).click()]);
+    expect(download.suggestedFilename()).toBe("shop-full-checkout.svg");
+
+    const svg = await readFile((await download.path())!, "utf8");
+    const texts = await page.evaluate((doc) => [...new DOMParser().parseFromString(doc, "image/svg+xml").querySelectorAll("text")].map((t) => t.textContent), svg);
+    // A name too wide for its header box is cut with "…", as the chart and `archidocs export` draw it.
+    const shown = (name: string) => texts.some((t) => t === name || (t?.endsWith("…") && t.length > 1 && name.startsWith(t.slice(0, -1))));
+    for (const name of names) expect(shown(name), name).toBe(true);
+    for (const label of labels) expect(texts).toContain(label);
   });
 });

@@ -1,10 +1,10 @@
-import { describeLens, type ResolvedView, type ViewEdge, type ViewNode } from "../core/views/index.ts";
+import { describeLens, instancesChip, type ResolvedView, type ViewEdge, type ViewNode } from "../core/views/index.ts";
 import type { Bundle, BundleElement, BundleLens } from "../schema/bundle.ts";
 import { FONT_FAMILY, FONTS } from "./font.ts";
-import type { Layout, LaidOutNode } from "./layout.ts";
+import { chipWidth, type Layout, type LaidOutNode } from "./layout.ts";
 import { teamStyles, type TeamStyle } from "./teams.ts";
 import { cut, fmt, text, textWidth } from "./text.ts";
-import { flatten, PALETTES, type Palette, type Theme } from "./tokens.ts";
+import { flatten, PALETTES, targetStep, type Palette, type Theme } from "./tokens.ts";
 
 /** Where a picture comes from, for its source line: the Workspace's name, the commit and its date (both null before the first commit). */
 export interface RenderSource {
@@ -62,20 +62,28 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
 
   const title = view.title;
   const subtitle = sourceLine(source, label);
-  const key = drawKey(c, bundle, view.lens);
+  const key = drawKey(c, bundle, view.lens, view.nodes.some((n) => n.instances !== undefined));
   const width = Math.ceil(Math.max(layout.width, key.width, textWidth(title, 20, 700), textWidth(subtitle, 12)) + 2 * PAD);
   const height = Math.ceil(HEADER + layout.height + PAD + KEY);
 
   const depth = (n: ViewNode): number => (n.parent === null ? 0 : 1 + depth(view.nodes.find((p) => p.id === n.parent)!));
   const byDepth = view.nodes.map((n) => ({ n, d: depth(n) })).sort((a, b) => a.d - b.d).map(({ n }) => n);
   const ring = view.lens !== undefined && "team" in view.lens;
+  const byId = new Map(view.nodes.map((n) => [n.id, n]));
+  const targetDepth = (n: ViewNode): number => (n.kind !== "target" ? 0 : 1 + (n.parent === null ? 0 : targetDepth(byId.get(n.parent)!)));
+  /** What a box is drawn on: its nearest enclosing Target's Target Depth ground, else the canvas. */
+  const groundOf = (n: ViewNode): string => {
+    const parent = n.parent === null ? undefined : byId.get(n.parent);
+    return parent === undefined ? c.ground : parent.kind === "target" ? c[`target-${targetStep(targetDepth(parent))}`] : groundOf(parent);
+  };
+  const targetGround = (n: ViewNode) => c[`target-${targetStep(targetDepth(n))}`];
   let clips = 0;
   const drawn = (n: ViewNode) => {
     const box = boxes.get(n.id)!;
     const element = elements.get(n.element ?? n.id);
     const target = n.kind === "target" ? targets.get(n.id) : undefined;
     const team = teams.get(element?.owner ?? target?.owner ?? "");
-    return containers.has(n.id) ? drawContainer(c, n, box, team, target?.kind) : drawNode(c, n, box, element, team, ring, `clip-${clips++}`);
+    return containers.has(n.id) ? drawContainer(c, n, box, team, groundOf(n), n.kind === "target" ? targetGround(n) : undefined, target?.kind) : drawNode(c, n, box, element, team, ring, `clip-${clips++}`);
   };
 
   return [
@@ -96,7 +104,7 @@ export function renderSvg({ bundle, view, layout, source, theme = "light", label
 }
 
 const marker = (id: string, fill: string) =>
-  `<marker id="${id}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${fill}"/></marker>`;
+  `<marker id="${id}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${fill}"/></marker>`;
 
 /** A broker's vertical stripes, in the rule colour. */
 const brokerPattern = (c: Palette) => `<pattern id="broker" width="12" height="12" patternUnits="userSpaceOnUse"><rect x="8" width="4" height="12" fill="${c.rule}"/></pattern>`;
@@ -174,10 +182,13 @@ function drawNode(c: Palette, n: ViewNode, box: LaidOutNode, element: BundleElem
   const dash = n.external ? ` stroke-dasharray="6 4"` : "";
   const frameWidth = system ? 2 : FRAME;
   const tileWidth = team ? textWidth(team.code, 10, 700) + 16 + 8 : 0;
+  const chip = n.instances === undefined ? undefined : instancesChip(n.instances);
+  const chipRoom = chip === undefined ? 0 : chipWidth(chip) + 8;
   const left = x + EDGE + (n.kind === "person" ? 12 : 8);
   const right = n.kind === "person" ? x + w - 16 : x + w - 10;
   return [
     `<g>`,
+    ...(chip === undefined ? [] : stack(l, x, y, w, h)),
     ...(l.ring ? [`<path d="${shape(x - 4, y - 4, w + 8, h + 8, r ? [r + 4, r + 4, r + 4, r + 4] : type === "datastore" ? [0, 0, 16, 16] : [0, 0, 0, 0])}" fill="${l.ring}"/>`] : []),
     `<clipPath id="${clip}"><path d="${d}"/></clipPath>`,
     `<path d="${d}" fill="${l.fill}"/>`,
@@ -185,22 +196,45 @@ function drawNode(c: Palette, n: ViewNode, box: LaidOutNode, element: BundleElem
     `<path d="${d}" fill="none" stroke="${l.frame}" stroke-width="${frameWidth}"${dash}/>`,
     ...(l.double ? [`<path d="${shape(x + 3, y + 3, w - 6, h - 6, [0, 0, type === "datastore" ? 9 : 0, type === "datastore" ? 9 : 0])}" fill="none" stroke="${l.frame}" stroke-width="${FRAME}"/>`] : []),
     `<rect x="${fmt(x - 1)}" y="${fmt(y - 1)}" width="${EDGE + 1}" height="${fmt(h + 2)}" fill="${l.edge}" clip-path="url(#${clip})"/>`,
-    text(left, y + h / 2 - 4, cut(n.name, 13, right - left - tileWidth, 700), { size: 13, fill: l.name, weight: 700 }),
+    text(left, y + h / 2 - 4, cut(n.name, 13, right - left - tileWidth - chipRoom, 700), { size: 13, fill: l.name, weight: 700 }),
     text(left, y + h / 2 + 13, cut(subLabel(n, element), 11, right - left), { size: 11, fill: l.sub }),
     ...(team ? [codeTile(c, team, right, y + 8)] : []),
+    ...(chip === undefined ? [] : [countChip(c, l, chip, right - tileWidth, y + 8)]),
     ...badge(c, n, box),
     ...(n.mark?.hit && n.collapsed ? [`<rect x="${fmt(x + w - 42)}" y="${fmt(y + h - 18)}" width="10" height="10" fill="${c.ink}" stroke="${c.paper}" stroke-width="2"/>`] : []),
     `</g>`,
   ].join("");
 }
 
-/** An open box: a quiet line frame on the open-box tint, its head row at the top; a Deployment Target is a quiet frame with no fill. */
-function drawContainer(c: Palette, n: ViewNode, box: LaidOutNode, team: TeamStyle | undefined, targetKind?: string): string {
+/** How far each copy behind a scaled Deployment sits from the one in front, down and to the right. */
+export const STACK_OFFSET = 5;
+
+/** A scaled Deployment's two copies behind its box, back to front, each framed like the box. */
+function stack(l: Look, x: number, y: number, w: number, h: number): string[] {
+  return [2, 1].map((i) => `<rect x="${fmt(x + i * STACK_OFFSET)}" y="${fmt(y + i * STACK_OFFSET)}" width="${fmt(w)}" height="${fmt(h)}" fill="${l.fill}" stroke="${l.frame}" stroke-width="${FRAME}"/>`);
+}
+
+/** A scaled Deployment's count chip, `×3` or `2–10`, framed in ink, its right edge at `right`. */
+function countChip(c: Palette, l: Look, chip: string, right: number, top: number): string {
+  const w = chipWidth(chip);
+  const x = right - w;
+  return [
+    `<rect x="${fmt(x)}" y="${fmt(top)}" width="${fmt(w)}" height="16" fill="${c.paper}" stroke="${l.frame}" stroke-width="1"/>`,
+    text(x + 6, top + 12, chip, { size: 10, fill: l.name, weight: 700 }),
+  ].join("");
+}
+
+/**
+ * An open box: a quiet line frame on the open-box tint (flattened onto `under`,
+ * what it sits on), its head row at the top. A Deployment Target is a quiet
+ * frame on its Target Depth ground, headed by its name and kind alone.
+ */
+function drawContainer(c: Palette, n: ViewNode, box: LaidOutNode, team: TeamStyle | undefined, under: string, targetGround: string | undefined, targetKind?: string): string {
   const { x, y, width: w, height: h } = box;
   const target = n.kind === "target";
   const dimmed = n.mark && !n.mark.hit;
   const frame = n.external ? c.ink : c.line;
-  const fill = target || dimmed ? "none" : flatten(c.container, c.ground);
+  const fill = targetGround ?? (dimmed ? "none" : flatten(c.container, under));
   const dash = n.external ? ` stroke-dasharray="6 4"` : "";
   const tileWidth = team ? textWidth(team.code, 10, 700) + 16 + 8 : 0;
   const left = x + (target ? 12 : EDGE + 10);
@@ -223,8 +257,8 @@ function drawEdge(c: Palette, points: { x: number; y: number }[], edge: ViewEdge
   return `<path d="${d}" fill="none" stroke="${c.edge}" stroke-width="${FRAME}" marker-end="url(#arrow)"/>`;
 }
 
-/** The key, in the canvas's own vocabulary: the Team tile, External, broker, and the Lens if there is one. */
-function drawKey(c: Palette, bundle: Bundle, lens: BundleLens | undefined): { parts: string[]; width: number } {
+/** The key, in the canvas's own vocabulary: the Team tile, External, broker, the stack when a Deployment is scaled, and the Lens if there is one. */
+function drawKey(c: Palette, bundle: Bundle, lens: BundleLens | undefined, scaled: boolean): { parts: string[]; width: number } {
   const parts: string[] = [];
   let x = 0;
   const label = (s: string) => {
@@ -243,6 +277,11 @@ function drawKey(c: Palette, bundle: Bundle, lens: BundleLens | undefined): { pa
   parts.push(`<rect x="${fmt(x)}" y="4" width="28" height="16" fill="${c.paper}"/><rect x="${fmt(x)}" y="4" width="28" height="16" fill="url(#broker)" stroke="${c.ink}" stroke-width="${FRAME}"/>`);
   x += 36;
   label("Broker");
+  if (scaled) {
+    for (const i of [2, 1, 0]) parts.push(`<rect x="${fmt(x + i * 3)}" y="${fmt(1 + i * 3)}" width="22" height="12" fill="${c.paper}" stroke="${c.ink}" stroke-width="${FRAME}"/>`);
+    x += 36;
+    label("Stacked: scaled (×3 fixed, 2–10 autoscale)");
+  }
   if (lens) {
     if ("impact" in lens) {
       swatch(`fill="${c.herebg}" stroke="${c.here}" stroke-width="2.5"`);

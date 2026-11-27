@@ -3,17 +3,20 @@ name: Sites
 # Builds the docs site (website/) and the example sites (examples/*) and deploys them
 # to Cloudflare Workers (static assets, configured in each wrangler.jsonc):
 #   - a push to beta deploys each site to its staging Worker (`--env staging`): beta.archidocs.dev,
-#     beta.big-bank.archidocs.dev and beta.kitchen-sink.archidocs.dev, public but marked noindex
+#     beta.big-bank.archidocs.dev and beta.kitchen-sink.archidocs.dev, public but marked noindex.
+#     "Run workflow" on beta (Actions → Sites) does the same, for when a push skipped it: a push
+#     that touches only ignored paths, or the push that created the branch.
 #   - each PR gets a Worker Preview named pr-<number> per site, listed in one PR comment
 #   - closing the PR deletes its Previews
-# Production (archidocs.dev, big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys only from
-# a stable release tag, in publish.yml, because the sites document and show the released CLI.
+# Production (archidocs.dev, big-bank.archidocs.dev, kitchen-sink.archidocs.dev) deploys from `main`,
+# which holds only released code, in publish.yml, once CI passes and any release it made is published.
 #
 # Needs two repository secrets: CLOUDFLARE_API_TOKEN (Account › Workers Scripts › Edit,
 # Zone › Workers Routes › Edit and Zone › DNS › Edit on archidocs.dev) and
 # CLOUDFLARE_ACCOUNT_ID. Without them (forks, Dependabot, before setup) the deploy
 # jobs are skipped rather than failed.
 on:
+  workflow_dispatch:
   push:
     branches: [beta]
     paths-ignore: [".scratch/**", ".impeccable/**", ".claude/**", "docs/**", "AGENTS.md"]
@@ -48,7 +51,10 @@ jobs:
 
   deploy:
     needs: credentials
-    if: needs.credentials.outputs.ready == 'true' && github.event.action != 'closed'
+    # A manual run deploys staging, which shows the beta branch, so it runs only from beta.
+    if: >-
+      needs.credentials.outputs.ready == 'true' && github.event.action != 'closed'
+      && (github.event_name != 'workflow_dispatch' || github.ref_name == 'beta')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -69,23 +75,18 @@ jobs:
           # Full history: each docs page's "Last updated" date is the date of its file's last commit.
           # The demos don't need it, but the repo is small enough to fetch whole for all three.
           fetch-depth: 0
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # The docs build takes its screenshots of the viewer in Chromium (website/src/lib/screenshots.ts).
-      - if: matrix.site == 'docs'
-        run: pnpm exec playwright install --with-deps chromium
+          # The docs build takes its screenshots of the viewer in Chromium (website/src/lib/screenshots.ts).
+          chromium: ${{ matrix.site == 'docs' }}
       - run: pnpm "${{ matrix.build }}"
         env:
           # The staging docs say they document the beta branch rather than the last release
           # (website/src/lib/channel.ts). Empty for PR Previews, which keep the release line.
-          ARCHIDOCS_DOCS_CHANNEL: ${{ github.event_name == 'push' && 'beta' || '' }}
+          ARCHIDOCS_DOCS_CHANNEL: ${{ github.event_name != 'pull_request' && 'beta' || '' }}
 
       - name: Deploy staging
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         env:
           ASSETS: ${{ matrix.dir }}/${{ matrix.assets }}
         run: |
@@ -187,12 +188,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - name: Delete the PR Preview
         env:
           PR: ${{ github.event.pull_request.number }}

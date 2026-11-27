@@ -17,7 +17,7 @@ async function revisions(page: Page): Promise<{ sha: string; subject: string; ta
 
 test.describe("Compare", () => {
   test("marks added nodes and edges with a green +, removed ones as dashed ghosts and changed ones with an amber dot", async ({ page }) => {
-    await open(page, "#/view/c2?vs=v1");
+    await open(page, "#/view/c2?closed=shop:checkout,payments:payments,shop:legacy&vs=v1");
 
     expect(await marks(page)).toEqual({
       "payments:payments": "unchanged",
@@ -50,7 +50,7 @@ test.describe("Compare", () => {
   });
 
   test("a removed System's C2 opens from its ghost, drawn from the earlier side", async ({ page }) => {
-    await open(page, "#/view/c2?vs=v1");
+    await open(page, "#/view/c2?closed=shop:legacy&vs=v1");
 
     await node(page, "shop:legacy").dblclick();
     await settled(page);

@@ -6,7 +6,7 @@ targets:
     targets:
       cluster:
         name: Kubernetes cluster
-        kind: cluster
+        kind: k8s
 #endregion
 
 #region deployments
@@ -19,6 +19,7 @@ deployments:
     environment: prod
     target: cluster
     url: https://api.sink.example
+    instances: 3
     endpoints:
       - name: health
         url: https://api.sink.example/healthz

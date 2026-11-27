@@ -27,6 +27,12 @@ describe("renderSequenceSvg", () => {
     expect(render("shop:full-checkout")).toBe(svg);
   });
 
+  it("orients arrowheads with plain `auto`, which every viewer supports", () => {
+    const svg = render("shop:full-checkout");
+
+    expect([...svg.matchAll(/<marker [^>]*orient="([^"]+)"/g)].map((m) => m[1])).toEqual(["auto", "auto"]);
+  });
+
   it("titles the chart and gives its source line", () => {
     expect(texts(render("shop:pay")).slice(0, 2)).toEqual(["Pay for an order", "acme-architecture · 0123456 · 2026-11-22"]);
   });

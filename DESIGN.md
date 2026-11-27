@@ -29,6 +29,9 @@ colors:
   removed: "#b3261e"
   changed: "#9a6200"
   note-line: "#d9a600"
+  target-1: "#ebede8"
+  target-2: "#e2e5df"
+  target-3: "#d9ddd6"
 typography:
   headline:
     fontFamily: "Overpass, ui-sans-serif, system-ui, sans-serif"
@@ -301,6 +304,7 @@ A stone-and-slate signage palette with one wayfinding yellow and a small set of 
 - **Stone Line** (line): quiet frames such as tool buttons on paper and Deployment Target containers.
 - **Stone Rule** (rule): hairlines between sections and broker stripes.
 - **Stone Tint** (tint): hover fills and collapsed-System fill.
+- **Target Depth** (target-1, target-2, target-3): the ground of a Deployment Target group, one step off its parent's per nesting level, so it reads which box is inside which. An outermost Target sits on target-1, a Target inside it on target-2, and every deeper one on target-3. Each step is darker than the last in both modes: light `#ebede8` / `#e2e5df` / `#d9ddd6` on the stone ground, Night shift `#0d1117` / `#0a0d12` / `#06080c` below its `#10151c` ground, so paper nodes stand further out the deeper they sit. There are no per-kind Target styles; the header shows the Target's name and its kind alone, uppercased.
 - **Plate Muted** / **Plate Line**: secondary text and button frames on the plate.
 - **Edge** / **Edge Faint**: Relationship lines; a stepped-back edge (faded by a lens, unchanged in Compare, a later Step) is drawn as a solid Edge Faint stroke at full opacity, never faded and never dashed.
 
@@ -373,7 +377,7 @@ The only box-shadows are zero-blur state rings, drawn outside the frame so the f
 
 ## Shapes
 
-Every chrome surface has square corners (radius 0): buttons, tiles, tabs, flyouts, panels, the Key and the zoom stack. Corners are spent only on nodes, where shape is an encoding the Key explains: a Person is a pill (28px radius), a datastore Service has a rounded base (0 0 12px 12px), a broker carries vertical stripes, an External has a dashed frame with a solid Team edge, an open box (container) is a dashed frame on a translucent tint, and a Deployment Target is a quiet solid line frame. A collapsed System is tinted with a 2px frame.
+Every chrome surface has square corners (radius 0): buttons, tiles, tabs, flyouts, panels, the Key and the zoom stack. Corners are spent only on nodes, where shape is an encoding the Key explains: a Person is a pill (28px radius), a datastore Service has a rounded base (0 0 12px 12px), a broker carries vertical stripes, an External has a dashed frame with a solid Team edge, an open box (container) is a dashed frame on a translucent tint, and a Deployment Target is a quiet solid line frame on its Target Depth ground. A collapsed System is tinted with a 2px frame.
 
 **The Dash Means Something Rule.** A dash is reserved for External frames and open boxes on nodes, removed Relationships in Compare, and Return steps and lifelines in sequence charts. Nothing else is dashed, stepped-back edges included.
 

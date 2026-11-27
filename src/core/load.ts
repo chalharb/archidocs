@@ -1,6 +1,6 @@
 import { basename, dirname, join, relative, sep } from "node:path";
 import { Bundle, SCHEMA_VERSION, type BundleDeployment, type BundleElement, type BundleRelationship, type BundleSelector, type BundleStructuralView, type BundleTarget, type BundleView } from "../schema/bundle.ts";
-import { DynamicView, ProjectFile, StructuralView, WorkspaceFile, type LensInput, type SelectorInput, childKindOf, collectionOf, kindOfCollection, lensSchemaFor, selectorSchemaFor, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
+import { DynamicView, Instances, ProjectFile, StructuralView, WorkspaceFile, type LensInput, type SelectorInput, childKindOf, collectionOf, kindOfCollection, lensSchemaFor, selectorSchemaFor, shallow, workspaceOnlyKeys, type ElementKind } from "../schema/workspace.ts";
 import type { FileSystem } from "./fs.ts";
 import type { ElementDecl, Finding, Issue, Located, LoadedWorkspace, Project, SourceFile, TargetDecl, ViewDecl } from "./model.ts";
 import { indexByQualifiedId, qualified, qualify, referenceResolver } from "./refs.ts";
@@ -328,6 +328,9 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
   const str = (v: unknown) => (typeof v === "string" ? v : null);
   const links = (v: unknown) =>
     Array.isArray(v) ? v.map(asRecord).map((l) => ({ label: String(l.label ?? ""), url: String(l.url ?? "") })) : [];
+  // Scalars only, as strings; a nested value is a schema finding and is left out here.
+  const metadata = (v: unknown) =>
+    Object.fromEntries(Object.entries(asRecord(v)).flatMap(([k, x]) => (["string", "number", "boolean"].includes(typeof x) ? [[k, String(x)]] : [])));
   const byId = <T extends { id: string }>(a: T, b: T) => cmp(a.id, b.id);
   const projects = ws.projects.filter((p): p is Project & { id: string } => p.id !== undefined && !p.duplicateOf);
 
@@ -343,19 +346,21 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
         owner: str(d.owner) ?? e.project.owner ?? "",
         tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
         links: links(d.links),
+        metadata: metadata(d.metadata),
         source: source(e),
       };
       const external = d.external === true;
       const technology = str(d.technology);
+      const repository = str(d.repository);
       switch (e.kind) {
         case "person":
           return { ...common, kind: e.kind };
         case "system":
-          return { ...common, kind: e.kind, external };
+          return { ...common, kind: e.kind, external, repository };
         case "service":
-          return { ...common, kind: e.kind, type: (["app", "datastore", "broker"] as const).find((t) => t === d.type) ?? "app", technology, external };
+          return { ...common, kind: e.kind, type: (["app", "datastore", "broker"] as const).find((t) => t === d.type) ?? "app", technology, external, repository };
         case "component":
-          return { ...common, kind: e.kind, technology };
+          return { ...common, kind: e.kind, technology, repository };
       }
     });
 
@@ -404,6 +409,7 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
     target: qualify(d.data.target, d.project) ?? String(d.data.target ?? ""),
     url: str(d.data.url),
     endpoints: Array.isArray(d.data.endpoints) ? d.data.endpoints.map(asRecord).map((e) => ({ name: String(e.name ?? ""), url: String(e.url ?? "") })) : [],
+    instances: instancesOf(d.data.instances),
     owner: d.service ? ownerOf(d.service) : (d.project.owner ?? ""),
     source: source(d),
   }));
@@ -495,3 +501,9 @@ const asRecord = (v: unknown): Record<string, unknown> =>
   v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/** A Deployment's `instances` as the Bundle carries it: 1 when absent or invalid (Load has already reported an invalid one). */
+function instancesOf(value: unknown): number | { min: number; max: number } {
+  const parsed = Instances.safeParse(value);
+  return parsed.success ? parsed.data : 1;
+}

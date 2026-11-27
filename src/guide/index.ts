@@ -3,16 +3,13 @@ import { ruleCatalogue } from "../core/catalogue.ts";
 import { suggest } from "../core/suggest.ts";
 
 /**
- * The authoring guide's Markdown, shipped beside the code in `guide/`. The
+ * The skills' guides, as Markdown shipped beside the code in `guide/`. The
  * module runs from dist/guide/ when installed and from src/guide/ in this
  * repo; both sit two levels below the package root.
  */
 const GUIDE_DIR = new URL("../../guide/", import.meta.url);
 
-/** The skill's name, as its stub and the full SKILL.md both declare it. */
-export const SKILL_NAME = "archidocs-authoring";
-
-/** The guide's topics, in the order they are listed. `rules` is generated from the rule registry. */
+/** The authoring guide's topics, in the order they are listed. `rules` is generated from the rule registry. */
 export const topics = [
   { id: "bootstrap", summary: "Declare an existing codebase's Services, Relationships and Deployments in one pass, from an approved inventory." },
   { id: "add-service", summary: "Add one Service with its Components, Relationships and Deployments." },
@@ -27,42 +24,136 @@ export const topics = [
 
 export type TopicId = (typeof topics)[number]["id"];
 
+/**
+ * Authoring topics that became skills of their own, by the skill that took
+ * each over. Asking authoring for one returns a short note naming the skill,
+ * so 1.3.x stubs and agents still find it. Drop these at the next major version.
+ */
+const movedTopics: ReadonlyMap<string, string> = new Map([["fill-gaps", "fill-gaps"]]);
+
+const movedNote = (topic: string, skill: string) =>
+  `# ${topic}\n\nThe \`${topic}\` topic moved to the \`archidocs-${skill}\` skill. Load it with \`get_guide("${skill}")\`, or \`archidocs guide --skill ${skill}\` without MCP, and follow it.\n`;
+
+/** A skill's topic: a reference file under its guide folder's `topics/`, or a generated one. */
+export interface Topic {
+  readonly id: string;
+  readonly summary: string;
+}
+
+/** One agent skill: the stub `init` installs, and the guide `get_guide` serves. */
+export interface Skill {
+  readonly id: string;
+  /** The stub's frontmatter `name`: `archidocs-<id>`, since `.agents/skills/` has no namespace. */
+  readonly name: string;
+  /** The stub's frontmatter `description`, which decides when the skill fires. */
+  readonly description: string;
+  /** The folder under `guide/` that holds its SKILL.md (and `topics/`), with a trailing slash; `""` for authoring. */
+  readonly dir: string;
+  readonly topics?: readonly Topic[];
+}
+
+/** Every skill, authoring first. */
+export const skills = [
+  {
+    id: "authoring",
+    name: "archidocs-authoring",
+    description:
+      "Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.",
+    dir: "",
+    topics,
+  },
+  {
+    id: "consult",
+    name: "archidocs-consult",
+    description:
+      "Check the Archidocs architecture Model before and after changing code. Use when changing a public API, event or schema, adding or removing a dependency on another Service, datastore or broker, renaming or retiring a Service, changing deployment config, or answering who calls, owns or deploys something.",
+    dir: "consult/",
+  },
+  {
+    id: "fill-gaps",
+    name: "archidocs-fill-gaps",
+    description:
+      "Find and fill what the Archidocs Model leaves empty, by interviewing the user with values proposed from evidence in the code. Use when asked what's missing or undocumented in the architecture, to audit or complete the Model, or to prepare a Team's documentation backlog.",
+    dir: "fill-gaps/",
+  },
+  {
+    id: "describe",
+    name: "archidocs-describe",
+    description:
+      "Build the Archidocs Model from the user's own explanation of their architecture, iteratively, with no code needed. Use when the user describes how their systems fit together in prose, wants to talk through or sketch an architecture, or is documenting something whose code isn't available.",
+    dir: "describe/",
+  },
+] as const satisfies readonly Skill[];
+
+export type SkillId = (typeof skills)[number]["id"];
+
+/** The authoring skill's name, as its stub and the full SKILL.md both declare it. */
+export const SKILL_NAME = skills[0].name;
+
 export type GuideResult =
-  | { ok: true; topic: TopicId | null; text: string }
+  | { ok: true; skill: string; topic: string | null; text: string }
   | { ok: false; message: string; suggestion?: string };
 
 /**
- * The guide as `get_authoring_guide` and `archidocs guide` serve it: with no
- * topic, SKILL.md followed by the list of topics; with one, that topic's
- * reference file.
+ * A skill's guide as `get_guide` and `archidocs guide --skill` serve it: with
+ * no topic, its SKILL.md, followed by its list of topics if it has any; with
+ * one, that topic's reference file. An unknown skill names the closest one.
  */
-export async function authoringGuide(topic?: string): Promise<GuideResult> {
-  if (topic === undefined) {
-    const skill = await readFile(new URL("SKILL.md", GUIDE_DIR), "utf8");
-    const list = ["## Topics", "", ...topics.map((t) => `- \`${t.id}\`: ${t.summary}`)];
-    return { ok: true, topic: null, text: `${skill.trimEnd()}\n\n${list.join("\n")}\n` };
-  }
-  const found = topics.find((t) => t.id === topic);
+export async function guide(skill: string, topic?: string): Promise<GuideResult> {
+  const found = skills.find((s) => s.id === skill);
   if (!found) {
-    const suggestion = suggest(topic, topics.map((t) => t.id));
-    return { ok: false, message: `Unknown topic "${topic}"${suggestion ? `; did you mean "${suggestion}"?` : ""} Topics: ${topics.map((t) => t.id).join(", ")}.`, ...(suggestion ? { suggestion } : {}) };
+    const ids = skills.map((s) => s.id);
+    const suggestion = suggest(skill, ids);
+    return { ok: false, message: `Unknown skill "${skill}"${suggestion ? `; did you mean "${suggestion}"?` : ""} Skills: ${ids.join(", ")}.`, ...(suggestion ? { suggestion } : {}) };
   }
-  if (found.id === "rules") return { ok: true, topic: found.id, text: ruleCatalogue() };
-  return { ok: true, topic: found.id, text: await readFile(new URL(`topics/${found.id}.md`, GUIDE_DIR), "utf8") };
+  return skillGuide(found, topic);
 }
 
+/** One skill's guide, for `guide` once the skill is found. */
+export async function skillGuide(skill: Skill, topic?: string): Promise<GuideResult> {
+  const own = skill.topics ?? [];
+  if (topic === undefined) {
+    const text = (await readFile(new URL(`${skill.dir}SKILL.md`, GUIDE_DIR), "utf8")).trimEnd();
+    const list = own.length ? ["", "", "## Topics", "", ...own.map((t) => `- \`${t.id}\`: ${t.summary}`)].join("\n") : "";
+    return { ok: true, skill: skill.id, topic: null, text: `${text}${list}\n` };
+  }
+  if (!own.length) return { ok: false, message: `The skill "${skill.id}" has no topics; load it with no topic.` };
+  const found = own.find((t) => t.id === topic);
+  const movedTo = skill.id === "authoring" ? movedTopics.get(topic) : undefined;
+  if (!found && movedTo) return { ok: true, skill: skill.id, topic, text: movedNote(topic, movedTo) };
+  if (!found) {
+    const suggestion = suggest(topic, own.map((t) => t.id));
+    return { ok: false, message: `Unknown topic "${topic}"${suggestion ? `; did you mean "${suggestion}"?` : ""} Topics: ${own.map((t) => t.id).join(", ")}.`, ...(suggestion ? { suggestion } : {}) };
+  }
+  if (skill.id === "authoring" && found.id === "rules") return { ok: true, skill: skill.id, topic: found.id, text: ruleCatalogue() };
+  return { ok: true, skill: skill.id, topic: found.id, text: await readFile(new URL(`${skill.dir}topics/${found.id}.md`, GUIDE_DIR), "utf8") };
+}
+
+/** The authoring guide, as `get_authoring_guide` and `archidocs guide` without `--skill` serve it. */
+export const authoringGuide = (topic?: string): Promise<GuideResult> => guide("authoring", topic);
+
+const titleOf = (id: string) => `Archidocs ${id.replaceAll("-", " ")}`;
+
 /**
- * The thin SKILL.md that `archidocs init` installs in a repo, naming the
- * command that runs archidocs there (`runner`, such as `npx archidocs`). It
- * only points at the served guide, so it never goes stale, and uses only the
- * portable frontmatter fields.
+ * The thin SKILL.md that `archidocs init` installs in a repo for one skill,
+ * naming the command that runs archidocs there (`runner`, such as `npx
+ * archidocs`). It only points at the served guide, so it never goes stale, and
+ * uses only the portable frontmatter fields.
  */
-export const skillStub = (runner: string) => `---
-name: ${SKILL_NAME}
-description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.
+export function skillStub(id: SkillId, runner: string): string {
+  const skill: Skill = skills.find((s) => s.id === id)!;
+  const cli = (args: string) => `\`${runner} guide ${args}\``;
+  const load =
+    skill.id === "authoring"
+      ? `Before editing the Model, load the full guide: call \`get_guide("authoring")\` on the Archidocs MCP server (\`get_authoring_guide\` on a server older than \`get_guide\`), or run ${cli("--skill authoring")} when no Archidocs MCP server is connected. It lists the topics; load the one for the task with \`get_guide("authoring", topic)\` or ${cli("<topic> --skill authoring")}, and follow it.`
+      : `Before you start, load the full guide: call \`get_guide("${skill.id}")\` on the Archidocs MCP server, or run ${cli(`--skill ${skill.id}`)} when no Archidocs MCP server is connected, and follow it.`;
+  return `---
+name: ${skill.name}
+description: ${skill.description}
 ---
 
-# Archidocs authoring
+# ${titleOf(skill.id)}
 
-Before editing the Model, load the full guide: call the \`get_authoring_guide\` tool of the Archidocs MCP server, or run \`${runner} guide\` when no Archidocs MCP server is connected. It lists the topics; load the one for the task with \`get_authoring_guide(topic)\` or \`${runner} guide <topic>\`, and follow it.${runner === "archidocs" ? "" : ` In this repo, run every \`archidocs\` command as \`${runner}\`.`}
+${load}${runner === "archidocs" ? "" : ` In this repo, run every \`archidocs\` command as \`${runner}\`.`}
 `;
+}

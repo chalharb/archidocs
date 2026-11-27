@@ -6,7 +6,7 @@ sidebar:
 ---
 
 :::note[For agents]
-If you can run Archidocs, read its own guide: `archidocs guide`, or the MCP tool `get_authoring_guide`. It matches the installed version, while this site documents the latest release only. The same guide is rendered under [Authoring guide for agents](/docs/reference/agent-guide/).
+If you can run Archidocs, read its own guide: the MCP tool `get_guide("authoring")`, or `archidocs guide` without MCP. It matches the installed version, while this site documents the latest release only. The same guide is rendered under [Authoring guide for agents](/docs/reference/agent-guide/).
 :::
 
 `archidocs mcp` serves the Model to coding agents over the [Model Context Protocol](https://modelcontextprotocol.io) (MCP). It is the viewer's twin: what a person can see in the viewer, an agent can ask the MCP server, and both answers come from the same Model.
@@ -51,9 +51,19 @@ The server talks over stdio by default, which is how coding agents start MCP ser
 
 The MCP tools say what they do. The authoring guide says how to model well with them: the Model's rules, the edit loop, and a topic for each task, such as bootstrapping a Project from code.
 
-It ships with the CLI, so it always matches it. `archidocs guide` prints it, and the MCP tool `get_authoring_guide` serves it. `archidocs init` installs a skill that points agents at it.
+It ships with the CLI, so it always matches it. The MCP tool `get_guide("authoring")` serves it, and `archidocs guide` prints it. `get_authoring_guide` serves the same and is deprecated, kept for skills installed by older versions. `archidocs init` installs a skill that points agents at it.
+
+Other skills build on the authoring guide, each with a guide of its own. [`fill-gaps`](/docs/reference/agent-guide/fill-gaps/) finds what the Model leaves empty and interviews you to fill it: `get_guide("fill-gaps")` serves it, and `archidocs guide --skill fill-gaps` prints it.
 
 The guides on this site cover the same tasks for people, and each links its agent topic.
+
+## Consulting the Model while coding
+
+The `consult` skill is for an agent changing a Service's code, not the Model. Before a change that reaches past the Service, such as a public API, a dependency or deployment config, it reads the Model and reports the Service's consumers, the Teams to tell, its Deployments and its ADRs. It stops only when an accepted ADR contradicts the change or the change breaks another Team's consumer. It never writes the Model; when the code and the Model drift apart, it hands off to the authoring guide. `get_guide("consult")` serves it, and `archidocs guide --skill consult` prints it. See [Consult the Model while coding](/docs/guides/agents/consult-while-coding/).
+
+## Describing an architecture in prose
+
+An agent doesn't need code to build a Model. The `describe` skill, served by `get_guide("describe")`, has it work from your own explanation: you describe how your systems fit together, and it plays back a draft and asks only what is ambiguous, round by round. It never makes up Environments, URLs or Owners, and writes nothing until you approve the first draft. See [Describe an architecture in prose](/docs/guides/agents/describe-in-prose/).
 
 ## Why it works this way
 
@@ -69,4 +79,7 @@ The guides on this site cover the same tasks for people, and each links its agen
 - [Connect an agent over MCP](/docs/guides/agents/connect-mcp/)
 - [Install the agent skill](/docs/guides/agents/install-skill/)
 - [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
+- [Fill documentation gaps](/docs/guides/agents/fill-gaps/)
+- [Consult the Model while coding](/docs/guides/agents/consult-while-coding/)
+- [Describe an architecture in prose](/docs/guides/agents/describe-in-prose/)
 - [`archidocs mcp`](/docs/reference/cli/mcp/)

@@ -10,7 +10,10 @@ import {
   diff,
   filterChanges,
   findPaths,
+  formatGaps,
+  gapNames,
   getImpact,
+  listGaps,
   levelOf,
   listOwned,
   resolveScope,
@@ -21,7 +24,7 @@ import {
   type ImpactRing,
 } from "../core/index.ts";
 import { suggest } from "../core/suggest.ts";
-import { describeLens, listViews, resolveView, type ResolvedStep, type ViewNode } from "../core/views/index.ts";
+import { describeLens, isScaled, listViews, resolveView, type ResolvedStep, type ViewNode } from "../core/views/index.ts";
 import { listAdrs, type ListedAdr } from "../core/adrs.ts";
 import { AdrStatus } from "../schema/adr.ts";
 import { BundleAdr, BundleDeployment, BundleElement, BundleLens, BundleRelationship, type Bundle } from "../schema/bundle.ts";
@@ -31,7 +34,7 @@ import { pastOf, type Past } from "./history.ts";
 import type { ErrorCode } from "./errors.ts";
 import { registerWriteTools } from "./writes.ts";
 import { callLine, type Log } from "./announce.ts";
-import { authoringGuide, topics } from "../guide/index.ts";
+import { authoringGuide, guide as skillGuide, skills, topics, type GuideResult, type Skill } from "../guide/index.ts";
 
 export interface ServerOptions {
   source: Source;
@@ -219,7 +222,9 @@ export function createServer(options: ServerOptions): McpServer {
         ["technology", "technology" in element ? element.technology : null],
         ["external", "external" in element && element.external ? "yes" : null],
         ["tags", element.tags.join(", ")],
+        ["repository", "repository" in element ? element.repository : null],
         ["links", element.links.map((l) => `[${l.label}](${l.url})`).join(", ")],
+        ["metadata", Object.entries(element.metadata).map(([k, v]) => `${k}: ${v}`).join(", ")],
         ["children", children.map(label).join(", ")],
         ["deployments", deployments.map((d) => `${d.environment} on ${d.target}${d.url ? ` (${d.url})` : ""}`).join(", ")],
         ["uses", relationships.out.map((r) => `${r.to}${r.description ? ` (${r.description})` : ""}`).join(", ")],
@@ -299,7 +304,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Get Deployments",
       description:
-        "Where a Service runs: each Deployment's Environment, its full Deployment Target chain (outermost first), main url and named endpoints. Pass `environment` for one Environment, e.g. a Service's URL in staging.",
+        "Where a Service runs: each Deployment's Environment, its full Deployment Target chain (outermost first), main url, named endpoints and `instances` (a count, or {min, max} for autoscale). Pass `environment` for one Environment, e.g. a Service's URL in staging.",
       input: z.object({
         service: QualifiedId.describe("The Service's qualified id, project:id"),
         environment: z.string().min(1).optional().describe("An Environment id, such as prod or staging"),
@@ -332,7 +337,7 @@ export function createServer(options: ServerOptions): McpServer {
           ...items.map((d) => {
             const chain = d.targetPath.length ? d.targetPath.map((t) => t.id).join(" › ") : d.target;
             const urls = [d.url ?? "no URL", ...d.endpoints.map((e) => `${e.name}: ${e.url}`)].join("; ");
-            return `- ${d.environment} on ${chain}: ${urls}`;
+            return `- ${d.environment} on ${chain}${instancesLabel(d.instances)}: ${urls}`;
           }),
         ].join("\n"),
       );
@@ -425,6 +430,7 @@ export function createServer(options: ServerOptions): McpServer {
               name: z.string(),
               element: z.string().optional(),
               target: z.string().optional(),
+              instances: BundleDeployment.shape.instances.optional(),
               parent: z.string().nullable(),
               collapsed: z.boolean(),
               external: z.boolean(),
@@ -558,6 +564,36 @@ export function createServer(options: ServerOptions): McpServer {
           ]),
         ].join("\n"),
       );
+    },
+  );
+
+  tool(
+    "list_gaps",
+    {
+      title: "List gaps",
+      description:
+        "What the Model leaves empty, grouped by Project and Owner Team: an Element's `description`; a Service's or Component's `technology`; for a Service you run (`type: app`, not external) its `repository`, its `deployments` when it has none (any non-external Service), and `api-docs` when a non-Person calls it and no `links` label or Deployment `endpoints` name mentions api, openapi or swagger; a Relationship's `description` and `technology`, and an async one's `channel`; a Deployment `url` of a Service you run. Tags, links, metadata and Owners are never gaps. Use it to find what to fill.",
+      input: z.object({
+        project: z.string().min(1).optional().describe("Only this Project's gaps"),
+        owner: z.string().min(1).optional().describe("Only the gaps of items this Team owns"),
+      }),
+      output: z.object({
+        total: z.number(),
+        gaps: z.array(
+          z.object({
+            project: z.string(),
+            owner: z.string(),
+            item: z.object({ kind: z.enum(["element", "relationship", "deployment"]), id: z.string() }),
+            missing: z.array(z.enum(gapNames)),
+          }),
+        ),
+      }),
+    },
+    ({ project, owner }, { bundle }) => {
+      if (project !== undefined && !bundle.projects.some((p) => p.id === project)) return notFound("Project", project, bundle.projects.map((p) => p.id));
+      if (owner !== undefined && !bundle.teams.some((t) => t.id === owner)) return notFound("Team", owner, bundle.teams.map((t) => t.id));
+      const gaps = listGaps(bundle, { ...(project === undefined ? {} : { project }), ...(owner === undefined ? {} : { owner }) });
+      return ok({ total: gaps.length, gaps }, gaps.length ? `${count(gaps.length, "item")} with gaps.\n${formatGaps(gaps, bundle)}` : "No gaps.");
     },
   );
 
@@ -825,28 +861,53 @@ export function createServer(options: ServerOptions): McpServer {
     },
   );
 
-  const GuideInput = z.object({
-    topic: z.string().min(1).optional().describe(`One topic's reference file: ${topics.map((t) => t.id).join(", ")}`),
-    // Taken like every read tool's, but the guide ships with this Archidocs, so it is the same at every point.
+  // Taken like every read tool's, but the guides ship with this Archidocs, so they are the same at every point.
+  const topicArg = (of: string) => z.string().min(1).optional().describe(`One topic's reference file${of}`);
+  const GuideOutput = z.object({ topic: z.string().nullable(), topics: z.array(z.object({ id: z.string(), summary: z.string() })), text: z.string() });
+  /** A guide as a tool result: the ids of what was served, the skill's topics and the text. */
+  const guideResult = (served: GuideResult, extra: (g: Extract<GuideResult, { ok: true }>) => Record<string, unknown>): CallToolResult => {
+    if (!served.ok) return toResult(fail("not_found", served.message, served.suggestion ? [served.suggestion] : undefined));
+    return toResult(ok({ ...extra(served), topic: served.topic, topics: [...((skills as readonly Skill[]).find((s) => s.id === served.skill)?.topics ?? [])].map((t) => ({ ...t })), text: served.text }, served.text));
+  };
+
+  const GetGuideInput = z.object({
+    skill: z.string().min(1).describe(`The skill: ${skills.map((s) => s.id).join(", ")}`),
+    topic: topicArg(`, for a skill that has topics; authoring's are ${topics.map((t) => t.id).join(", ")}`),
     at: At.optional(),
   });
   server.registerTool(
-    "get_authoring_guide",
+    "get_guide",
     {
-      title: "Authoring guide",
+      title: "Skill guide",
       description:
-        "How to edit the Model with the write tools. With no topic: the archidocs-authoring skill (the Model, the edit loop) and its list of topics. With a topic: that flow's reference file; `rules` is the catalog of every check rule. Load it before writing.",
-      inputSchema: advertise(GuideInput),
-      outputSchema: z.object({ topic: z.string().nullable(), topics: z.array(z.object({ id: z.string(), summary: z.string() })), text: z.string() }),
+        "Load an Archidocs agent skill's full guide, from this version. With no topic: the skill's SKILL.md, and for `authoring` (the Model, the edit loop) its list of topics. With a topic: that flow's reference file; authoring's `rules` is the catalog of every check rule. Load `authoring` before writing.",
+      inputSchema: advertise(GetGuideInput),
+      outputSchema: GuideOutput.extend({ skill: z.string() }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    // The guide ships with this version, so it answers whatever the state of the source.
+    // The guides ship with this version, so they answer whatever the state of the source.
+    async (raw: unknown): Promise<CallToolResult> => {
+      const args = GetGuideInput.safeParse(raw ?? {});
+      if (!args.success) return toResult(fail("invalid_input", z.prettifyError(args.error)));
+      return guideResult(await skillGuide(args.data.skill, args.data.topic), (g) => ({ skill: g.skill }));
+    },
+  );
+
+  const GuideInput = z.object({ topic: topicArg(`: ${topics.map((t) => t.id).join(", ")}`), at: At.optional() });
+  server.registerTool(
+    "get_authoring_guide",
+    {
+      title: "Authoring guide (deprecated)",
+      description:
+        "Deprecated in favour of `get_guide`, which serves every skill: this returns the same as `get_guide(\"authoring\", topic)`. With no topic: the archidocs-authoring skill (the Model, the edit loop) and its list of topics. With a topic: that flow's reference file; `rules` is the catalog of every check rule.",
+      inputSchema: advertise(GuideInput),
+      outputSchema: GuideOutput,
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
     async (raw: unknown): Promise<CallToolResult> => {
       const args = GuideInput.safeParse(raw ?? {});
       if (!args.success) return toResult(fail("invalid_input", z.prettifyError(args.error)));
-      const guide = await authoringGuide(args.data.topic);
-      if (!guide.ok) return toResult(fail("not_found", guide.message, guide.suggestion ? [guide.suggestion] : undefined));
-      return toResult(ok({ topic: guide.topic, topics: topics.map((t) => ({ ...t })), text: guide.text }, guide.text));
+      return guideResult(await authoringGuide(args.data.topic), () => ({}));
     },
   );
 
@@ -924,7 +985,7 @@ const ViewSummary = z.object({ id: z.string(), kind: ViewKind, title: z.string()
 
 const nodeKind = (n: ViewNode) => (n.kind === "deployment" ? `Deployment of ${n.element}` : n.kind === "target" ? "Deployment Target" : kindName[n.kind]);
 const nodeLine = (n: ViewNode) =>
-  `- ${label(n)}: ${nodeKind(n)}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}${n.mark.side === undefined || n.mark.side === "origin" ? "" : ` ${n.mark.side}`}` : ""}`;
+  `- ${label(n)}: ${nodeKind(n)}${n.instances === undefined ? "" : instancesLabel(n.instances)}${n.external ? ", external" : ""}${n.parent ? ` in ${n.parent}` : ""}${n.collapsed ? ", collapsed" : ""}${n.mark?.hit ? `, hit${n.mark.distance === undefined ? "" : ` at distance ${n.mark.distance}`}${n.mark.side === undefined || n.mark.side === "origin" ? "" : ` ${n.mark.side}`}` : ""}`;
 
 /** A Step as one line: a return drawn dashed (⇠), an event with its broker and channel. */
 const stepLine = (s: ResolvedStep) => {
@@ -956,9 +1017,13 @@ const deploymentResult = (d: DeploymentDetail) => ({
   targetPath: d.targetPath,
   url: d.url,
   endpoints: d.endpoints,
+  instances: d.instances,
   owner: d.owner,
   source: d.source,
 });
+
+/** ` (×3)` or ` (2–10 instances)`; empty for a single instance. */
+const instancesLabel = (i: BundleDeployment["instances"]) => (!isScaled(i) ? "" : typeof i === "number" ? ` (×${i})` : ` (${i.min}–${i.max} instances)`);
 
 const summary = (e: BundleElement) => ({ id: e.id, kind: e.kind, name: e.name });
 const label = (e: { id: string; name: string }) => `${e.id} (${e.name})`;

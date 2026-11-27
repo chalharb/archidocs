@@ -1,18 +1,23 @@
-// Builds the docs site into a temp folder and serves it as Workers static
-// assets would: `/a/` serves `a/index.html`, `/a` redirects to `/a/`, and a
+// Builds the docs site into a temp folder, or with E2E_DOCS_PREBUILT=1 takes
+// the one `pnpm docs:build` already wrote to website/dist (CI's docs job builds
+// it once for its build checks and this suite), and serves it as Workers
+// static assets would: `/a/` serves `a/index.html`, `/a` redirects to `/a/`, and a
 // missing path gets `404.html`.
 import { execFileSync } from "node:child_process";
 import { createReadStream, mkdtempSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOCS_PORT } from "./port.ts";
 
 const website = fileURLToPath(new URL("..", import.meta.url));
-const root = join(mkdtempSync(join(tmpdir(), "archidocs-docs-e2e-")), "dist");
-execFileSync("pnpm", ["exec", "astro", "build"], { cwd: website, stdio: ["ignore", "ignore", "inherit"], env: { ...process.env, ARCHIDOCS_DOCS_OUT_DIR: root } });
+const prebuilt = process.env.E2E_DOCS_PREBUILT === "1";
+const root = prebuilt ? join(website, "dist") : join(mkdtempSync(join(tmpdir(), "archidocs-docs-e2e-")), "dist");
+if (!prebuilt) {
+  execFileSync("pnpm", ["exec", "astro", "build"], { cwd: website, stdio: ["ignore", "ignore", "inherit"], env: { ...process.env, ARCHIDOCS_DOCS_OUT_DIR: root } });
+}
 
 const types: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -30,9 +35,9 @@ const isFile = async (file: string) => (await stat(file).catch(() => undefined))
 
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url ?? "/", "http://host").pathname);
-  const rel = normalize(path).replace(/^\/+/, "");
-  if (rel.startsWith("..")) return void res.writeHead(400).end();
-  let file = join(root, rel);
+  let file = resolve(root, normalize(path).replace(/^\/+/, ""));
+  // Nothing outside the site: a path that climbs out of it is refused.
+  if (file !== root && !file.startsWith(root + sep)) return void res.writeHead(400).end();
   if (!(await isFile(file))) {
     if (await isFile(join(file, "index.html"))) {
       if (!path.endsWith("/")) return void res.writeHead(307, { location: `${path}/` }).end();

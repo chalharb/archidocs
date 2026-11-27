@@ -26,3 +26,50 @@ describe("archidocs guide", () => {
     expect(stderr).toContain('Unknown topic "bootstrp"; did you mean "bootstrap"?');
   });
 });
+
+describe("archidocs guide --skill", () => {
+  it("prints what get_guide serves, and defaults to authoring", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const [plain, skill, topic, topicFirst] = await Promise.all([
+      archidocs(tmpdir(), "guide"),
+      archidocs(tmpdir(), "guide", "--skill", "authoring"),
+      archidocs(tmpdir(), "guide", "--skill", "authoring", "relationships"),
+      archidocs(tmpdir(), "guide", "relationships", "--skill", "authoring"),
+    ]);
+    expect(skill.code).toBe(0);
+    expect(skill.stdout).toBe(text(await call("get_guide", { skill: "authoring" })));
+    expect(plain.stdout).toBe(skill.stdout);
+    expect(topic.stdout).toBe(text(await call("get_guide", { skill: "authoring", topic: "relationships" })));
+    expect(topicFirst.stdout).toBe(topic.stdout);
+  }, 30_000);
+
+  it("prints consult's guide as get_guide serves it", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const consult = await archidocs(tmpdir(), "guide", "--skill", "consult");
+    expect(consult.code).toBe(0);
+    expect(consult.stdout).toBe(text(await call("get_guide", { skill: "consult" })));
+  }, 30_000);
+
+  it("prints the fill-gaps skill, and the moved-topic note for the old authoring topic", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const [skill, moved] = await Promise.all([archidocs(tmpdir(), "guide", "--skill", "fill-gaps"), archidocs(tmpdir(), "guide", "fill-gaps")]);
+    expect(skill.code).toBe(0);
+    expect(skill.stdout).toBe(text(await call("get_guide", { skill: "fill-gaps" })));
+    expect(moved.code).toBe(0);
+    expect(moved.stdout).toBe(text(await call("get_authoring_guide", { topic: "fill-gaps" })));
+    expect(moved.stdout).toContain("archidocs-fill-gaps");
+  }, 30_000);
+
+  it("prints the describe guide as get_guide serves it", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const cli = await archidocs(tmpdir(), "guide", "--skill", "describe");
+    expect(cli.code).toBe(0);
+    expect(cli.stdout).toBe(text(await call("get_guide", { skill: "describe" })));
+  });
+
+  it("exits 2 on an unknown skill, naming the closest one", async () => {
+    const { code, stderr } = await archidocs(tmpdir(), "guide", "--skill", "authorng");
+    expect(code).toBe(2);
+    expect(stderr).toContain('Unknown skill "authorng"; did you mean "authoring"?');
+  });
+});

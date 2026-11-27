@@ -1,6 +1,6 @@
 # 07: Key explains the icons
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

@@ -32,7 +32,7 @@ describe("the built site", () => {
   it("has llms.txt, llms-full.txt and llms-small.txt, the small one without the Examples and the Changelog", () => {
     const index = read("llms.txt");
     expect(index).toContain("archidocs guide");
-    expect(index).toContain("get_authoring_guide");
+    expect(index).toContain("get_guide");
     expect(index).toContain("https://archidocs.dev/llms-full.txt");
     const full = read("llms-full.txt");
     const small = read("llms-small.txt");

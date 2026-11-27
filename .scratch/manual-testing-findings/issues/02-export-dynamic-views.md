@@ -1,6 +1,6 @@
 # 02: Export a Dynamic View from the viewer
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

@@ -346,8 +346,8 @@ deployments:
   - { service: cart, environment: staging, target: platform:eks-staging, url: https://cart.staging.shop.example.com }
 `,
   "payments/deployments.yaml": `deployments:
-  - { service: payments-api, environment: prod, target: platform:eks-prod }
-  - { service: payments-api, environment: staging, target: platform:eks-prod, url: https://payments.staging.example.com }
+  - { service: payments-api, environment: prod, target: platform:eks-prod, instances: 3 }
+  - { service: payments-api, environment: staging, target: platform:eks-prod, url: https://payments.staging.example.com, instances: { min: 2, max: 10 } }
 `,
   "platform/targets.yaml": `targets:
   aws-eu:

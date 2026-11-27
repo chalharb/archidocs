@@ -28,6 +28,14 @@ test.describe("Solutions Architect: where is a Service deployed?", () => {
     for (let i = 0; i + 1 < chain.length; i++) expect(inside(boxes.get(chain[i]!)!, boxes.get(chain[i + 1]!)!), `${chain[i]} in ${chain[i + 1]}`).toBe(true);
     await expect(node(page, "platform:eks-prod")).toContainText("cluster");
 
+    // A Target's header shows its kind alone, and each nesting level sits on a ground one step off its parent's.
+    await expect(node(page, "platform:eks-prod").getByTestId("sublabel")).toHaveText("cluster");
+    await expect(node(page, "platform:eks-prod")).not.toContainText(/deployment target/i);
+    await expect(node(page, "platform:aws-eu")).toHaveClass(/\barc-target-step-1\b/);
+    await expect(node(page, "platform:eks-prod")).toHaveClass(/\barc-target-step-2\b/);
+    const ground = (id: string) => node(page, id).evaluate((e) => getComputedStyle(e).backgroundColor);
+    expect(await ground("platform:eks-prod")).not.toBe(await ground("platform:aws-eu"));
+
     // Selecting the Deployment shows its Service, with the URL for that Environment.
     await node(page, "shop:cart@platform:eks-prod").click();
     await expect(panel(page).getByRole("heading", { name: "Cart" })).toBeVisible();
@@ -91,5 +99,38 @@ test.describe("Solutions Architect: where is a Service deployed?", () => {
     await expect(node(page, "payments:payments-api@platform:eks-prod")).toContainText("payments.staging.example.com");
     await open(page, "#/view/deployment/prod");
     await expect(node(page, "payments:payments-api@platform:eks-prod")).toContainText("EKS prod");
+  });
+});
+
+/** Opens the canvas Key, if it is folded. */
+async function openKey(page: Page) {
+  const key = page.locator(".arc-key");
+  if ((await key.getAttribute("open")) === null) await key.locator("summary").click();
+}
+
+test.describe("a scaled Deployment", () => {
+  test("draws as a stack with its count chip, `×3` fixed or `2–10` autoscale, and the Key explains the stack", async ({ page }) => {
+    await open(page, "#/view/deployment/prod");
+    const scaled = node(page, "payments:payments-api@platform:eks-prod");
+    await expect(scaled.getByTestId("instances")).toHaveText("×3");
+    // The stack sits behind the box: its two copies are offset down and to the right.
+    const stack = scaled.locator("xpath=preceding-sibling::*[@data-testid='stack']");
+    await expect(stack).toHaveCount(1);
+    expect(await stack.evaluate((el) => [getComputedStyle(el, "::before").transform, getComputedStyle(el, "::after").transform])).toEqual(["matrix(1, 0, 0, 1, 10, 10)", "matrix(1, 0, 0, 1, 5, 5)"]);
+    // An unscaled Deployment has neither.
+    const plain = node(page, "shop:cart@platform:eks-prod");
+    await expect(plain.getByTestId("instances")).toHaveCount(0);
+    await expect(plain.locator("xpath=preceding-sibling::*[@data-testid='stack']")).toHaveCount(0);
+    await openKey(page);
+    await expect(page.getByTestId("key-scaled")).toContainText("Stacked: scaled");
+
+    await open(page, "#/view/deployment/staging");
+    await expect(node(page, "payments:payments-api@platform:eks-prod").getByTestId("instances")).toHaveText("2–10");
+  });
+
+  test("leaves the Key's stack row out of a View with no scaled Deployment", async ({ page }) => {
+    await open(page, "#/view/c1");
+    await openKey(page);
+    await expect(page.getByTestId("key-scaled")).toHaveCount(0);
   });
 });

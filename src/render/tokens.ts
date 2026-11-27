@@ -44,6 +44,18 @@ export interface Palette {
   "edge-faint": string;
   /** An open box's translucent tint, as the viewer's CSS writes it. */
   container: string;
+  /** Target Depth grounds: a Deployment Target's fill, one step off its parent's per nesting level (see `targetStep`). */
+  "target-1": string;
+  "target-2": string;
+  "target-3": string;
+}
+
+/** How many Target Depth grounds there are; Targets nested deeper reuse the last. */
+export const TARGET_STEPS = 3;
+
+/** The Target Depth ground a Deployment Target at `depth` (1 for an outermost Target) draws on: 1 to `TARGET_STEPS`. */
+export function targetStep(depth: number): 1 | 2 | 3 {
+  return Math.min(Math.max(depth, 1), TARGET_STEPS) as 1 | 2 | 3;
 }
 
 export const PALETTES: Record<Theme, Palette> = {
@@ -70,6 +82,9 @@ export const PALETTES: Record<Theme, Palette> = {
     edge: "#5b6573",
     "edge-faint": "#80878f",
     container: "rgba(232, 234, 229, 0.6)",
+    "target-1": "#ebede8",
+    "target-2": "#e2e5df",
+    "target-3": "#d9ddd6",
   },
   dark: {
     ground: "#10151c",
@@ -94,6 +109,9 @@ export const PALETTES: Record<Theme, Palette> = {
     edge: "#8f99a5",
     "edge-faint": "#646d78",
     container: "rgba(35, 44, 56, 0.55)",
+    "target-1": "#0d1117",
+    "target-2": "#0a0d12",
+    "target-3": "#06080c",
   },
 };
 

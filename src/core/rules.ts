@@ -859,12 +859,12 @@ export const rules: RuleDefinition[] = [
     since: "1.0.0",
     summary: `A View has more than ${MAX_VIEW_NODES} nodes, too many for a readable diagram. A Generated View is reported at its System or Service, or at \`workspace.yaml\` for the Landscapes; a Saved View at its id.`,
     why: `A View is a diagram for people to read. With more than ${MAX_VIEW_NODES} nodes the boxes and lines are too many to follow, so the View answers no question at a glance.`,
-    fix: "Split the System, or group top-level Services and Systems, so each Generated View stays within the limit; narrow a Saved View's selectors or raise its `level`.",
+    fix: "Split the System, or group top-level Services and Systems, so each Generated View stays within the limit; narrow a Saved View's selectors or raise its `level`. The C2 Landscape opens every System, so it stays within the limit only while the Workspace's Systems, Services and Persons do.",
     related: ["empty-view"],
     example: {
       failing: withServices(`systems:\n  big:\n    name: Big\n    services:\n${numbered(MAX_VIEW_NODES, "s", 6)}`),
       passing: withServices(
-        `systems:\n  big:\n    name: Big\n    services:\n${numbered(MAX_VIEW_NODES / 2, "s", 6)}  more:\n    name: More\n    services:\n${numbered(MAX_VIEW_NODES / 2, "s", 6, MAX_VIEW_NODES / 2)}`,
+        `systems:\n  big:\n    name: Big\n    services:\n${numbered(MAX_VIEW_NODES / 2 - 1, "s", 6)}  more:\n    name: More\n    services:\n${numbered(MAX_VIEW_NODES / 2 - 1, "s", 6, MAX_VIEW_NODES / 2)}`,
       ),
     },
     check: (ws, bundle) => {

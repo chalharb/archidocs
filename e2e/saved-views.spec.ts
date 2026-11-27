@@ -132,8 +132,19 @@ test.describe("Export", () => {
 });
 
 test.describe("Save as View", () => {
+  test("the C2 Landscape with a System closed gives level: c2 with that System as collapse", async ({ page }) => {
+    await open(page, "#/view/c2?closed=payments:payments");
+    const { yaml, call } = await savedYamlAndCall(page, "landscape", "Landscape");
+
+    expect(parse(yaml).views.structural.landscape).toEqual({ title: "Landscape", level: "c2", collapse: ["payments:payments"] });
+    const screen = await nodeIds(page);
+    expect(screen).not.toContain("payments:payments-api");
+    expect(await resolvedIds({ "shop/saved.yaml": yaml }, "shop:landscape")).toEqual(screen);
+    expect(await upsertedIds(call, "shop:landscape")).toEqual(screen);
+  });
+
   test("open boxes and an Impact Lens give YAML that resolves to the screen's nodes", async ({ page }) => {
-    await open(page, "#/view/c2?open=shop:checkout&impact=shop:cart&way=upstream");
+    await open(page, "#/view/c2?closed=payments:payments&impact=shop:cart&way=upstream");
     const { yaml, call } = await savedYamlAndCall(page, "cart-upstream", "Cart upstream");
 
     const definition = parse(yaml).views.structural["cart-upstream"];
@@ -147,7 +158,7 @@ test.describe("Save as View", () => {
   });
 
   test("picks and a Team Lens give YAML that resolves to the picks and their containers", async ({ page }) => {
-    await open(page, "#/view/c2?open=shop:checkout&team=payments-team");
+    await open(page, "#/view/c2?closed=payments:payments&team=payments-team");
     await node(page, "shop:fraud-check").click({ modifiers: ["Shift"] });
     await node(page, "payments:payments").click({ modifiers: ["Shift"] });
     const { yaml } = await savedYamlAndCall(page, "fraud", "Fraud");
@@ -157,7 +168,7 @@ test.describe("Save as View", () => {
   });
 
   test("Connect to… becomes a path selector", async ({ page }) => {
-    await open(page, "#/view/c2?sel=shop:web");
+    await open(page, "#/view/c2?closed=shop:checkout,payments:payments&sel=shop:web");
     await page.getByRole("complementary", { name: "Element" }).getByRole("button", { name: "Connect to…" }).click();
     await node(page, "payments:payments").click();
     await settled(page);

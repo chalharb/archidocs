@@ -203,3 +203,21 @@ describe("a Lens over a Deployment View", () => {
     expect(view?.nodes.filter((n) => n.mark?.hit).map((n) => n.id)).toEqual(["platform:aws-eu", "platform:aws-us", "platform:dc", "platform:eks-eu", "platform:eks-us", "platform:ns-pay", "platform:ns-shop"]);
   });
 });
+
+describe("a scaled Deployment on a Deployment View", () => {
+  it("carries its `instances` on its node; an unscaled one, even at `instances: 1`, carries none", async () => {
+    const { bundle } = await loadWorkspace({
+      ...deploymentViewWorkspace,
+      "shop/model.yaml": deploymentViewWorkspace["shop/model.yaml"]!
+      .replace("target: platform:ns-shop, url: https://shop.example.com }", "target: platform:ns-shop, url: https://shop.example.com, instances: 3 }")
+      .replace("{ service: cart, environment: prod, target: platform:ns-shop }", "{ service: cart, environment: prod, target: platform:ns-shop, instances: { min: 2, max: 10 } }")
+        .replace("{ service: cart, environment: prod, target: platform:eks-us }", "{ service: cart, environment: prod, target: platform:eks-us, instances: 1 }"),
+    });
+    const nodes = structuralView(bundle, "deployment/prod")!.nodes;
+
+    expect(nodes.find((n) => n.id === "shop:web@platform:ns-shop")?.instances).toBe(3);
+    expect(nodes.find((n) => n.id === "shop:cart@platform:ns-shop")?.instances).toEqual({ min: 2, max: 10 });
+    expect(nodes.find((n) => n.id === "shop:cart@platform:eks-us")).not.toHaveProperty("instances");
+    expect(nodes.find((n) => n.id === "shop:web@platform:eks-us")).not.toHaveProperty("instances");
+  });
+});

@@ -52,3 +52,4 @@ export { listAdrs, adrsFor, type ListAdrsOptions, type ListedAdr } from "./adrs.
 export { diff, countChanges, changedIds, changeKinds, type Change, type ChangeKind, type ChangeType, type ChangeItem, type ChangeCounts } from "./diff.ts";
 export { unionBundle } from "./compare.ts";
 export { resolveScope, scopeMatcher, filterChanges, type HistoryScope, type ScopeResolution } from "./history-scope.ts";
+export { listGaps, formatGaps, gapNames, type Gap, type GapName, type GapItemKind, type GapFilter } from "./gaps.ts";

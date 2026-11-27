@@ -7,14 +7,16 @@ import { themes, type Theme } from "../render/tokens.ts";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { gitTopLevel } from "../git.ts";
 import { findCheckout, type Checkout } from "../workspace/index.ts";
-import { build, buildHistory, check, diff, exportViews } from "../commands/index.ts";
+import { build, buildHistory, check, diff, exportViews, gaps } from "../commands/index.ts";
 import { bundleSource, checkoutSource, checkServer, createServer, DEFAULT_PORT, serveHttp, startupLine } from "../mcp/index.ts";
-import { authoringGuide } from "../guide/index.ts";
+import { guide as skillGuide } from "../guide/index.ts";
 import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
 import { exitCodeFor, formatIssues, formats, formatText, type Format } from "./format.ts";
 import { DEFAULT_KEEP, pointMessage } from "../history/index.ts";
+import { formatGaps } from "../core/index.ts";
+import { didYouMean } from "../core/suggest.ts";
 import { LATEST_BUNDLE_PATH } from "../revisions/index.ts";
 import { SCHEMA_VERSION } from "../schema/bundle.ts";
 import { diffFormats, formatDiff, type DiffFormat } from "./diff-format.ts";
@@ -84,9 +86,9 @@ async function main(argv: string[], io: Io): Promise<number> {
     return OK;
   }
   if (command === "guide") {
-    const { positionals } = parseCommand("guide", rest);
+    const { positionals, values } = parseCommand("guide", rest);
     if (positionals.length > 1) throw new UsageError(`Give one topic at a time; got ${positionals.join(", ")}.`);
-    const guide = await authoringGuide(positionals[0]);
+    const guide = await skillGuide(values.skill, positionals[0]);
     if (!guide.ok) throw new UsageError(guide.message);
     io.stdout.write(guide.text);
     return OK;
@@ -98,6 +100,25 @@ async function main(argv: string[], io: Io): Promise<number> {
     const { issues } = await check(await checkoutFrom(io.cwd));
     io.stdout.write(formatIssues(issues, format, { color: useColor(io) }));
     return exitCodeFor(issues, { strict: values.strict });
+  }
+  if (command === "gaps") {
+    const { values } = parseCommand("gaps", rest);
+    const result = await gaps(await checkoutFrom(io.cwd), {
+      ...(values.project === undefined ? {} : { project: values.project }),
+      ...(values.owner === undefined ? {} : { owner: values.owner }),
+    });
+    switch (result.kind) {
+      case "errors":
+        io.stdout.write(formatText(result.issues, { color: useColor(io) }));
+        io.stderr.write("Not listing gaps: the Workspace has errors.\n");
+        return FOUND_ERRORS;
+      case "unknown":
+        throw new UsageError(`Unknown ${result.what} "${result.id}"${didYouMean(result.id, result.known) || "."}`);
+      case "gaps":
+        if (values.json) io.stdout.write(JSON.stringify({ total: result.gaps.length, gaps: result.gaps }, null, 2) + "\n");
+        else io.stdout.write(result.gaps.length ? formatGaps(result.gaps, result.bundle) : "No gaps.\n");
+        return OK;
+    }
   }
   if (command === "build") {
     const { values } = parseCommand("build", rest);

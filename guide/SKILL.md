@@ -7,14 +7,14 @@ description: Edit the Archidocs architecture Model. Use when bootstrapping a Pro
 
 The Model is YAML in a Workspace: `workspace.yaml` defines Teams and Environments, and each Project folder (marked by `project.yaml`) declares its Elements, Relationships, Deployment Targets, Deployments and Saved Views. You need two things: code you can read, and a writable Workspace checkout served by `archidocs mcp --workspace <path>`.
 
-Load the topic for the task before you write: `get_authoring_guide(topic)`, or `archidocs guide <topic>` without MCP.
+Load the topic for the task before you write: `get_guide("authoring", topic)`, or `archidocs guide <topic>` without MCP.
 
 The CLI commands in this guide, such as `archidocs check`, assume a global install. When there is none, run them the way the repo's AGENTS.md says, such as `npx archidocs check`.
 
 ## The Model
 
-- **Elements**: Person, System, Service, Component. Nesting is strict: System › Service › Component; a Service may sit outside any System; Persons are top-level. Every Element has `name`, and optionally `description`, `owner`, `tags`, `links`.
-  - Service adds `type` (`app` by default, `datastore`, `broker`), `technology`, `external`. System adds `external`. Component adds `technology`.
+- **Elements**: Person, System, Service, Component. Nesting is strict: System › Service › Component; a Service may sit outside any System; Persons are top-level. Every Element has `name`, and optionally `description` (Markdown), `owner`, `tags`, `links`, `metadata` (a free-form `key: value` map for facts the Model has no field for, such as `tier: 1`).
+  - Service adds `type` (`app` by default, `datastore`, `broker`), `technology`, `external`, `repository`. System adds `external`, `repository`. Component adds `technology`, `repository`. `repository` is the source code URL; use it rather than a `Repository` link.
   - An External System or Service runs outside the organization and has no declared Components.
 - **Relationships** sit under their consumer and point `to` the provider it depends on. Edges between higher-level Elements are derived, never declared.
 - **Ownership**: one Owner Team per Element, defaulting to the Project's `owner`. Set `owner` only when it differs.

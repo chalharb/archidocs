@@ -50,8 +50,9 @@ export default defineConfig({
       // The date of each hand-written page's last commit, so the workflows that deploy the site check out
       // the full git history (`fetch-depth: 0`). A generated page has no file, so it shows no date.
       lastUpdated: true,
-      // Starlight's page footer, with the release the site documents added.
-      components: { Footer: "./src/components/Footer.astro" },
+      // Starlight's page footer, with the release the site documents added, and its site title,
+      // with a beta badge on the staging build of the beta branch.
+      components: { Footer: "./src/components/Footer.astro", SiteTitle: "./src/components/SiteTitle.astro" },
       // Each group opens with its index page: `index.mdx` in the group's folder, with `sidebar.order: 0`.
       // Guides and Reference are made of sub-groups, so their index pages are named here.
       sidebar: [
@@ -88,7 +89,7 @@ export default defineConfig({
         starlightLlmsTxt({
           projectName: "Archidocs",
           details: [
-            "If you can run Archidocs, prefer its own guide: `archidocs guide` (or the MCP `get_authoring_guide` tool) serves the authoring guide that matches the installed version. This site documents the latest release only.",
+            "If you can run Archidocs, prefer its own guide: the MCP `get_guide` tool (or `archidocs guide`) serves the authoring guide that matches the installed version. This site documents the latest release only.",
             "Every page is also available as Markdown at its URL with `.md` appended, such as https://archidocs.dev/docs/reference/cli/check.md.",
           ].join("\n\n"),
           // One set per part of the docs, so llms.txt indexes them all. A group's index page has its folder's

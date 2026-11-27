@@ -215,6 +215,23 @@ services:
     await call("upsert_element", { project: "shop", kind: "service", id: "api", fields: { technology: "Go" } });
     expect(await read("shop/api.yaml")).toBe(flush + "    technology: Go\n");
   });
+
+  it("reads no style from a block scalar's text, such as a Markdown description with a list", async () => {
+    const markdown = `services:
+  web:
+    name: Web
+    description: |
+      Serves the shop. It:
+      - renders pages
+      - proxies the API
+    links:
+      - label: Docs
+        url: https://docs.example.com/web
+`;
+    const { call, read } = await setup({ ...commented, "shop/web.yaml": markdown });
+    await call("upsert_element", { project: "shop", kind: "service", id: "web", fields: { technology: "Next.js" } });
+    expect(await read("shop/web.yaml")).toBe(markdown + "    technology: Next.js\n");
+  });
 });
 
 describe("every write", () => {

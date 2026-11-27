@@ -8,7 +8,7 @@ import { run } from "../../src/cli/run.ts";
 import { commandList, NO_WORKSPACE, parseCommandLine, type CommandDefinition } from "../../src/cli/commands.ts";
 import type { Files } from "../../src/core/files.ts";
 import { ruleAreas, rules } from "../../src/core/rules.ts";
-import { topics } from "../../src/guide/index.ts";
+import { skills, topics } from "../../src/guide/index.ts";
 import { archidocsArgs, checkMarkdown } from "../src/lib/command-lines.ts";
 import { repoPath } from "../src/lib/repo.ts";
 import { cliPages, commandPath, FILES_SECTION, handWrittenFile, SEE_ALSO, WORKSPACE_SECTION } from "../src/reference/cli.ts";
@@ -268,10 +268,21 @@ describe("generated reference pages", () => {
     expect(pages.get("docs/reference/agent-guide")!.body).toContain("[`rules`](/docs/reference/rules/)");
   });
 
+  it("renders every other skill's guide as a page of its own, listed on the overview", async () => {
+    const pages = await byId();
+    for (const skill of skills.filter((s) => s.id !== "authoring")) {
+      const page = pages.get(`docs/reference/agent-guide/${skill.id}`);
+      expect(page?.source).toBe(`guide/${skill.dir}SKILL.md`);
+      expect(page!.body).not.toContain(`name: ${skill.name}`);
+      expect(pages.get("docs/reference/agent-guide")!.body).toContain(`[\`${skill.id}\`](/docs/reference/agent-guide/${skill.id}/)`);
+    }
+  });
+
   it("rewrites the repo's relative links for the site", () => {
     expect(rewriteLinks("See [x](topics/saved-view.md#steps), [g](../GLOSSARY.md) and [a](../docs/publishing.md).", "guide/SKILL.md")).toBe(
       "See [x](/docs/reference/agent-guide/saved-view/#steps), [g](/docs/reference/glossary/) and [a](https://github.com/chalharb/archidocs/blob/main/docs/publishing.md).",
     );
+    expect(rewriteLinks("See [f](fill-gaps/SKILL.md).", "guide/SKILL.md")).toBe("See [f](/docs/reference/agent-guide/fill-gaps/).");
     expect(rewriteLinks("as the `rules` topic explains", "guide/SKILL.md")).toBe("as the [`rules` topic](/docs/reference/rules/) explains");
   });
 
@@ -385,6 +396,7 @@ describe("MCP tool pages", () => {
     expect(codes("get_changes")).toEqual(["invalid_input", "not_found", "ambiguous", "source_unavailable", "history_unavailable"]);
     expect(codes("upsert_relationship")).toEqual(["invalid_input", "not_found", "ambiguous", "validation_failed", "read_only", "source_unavailable"]);
     expect(codes("check")).toEqual(["invalid_input", "read_only", "source_unavailable"]);
+    expect(codes("get_guide")).toEqual(["invalid_input", "not_found"]);
     expect(codes("get_authoring_guide")).toEqual(["invalid_input", "not_found"]);
     expect((await pages()).get("docs/reference/mcp/get_element")!.body).toContain("- [`not_found`](/docs/reference/mcp/errors/#not_found) when");
   });

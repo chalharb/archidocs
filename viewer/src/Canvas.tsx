@@ -14,15 +14,17 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import type { CompareMark, ImpactSide, NodeMark, ResolvedView, ViewNode } from "../../src/core/views/index.ts";
-import type { BundleElement } from "../../src/schema/bundle.ts";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { instancesChip, type CompareMark, type ImpactSide, type NodeMark, type ResolvedView, type ViewNode } from "../../src/core/views/index.ts";
+import type { BundleElement, BundleRelationship } from "../../src/schema/bundle.ts";
 import type { TeamStyle } from "../../src/render/teams.ts";
 import type { LaidOut } from "./layout.ts";
 import { NODE_SIZES } from "../../src/render/layout.ts";
+import { targetStep } from "../../src/render/tokens.ts";
 import { Icon, type IconName } from "./Icon.tsx";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
+import type { EdgeRef } from "./place.ts";
 import { CtrlWheelZoom } from "./wheel.tsx";
 
 /** The sub-label under a box's name, as the Variant D prototype writes it: "System · 4 Services", "datastore · Postgres", "External System". */
@@ -81,6 +83,8 @@ export interface CanvasProps {
   workspace: Workspace;
   laidOut: LaidOut;
   selected: string | null;
+  /** The selected edge, shown in the Relationship panel. */
+  selectedEdge: EdgeRef | null;
   open: readonly string[];
   /** Changes when the screen should fit the drawing again, such as a new View or direction. */
   fitKey: string;
@@ -91,6 +95,7 @@ export interface CanvasProps {
   /** Ringed rather than badged: a Team Lens. */
   ring: boolean;
   onSelect: (id: string | null) => void;
+  onSelectEdge: (edge: EdgeRef) => void;
   /** Shift-click: picks or unpicks a node. */
   onPick: (id: string) => void;
   onToggle: (id: string, open: boolean) => void;
@@ -106,29 +111,41 @@ interface BoxData extends Record<string, unknown> {
   sublabel: string;
   team: TeamStyle | undefined;
   container: boolean;
+  /** A Deployment Target's Target Depth ground: 1 for an outermost Target, one step more per Target it nests in, capped. */
+  targetStep: number | undefined;
   /** The box was laid out a line taller, for a name too long for the widest box. */
   twoLine: boolean;
-  /** `+` when collapsed with children to show, `−` when opened by the viewer, else neither. */
+  /** `+` when collapsed with children to show, `−` when opened by the viewer or an open System on the C2 Landscape, else neither. */
   toggle: "expand" | "collapse" | null;
   onToggle: (id: string, open: boolean) => void;
-  /** Set when the box is the way into its own View, other than the one on screen. */
-  wayIn: boolean;
+  /**
+   * Where the box's arrow tile goes, a level down, when it has one: `own`, its own View, other than the one on
+   * screen; `landscape`, the C2 Landscape, for a System on the C1 Landscape.
+   */
+  wayIn: "own" | "landscape" | null;
   onOpenView: (id: string) => void;
   mark: NodeMark | undefined;
   ring: boolean;
   picked: boolean;
   /** Set while Comparing: how this node changed between the two Revisions. */
   change: CompareMark | undefined;
+  /** Set while an edge is hovered: whether this box is one of its two ends, or fades with the rest. */
+  hover: "end" | "faded" | undefined;
 }
 
 interface RouteData extends Record<string, unknown> {
   points: { x: number; y: number }[];
   faded: boolean;
+  /** The edge is the one shown in the Relationship panel. */
+  picked: boolean;
   /** Set while a Lens is on: whether it lights this edge. */
   lit: boolean | undefined;
   change: CompareMark | undefined;
   from: string;
   to: string;
+  /** What the edge carries, one Relationship a line: its tooltip. */
+  tooltip: string;
+  onHover: (id: string, on: boolean) => void;
 }
 
 const KIND_LABEL: Record<ViewNode["kind"], string> = { person: "Person", system: "System", service: "Service", component: "Component", target: "Deployment Target", deployment: "Deployment" };
@@ -141,7 +158,7 @@ export function Canvas(props: CanvasProps) {
   );
 }
 
-function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring, onSelect, onPick, onToggle, onOpenView, onSettled }: CanvasProps) {
+function Flow({ workspace, laidOut, selected, selectedEdge, open, fitKey, lensed, picks, ring, onSelect, onSelectEdge, onPick, onToggle, onOpenView, onSettled }: CanvasProps) {
   const { view, layout } = laidOut;
   const reducedMotion = useReducedMotion();
   const animate = !reducedMotion && view.nodes.length <= ANIMATE_MAX_NODES;
@@ -150,12 +167,32 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
   const marks = useMemo(() => new Map(lensed?.nodes.map((n) => [n.id, n.mark]) ?? []), [lensed]);
   const litEdges = useMemo(() => (lensed ? new Map(lensed.edges.map((e) => [`${e.from}>${e.to}`, e.lit === true])) : undefined), [lensed]);
 
+  // The hovered edge, while it is still on screen: it lights over any Lens or selection, which return when it is left.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const hovered = useMemo(() => layout.edges.find((e) => `${e.from}>${e.to}` === hoveredId), [layout, hoveredId]);
+  const onHover = useCallback((id: string, on: boolean) => setHoveredId((current) => (on ? id : current === id ? null : current)), []);
+
+  // Stacking, bottom to top: open boxes by depth, then every edge, then the boxes with nothing open inside them.
+  // Edges sit over the open boxes they cross, so those never take the pointer from an edge's hover target.
+  const edgeZ = useMemo(() => {
+    const byId = new Map(view.nodes.map((n) => [n.id, n]));
+    const depth = (id: string): number => {
+      const parent = byId.get(id)?.parent ?? null;
+      return parent === null ? 0 : 1 + depth(parent);
+    };
+    return 1 + Math.max(0, ...view.nodes.map((n) => depth(n.id)));
+  }, [view]);
+
   const nodes = useMemo<Node<BoxData>[]>(() => {
     const byId = new Map(view.nodes.map((n) => [n.id, n]));
     const containers = new Set(view.nodes.map((n) => n.parent).filter((p) => p !== null));
     const depth = (id: string): number => {
       const parent = byId.get(id)?.parent ?? null;
       return parent === null ? 0 : 1 + depth(parent);
+    };
+    const targetDepth = (id: string): number => {
+      const node = byId.get(id);
+      return node?.kind !== "target" ? 0 : 1 + (node.parent === null ? 0 : targetDepth(node.parent));
     };
     return layout.nodes.map((box) => {
       const node = byId.get(box.id)!;
@@ -173,51 +210,66 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         style: { width: box.width, height: box.height },
         // A rebuilt node without `measured` loses its handle bounds, and React Flow hides its edges until it measures it again.
         measured: { width: box.width, height: box.height },
-        zIndex: depth(box.id),
+        zIndex: containers.has(box.id) ? depth(box.id) : edgeZ + 1,
         selected: box.id === selected,
         draggable: false,
         connectable: false,
         data: {
           node,
           type: element?.kind === "service" && element.type !== "app" ? element.type : undefined,
-          sublabel: target ? `${KIND_LABEL.target} · ${target.kind}` : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.environment, node) : undefined),
+          sublabel: target ? target.kind : describe(node, element, technology, containers.has(box.id) ? undefined : inside(element?.id), node.kind === "deployment" ? deployedAt(workspace, view.environment, node) : undefined),
           team: workspace.teams.get(element?.owner ?? target?.owner ?? ""),
           container: containers.has(box.id),
+          targetStep: node.kind === "target" ? targetStep(targetDepth(box.id)) : undefined,
           twoLine: !containers.has(box.id) && box.height > NODE_SIZES[node.kind].height,
           toggle: canOpen ? "expand" : open.includes(box.id) ? "collapse" : null,
           onToggle,
-          wayIn: element !== undefined && workspace.wayIn(element.id) !== undefined && workspace.wayIn(element.id) !== view.id,
+          wayIn: element === undefined || workspace.wayIn(element.id) === undefined || workspace.wayIn(element.id) === view.id ? null : view.id === "c1" && element.kind === "system" ? "landscape" : "own",
           onOpenView,
           mark: marks.get(box.id),
           ring,
           picked: picks.includes(box.id),
           change: node.change,
+          hover: hovered ? (box.id === hovered.from || box.id === hovered.to ? "end" : "faded") : undefined,
         },
       };
     });
-  }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks]);
+  }, [view, layout, workspace, selected, open, onToggle, onOpenView, marks, ring, picks, hovered, edgeZ]);
+
+  const keyIcons = useMemo(() => iconsOn(nodes.map((n) => n.data.type ?? n.data.node.kind)), [nodes]);
 
   const edgeChanges = useMemo(() => new Map(view.edges.map((e) => [`${e.from}>${e.to}`, e.change])), [view]);
-  const edges = useMemo<Edge<RouteData>[]>(
-    () =>
-      layout.edges.map((e) => ({
+  const tooltips = useMemo(() => {
+    const names = new Map(view.nodes.map((n) => [n.id, n.name]));
+    return new Map(view.edges.map((e) => [`${e.from}>${e.to}`, edgeTooltip(names.get(e.from) ?? e.from, names.get(e.to) ?? e.to, e.relationships)]));
+  }, [view]);
+  const pickedEdge = selectedEdge ? `${selectedEdge.from}>${selectedEdge.to}` : null;
+  const edges = useMemo<Edge<RouteData>[]>(() => {
+    const drawn = layout.edges.map(
+      (e): Edge<RouteData> => ({
         id: `${e.from}>${e.to}`,
         source: e.from,
         target: e.to,
         type: "route",
-        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, orient: "auto" },
         selectable: false,
+        zIndex: edgeZ,
         data: {
           points: e.points,
-          faded: selected !== null && e.from !== selected && e.to !== selected,
-          lit: litEdges?.get(`${e.from}>${e.to}`),
+          faded: pickedEdge !== null ? `${e.from}>${e.to}` !== pickedEdge : selected !== null && e.from !== selected && e.to !== selected,
+          picked: `${e.from}>${e.to}` === pickedEdge,
+          lit: hovered ? e === hovered : litEdges?.get(`${e.from}>${e.to}`),
           change: edgeChanges.get(`${e.from}>${e.to}`),
           from: e.from,
           to: e.to,
+          tooltip: tooltips.get(`${e.from}>${e.to}`) ?? "",
+          onHover,
         },
-      })),
-    [layout, selected, litEdges, edgeChanges],
-  );
+      }),
+    );
+    // The hovered edge draws last, over the others.
+    return hovered ? [...drawn.filter((e) => e.data!.lit !== true), ...drawn.filter((e) => e.data!.lit === true)] : drawn;
+  }, [layout, selected, pickedEdge, litEdges, edgeChanges, tooltips, hovered, onHover, edgeZ]);
 
   return (
     <ReactFlow
@@ -242,22 +294,44 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       proOptions={{ hideAttribution: true }}
       onNodeClick={(event, node) => (event.shiftKey ? onPick(node.id) : onSelect(node.id))}
       onNodeDoubleClick={(_, node) => onOpenView(node.id)}
+      onEdgeClick={(_, edge) => onSelectEdge({ from: edge.source, to: edge.target })}
       onPaneClick={() => onSelect(null)}
     >
       <Panel position="bottom-left" className="arc-key-panel">
-        <Key lens={lensed !== undefined} />
+        <Key lens={lensed !== undefined} icons={keyIcons} scaled={view.nodes.some((n) => n.instances !== undefined)} />
       </Panel>
       {view.nodes.length > MINIMAP_MIN_NODES && <MiniMap position="top-right" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeStrokeWidth={0} />}
       <Controls position="bottom-right" showInteractive={false} />
-      <Fitter laidOut={laidOut} fitKey={fitKey} selected={selected} animate={animate} onSettled={onSettled} />
+      <Fitter laidOut={laidOut} fitKey={fitKey} selected={selected ?? (selectedEdge ? "edge" : null)} animate={animate} onSettled={onSettled} />
       <KeepBesidePanel selected={selected} animate={animate} drawingWidth={layout.width} />
       <CtrlWheelZoom />
     </ReactFlow>
   );
 }
 
-/** The map key: what every mark on the canvas means, and the canvas's gestures. It folds away and stays folded. */
-function Key({ lens }: { lens: boolean }) {
+/** The Key's icon rows, in reading order, each with the kind name it stands for. */
+const KEY_ICONS: { kind: string; label: string }[] = [
+  { kind: "person", label: KIND_LABEL.person },
+  { kind: "system", label: KIND_LABEL.system },
+  { kind: "service", label: KIND_LABEL.service },
+  { kind: "datastore", label: "Datastore" },
+  { kind: "broker", label: "Broker" },
+  { kind: "component", label: KIND_LABEL.component },
+  { kind: "deployment", label: KIND_LABEL.deployment },
+  { kind: "target", label: KIND_LABEL.target },
+];
+
+/** The icon rows for the kinds a View actually draws, so a C1 Key lists no datastore or Target. */
+function iconsOn(kinds: string[]): { icon: IconName; label: string }[] {
+  const drawn = new Set(kinds);
+  return KEY_ICONS.filter((k) => drawn.has(k.kind)).map((k) => ({ icon: KIND_ICON[k.kind]!, label: k.label }));
+}
+
+/**
+ * The map key: what every mark and icon on the canvas means, and the canvas's gestures.
+ * It starts folded so it never covers the drawing; a visitor's own toggle is remembered.
+ */
+function Key({ lens, icons, scaled }: { lens: boolean; icons: { icon: IconName; label: string }[]; scaled: boolean }) {
   const [open, setOpen] = useState(() => readKeyOpen());
   return (
     <details
@@ -271,7 +345,24 @@ function Key({ lens }: { lens: boolean }) {
         writeKeyOpen(next);
       }}
     >
-      <summary>Key</summary>
+      <summary
+        onClick={(e) => {
+          // Remembered here, as the click lands: the toggle event comes a task later, and a reload can beat it.
+          writeKeyOpen(!(e.currentTarget.parentElement as HTMLDetailsElement).open);
+        }}
+      >
+        Key
+      </summary>
+      {icons.length > 0 && (
+        <ul className="arc-key-icons" aria-label="Icons">
+          {icons.map(({ icon, label }) => (
+            <li key={icon} data-key-icon={icon}>
+              <Icon name={icon} />
+              {label}
+            </li>
+          ))}
+        </ul>
+      )}
       <ul>
         <li>
           <span className="arc-key-swatch arc-key-team" aria-hidden="true">
@@ -281,7 +372,7 @@ function Key({ lens }: { lens: boolean }) {
         </li>
         <li>
           <span className="arc-key-swatch arc-key-way-in" aria-hidden="true" />
-          Arrow tile: opens the box's own View
+          Arrow tile: goes a level down
         </li>
         <li>
           <span className="arc-key-swatch arc-key-external" aria-hidden="true" />
@@ -291,6 +382,12 @@ function Key({ lens }: { lens: boolean }) {
           <span className="arc-key-swatch arc-key-broker" aria-hidden="true" />
           Striped: broker
         </li>
+        {scaled && (
+          <li data-testid="key-scaled">
+            <span className="arc-key-swatch arc-key-stacked" aria-hidden="true" />
+            Stacked: scaled (×3 fixed, 2–10 autoscale)
+          </li>
+        )}
         {lens && (
           <>
             <li>
@@ -312,19 +409,17 @@ function Key({ lens }: { lens: boolean }) {
           </>
         )}
       </ul>
-      <p className="arc-key-gestures">+ shows what is inside, here · the arrow tile (or a double-click) opens a box's own View · Shift-click picks for export · / finds</p>
+      <p className="arc-key-gestures">+ shows what is inside, here · the arrow tile (or a double-click) goes a level down · Shift-click picks for export · / finds</p>
     </details>
   );
 }
 
-/** Open by default only where the canvas has room for it beside the drawing; afterwards it stays as the visitor left it. */
+/** Folded by default on every screen; afterwards it stays as the visitor left it. */
 function readKeyOpen(): boolean {
-  const roomy = window.innerWidth >= 1200 && window.innerHeight >= 760;
   try {
-    const stored = window.localStorage.getItem("archidocs.key");
-    return stored === null ? roomy : stored === "open";
+    return window.localStorage.getItem("archidocs.key") === "open";
   } catch {
-    return roomy;
+    return false;
   }
 }
 
@@ -332,7 +427,7 @@ function writeKeyOpen(open: boolean) {
   try {
     window.localStorage.setItem("archidocs.key", open ? "open" : "closed");
   } catch {
-    // The key simply opens again next time.
+    // The key simply starts folded again next time.
   }
 }
 
@@ -346,7 +441,8 @@ function besidePanel(width: number): number {
  * transition has finished. A new Layout under the same fitKey (a new Bundle swapped in by `archidocs dev`) keeps
  * the camera where the reader left it.
  * The fit uses the whole canvas unless something is selected (the Element panel then takes the right edge), never
- * zooms past 1:1, and never below MIN_FIT_ZOOM: a View too big for that opens at its start and pans for the rest.
+ * zooms past 1:1, and never below MIN_FIT_ZOOM: a View too big for that opens on its selected box, or else at its
+ * start, and pans for the rest.
  */
 function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: LaidOut; fitKey: string; selected: string | null; animate: boolean; onSettled: (laidOut: LaidOut) => void }) {
   const { setViewport } = useReactFlow();
@@ -367,9 +463,16 @@ function Fitter({ laidOut, fitKey, selected, animate, onSettled }: { laidOut: La
       const room = selected === null ? width : besidePanel(width);
       const fit = Math.min(1, (room - 2 * FIT_PAD) / Math.max(layout.width, 1), (height - 2 * FIT_PAD) / Math.max(layout.height, 1));
       const zoom = Math.max(MIN_FIT_ZOOM, fit);
-      // Centred when the whole drawing fits; otherwise from its top-left corner, where a View starts reading.
-      const x = layout.width * zoom <= room - 2 * FIT_PAD ? (room - layout.width * zoom) / 2 : FIT_PAD;
-      const y = layout.height * zoom <= height - 2 * FIT_PAD ? (height - layout.height * zoom) / 2 : FIT_PAD;
+      // Centred when the whole drawing fits; otherwise on the selected box, or else from the drawing's top-left corner,
+      // where a View starts reading. The drawing's edges never come in past the padding.
+      const box = selected === null ? undefined : layout.nodes.find((n) => n.id === selected);
+      const along = (span: number, size: number, at: number | undefined, boxSize: number) => {
+        if (size * zoom <= span - 2 * FIT_PAD) return (span - size * zoom) / 2;
+        if (at === undefined) return FIT_PAD;
+        return Math.min(FIT_PAD, Math.max(span - FIT_PAD - size * zoom, span / 2 - (at + boxSize / 2) * zoom));
+      };
+      const x = along(room, layout.width, box?.x, box?.width ?? 0);
+      const y = along(height, layout.height, box?.y, box?.height ?? 0);
       duration = animate && !first.current ? DURATION : 0;
       first.current = false;
       void setViewport({ x, y, zoom }, { duration });
@@ -425,7 +528,9 @@ function KeepBesidePanel({ selected, animate, drawingWidth }: { selected: string
 }
 
 const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
-  const { node, type, sublabel, team, container, twoLine, toggle, onToggle, wayIn, onOpenView, mark, ring, picked, change } = data;
+  const { node, type, sublabel, team, container, targetStep, twoLine, toggle, onToggle, wayIn, onOpenView, mark: lensMark, ring, picked, change, hover } = data;
+  // A hovered edge's ends light, and everything else fades, over a Lens's marks.
+  const mark = hover ? undefined : lensMark;
   const stop = (e: MouseEvent) => e.stopPropagation();
   const toggleButton = toggle && (
     <button
@@ -447,8 +552,8 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     <button
       type="button"
       className="arc-way-in nodrag nopan"
-      aria-label={`Open ${node.name}'s View`}
-      title={`Open ${node.name}'s own View`}
+      aria-label={wayIn === "landscape" ? `Open ${node.name} on the C2 Landscape` : `Open ${node.name}'s View`}
+      title={wayIn === "landscape" ? `Open the C2 Landscape at ${node.name}` : `Open ${node.name}'s own View`}
       onClick={(e) => {
         stop(e);
         onOpenView(node.id);
@@ -463,6 +568,7 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     `arc-${node.kind}`,
     type ? `arc-t-${type}` : "",
     container ? "arc-container" : "",
+    targetStep ? `arc-target-step-${targetStep}` : "",
     twoLine ? "arc-two-line" : "",
     node.external ? "arc-external" : "",
     selected ? "arc-selected" : "",
@@ -472,76 +578,89 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
     mark?.hit && node.collapsed ? "arc-holds-hit" : "",
     picked ? "arc-picked" : "",
     change ? `arc-${change}` : "",
+    hover === "end" ? "arc-hover-end" : hover === "faded" ? "arc-dim" : "",
   ];
+  // A scaled Deployment: two framed copies behind the box, and its count chip beside the Team code.
+  const chip = node.instances === undefined ? undefined : instancesChip(node.instances);
+  const faint = (mark !== undefined && !mark.hit) || change === "unchanged" || change === "removed";
   return (
-    <div
-      className={classes.filter(Boolean).join(" ")}
-      style={team ? ({ "--team": team.color } as CSSProperties) : undefined}
-      data-node={node.id}
-      data-parent={node.parent ?? ""}
-      data-hit={mark ? String(mark.hit) : undefined}
-      data-distance={mark?.distance}
-      data-picked={picked ? "true" : undefined}
-      data-change={change}
-      aria-selected={selected ? "true" : "false"}
-      title={change && change !== "unchanged" ? `${node.name}: ${change === "changed" && node.collapsed ? "changed, or something inside changed" : change}` : mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
-    >
-      <Handle type="target" position={Position.Left} isConnectable={false} className="arc-handle" />
-      <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
-      {/* As the Variant D prototype draws it: [+] glyph Name TEAM on one row, the sub-label under it. */}
-      <div className="arc-box-head">
-        {toggleButton}
-        <Icon name={KIND_ICON[type ?? node.kind]!} className="arc-kind-glyph" />
-        <span className="arc-name" data-testid="name">
-          {node.name}
-        </span>
-        {/* An open box's sub-label sits in its head row, after the name, and gives way to it when space runs out. */}
-        {container && (
-          <span className="arc-sublabel arc-csub" data-testid="sublabel" title={sublabel}>
-            {sublabel}
+    <>
+      {chip !== undefined && <div className={["arc-stack", faint ? "arc-stack-faint" : ""].filter(Boolean).join(" ")} data-testid="stack" aria-hidden="true" />}
+      <div
+        className={classes.filter(Boolean).join(" ")}
+        style={team ? ({ "--team": team.color } as CSSProperties) : undefined}
+        data-node={node.id}
+        data-parent={node.parent ?? ""}
+        data-hit={mark ? String(mark.hit) : undefined}
+        data-distance={mark?.distance}
+        data-picked={picked ? "true" : undefined}
+        data-change={change}
+        data-hover={hover}
+        aria-selected={selected ? "true" : "false"}
+        title={change && change !== "unchanged" ? `${node.name}: ${change === "changed" && node.collapsed ? "changed, or something inside changed" : change}` : mark?.hit && node.collapsed ? `${node.name}: something inside is hit` : node.name}
+      >
+        <Handle type="target" position={Position.Left} isConnectable={false} className="arc-handle" />
+        <Handle type="source" position={Position.Right} isConnectable={false} className="arc-handle" />
+        {/* As the Variant D prototype draws it: [+] glyph Name TEAM on one row, the sub-label under it. */}
+        <div className="arc-box-head">
+          {toggleButton}
+          <Icon name={KIND_ICON[type ?? node.kind]!} className="arc-kind-glyph" />
+          <span className="arc-name" data-testid="name">
+            {node.name}
           </span>
-        )}
-        {team && (
-          <span className="arc-team" data-testid="team" title={`Owner: ${team.code}`}>
-            {team.code}
-          </span>
-        )}
-        {container && wayInButton}
-      </div>
-      {!container && (
-        <div className="arc-box-foot">
-          <div className="arc-sublabel" data-testid="sublabel" title={sublabel}>
-            {sublabel}
-          </div>
-          {wayInButton}
+          {/* An open box's sub-label sits in its head row, after the name, and gives way to it when space runs out. */}
+          {container && (
+            <span className="arc-sublabel arc-csub" data-testid="sublabel" title={sublabel}>
+              {sublabel}
+            </span>
+          )}
+          {chip !== undefined && (
+            <span className="arc-instances" data-testid="instances" title={typeof node.instances === "number" ? `${node.instances} instances` : `Autoscales from ${chip.replace("–", " to ")} instances`}>
+              {chip}
+            </span>
+          )}
+          {team && (
+            <span className="arc-team" data-testid="team" title={`Owner: ${team.code}`}>
+              {team.code}
+            </span>
+          )}
+          {container && wayInButton}
         </div>
-      )}
-      {mark?.distance !== undefined && !(container && !node.collapsed) && (
-        <span className={`arc-badge arc-badge-${mark.side ?? "distance"}`}>
-          {mark.side && <Icon name={SIDE_ICON[mark.side]} className="arc-badge-icon" />}
-          {mark.side && mark.side !== "origin" && `${SIDE_LABEL[mark.side]} `}
-          {mark.side === "origin" && SIDE_LABEL.origin}
-          <span className={mark.side === "origin" ? "arc-visually-hidden" : undefined} data-testid="distance" aria-label={`distance ${mark.distance}`}>
-            {mark.distance}
+        {!container && (
+          <div className="arc-box-foot">
+            <div className="arc-sublabel" data-testid="sublabel" title={sublabel}>
+              {sublabel}
+            </div>
+            {wayInButton}
+          </div>
+        )}
+        {mark?.distance !== undefined && !(container && !node.collapsed) && (
+          <span className={`arc-badge arc-badge-${mark.side ?? "distance"}`}>
+            {mark.side && <Icon name={SIDE_ICON[mark.side]} className="arc-badge-icon" />}
+            {mark.side && mark.side !== "origin" && `${SIDE_LABEL[mark.side]} `}
+            {mark.side === "origin" && SIDE_LABEL.origin}
+            <span className={mark.side === "origin" ? "arc-visually-hidden" : undefined} data-testid="distance" aria-label={`distance ${mark.distance}`}>
+              {mark.distance}
+            </span>
           </span>
-        </span>
-      )}
-      {mark?.hit && node.collapsed && <span className="arc-holds" aria-hidden="true" />}
-      {change === "added" && (
-        <span className="arc-added-mark" data-testid="added" aria-label="added">
-          +
-        </span>
-      )}
-      {change === "changed" && <span className="arc-changed-mark" data-testid="changed" aria-label="changed" />}
-    </div>
+        )}
+        {mark?.hit && node.collapsed && <span className="arc-holds" aria-hidden="true" />}
+        {change === "added" && (
+          <span className="arc-added-mark" data-testid="added" aria-label="added">
+            +
+          </span>
+        )}
+        {change === "changed" && <span className="arc-changed-mark" data-testid="changed" aria-label="changed" />}
+      </div>
+    </>
   );
 });
 
 function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
   const d = data!.points.map((p, i) => `${i === 0 ? "M" : "L"}${round(p.x)} ${round(p.y)}`).join(" ");
-  const { faded, lit, change } = data!;
-  // While a Lens is on it decides which edges stand out; selection fades edges only without one.
-  const classes = ["arc-edge", (lit === undefined ? faded : !lit) ? "arc-faded" : "", lit ? "arc-lit" : "", change ? `arc-${change}` : ""];
+  const { faded, picked, lit, change, from, to, tooltip, onHover } = data!;
+  // While a Lens is on it decides which edges stand out; selection fades edges only without one. A picked edge always stands out.
+  const classes = ["arc-edge", !picked && (lit === undefined ? faded : !lit) ? "arc-faded" : "", lit ? "arc-lit" : "", picked ? "arc-edge-picked" : "", change ? `arc-${change}` : ""];
   const path = (
     <path
       className={classes.filter(Boolean).join(" ")}
@@ -554,11 +673,24 @@ function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
       data-change={change}
     />
   );
-  if (change !== "added" && change !== "changed") return path;
+  // A wide, unseen stroke over the line, so a 1.5px edge is easy to hover.
+  const hit = (
+    <path className="arc-edge-hit" d={d} data-edge-hit={`${from}>${to}`} onMouseEnter={() => onHover(`${from}>${to}`, true)} onMouseLeave={() => onHover(`${from}>${to}`, false)}>
+      <title>{tooltip}</title>
+    </path>
+  );
+  if (change !== "added" && change !== "changed")
+    return (
+      <>
+        {path}
+        {hit}
+      </>
+    );
   const mid = midpoint(data!.points);
   return (
     <>
       {path}
+      {hit}
       {change === "added" ? (
         <text className="arc-edge-added" x={mid.x} y={mid.y} dy="0.35em" textAnchor="middle" aria-hidden="true">
           +
@@ -568,6 +700,12 @@ function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
       )}
     </>
   );
+}
+
+/** An edge's tooltip: what each of its Relationships says and runs on, else just which two boxes it joins. */
+function edgeTooltip(from: string, to: string, relationships: readonly BundleRelationship[]): string {
+  const lines = relationships.map((r) => [r.description, r.technology && `[${r.technology}]`].filter(Boolean).join(" ")).filter(Boolean);
+  return [`${from} → ${to}`, ...lines].join("\n");
 }
 
 /** The point halfway along a polyline. */
