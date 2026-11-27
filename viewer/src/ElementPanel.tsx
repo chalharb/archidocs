@@ -218,11 +218,16 @@ function Links({ workspace, id, onFocus }: { workspace: Workspace; id: string; o
     </button>
   );
   const rel = (r: BundleRelationship, i: number) => (
-    <li key={i}>
-      {r.from === id ? "→ " : "← "}
+    <li key={i} className="arc-link-row">
+      <span aria-label={r.from === id ? "to" : "from"}>{r.from === id ? "→" : "←"}</span>
       {link(r.from === id ? r.to : r.from)}
-      {r.description && <span className="arc-muted"> {r.description}</span>}
-      {r.technology && <span className="arc-muted"> · {r.technology}</span>}
+      {(r.description || r.technology) && (
+        <span className="arc-muted arc-link-what">
+          {r.description}
+          {r.description && r.technology && " · "}
+          {r.technology}
+        </span>
+      )}
     </li>
   );
   const rings = (label: string, list: ImpactRing[] | undefined) => (

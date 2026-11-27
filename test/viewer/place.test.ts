@@ -9,6 +9,7 @@ const samples: Record<string, string> = {
   open: "open=shop:checkout,payments:payments",
   closed: "closed=shop:checkout,payments:payments",
   sel: "sel=shop:cart",
+  rel: "rel=shop:web,payments:payments",
   dir: "dir=LR",
   impact: "impact=shop:cart&way=both",
   way: "impact=shop:cart&way=upstream",
@@ -78,10 +79,10 @@ describe("parsing and formatting", () => {
   });
 
   it("writes parameters in the list's order, whatever order they were read in", () => {
-    // One Lens at a time: the Connect to… Lens, whose three parameters can all be present.
+    // One Lens at a time: the Connect to… Lens, whose three parameters can all be present; and `sel`, which `rel` gives way to.
     const pairs = Object.values(samples).flatMap((q) => q.split("&"));
     const value = (name: string) => pairs.find((p) => p.startsWith(`${name}=`))!;
-    const present = names.filter((n) => !["impact", "way", "team"].includes(n));
+    const present = names.filter((n) => !["impact", "way", "team", "rel"].includes(n));
     const query = (order: readonly string[]) => order.map(value).join("&");
     expect(formatPlace(parsePlace(hash("c2", query([...present].reverse()))))).toBe(hash("c2", query(present)));
   });
@@ -130,5 +131,23 @@ describe("what existing URLs mean", () => {
   it("drops repeated and empty ids from lists, and decodes the View id", () => {
     expect(parsePlace("#/view/c2?open=a,,a,b&picks=").open).toEqual(["a", "b"]);
     expect(parsePlace("#/view/c2%2Fshop%3Acheckout").view).toBe("c2/shop:checkout");
+  });
+});
+
+describe("the selected edge", () => {
+  it("reads and writes rel as the edge's two nodes", () => {
+    const place = parsePlace(hash("c2", "rel=shop:web,payments:payments"));
+    expect(place.edge).toEqual({ from: "shop:web", to: "payments:payments" });
+    expect(formatPlace(place)).toBe(hash("c2", "rel=shop:web,payments:payments"));
+  });
+
+  it("gives way to a selected node", () => {
+    expect(parsePlace(hash("c2", "sel=shop:cart&rel=shop:web,payments:payments")).edge).toBeNull();
+    expect(formatPlace({ ...HOME, view: "c2", selected: "shop:cart", edge: { from: "a", to: "b" } })).toBe(hash("c2", "sel=shop:cart"));
+  });
+
+  it("ignores a rel that isn't exactly two nodes", () => {
+    expect(parsePlace(hash("c2", "rel=shop:web")).edge).toBeNull();
+    expect(parsePlace(hash("c2", "rel=a,b,c")).edge).toBeNull();
   });
 });
