@@ -164,7 +164,7 @@ jobs:
           test -f "$SITE/index.html"
           test -f "$SITE/workspace.bundle.json"
           # One picture per Saved View the latest Bundle holds (Deployment Views can't be exported yet).
-          ids="$(jq -r '.views[] | select(.level != "deployment") | .id | gsub("[/:]"; "-")' "$SITE/workspace.bundle.json")"
+          ids="$(jq -r '.views[] | select(.level != "deployment") | .id | gsub("/"; "-") | gsub(":"; "_")'"$SITE/workspace.bundle.json")"
           test -n "$ids"
           for id in $ids; do test -f "$SITE/views/$id.svg"; done
           test "$(jq -c '[.revisions[] | [.subject, .tags, .bundle]]' "$SITE/bundles/index.json")" = \

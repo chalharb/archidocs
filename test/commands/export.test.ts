@@ -57,6 +57,22 @@ describe("exportViews", () => {
     expect((await readdir(out)).sort()).toEqual(files.map((f) => f.path.slice(out.length + 1)).sort());
   });
 
+  it("gives Saved Views whose ids used to share a file name a file each", async () => {
+    const { checkout } = await checkoutOf({
+      ...landscapeWorkspace,
+      "pay/project.yaml": "id: pay\nname: Pay\nowner: platform-team\n",
+      "pay/views.yaml": "views:\n  structural:\n    core-flow:\n      title: Core flow\n      level: c1\n",
+      "pay-core/project.yaml": "id: pay-core\nname: Pay core\nowner: platform-team\n",
+      "pay-core/views.yaml": "views:\n  structural:\n    flow:\n      title: Flow\n      level: c1\n",
+    });
+    const out = await tempDir();
+
+    const result = await exportViews(checkout, options(out, { views: "all-saved" }));
+
+    expect(result.kind).toBe("written");
+    expect((await readdir(out)).sort()).toEqual(["pay-core_flow.svg", "pay_core-flow.svg"]);
+  });
+
   it("draws a PNG", async () => {
     const { checkout } = await checkoutOf(landscapeWorkspace);
     const out = await tempDir();

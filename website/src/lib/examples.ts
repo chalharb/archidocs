@@ -48,8 +48,8 @@ export type Theme = (typeof THEMES)[number];
 /** The header label stamped into each exported diagram, such as `Big Bank · v1.2.0`. */
 export const diagramLabel = (example: DiagramSource): string => `${example.name} · v${VERSION}`;
 
-/** The file `export --all-saved` writes for a Saved View: `digital:mainframe-outage` → `digital-mainframe-outage`. A Generated View's file is named the same way. */
-export const diagramFile = (viewId: string): string => viewId.replace(/[/:]/g, "-");
+/** The file `export --all-saved` writes for a Saved View: `digital:mainframe-outage` → `digital_mainframe-outage`. A Generated View's file is named the same way. */
+export const diagramFile = (viewId: string): string => viewId.replace(/\//g, "-").replace(/:/g, "_");
 
 export const diagramUrl = (example: DiagramSource, theme: Theme, viewId: string): string => `/diagrams/${example.slug}/${theme}/${diagramFile(viewId)}.svg`;
 
