@@ -85,3 +85,35 @@ describe("Load of a Workspace with problems", () => {
     ]);
   });
 });
+
+describe("URL fields", () => {
+  const issuesOf = async (files: Record<string, string>) => (await loadWorkspace({ ...validWorkspace, ...files })).issues.map((i) => [i.file, i.line, i.rule, i.message]);
+
+  it("accept only http and https, so javascript:, data: and mailto: are errors", async () => {
+    expect(
+      await issuesOf({
+        "shop/more.yaml": [
+          "services:",
+          "  docs:",
+          "    name: Docs",
+          "    repository: mailto:dev@example.com",
+          "    links:",
+          "      - { label: Runbook, url: 'javascript:alert(1)' }",
+          "deployments:",
+          "  - { service: web, environment: staging, target: shop-edge, url: 'data:text/html,hi' }",
+          "",
+        ].join("\n"),
+      }),
+    ).toEqual([
+      ["archidocs/shop/more.yaml", 4, "invalid-value", 'Invalid value for "repository": must be an http or https URL'],
+      ["archidocs/shop/more.yaml", 6, "invalid-value", 'Invalid value for "links.0.url": must be an http or https URL'],
+      ["archidocs/shop/more.yaml", 8, "invalid-value", 'Invalid value for "url": must be an http or https URL'],
+      ["archidocs/shop/more.yaml", 8, "unknown-target", 'Unknown Deployment Target "shop-edge" in Project "shop"'],
+    ]);
+  });
+
+  it("still accept an https URL", async () => {
+    expect(await issuesOf({ "shop/more.yaml": "services:\n  docs:\n    name: Docs\n    repository: https://github.com/acme/docs\n    links:\n      - { label: Runbook, url: https://wiki.example.com/runbook }\n" })).toEqual([]);
+  });
+});
+

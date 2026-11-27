@@ -118,8 +118,8 @@ describe("the built site", () => {
 
   it("shows a Diagram in both themes with a link to the live viewer", () => {
     const html = read("docs/examples/big-bank/index.html");
-    expect(html).toContain('src="/diagrams/big-bank/light/digital-mainframe-outage.svg"');
-    expect(html).toContain('src="/diagrams/big-bank/dark/digital-mainframe-outage.svg"');
+    expect(html).toContain('src="/diagrams/big-bank/light/digital_mainframe-outage.svg"');
+    expect(html).toContain('src="/diagrams/big-bank/dark/digital_mainframe-outage.svg"');
     expect(html).toContain('href="https://big-bank.archidocs.dev/#/view/digital:mainframe-outage"');
   });
 });

@@ -138,7 +138,7 @@ describe("Deployment declarations", () => {
         "shop/zz-more.yaml": "deployments:\n  - { service: web, environment: staging, target: shop-edge, url: not-a-url }\n  - { service: web, environment: staging, targett: shop-edge }\n",
       }),
     ).toEqual([
-      ["archidocs/shop/zz-more.yaml", 2, "invalid-value", 'Invalid value for "url": Invalid URL'],
+      ["archidocs/shop/zz-more.yaml", 2, "invalid-value", 'Invalid value for "url": must be an http or https URL'],
       ["archidocs/shop/zz-more.yaml", 3, "missing-field", 'Missing required field "target"'],
       ["archidocs/shop/zz-more.yaml", 3, "unknown-field", 'Unknown field "targett"; did you mean "target"?'],
     ]);

@@ -46,7 +46,8 @@ export async function proposeAdr(edit: Edit, request: AdrRequest): Promise<Plann
   const number = String(Math.max(0, ...taken) + 1).padStart(4, "0");
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "") || "decision";
   const folder = join(edit.repoRoot, ...project.folder.split("/"), "adr");
-  const date = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   let text: string;
   if (request.body !== undefined) {

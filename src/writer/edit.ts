@@ -1,5 +1,6 @@
 import { isAbsolute, join, normalize } from "node:path";
 import type { Issue, LoadedWorkspace, Project } from "../core/model.ts";
+import { isWorkspaceFile } from "../core/workspace-files.ts";
 import { suggest } from "../core/suggest.ts";
 import { Id, Ref } from "../schema/workspace.ts";
 import type { YamlFile } from "./document.ts";
@@ -65,8 +66,8 @@ export function findProject(edit: Edit, id: string): Project | Failure {
 export function projectFile(edit: Edit, project: Project, file: string): { ok: true; abs: string } | Failure {
   const clean = normalize(file);
   const reserved = ["project.yaml", "workspace.yaml"];
-  if (isAbsolute(file) || clean.startsWith("..") || !clean.endsWith(".yaml") || reserved.includes(clean)) {
-    return fail("invalid_input", `file "${file}" must be a .yaml path inside the Project's folder, relative to it, other than project.yaml.`);
+  if (isAbsolute(file) || clean.startsWith("..") || !isWorkspaceFile(clean) || !clean.endsWith(".yaml") || reserved.includes(clean)) {
+    return fail("invalid_input", `file "${file}" must be a .yaml path inside the Project's folder, relative to it, other than project.yaml, with no part starting with "." or named node_modules (Load skips those).`);
   }
   return { ok: true, abs: join(edit.repoRoot, ...project.folder.split("/"), clean) };
 }

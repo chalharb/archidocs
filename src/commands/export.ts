@@ -63,7 +63,7 @@ export async function exportViews(checkout: Checkout, options: ExportOptions): P
   if (options.file === undefined) await mkdir(options.out, { recursive: true });
   const files: ExportedFile[] = [];
   for (const [id, view] of views) {
-    const path = options.file ?? join(options.out, `${id.replace(/[/:]/g, "-")}.${format}`);
+    const path = options.file ?? join(options.out, `${id.replace(/\//g, "-").replace(/:/g, "_")}.${format}`);
     // A Dynamic View draws as a sequence chart, any other as a diagram.
     const svg =
       view.kind === "dynamic"

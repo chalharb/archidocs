@@ -76,7 +76,7 @@
         "url": {
           "type": "string",
           "format": "uri",
-          "description": "The page the link opens. A full URL, such as `https://wiki.example.com/runbooks/web`."
+          "description": "The page the link opens. A full web URL, such as `https://wiki.example.com/runbooks/web`."
         }
       },
       "required": [

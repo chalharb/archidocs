@@ -74,7 +74,7 @@ async function main(argv: string[], io: Io): Promise<number> {
     const cwd = await realpath(io.cwd);
     const repoRoot = (await gitTopLevel(cwd)) ?? cwd;
     const { version } = JSON.parse(await readFile(PACKAGE_JSON, "utf8")) as { version: string };
-    const lines = await init({ repoRoot, cwd, skillOnly: values.skill, env: io.env, version, ...(values.workspace === undefined ? {} : { workspace: values.workspace }) });
+    const lines = await init({ repoRoot, cwd, skillOnly: values.skill, noClaudeSkills: values["no-claude-skills"], env: io.env, version, ...(values.workspace === undefined ? {} : { workspace: values.workspace }) });
     io.stdout.write(lines.join("\n") + "\n");
     return OK;
   }
