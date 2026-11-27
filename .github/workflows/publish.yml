@@ -83,7 +83,7 @@ jobs:
             echo "::notice::$BRANCH has moved on since ${SHA:0:7}; the CI run for its newer commit releases both."
           fi
       - if: steps.current.outputs.current == 'true'
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - if: steps.current.outputs.current == 'true'
         uses: actions/setup-node@v7
         with:
@@ -197,7 +197,7 @@ jobs:
           # Full history: each docs page's "Last updated" date is the date of its file's last commit.
           fetch-depth: 0
       - if: steps.credentials.outputs.ready == 'true'
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - if: steps.credentials.outputs.ready == 'true'
         uses: actions/setup-node@v7
         with:
