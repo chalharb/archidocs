@@ -9,7 +9,7 @@ import { gitTopLevel } from "../git.ts";
 import { findCheckout, type Checkout } from "../workspace/index.ts";
 import { build, buildHistory, check, diff, exportViews } from "../commands/index.ts";
 import { bundleSource, checkoutSource, checkServer, createServer, DEFAULT_PORT, serveHttp, startupLine } from "../mcp/index.ts";
-import { authoringGuide } from "../guide/index.ts";
+import { guide as skillGuide } from "../guide/index.ts";
 import { EXIT, NO_WORKSPACE, parseCommand, usageText } from "./commands.ts";
 import { init } from "./init.ts";
 import { DEFAULT_DEV_PORT, serveDev } from "./dev.ts";
@@ -84,9 +84,9 @@ async function main(argv: string[], io: Io): Promise<number> {
     return OK;
   }
   if (command === "guide") {
-    const { positionals } = parseCommand("guide", rest);
+    const { positionals, values } = parseCommand("guide", rest);
     if (positionals.length > 1) throw new UsageError(`Give one topic at a time; got ${positionals.join(", ")}.`);
-    const guide = await authoringGuide(positionals[0]);
+    const guide = await skillGuide(values.skill, positionals[0]);
     if (!guide.ok) throw new UsageError(guide.message);
     io.stdout.write(guide.text);
     return OK;

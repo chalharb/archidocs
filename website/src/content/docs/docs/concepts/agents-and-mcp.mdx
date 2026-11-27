@@ -6,7 +6,7 @@ sidebar:
 ---
 
 :::note[For agents]
-If you can run Archidocs, read its own guide: `archidocs guide`, or the MCP tool `get_authoring_guide`. It matches the installed version, while this site documents the latest release only. The same guide is rendered under [Authoring guide for agents](/docs/reference/agent-guide/).
+If you can run Archidocs, read its own guide: the MCP tool `get_guide("authoring")`, or `archidocs guide` without MCP. It matches the installed version, while this site documents the latest release only. The same guide is rendered under [Authoring guide for agents](/docs/reference/agent-guide/).
 :::
 
 `archidocs mcp` serves the Model to coding agents over the [Model Context Protocol](https://modelcontextprotocol.io) (MCP). It is the viewer's twin: what a person can see in the viewer, an agent can ask the MCP server, and both answers come from the same Model.
@@ -51,7 +51,7 @@ The server talks over stdio by default, which is how coding agents start MCP ser
 
 The MCP tools say what they do. The authoring guide says how to model well with them: the Model's rules, the edit loop, and a topic for each task, such as bootstrapping a Project from code.
 
-It ships with the CLI, so it always matches it. `archidocs guide` prints it, and the MCP tool `get_authoring_guide` serves it. `archidocs init` installs a skill that points agents at it.
+It ships with the CLI, so it always matches it. The MCP tool `get_guide("authoring")` serves it, and `archidocs guide` prints it. `get_authoring_guide` serves the same and is deprecated, kept for skills installed by older versions. `archidocs init` installs a skill that points agents at it.
 
 The guides on this site cover the same tasks for people, and each links its agent topic.
 

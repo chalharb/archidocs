@@ -385,6 +385,7 @@ describe("MCP tool pages", () => {
     expect(codes("get_changes")).toEqual(["invalid_input", "not_found", "ambiguous", "source_unavailable", "history_unavailable"]);
     expect(codes("upsert_relationship")).toEqual(["invalid_input", "not_found", "ambiguous", "validation_failed", "read_only", "source_unavailable"]);
     expect(codes("check")).toEqual(["invalid_input", "read_only", "source_unavailable"]);
+    expect(codes("get_guide")).toEqual(["invalid_input", "not_found"]);
     expect(codes("get_authoring_guide")).toEqual(["invalid_input", "not_found"]);
     expect((await pages()).get("docs/reference/mcp/get_element")!.body).toContain("- [`not_found`](/docs/reference/mcp/errors/#not_found) when");
   });

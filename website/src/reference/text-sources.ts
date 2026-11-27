@@ -34,7 +34,7 @@ export function rewriteLinks(markdown: string, from: string): string {
 }
 
 const VERSION_NOTE =
-  ":::note\nThis is the guide for the latest release. If you can run Archidocs, `archidocs guide` or the MCP `get_authoring_guide` tool serves the guide that matches your installed version.\n:::";
+  ":::note\nThis is the guide for the latest release. If you can run Archidocs, `archidocs guide` or the MCP `get_guide` tool serves the guide that matches your installed version.\n:::";
 
 export function agentGuidePages(): GeneratedPage[] {
   const skill = splitTitle(stripFrontmatter(readRepoFile("guide/SKILL.md")));
@@ -63,7 +63,7 @@ export function agentGuidePages(): GeneratedPage[] {
         order: i + 1,
         description: t.summary,
         source,
-        body: blocks(`Topic \`${t.id}\`: \`archidocs guide ${t.id}\` or \`get_authoring_guide("${t.id}")\`.`, rewriteLinks(rest, source)),
+        body: blocks(`Topic \`${t.id}\`: \`archidocs guide ${t.id}\` or \`get_guide("authoring", "${t.id}")\`.`, rewriteLinks(rest, source)),
       };
     });
   return [index, ...pages];

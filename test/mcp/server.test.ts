@@ -235,6 +235,7 @@ describe("tool surface", () => {
       "get_changes",
       "get_deployments",
       "get_element",
+      "get_guide",
       "get_impact",
       "get_view",
       "get_workspace_info",

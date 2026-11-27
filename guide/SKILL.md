@@ -7,7 +7,7 @@ description: Edit the Archidocs architecture Model. Use when bootstrapping a Pro
 
 The Model is YAML in a Workspace: `workspace.yaml` defines Teams and Environments, and each Project folder (marked by `project.yaml`) declares its Elements, Relationships, Deployment Targets, Deployments and Saved Views. You need two things: code you can read, and a writable Workspace checkout served by `archidocs mcp --workspace <path>`.
 
-Load the topic for the task before you write: `get_authoring_guide(topic)`, or `archidocs guide <topic>` without MCP.
+Load the topic for the task before you write: `get_guide("authoring", topic)`, or `archidocs guide <topic>` without MCP.
 
 The CLI commands in this guide, such as `archidocs check`, assume a global install. When there is none, run them the way the repo's AGENTS.md says, such as `npx archidocs check`.
 

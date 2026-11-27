@@ -1,6 +1,6 @@
 # 01: `get_guide` and `--skill`
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Agent skills](../spec.md)
 
@@ -21,8 +21,8 @@ One way to load any skill's guide. PR title: `feat(guide): ...`.
 
 ## Acceptance criteria
 
-- [ ] `get_guide` and `archidocs guide --skill` serve authoring and its topics.
-- [ ] `get_authoring_guide` and `archidocs guide <topic>` behave as before.
-- [ ] The tool-name test passes.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm docs:test` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `get_guide` and `archidocs guide --skill` serve authoring and its topics.
+- [x] `get_authoring_guide` and `archidocs guide <topic>` behave as before.
+- [x] The tool-name test passes.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm docs:test` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.

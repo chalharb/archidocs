@@ -29,7 +29,7 @@ describe("archidocs init without a global install", () => {
     expect(code).toBe(0);
     const runner = `npx -y archidocs@${version}`;
     expect(stdout).toContain(`  ${runner} mcp --workspace archidocs`);
-    for (const dir of skillDirs) expect(await read(repo, `${dir}/archidocs-authoring/SKILL.md`)).toContain(`\`${runner} guide\``);
+    for (const dir of skillDirs) expect(await read(repo, `${dir}/archidocs-authoring/SKILL.md`)).toContain(`\`${runner} guide --skill authoring\``);
     expect(await read(repo, "AGENTS.md")).toContain(`\`${runner} guide\``);
   });
 
@@ -38,7 +38,7 @@ describe("archidocs init without a global install", () => {
     await writeFile(join(repo, "package.json"), JSON.stringify({ devDependencies: { archidocs: "^1.3.0" } }));
     const { stdout } = await archidocs(repo, viaNpx, "init");
     expect(stdout).toContain("  npx archidocs mcp --workspace archidocs");
-    expect(await read(repo, ".claude/skills/archidocs-authoring/SKILL.md")).toContain("`npx archidocs guide`");
+    expect(await read(repo, ".claude/skills/archidocs-authoring/SKILL.md")).toContain("`npx archidocs guide --skill authoring`");
     expect(await read(repo, "AGENTS.md")).toContain("`npx archidocs guide`");
   });
 
@@ -73,6 +73,7 @@ describe("archidocs init from a global bin", () => {
     for (const dir of skillDirs) {
       const stub = await read(repo, `${dir}/archidocs-authoring/SKILL.md`);
       expect(stub).toMatch(/^---\nname: archidocs-authoring\ndescription: .+\n---\n/);
+      expect(stub).toContain("get_guide");
       expect(stub).toContain("get_authoring_guide");
       expect(stub).toContain("archidocs guide");
     }

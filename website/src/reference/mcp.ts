@@ -68,6 +68,7 @@ export const EXAMPLES: Readonly<Record<string, ToolExample>> = {
   get_changes: { arguments: { from: "737dd399d1b037ce5cd7a723138fc59fb90f6835", limit: 3 } },
   list_history: { arguments: { limit: 2 } },
   check: { arguments: {} },
+  get_guide: { arguments: { skill: "authoring", topic: "relationships" } },
   get_authoring_guide: { arguments: { topic: "relationships" } },
   upsert_element: { arguments: { project: "sink", kind: "service", id: "invoices", parent: "shop", fields: { name: "Invoices", technology: "Go", owner: "core" }, dry_run: true } },
   upsert_relationship: { arguments: { project: "sink", from: "reports", to: "search", fields: { description: "Looks up products in", technology: "HTTPS" }, dry_run: true } },
@@ -333,12 +334,12 @@ const sections = (list: readonly FieldSection[], none: string): string =>
 /**
  * The codes a tool can return, each with when, read off its input: a tool
  * that names something can find nothing, one with a history `scope` can find
- * two things, and so on. `get_authoring_guide` reads no Workspace.
+ * two things, and so on. The guide tools read no Workspace.
  */
 export function toolErrors(tool: ListedTool): { code: ErrorCode; when: string }[] {
   const write = isWrite(tool);
   const history = takes(tool, "scope_kind");
-  const readsWorkspace = tool.name !== "get_authoring_guide";
+  const readsWorkspace = tool.name !== "get_guide" && tool.name !== "get_authoring_guide";
   // The guide takes `at` like every read tool, but ships with the server, so it ignores it.
   const at = readsWorkspace && takes(tool, "at");
   const names = write ? takes(tool, "project") : (tool.inputSchema.required?.length ?? 0) > 0 || at || takes(tool, "topic");

@@ -66,13 +66,15 @@ Run `archidocs init` again after upgrading the CLI. It rewrites the skill files 
 
 ## Check it worked
 
-Ask the agent to add a Service. It loads the authoring guide first, with `archidocs guide` or the MCP [`get_authoring_guide`](/docs/reference/mcp/read-tools/#get_authoring_guide) tool.
+Ask the agent to add a Service. It loads the authoring guide first, with the MCP [`get_guide`](/docs/reference/mcp/get_guide/) tool or `archidocs guide --skill authoring`. Servers older than `get_guide` serve the same guide as [`get_authoring_guide`](/docs/reference/mcp/get_authoring_guide/), which the skill names as a fallback.
 
 To read what it reads, run the same command:
 
 ```bash
-archidocs guide
+archidocs guide --skill authoring
 ```
+
+`--skill` defaults to `authoring`, so `archidocs guide` prints the same.
 
 The first lines are the skill's name and description:
 

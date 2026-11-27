@@ -108,17 +108,20 @@ export const commands = {
   },
   guide: {
     name: "guide",
-    synopsis: ["guide [topic]"],
-    description: "Print the authoring guide for agents, or one of its task topics.",
-    arguments: [{ name: "[topic]", description: "A task topic; with none, the guide and the list of topics." }],
-    flags: {},
+    synopsis: ["guide [topic] [--skill <id>]"],
+    description: "Print an agent skill's full guide, or one of its task topics. With no `--skill`, the authoring guide.",
+    arguments: [{ name: "[topic]", description: "A task topic of the skill; with none, the guide and its list of topics." }],
+    flags: {
+      skill: { type: "string", value: "<id>", default: "authoring", description: "The skill whose guide to print. `authoring` is the one there is today." },
+    },
     examples: [
-      { command: "archidocs guide", description: "Print the guide: the Model in brief, the edit loop and the list of task topics." },
+      { command: "archidocs guide", description: "Print the authoring guide: the Model in brief, the edit loop and the list of task topics." },
       { command: "archidocs guide add-service", description: "Print one task topic, here how to add a Service." },
+      { command: "archidocs guide --skill authoring", description: "Name the skill, as a skill's stub does: the same as `archidocs guide`." },
     ],
     exitCodes: [
       { code: EXIT.ok, meaning: "The guide or the topic was printed." },
-      { code: EXIT.couldNotRun, meaning: "It could not run: an unknown topic (the message lists the topics there are), more than one topic, or any flag, since it takes none." },
+      { code: EXIT.couldNotRun, meaning: "It could not run: an unknown skill or topic (the message names the closest one and lists them all), a topic on a skill without topics, more than one topic, or an unknown flag." },
     ],
   },
   check: {
