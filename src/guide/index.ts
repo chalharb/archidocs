@@ -60,6 +60,13 @@ export const skills = [
       "Check the Archidocs architecture Model before and after changing code. Use when changing a public API, event or schema, adding or removing a dependency on another Service, datastore or broker, renaming or retiring a Service, changing deployment config, or answering who calls, owns or deploys something.",
     dir: "consult/",
   },
+  {
+    id: "describe",
+    name: "archidocs-describe",
+    description:
+      "Build the Archidocs Model from the user's own explanation of their architecture, iteratively, with no code needed. Use when the user describes how their systems fit together in prose, wants to talk through or sketch an architecture, or is documenting something whose code isn't available.",
+    dir: "describe/",
+  },
 ] as const satisfies readonly Skill[];
 
 export type SkillId = (typeof skills)[number]["id"];

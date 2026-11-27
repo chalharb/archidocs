@@ -104,6 +104,20 @@ describe("get_guide", () => {
   });
 });
 
+describe("get_guide(\"describe\")", () => {
+  it("serves the describe guide, which loads authoring first and has no topics", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const result = await call("get_guide", { skill: "describe" });
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({ skill: "describe", topic: null, topics: [] });
+    expect(text(result)).toMatch(/^---\nname: archidocs-describe\n/);
+    expect(text(result)).toContain('`get_guide("authoring")`');
+    expect(skillStub("describe", "archidocs")).toContain('`get_guide("describe")`');
+    const frontmatter = (s: string) => /^---\n[\s\S]*?\n---\n/.exec(s)![0];
+    expect(frontmatter(skillStub("describe", "archidocs"))).toBe(frontmatter(text(result)));
+  });
+});
+
 describe("the skill registry", () => {
   it("names each skill archidocs-<id>", () => {
     for (const s of skills) expect(s.name).toBe(`archidocs-${s.id}`);

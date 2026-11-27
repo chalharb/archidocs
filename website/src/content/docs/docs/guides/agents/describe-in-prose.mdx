@@ -1,0 +1,117 @@
+---
+title: Describe an architecture in prose
+description: Explain your architecture to an agent in your own words and have it build the Model round by round, with no code needed.
+sidebar:
+  order: 5
+---
+
+Explain how your systems fit together, in your own words, and have a coding agent turn it into a Model. The agent plays back a draft after each thing you say and asks only what it can't tell. Nothing is written until you approve the first draft.
+
+Use this when the code isn't at hand, when you want to sketch an architecture before it exists, or when talking it through is faster than pointing an agent at a dozen repos.
+
+:::note[For agents]
+Load the `describe` skill's guide: the MCP tool `get_guide("describe")`, or `archidocs guide --skill describe` without MCP.
+:::
+
+## Before you start
+
+- The agent has the Archidocs MCP server over a writable [Workspace checkout](/docs/reference/glossary/#term-checkout). See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/).
+- The agent loads the `describe` guide. If your repo has no `archidocs-describe` skill yet, ask the agent to call `get_guide("describe")` first. See [Install the agent skill](/docs/guides/agents/install-skill/).
+- The agent doesn't need any code. It works only from what you say.
+
+## 1. Explain it
+
+Tell the agent what you have, as you would tell a colleague:
+
+```text
+I have a next.js app that uses BFF to call an api that's running on anthos and is proxied
+through an apigee gateway. That API gets its data from BigQuery. The bigquery table is
+populated by an ETL from a black-boxed service
+```
+
+You don't need to cover everything at once. Explain one part, answer the questions, then go on to the next.
+
+## 2. Read the draft
+
+After each round the agent plays back the whole draft, not only what changed. It's an outline of the Elements, then one line per path, with arrows pointing from the caller to what it calls:
+
+```text
+Services
+  web        Service              technology: Next.js
+    bff      Component            (the BFF)
+  apigee     Service              technology: Apigee        (API gateway)
+  api        Service                                         (the API)
+  bigquery   Service, datastore   technology: BigQuery
+  etl        Service                                         (the ETL)
+  source     System                                          (the black-boxed service)
+
+Deployment Targets
+  anthos     kind: anthos
+
+Flow
+  web.bff → apigee → api → bigquery
+  bigquery ← etl → source
+```
+
+The agent records only what you said. It never makes up Environments, URLs or Owners; whatever you leave out stays empty for later.
+
+## 3. Answer the questions
+
+The agent then asks numbered questions about what is ambiguous, each with a proposed answer:
+
+```text
+1. Project: put all of this in one new Project, `orders` ("Orders")?
+2. Owner Team: which Team owns it?
+3. BFF: a Component of `web`, deployed with it? (Or its own Service, if it is deployed apart.)
+4. Apigee: a Service in the path, `web → apigee → api`, owned by the Team that runs it?
+5. BigQuery: your own dataset in your Google Cloud project, so not `external`?
+6. The black box: run by a vendor (`external: true`), or by a Team in the organization?
+7. ETL: does it pull from the black box (`etl → source`), as drawn?
+8. Anthos: which Environments does the API run in (for example `dev` and `prod`)?
+```
+
+Answer by number, such as `1 yes, 2 checkout-team, 6 a vendor's CRM`, or say `skip`. "Yes" takes the proposed answer. The Project and Owner Team are asked once, in the first round.
+
+Some answers follow fixed modeling rules:
+
+- **A gateway** such as Apigee is a Service in the path by default, owned by the Team that runs it. The lighter option leaves it out and names it on the Relationship, as `HTTPS via Apigee`. See [Gateways and proxies](/docs/reference/agent-guide/relationships/#gateways-and-proxies).
+- **A black box** is a System. If a vendor runs it, it's External. If a Team in your organization runs it, it's a System with no Components, owned by that Team.
+- **A platform** such as Anthos becomes a Deployment Target. The agent asks which Environments run on it before it adds any Deployments.
+- **Another Team's System** is proposed as its own Project, owned by that Team. Say "keep it all in one" if you'd rather not.
+
+## 4. Approve and keep going
+
+When the first draft is right, approve it. The agent writes the Project, then starts `archidocs dev` and gives you the viewer's URL, or prints the command for you to run. From then on, each round's changes are written as soon as you approve them, and the viewer reloads.
+
+## 5. Review the pull request
+
+When you're done, the agent runs `check` and suggests a branch name, a pull request title and a description. The description lists what was written and what is still open. Commit, push, and review it like code.
+
+The agent then offers to [fill the documentation gaps](/docs/guides/agents/fill-gaps/). That pass reads the code to propose the technology, repository links and URLs you didn't mention.
+
+## Check it worked
+
+In the Workspace checkout:
+
+```bash
+archidocs check
+```
+
+```text
+0 errors, 0 warnings
+```
+
+Open the viewer and follow each path from the draft's flow.
+
+## If it didn't
+
+If the agent starts reading code or proposing URLs you never gave, it isn't following the `describe` guide. Ask it to load `get_guide("describe")` and start the round again.
+
+If the agent writes before you approve the first draft, say so and ask it to undo the writes. Every write returns a diff.
+
+## Related
+
+- [Fill documentation gaps](/docs/guides/agents/fill-gaps/)
+- [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
+- [Connect Services](/docs/guides/model/connect-services/)
+- [Agents and MCP](/docs/concepts/agents-and-mcp/)
