@@ -80,7 +80,7 @@
             "description": "The Deployment Target it runs on: an id in this Project, or `project:id` for one another Project declares."
           },
           "url": {
-            "description": "The Service's main URL in this Environment. An `http` or `https` URL, such as `https://cart.example.com`.",
+            "description": "The Service's main URL in this Environment. A full web URL, such as `https://cart.example.com`.",
             "type": "string",
             "format": "uri"
           },
@@ -97,7 +97,7 @@
                 "url": {
                   "type": "string",
                   "format": "uri",
-                  "description": "The endpoint's address. An `http` or `https` URL."
+                  "description": "The endpoint's address. A full web URL."
                 }
               },
               "required": [
@@ -421,7 +421,7 @@
         "url": {
           "type": "string",
           "format": "uri",
-          "description": "The page the link opens. An `http` or `https` URL, such as `https://wiki.example.com/runbooks/web`."
+          "description": "The page the link opens. A full web URL, such as `https://wiki.example.com/runbooks/web`."
         }
       },
       "required": [
@@ -544,7 +544,7 @@
         "repository": {
           "type": "string",
           "format": "uri",
-          "description": "The `http` or `https` URL of the source code repository the Element is built from. Shown as a link in the viewer."
+          "description": "The full web URL of the source code repository the Element is built from. Shown as a link in the viewer."
         },
         "services": {
           "description": "The Services in the System, keyed by id.",
@@ -633,7 +633,7 @@
         "repository": {
           "type": "string",
           "format": "uri",
-          "description": "The `http` or `https` URL of the source code repository the Element is built from. Shown as a link in the viewer."
+          "description": "The full web URL of the source code repository the Element is built from. Shown as a link in the viewer."
         },
         "external": {
           "description": "`true` for a Service run outside the organization, such as a payment provider's API. An External Service can't declare Components. Default: `false`.",
@@ -722,7 +722,7 @@
         "repository": {
           "type": "string",
           "format": "uri",
-          "description": "The `http` or `https` URL of the source code repository the Element is built from. Shown as a link in the viewer."
+          "description": "The full web URL of the source code repository the Element is built from. Shown as a link in the viewer."
         },
         "in": {
           "description": "The Service this Component belongs to, as an id in this Project. Required for a Component under the top-level `components` key, and not allowed for one nested under a Service's `components`.",

@@ -16,7 +16,7 @@ const httpUrl = () => z.url({ protocol: /^https?$/, error: "must be an http or h
 export const Link = z
   .strictObject({
     label: z.string().describe("The text of the link, such as `Runbook`."),
-    url: httpUrl().describe("The page the link opens. An `http` or `https` URL, such as `https://wiki.example.com/runbooks/web`."),
+    url: httpUrl().describe("The page the link opens. A full web URL, such as `https://wiki.example.com/runbooks/web`."),
   })
   .meta({ id: "Link", title: "Link", description: "A link to a page about the thing it is declared on, such as a runbook or a dashboard." });
 
@@ -95,7 +95,7 @@ export const Metadata = z
   );
 
 /** A link to the source code repository of a System, Service or Component. */
-const Repository = httpUrl().describe("The `http` or `https` URL of the source code repository the Element is built from. Shown as a link in the viewer.");
+const Repository = httpUrl().describe("The full web URL of the source code repository the Element is built from. Shown as a link in the viewer.");
 
 /** The fields every kind of Element takes. */
 const elementFields = {
@@ -191,7 +191,7 @@ export interface TargetInput {
 export const Endpoint = z
   .strictObject({
     name: z.string().describe("What the endpoint is, such as `health` or `admin`."),
-    url: httpUrl().describe("The endpoint's address. An `http` or `https` URL."),
+    url: httpUrl().describe("The endpoint's address. A full web URL."),
   })
   .describe("A further named URL of the Service in this Environment.");
 
@@ -225,7 +225,7 @@ export const Deployment = z
     service: Ref.describe("The Service that runs: an id in this Project, or `project:id`. It must name a Service, not a System or a Component."),
     environment: Id.describe("The Environment it runs in: the id of an Environment in `workspace.yaml`."),
     target: Ref.describe("The Deployment Target it runs on: an id in this Project, or `project:id` for one another Project declares."),
-    url: httpUrl().optional().describe("The Service's main URL in this Environment. An `http` or `https` URL, such as `https://cart.example.com`."),
+    url: httpUrl().optional().describe("The Service's main URL in this Environment. A full web URL, such as `https://cart.example.com`."),
     endpoints: z.array(Endpoint).optional().describe("Further named URLs of the Service in this Environment, such as a health check or an admin console."),
     instances: Instances.optional(),
   })
