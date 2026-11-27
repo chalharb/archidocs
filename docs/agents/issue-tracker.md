@@ -15,7 +15,7 @@ The issue types follow Azure DevOps' Epic → Feature → Task, with sub-issues 
 
 User stories aren't issues: they're listed in the `Feature`'s spec, and each `Task` delivers a thin end-to-end slice of them.
 
-Every issue's body follows its type's template in `.github/ISSUE_TEMPLATE/`, with the same headings in the same order: `epic.md`, `feature.md`, `task.md` and `map.md` (Markdown, for maintainers and agents), and the `bug_report.yml` and `feature_request.yml` forms (for users; the latter makes a `Request`). Write the body to a file from the template, fill each section, and delete the HTML comments. A section with nothing to say stays, with "None." under it. Children are listed by GitHub as sub-issues, so a body never lists them.
+Every issue's body follows its type's template in `.github/ISSUE_TEMPLATE/`, with the same headings in the same order: `epic.md`, `feature.md`, `task.md` and `map.md` (Markdown, for maintainers and agents), and the `bug_report.yml` and `feature_request.yml` forms (for users). The "Feature request" form makes a `Request`, not a `Feature`: it asks what the user is trying to do, what they'd like and what they do now, and lands in `backlog` for triage. Write the body to a file from the template, fill each section, and delete the HTML comments. A section with nothing to say stays, with "None." under it. Children are listed by GitHub as sub-issues, so a body never lists them.
 
 When a skill says **spec** (or PRD), it means a `Feature` issue; **ticket** means a `Task` (or `Bug`).
 
