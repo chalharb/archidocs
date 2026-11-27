@@ -7,9 +7,11 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 | `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
 | `needs-info`               | `needs-info`         | Waiting on reporter for more information |
 | `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
+| `ready-for-human`          | `needs-human`        | Needs a human: dashboard work, credentials or a decision no agent should make |
 | `wontfix`                  | `wontfix`            | Will not be actioned                     |
 
 They are options of the Archidocs Project's `Status` field, not issue labels, alongside three progress states: `in-progress` (claimed, being worked), `in-review` (PR open) and `done` (PR merged).
+
+Only `ready-for-human` is named differently: a skill that applies `ready-for-human` sets `needs-human`.
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.

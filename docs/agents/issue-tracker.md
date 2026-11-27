@@ -22,7 +22,7 @@ Before 2026-11-27, specs and tickets were Markdown files under `.scratch/`, then
 | `Feature` field  | `PVTSSF_lAHOAFfac84BtfmBzhro2OE` |
 | `Model` field    | `PVTSSF_lAHOAFfac84BtfmBzhro7Tk` |
 
-`Status` options: `needs-triage` `0c545800`, `needs-info` `dbada91e`, `ready-for-agent` `496af898`, `ready-for-human` `40466873`, `in-progress` `45445147`, `in-review` `98078e5a`, `done` `6d11c6fb`, `wontfix` `baa62b9e`.
+`Status` options: `needs-triage` `0c545800`, `needs-info` `dbada91e`, `ready-for-agent` `496af898`, `needs-human` `40466873`, `in-progress` `45445147`, `in-review` `98078e5a`, `done` `6d11c6fb`, `wontfix` `baa62b9e`.
 
 `Model` options: `fable` `c02e5f28` (strongest judgment: architecture, ambiguous specs, hard trade-offs), `opus` `52f568ac` (bugs with an unknown cause, performance, changes across modules), `sonnet` `96f1cf36` (well-specified features and refactors), `haiku` `ef7387b3` (mechanical edits: renames, copy changes, config).
 
