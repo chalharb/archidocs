@@ -1,6 +1,6 @@
 {
   "name": "archidocs",
-  "version": "1.6.0-beta.1",
+  "version": "1.6.0-beta.2",
   "description": "Git-native architecture as code: check and bundle a Workspace of Projects.",
   "type": "module",
   "license": "MIT",
