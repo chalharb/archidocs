@@ -6,7 +6,7 @@ import { bundleSource } from "../../src/mcp/index.ts";
 import { validWorkspace } from "../support/fixtures.ts";
 import { connect, connectTo } from "../support/mcp.ts";
 
-const topics = ["bootstrap", "add-service", "relationships", "deployments", "dynamic-view", "saved-view", "propose-adr", "fill-gaps", "change", "rules"];
+const topics = ["bootstrap", "add-service", "relationships", "deployments", "dynamic-view", "saved-view", "propose-adr", "change", "rules"];
 
 describe("get_authoring_guide", () => {
   it("returns SKILL.md and lists every topic", async () => {
@@ -95,6 +95,42 @@ describe("get_guide", () => {
     expect(text(result)).not.toContain("## Topics");
     const frontmatter = (s: string) => /^---\n[\s\S]*?\n---\n/.exec(s)![0];
     expect(frontmatter(skillStub("consult", "archidocs"))).toBe(frontmatter(text(result)));
+  });
+
+  it("serves the fill-gaps skill, which loads authoring first and scans with list_gaps", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const result = await call("get_guide", { skill: "fill-gaps" });
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({ skill: "fill-gaps", topic: null, topics: [] });
+    const guide = text(result);
+    expect(guide).toMatch(/^---\nname: archidocs-fill-gaps\n/);
+    expect(guide).toContain('`get_guide("authoring")`');
+    expect(guide).toContain("`list_gaps`");
+    expect(guide).toContain("## What counts as a gap");
+    expect(guide).not.toContain("jq");
+    const frontmatter = (s: string) => /^---\n[\s\S]*?\n---\n/.exec(s)![0];
+    expect(frontmatter(skillStub("fill-gaps", "archidocs"))).toBe(frontmatter(guide));
+  });
+
+  it("refuses a topic on fill-gaps, naming the skill", async () => {
+    const { call } = await connect(validWorkspace);
+    const result = await call("get_guide", { skill: "fill-gaps", topic: "bootstrap" });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('"fill-gaps" has no topics');
+  });
+
+  it("answers authoring's old fill-gaps topic with a note pointing at the fill-gaps skill", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const [old, now] = await Promise.all([call("get_authoring_guide", { topic: "fill-gaps" }), call("get_guide", { skill: "authoring", topic: "fill-gaps" })]);
+    expect(old.isError).toBeFalsy();
+    expect(text(old)).toContain("moved to the `archidocs-fill-gaps` skill");
+    expect(text(old)).toContain('`get_guide("fill-gaps")`');
+    expect(text(old).length).toBeLessThan(400);
+    expect(now.content).toEqual(old.content);
+  });
+
+  it("leaves fill-gaps out of authoring's description", () => {
+    expect(skills.find((s) => s.id === "authoring")!.description).not.toMatch(/gap/i);
   });
 
   it("describes get_authoring_guide as deprecated in favour of get_guide", async () => {
