@@ -13,7 +13,7 @@ The tracker's ids and conventions are in `docs/agents/issue-tracker.md`. Read it
 
 ```bash
 gh issue view <n> --comments
-gh project item-list 8 --owner chalharb --format json --limit 200 \
+gh project item-list 8 --owner chalharb --format json --limit 500 \
   -q '.items[] | select(.content.number == <n>) | {status, priority, model}'
 ```
 

@@ -42,7 +42,7 @@ Before 2026-11-27, specs and tickets were Markdown files under `.scratch/`, then
 
 `Model` options: `fable` `c02e5f28` (strongest judgment: architecture, ambiguous specs, hard trade-offs), `opus` `52f568ac` (bugs with an unknown cause, performance, changes across modules), `sonnet` `96f1cf36` (well-specified features and refactors), `haiku` `ef7387b3` (mechanical edits: renames, copy changes, config).
 
-An issue's project item id: `gh project item-list 8 --owner chalharb --format json -q '.items[] | select(.content.number == <n>) | .id'`.
+An issue's project item id: `gh project item-list 8 --owner chalharb --format json --limit 500 -q '.items[] | select(.content.number == <n>) | .id'`.
 
 ## When a skill says "publish to the issue tracker"
 
