@@ -10,6 +10,6 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 | `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
 | `wontfix`                  | `wontfix`            | Will not be actioned                     |
 
-The tracker's `Status` property holds these roles plus two progress states: `in-progress` (claimed, being worked) and `Done` (its PR merged).
+They are options of the Archidocs Project's `Status` field, not issue labels, alongside three progress states: `in-progress` (claimed, being worked), `in-review` (PR open) and `done` (PR merged).
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
