@@ -5,12 +5,14 @@ name: Release
 # semantic-release (release.config.mjs; why in docs/adr/0002-beta-branch-with-semantic-release.md)
 # reads the Conventional Commit titles since the branch's last release (fix → patch, feat → minor,
 # `!` or BREAKING CHANGE → major) and, if any calls for one, releases:
-#   - `beta`: X.Y.Z-beta.N to the npm `beta` dist-tag, a vX.Y.Z-beta.N tag and a GitHub
-#     prerelease. Nothing is committed back, `v1` stays put and no production site deploys.
-#   - `main`: X.Y.Z to `latest`, the vX.Y.Z tag and a GitHub Release. Once the published package
-#     passes the smoke check, `v1` moves to it (the docs tell people to use the Action as
+#   - `beta`: X.Y.Z-beta.N to the npm `beta` dist-tag, package.json committed back as
+#     `chore(release): X.Y.Z-beta.N [skip ci]`, the vX.Y.Z-beta.N tag on that commit and a GitHub
+#     prerelease. `v1` stays put and no production site deploys.
+#   - `main`: X.Y.Z to `latest`, package.json committed back as `chore(release): X.Y.Z [skip ci]`,
+#     the vX.Y.Z tag on that commit and a GitHub Release. Once the published package passes the
+#     smoke check, `v1` moves to it (the docs tell people to use the Action as
 #     `chalharb/archidocs@v1` and the GitLab template from `v1`).
-# Neither channel commits anything back, so `main` stays an ancestor of `beta`.
+# There is no changelog file: release notes live in GitHub Releases.
 # Every passing push to `main` deploys the docs and demo sites to production, from the release tag
 # when one was published (after its smoke check), otherwise from the commit CI tested.
 #
@@ -24,7 +26,7 @@ name: Release
 # stable releases don't (see the release step).
 #
 # RELEASE_TOKEN (a GitHub App token or fine-grained PAT with contents write) is required: it pushes
-# the release tags past the repo's rulesets.
+# the release commits past the repo's rulesets.
 on:
   workflow_run:
     workflows: [CI]
@@ -158,7 +160,7 @@ jobs:
 
   sites:
     # Every passing push to `main` deploys production. After a release, it waits for the smoke check
-    # and deploys the release tag; otherwise it deploys the
+    # and deploys the release tag, whose commit carries the new version; otherwise it deploys the
     # commit CI tested. Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see sites.yml); each
     # wrangler.jsonc holds its Worker and Custom Domains.
     needs: [release, smoke]

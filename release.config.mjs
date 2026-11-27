@@ -4,8 +4,10 @@
 // - `main` releases X.Y.Z to the npm `latest` dist-tag.
 // - `beta` releases X.Y.Z-beta.N to the npm `beta` dist-tag.
 //
-// Neither channel commits anything back to git: the tag marks the commit that was released, and
-// the release notes live in GitHub Releases (https://github.com/chalharb/archidocs/releases).
+// Both channels commit package.json with the released version as `chore(release): X.Y.Z [skip ci]`
+// and tag that commit, so the file in git is right at every release tag: the CLI reads
+// package.json at runtime. There is no changelog file; release notes live in GitHub Releases
+// (https://github.com/chalharb/archidocs/releases).
 //
 // Both publish to npm with trusted publishing (OIDC, no token) and make a GitHub Release, marked
 // as a prerelease on `beta`. The version comes from the Conventional Commit titles since the last
@@ -26,7 +28,7 @@ const types = [
 ];
 const conventional = { preset: "conventionalcommits", presetConfig: { types } };
 
-// Tells the workflow what was released: its smoke check, `v1` tag, and site deploys read these.
+// Tells the workflow what was released: its smoke check, `v1` tag and site deploys read these.
 const outputs = [
   "@semantic-release/exec",
   {
@@ -41,6 +43,7 @@ export default {
     ["@semantic-release/commit-analyzer", conventional],
     ["@semantic-release/release-notes-generator", conventional],
     "@semantic-release/npm",
+    ["@semantic-release/git", { assets: ["package.json"], message: "chore(release): ${nextRelease.version} [skip ci]" }],
     ["@semantic-release/github", { successComment: false, releasedLabels: false }],
     outputs,
   ],
