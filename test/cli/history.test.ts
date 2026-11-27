@@ -233,4 +233,16 @@ describe("archidocs history build", () => {
     expect(unknown.code).toBe(2);
     expect(unknown.stderr).toBe('archidocs: Unknown ref or date "nope"; a date names the last Revision at or before it.\n');
   });
+
+  it("drops from the index a Revision that a reset took off the branch, when nothing needed building", async () => {
+    const { repo, first, third } = await repoWithHistory();
+    await archidocs(repo.repoRoot, "history", "build");
+    repo.git("reset", "--quiet", "--hard", "HEAD~1");
+
+    const { stdout } = await archidocs(repo.repoRoot, "history", "build");
+
+    expect(stdout).toBe("Built 0 Revisions; 2 of 2 already built.\n");
+    const index = JSON.parse(await readFile(join(repo.repoRoot, ".archidocs/cache/bundles/index.json"), "utf8"));
+    expect(index.revisions.map((r: { sha: string }) => r.sha)).toEqual([third, first]);
+  });
 });
