@@ -1503,10 +1503,6 @@ select.arc-tool option {
   max-width: 65ch;
 }
 
-.arc-technology {
-  color: var(--muted);
-}
-
 .arc-panel-body h3 {
   margin: 20px 0 8px;
   font-size: 11px;
@@ -1539,6 +1535,53 @@ select.arc-tool option {
 
 .arc-facts dd {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The Overview's facts end with a gap before the questions below them. */
+.arc-facts + .arc-actions,
+.arc-panel-body section:has(> .arc-facts) + .arc-actions {
+  margin-top: 16px;
+}
+
+.arc-panel-body .arc-fact-list li {
+  padding: 0 0 4px;
+}
+
+.arc-panel-body .arc-fact-list li:last-child {
+  padding-bottom: 0;
+}
+
+/* An Element's description is Markdown: undo the panel's list and heading styles inside it. */
+.arc-description > :first-child {
+  margin-top: 0;
+}
+
+.arc-description > :last-child {
+  margin-bottom: 0;
+}
+
+.arc-panel-body .arc-description ul,
+.arc-panel-body .arc-description ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.arc-panel-body .arc-description ul {
+  list-style: disc;
+}
+
+.arc-panel-body .arc-description li {
+  padding: 2px 0;
+}
+
+.arc-panel-body .arc-description :is(h3, h4, h5, h6) {
+  margin: 14px 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .arc-owner,

@@ -34,6 +34,7 @@ describe("Element tree", () => {
       owner: "storefront-team",
       tags: ["customer"],
       links: [],
+      metadata: {},
       source: { file: "archidocs/shop/people.yaml", line: 2 },
     });
     expect(byId("shop:psp")).toEqual(expect.objectContaining({ kind: "system", external: true }));
@@ -41,6 +42,45 @@ describe("Element tree", () => {
     expect(byId("shop:cart")).toEqual(expect.objectContaining({ type: "app", technology: "Go", external: false }));
     expect(byId("shop:cart-store")).toEqual(expect.objectContaining({ kind: "component", technology: "Redis" }));
     expect(byId("shop:cart-store")).not.toHaveProperty("external");
+    expect(byId("shop:shopper")).not.toHaveProperty("repository");
+  });
+
+  it("carries a repository and free-form metadata, values as strings in declared order", async () => {
+    const { bundle, issues } = await loadWorkspace({
+      ...elementTreeWorkspace,
+      "shop/web.yaml": `services:
+  web:
+    name: Web
+    repository: https://github.com/acme/web
+    metadata:
+      tier: 1
+      on-call: storefront-oncall
+      pci: false
+`,
+    });
+
+    expect(issues).toEqual([]);
+    const web = bundle.elements.find((e) => e.id === "shop:web");
+    expect(web).toEqual(expect.objectContaining({ repository: "https://github.com/acme/web", metadata: { tier: "1", "on-call": "storefront-oncall", pci: "false" } }));
+    expect(Object.keys(web!.metadata)).toEqual(["tier", "on-call", "pci"]);
+  });
+
+  it("reports a repository that is not a URL and a metadata value that is not a scalar", async () => {
+    const { issues } = await loadWorkspace({
+      ...elementTreeWorkspace,
+      "shop/web.yaml": `services:
+  web:
+    name: Web
+    repository: acme/web
+    metadata:
+      owners: [a, b]
+`,
+    });
+
+    expect(issues.map((i) => [i.line, i.rule])).toEqual([
+      [4, "invalid-value"],
+      [6, "invalid-value"],
+    ]);
   });
 
   it("keeps an Element's id when it is re-parented", async () => {

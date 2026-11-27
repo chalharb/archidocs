@@ -328,6 +328,9 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
   const str = (v: unknown) => (typeof v === "string" ? v : null);
   const links = (v: unknown) =>
     Array.isArray(v) ? v.map(asRecord).map((l) => ({ label: String(l.label ?? ""), url: String(l.url ?? "") })) : [];
+  // Scalars only, as strings; a nested value is a schema finding and is left out here.
+  const metadata = (v: unknown) =>
+    Object.fromEntries(Object.entries(asRecord(v)).flatMap(([k, x]) => (["string", "number", "boolean"].includes(typeof x) ? [[k, String(x)]] : [])));
   const byId = <T extends { id: string }>(a: T, b: T) => cmp(a.id, b.id);
   const projects = ws.projects.filter((p): p is Project & { id: string } => p.id !== undefined && !p.duplicateOf);
 
@@ -343,19 +346,21 @@ function toBundle(ws: LoadedWorkspace, options: LoadOptions): Bundle {
         owner: str(d.owner) ?? e.project.owner ?? "",
         tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
         links: links(d.links),
+        metadata: metadata(d.metadata),
         source: source(e),
       };
       const external = d.external === true;
       const technology = str(d.technology);
+      const repository = str(d.repository);
       switch (e.kind) {
         case "person":
           return { ...common, kind: e.kind };
         case "system":
-          return { ...common, kind: e.kind, external };
+          return { ...common, kind: e.kind, external, repository };
         case "service":
-          return { ...common, kind: e.kind, type: (["app", "datastore", "broker"] as const).find((t) => t === d.type) ?? "app", technology, external };
+          return { ...common, kind: e.kind, type: (["app", "datastore", "broker"] as const).find((t) => t === d.type) ?? "app", technology, external, repository };
         case "component":
-          return { ...common, kind: e.kind, technology };
+          return { ...common, kind: e.kind, technology, repository };
       }
     });
 

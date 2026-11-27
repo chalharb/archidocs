@@ -381,6 +381,21 @@
             "$ref": "#/$defs/Link"
           }
         },
+        "metadata": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "description": "Free-form facts about the Element that the Model has no field for, such as `tier: 1` or `on-call: payments-oncall`. Keys are labels, shown as written; values are strings, numbers or booleans. Nothing in the Model reads them: they are shown in the viewer and returned by the MCP server."
+        },
         "relationships": {
           "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
           "type": "array",
@@ -500,6 +515,21 @@
             "$ref": "#/$defs/Link"
           }
         },
+        "metadata": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "description": "Free-form facts about the Element that the Model has no field for, such as `tier: 1` or `on-call: payments-oncall`. Keys are labels, shown as written; values are strings, numbers or booleans. Nothing in the Model reads them: they are shown in the viewer and returned by the MCP server."
+        },
         "relationships": {
           "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
           "type": "array",
@@ -510,6 +540,11 @@
         "external": {
           "description": "`true` for a System run outside the organization, such as a payment provider. Nothing inside an External System can declare Components. Default: `false`.",
           "type": "boolean"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer."
         },
         "services": {
           "description": "The Services in the System, keyed by id.",
@@ -560,6 +595,21 @@
             "$ref": "#/$defs/Link"
           }
         },
+        "metadata": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "description": "Free-form facts about the Element that the Model has no field for, such as `tier: 1` or `on-call: payments-oncall`. Keys are labels, shown as written; values are strings, numbers or booleans. Nothing in the Model reads them: they are shown in the viewer and returned by the MCP server."
+        },
         "relationships": {
           "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
           "type": "array",
@@ -579,6 +629,11 @@
         "technology": {
           "description": "What the Service is built with, such as `Go` or `PostgreSQL`. Shown under its name.",
           "type": "string"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer."
         },
         "external": {
           "description": "`true` for a Service run outside the organization, such as a payment provider's API. An External Service can't declare Components. Default: `false`.",
@@ -638,6 +693,21 @@
             "$ref": "#/$defs/Link"
           }
         },
+        "metadata": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "description": "Free-form facts about the Element that the Model has no field for, such as `tier: 1` or `on-call: payments-oncall`. Keys are labels, shown as written; values are strings, numbers or booleans. Nothing in the Model reads them: they are shown in the viewer and returned by the MCP server."
+        },
         "relationships": {
           "description": "The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider.",
           "type": "array",
@@ -648,6 +718,11 @@
         "technology": {
           "description": "What the Component is built with, such as `TypeScript module`. Shown under its name.",
           "type": "string"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer."
         },
         "in": {
           "description": "The Service this Component belongs to, as an id in this Project. Required for a Component under the top-level `components` key, and not allowed for one nested under a Service's `components`.",

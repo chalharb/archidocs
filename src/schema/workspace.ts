@@ -84,6 +84,16 @@ export const Relationship = z
     description: "A Relationship: a dependency of the Element it is declared under (the consumer) on the Element `to` names (the provider). Declare it once, under the consumer.",
   });
 
+/** An Element's free-form facts: what a team wants to record that the Model has no field for. */
+export const Metadata = z
+  .record(z.string().min(1), z.union([z.string(), z.number(), z.boolean()]))
+  .describe(
+    "Free-form facts about the Element that the Model has no field for, such as `tier: 1` or `on-call: payments-oncall`. Keys are labels, shown as written; values are strings, numbers or booleans. Nothing in the Model reads them: they are shown in the viewer and returned by the MCP server.",
+  );
+
+/** A link to the source code repository of a System, Service or Component. */
+const Repository = z.url().describe("The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer.");
+
 /** The fields every kind of Element takes. */
 const elementFields = {
   name: z.string().describe("The Element's display name."),
@@ -93,6 +103,7 @@ const elementFields = {
   ),
   tags: z.array(z.string()).optional().describe("Free-form labels. A Saved View's `{tag}` selector picks Elements by them."),
   links: z.array(Link).optional().describe("Links to pages about the Element, such as a runbook or a dashboard."),
+  metadata: Metadata.optional(),
   relationships: z.array(Relationship).optional().describe("The Relationships this Element is the consumer of: what it depends on. A Relationship is never declared under its provider."),
 };
 
@@ -106,6 +117,7 @@ export const Component = z
   .strictObject({
     ...elementFields,
     technology: z.string().optional().describe("What the Component is built with, such as `TypeScript module`. Shown under its name."),
+    repository: Repository.optional(),
     in: Id.optional().describe(
       "The Service this Component belongs to, as an id in this Project. Required for a Component under the top-level `components` key, and not allowed for one nested under a Service's `components`.",
     ),
@@ -122,6 +134,7 @@ export const Service = z
         "What the Service is; each type is drawn differently. `app`: an application, the usual case. `datastore`: a database or other store. `broker`: a message broker that async Relationships run through, named by their `via`. Default: `app`.",
       ),
     technology: z.string().optional().describe("What the Service is built with, such as `Go` or `PostgreSQL`. Shown under its name."),
+    repository: Repository.optional(),
     external: z.boolean().optional().describe("`true` for a Service run outside the organization, such as a payment provider's API. An External Service can't declare Components. Default: `false`."),
     in: Id.optional().describe(
       "The System this Service belongs to, as an id in this Project. Only for a Service under the top-level `services` key, and not allowed for one nested under a System's `services`. Without it, a top-level Service stands outside any System.",
@@ -134,6 +147,7 @@ export const System = z
   .strictObject({
     ...elementFields,
     external: z.boolean().optional().describe("`true` for a System run outside the organization, such as a payment provider. Nothing inside an External System can declare Components. Default: `false`."),
+    repository: Repository.optional(),
     services: z.record(Id, Service).optional().describe("The Services in the System, keyed by id."),
   })
   .meta({ id: "System", title: "System", description: "A System: a named grouping of Services that together deliver a business capability. Systems do not nest." });

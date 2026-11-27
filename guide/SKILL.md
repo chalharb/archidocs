@@ -13,8 +13,8 @@ The CLI commands in this guide, such as `archidocs check`, assume a global insta
 
 ## The Model
 
-- **Elements**: Person, System, Service, Component. Nesting is strict: System › Service › Component; a Service may sit outside any System; Persons are top-level. Every Element has `name`, and optionally `description`, `owner`, `tags`, `links`.
-  - Service adds `type` (`app` by default, `datastore`, `broker`), `technology`, `external`. System adds `external`. Component adds `technology`.
+- **Elements**: Person, System, Service, Component. Nesting is strict: System › Service › Component; a Service may sit outside any System; Persons are top-level. Every Element has `name`, and optionally `description` (Markdown), `owner`, `tags`, `links`, `metadata` (a free-form `key: value` map for facts the Model has no field for, such as `tier: 1`).
+  - Service adds `type` (`app` by default, `datastore`, `broker`), `technology`, `external`, `repository`. System adds `external`, `repository`. Component adds `technology`, `repository`. `repository` is the source code URL; use it rather than a `Repository` link.
   - An External System or Service runs outside the organization and has no declared Components.
 - **Relationships** sit under their consumer and point `to` the provider it depends on. Edges between higher-level Elements are derived, never declared.
 - **Ownership**: one Owner Team per Element, defaulting to the Project's `owner`. Set `owner` only when it differs.

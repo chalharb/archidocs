@@ -48,6 +48,10 @@ _Avoid_: Platform, domain, product (unless meaning the business product)
 Said of a System or Service run outside the organization, such as a payment provider; its Owner is the Team accountable for the integration.
 _Avoid_: Third-party, vendor (as a kind)
 
+**Metadata**:
+An Element's free-form facts, as `key: value` pairs, for what a Team wants to record that the Model has no field for, such as a tier or an on-call rota; shown and returned, never reasoned about.
+_Avoid_: Properties, attributes, custom fields
+
 **Model**:
 The single source of truth: every Element and Relationship in a Workspace.
 _Avoid_: Diagram, graph (when meaning the source of truth)

@@ -27,6 +27,18 @@ Elements are declared in any file of a Project, keyed by id, with children under
 
 Every Element has a name and an [Owner](/docs/reference/glossary/#term-owner), the one Team accountable for it. A Service also has a `type` that says what kind of software it is, such as a datastore or a message broker, and each type is drawn differently. The [Elements and Relationships reference](/docs/reference/model/model-yaml/) lists every field.
 
+## Describing an Element
+
+Besides its name and Owner, an Element can say more about itself. The viewer's Element panel shows each of these on its **Overview** tab:
+
+- `description`: what the Element is or does, in [Markdown](https://commonmark.org/help/): emphasis, code, lists and links.
+- `technology` (Services and Components): what it is built with, such as `Go` or `PostgreSQL`.
+- `repository` (Systems, Services and Components): the URL of the repository its code lives in.
+- `links`: other pages about it, such as a runbook or a dashboard, each with a `label`.
+- `metadata`: [free-form facts](/docs/reference/glossary/#term-metadata) the Model has no field for, such as a tier or an on-call rota, as `key: value` pairs. Nothing in the Model reads them; they are there for people and agents to look up.
+
+The Kitchen sink's API, in the Shop System above, uses all of them.
+
 ## Nesting
 
 Nesting is strict. Systems don't nest in Systems, and Components don't nest in Components. A Service may also stand outside any System, as the Kitchen sink's Search does.
@@ -54,6 +66,7 @@ Each level is drawn from the same Elements. A diagram never adds an Element of i
 - **Fixed kinds.** Every Workspace has the same four kinds, so a C2 diagram means the same thing in every organization. An agent knows what a Service is without reading a custom schema.
 - **Strict nesting gives the levels.** Because a Component is always inside a Service and a Service inside at most one System, the viewer can collapse any diagram to C1, C2 or C3 without asking how.
 - **External is a flag, not a kind.** An External Service is still a Service: other Elements depend on it, and impact questions reach it. The flag only says that its inside is out of view.
+- **`repository` is a field, not a link.** A link labeled "Repository" is a convention nothing checks, so an agent asking where a Service's code lives would have to guess the label. `metadata` takes the rest, so a Team's own facts never need a new field.
 - **Ids don't depend on nesting.** Moving a Service into another System keeps its id, so nothing that refers to it breaks.
 
 ## Related
