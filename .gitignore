@@ -7,3 +7,4 @@ playwright-report/
 examples/big-bank/site/
 examples/kitchen-sink/site/
 .wrangler/
+.scratch/

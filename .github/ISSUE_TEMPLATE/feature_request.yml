@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest something Archidocs should do.
-labels: ["enhancement"]
+type: Request
 body:
   - type: textarea
     id: problem

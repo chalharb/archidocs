@@ -10,7 +10,7 @@ web
 
 People across an engineering organisation who need a trustworthy answer to one architecture question, usually arriving in the viewer from a link shared in a pull request, a chat thread or an incident channel. They must orient fast and leave with the answer. This audience wins when design choices conflict.
 
-The six persona questions the viewer must answer (from `.scratch/archidocs-v1/spec.md`):
+The six persona questions the viewer must answer (from the [archidocs-v1 spec](https://github.com/chalharb/archidocs/blob/2ada153523e46f6f5f9ce1700678f431c7b5cdb0/.scratch/archidocs-v1/spec.md)):
 
 - **Enterprise Architect:** how are two Services connected?
 - **Solutions Architect:** where is a Service deployed?
@@ -39,7 +39,7 @@ The diagrams are generated from the validated Model at a commit, never drawn by 
 ## Capabilities and Constraints
 
 - Terms follow `GLOSSARY.md` (Workspace, Project, Element, Person, System, Service, Component, External, Relationship, Team, Environment, Deployment Target, Revision, Lens, Saved View).
-- Viewer shell and behaviour are settled by ticket 14 (`.scratch/archidocs-v1/issues/14-viewer-ux.md`, variant D "Explorer, focused"): rail with Find, Model, Teams and Views flyouts; location bar with breadcrumbs, chips, back/forward, Recent and Copy link; canvas; Element panel shown only while something is selected.
+- Viewer shell and behaviour are settled by ticket 14 ([`archidocs-v1/issues/14-viewer-ux.md`](https://github.com/chalharb/archidocs/blob/2ada153523e46f6f5f9ce1700678f431c7b5cdb0/.scratch/archidocs-v1/issues/14-viewer-ux.md), variant D "Explorer, focused"): rail with Find, Model, Teams and Views flyouts; location bar with breadcrumbs, chips, back/forward, Recent and Copy link; canvas; Element panel shown only while something is selected.
 - Team colour is a generated OKLCH palette (golden-angle hues), shown as a stripe on the node and always paired with the Team code (ticket 14).
 - Layout is automatic (elkjs, `BRANDES_KOEPF`), direction `TB | BT | LR | RL`; animated transitions on up to 100 nodes, always off under `prefers-reduced-motion`.
 - The viewer is read-only; it never writes to the Workspace repo.

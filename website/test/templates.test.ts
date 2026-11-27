@@ -8,7 +8,7 @@
  * - a page that is NOT on its list breaks the rule: fix the page, never add it to the list;
  * - a page that IS on its list now passes, or is gone: remove it from the list.
  *
- * So a list can only shrink. Tickets 06 and 08 of `.scratch/docs-rewrite/`
+ * So a list can only shrink. Tickets 06 and 08 of the docs-rewrite feature (archived in `.scratch/` at 2ada153)
  * empty them, and after that every list stays empty.
  */
 import { readdirSync, readFileSync } from "node:fs";

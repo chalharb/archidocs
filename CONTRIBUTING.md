@@ -8,7 +8,8 @@ To report a security problem, don't open an issue. Follow [SECURITY.md](SECURITY
 
 - **A question:** open an [issue](https://github.com/chalharb/archidocs/issues/new). Check [Troubleshooting](https://archidocs.dev/docs/help/troubleshooting/) and the [FAQ](https://archidocs.dev/docs/help/faq/) first.
 - **A bug:** open a [bug report](https://github.com/chalharb/archidocs/issues/new?template=bug_report.yml). Say which CLI version you ran, the command, and what it printed.
-- **An idea:** open a [feature request](https://github.com/chalharb/archidocs/issues/new?template=feature_request.yml). Say what you were trying to do before how Archidocs should do it.
+- **An accessibility barrier:** open a [bug report](https://github.com/chalharb/archidocs/issues/new?template=bug_report.yml&labels=accessibility) with the `accessibility` label. [ACCESSIBILITY.md](ACCESSIBILITY.md) says what we aim for and what we know falls short.
+- **An idea:** open a [feature request](https://github.com/chalharb/archidocs/issues/new?template=feature_request.yml). Say what you were trying to do before how Archidocs should do it. It's filed as a **Request** and triaged: planned as a Feature, made into a Task, or closed with the reason why.
 
 ## Set up
 
@@ -63,7 +64,7 @@ The other commands, the page templates and the style rules are in [website/READM
 2. Make one change per pull request, with tests for it.
 3. Run the checks above that cover what you changed.
 4. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and `CHANGELOG.md` are made from them. Don't edit the changelog by hand.
-5. Open the pull request against `beta`. Say what changed and why, and link the issue or ticket it closes. It is squash-merged, so its title becomes the commit message.
+5. Open the pull request against `beta`, and fill in the [template](.github/pull_request_template.md): `Closes #<n>`, What changed, Why, Verification and For reviewers. It is squash-merged, so its title becomes the commit message.
 
 ## How releases work
 
@@ -82,13 +83,14 @@ Releases are made by [semantic-release](https://semantic-release.gitbook.io/) (`
 
 ## How work is tracked
 
-Bugs and requests from users arrive as GitHub issues. Planned work is tracked in the repo, as Markdown files under `.scratch/`:
+Everything is tracked in GitHub issues, on the [Archidocs Project](https://github.com/users/chalharb/projects/8):
 
-- Each feature has a folder, `.scratch/<feature>/`, with its spec in `spec.md`.
-- The spec is split into tickets, one file each: `.scratch/<feature>/issues/<NN>-<slug>.md`.
-- A `Status:` line near the top of each ticket says where it stands.
-- Comments on a ticket go at the bottom of its file, under `## Comments`.
-- When a pull request implements a ticket, it sets the ticket's `Status: done` in the same change.
+- Bugs and requests from users arrive as issues of type **Bug** and **Request**.
+- Planned work follows Epic → Feature → Task. A **Feature** issue holds the feature's spec, with its user stories; its **Tasks** are sub-issues, one per pull request. An **Epic** groups several Features.
+- An issue's **Status** on the Project says where it stands; the board's columns are the statuses.
+- A pull request that implements a Task says `Closes #<n>`, and the Task closes when it merges.
+
+Specs and tickets from before the move were Markdown files under `.scratch/`. They're in git at [`.scratch/` @ 2ada153](https://github.com/chalharb/archidocs/tree/2ada153/.scratch).
 
 The conventions are in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) and [docs/agents/triage-labels.md](docs/agents/triage-labels.md). Design and product notes are in [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md).
 

@@ -1,6 +1,6 @@
 name: Bug report
 description: Something in the CLI, the viewer, the MCP server or the docs doesn't work as it should.
-labels: ["bug"]
+type: Bug
 body:
   - type: markdown
     attributes:
