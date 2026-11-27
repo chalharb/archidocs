@@ -1,43 +1,5 @@
 # Changelog
 
-## [1.4.0](https://github.com/chalharb/archidocs/compare/v1.3.3...v1.4.0) (2026-11-27)
-
-### Features
-
-* **deployments:** show scaled Deployments as a stack with a count chip ([654d3cb](https://github.com/chalharb/archidocs/commit/654d3cb8db3fd610435735294765a691b92b190a))
-* **gaps:** list_gaps MCP tool and archidocs gaps command ([7337f06](https://github.com/chalharb/archidocs/commit/7337f06d718452c903804a5db6c71160e8769970))
-* **gaps:** list_gaps MCP tool and archidocs gaps command ([#139](https://github.com/chalharb/archidocs/issues/139)) ([d755813](https://github.com/chalharb/archidocs/commit/d75581336b54cacb67e27f4fdd1bfe496fe72d3f))
-* **guide:** consult skill for checking the Model while changing code ([ef9f9de](https://github.com/chalharb/archidocs/commit/ef9f9de3afc59dc74bebd5c7b6eb8bdcef5274da))
-* **guide:** consult skill for checking the Model while changing code ([#143](https://github.com/chalharb/archidocs/issues/143)) ([388d7ad](https://github.com/chalharb/archidocs/commit/388d7adf6ecd8870f39a013019fea38cfe4309e0))
-* **guide:** describe skill builds the Model from the user's prose ([83cfdb8](https://github.com/chalharb/archidocs/commit/83cfdb8507b1d9d9ada26367fa5a23cdc5e2a113))
-* **guide:** describe skill builds the Model from the user's prose ([#141](https://github.com/chalharb/archidocs/issues/141)) ([cac9641](https://github.com/chalharb/archidocs/commit/cac9641656d412f9cdf47af1a3a562619054626d))
-* **guide:** fill-gaps is a skill of its own, scanning with list_gaps ([e9fe27d](https://github.com/chalharb/archidocs/commit/e9fe27da346504dd99ca98d81e335e12e3f3a8c7))
-* **guide:** fill-gaps is a skill of its own, scanning with list_gaps ([#142](https://github.com/chalharb/archidocs/issues/142)) ([fa3e34c](https://github.com/chalharb/archidocs/commit/fa3e34c2de2a1af1336d1e67de90f7a779338fba))
-* **guide:** load any skill's guide with get_guide and guide --skill ([2c79f21](https://github.com/chalharb/archidocs/commit/2c79f21d926c702ee00c99ad26260765bea2d334))
-* **guide:** load any skill's guide with get_guide and guide --skill ([#140](https://github.com/chalharb/archidocs/issues/140)) ([2ab6963](https://github.com/chalharb/archidocs/commit/2ab696343a6451d55619c015609c78dc9a3ea42e))
-* **model:** Element repository and metadata, structured Element panel ([#133](https://github.com/chalharb/archidocs/issues/133)) ([7a1fcb1](https://github.com/chalharb/archidocs/commit/7a1fcb17b1d5f5c0a93009d7f25b2014d4386e4b))
-* **model:** give Elements a repository and free-form metadata, and lay them out in the Element panel ([f5776ee](https://github.com/chalharb/archidocs/commit/f5776eedee32b7c33f644fdcaed24468089830fb))
-* **viewer:** export a Dynamic View as SVG or PNG ([252a051](https://github.com/chalharb/archidocs/commit/252a051e1be700e5e337ca5f3ddf831946d2f73d))
-* **viewer:** fold the Key by default and explain the View's icons ([8f8ebe3](https://github.com/chalharb/archidocs/commit/8f8ebe3070ee540532052dd9764c86e5080c5a43))
-* **viewer:** light a hovered edge and its two ends ([6feb3fd](https://github.com/chalharb/archidocs/commit/6feb3fd253099ca52d8acc7175d389e609f42563))
-* **viewer:** shade nested Deployment Targets by depth ([d689087](https://github.com/chalharb/archidocs/commit/d6890875d8b120a02ad5908c271a4b50624a0a79))
-* **viewer:** show an edge's Relationships in a sidebar ([380e8cd](https://github.com/chalharb/archidocs/commit/380e8cd1711eb393354721f4644c53b4dbeb6cdf))
-* **viewer:** show an edge's Relationships in a sidebar ([#132](https://github.com/chalharb/archidocs/issues/132)) ([ee01e30](https://github.com/chalharb/archidocs/commit/ee01e307cd0109acd2adbec31efd71aa512a556a))
-* **views:** open every System on the C2 Landscape, and drill down from C1 one level ([aa1f507](https://github.com/chalharb/archidocs/commit/aa1f507b1f0503b00738f97b447898560b69385d))
-
-### Bug fixes
-
-* **dev:** batch rebuilds and swap the Bundle in place ([2cfc90a](https://github.com/chalharb/archidocs/commit/2cfc90ac79be13c921eee92fd538604f6681aaa9))
-* **dev:** close idle keep-alive sockets when the dev server closes ([943e31d](https://github.com/chalharb/archidocs/commit/943e31d490b50e347a6d16327aa93b08fed59a98))
-* **render:** orient arrowheads with plain auto ([d9446fa](https://github.com/chalharb/archidocs/commit/d9446fa1b259916b602b841f9a9659ab9a0cfa92))
-* **render:** orient arrowheads with plain auto ([#131](https://github.com/chalharb/archidocs/issues/131)) ([f48e0df](https://github.com/chalharb/archidocs/commit/f48e0df8e2413c6180de6f35b03c2391eb32686a))
-* **render:** size sequence headers to fit their whole names ([0ce963d](https://github.com/chalharb/archidocs/commit/0ce963d8acebdd31606c2e363e434b7dffb40daf))
-* **viewer:** draw edges over open boxes so they can be hovered ([f667520](https://github.com/chalharb/archidocs/commit/f6675201facdd7953e9d3f862c93cf2b3fe4880f))
-* **viewer:** open the C1 Landscape as home ([8fe6a90](https://github.com/chalharb/archidocs/commit/8fe6a90837e70b11e4986e7698be20b8d47ebbf6))
-* **viewer:** orient the canvas's arrowheads with plain auto ([6789b88](https://github.com/chalharb/archidocs/commit/6789b884103e8d0c82cc7900f80e54e04c677b20))
-* **viewer:** remember the Key's toggle as the click lands ([7e2526f](https://github.com/chalharb/archidocs/commit/7e2526fd8265b53caa0d1b8efcd6c957f1de1323))
-* **writer:** read no YAML style from a block scalar's text ([47297ee](https://github.com/chalharb/archidocs/commit/47297ee7e9e4228c7c14b7f0a46ebedd62362c96))
-
 ## [1.3.3](https://github.com/chalharb/archidocs/compare/v1.3.2...v1.3.3) (2026-11-26)
 
 ### Bug fixes
