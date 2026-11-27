@@ -32,7 +32,7 @@ An issue's project item id: `gh project item-list 8 --owner chalharb --format js
 
 ## When a skill says "publish to the issue tracker"
 
-- **A spec:** `gh issue create --title "Spec: <feature>" --body-file spec.md`, then set its type to `Spec` (below). Add it to the project with `gh project item-add 8 --owner chalharb --url <issue url>`, and set `Feature`. Add the feature as a `Feature` option first if it's new.
+- **A spec:** `gh issue create --title "Spec: <feature>" --body-file spec.md`, then set its type to `Spec` (below). Add it to the project with `gh project item-add 8 --owner chalharb --url <issue url>`, and set `Feature`, `Model` and `Status` (see Spec status, below). Add the feature as a `Feature` option first if it's new.
 - **Tickets:** one issue per ticket, never one combined issue. Create each with `gh issue create`, set its type to `Task`, attach it to the spec as a sub-issue, add it to the project, and set `Status`, `Feature` and `Model`. Create blockers first, then add the "blocked by" links.
 
 Setting a type (an issue's `node_id` comes from `gh api repos/chalharb/archidocs/issues/<n> -q .node_id`):
@@ -61,7 +61,7 @@ The user normally passes an issue number or URL: `gh issue view <n> --comments`.
 - **Branch and PR:** put the issue number in the branch name (`161-init-stubs`). The PR body says `Closes #<n>`.
 - **Comments:** progress notes, manual-check results and questions go in issue comments.
 - **Done:** merging the PR closes the issue, and the Project's workflow moves it to `done`. An unmerged PR means the ticket isn't done. A ticket that waits on the maintainer stays open, with a comment saying what's left.
-- **Spec done:** close the spec issue when its last sub-issue closes.
+- **Spec status:** a spec's (or map's) `Status` follows its tickets. It starts as its first ticket's status, usually `ready-for-agent`, moves to `in-progress` when any ticket is claimed or closed, and goes to `done` when its last sub-issue closes: close the spec issue then.
 
 ## Wayfinding operations
 
