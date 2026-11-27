@@ -107,10 +107,10 @@ function Chart({ workspace, layout, fitKey, selected, playing, reducedMotion, on
     >
       <svg className="arc-defs" aria-hidden="true">
         <defs>
-          <marker id="arc-head-filled" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <marker id="arc-head-filled" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" className="arc-head" />
           </marker>
-          <marker id="arc-head-open" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <marker id="arc-head-open" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
             <path d="M0,0 L10,5 L0,10" className="arc-head-open" />
           </marker>
         </defs>

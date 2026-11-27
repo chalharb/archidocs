@@ -73,8 +73,8 @@ export function renderSequenceSvg({ bundle, view, source, brokers = false, theme
 
 /** Arrowheads: filled for sync calls, open for async and returns. */
 export const heads = (fill: string) =>
-  `<marker id="head-filled" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${fill}"/></marker>` +
-  `<marker id="head-open" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10" fill="none" stroke="${fill}" stroke-width="1.5"/></marker>`;
+  `<marker id="head-filled" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${fill}"/></marker>` +
+  `<marker id="head-open" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10" fill="none" stroke="${fill}" stroke-width="1.5"/></marker>`;
 
 const lifeline = (c: Palette, x: number, layout: SequenceLayout) =>
   `<path d="M${fmt(x)},${HEADER_BOX} L${fmt(x)},${fmt(layout.height - 10)}" fill="none" stroke="${c.faint}" stroke-dasharray="3 4"/>`;

@@ -244,7 +244,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         source: e.from,
         target: e.to,
         type: "route",
-        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, orient: "auto" },
         selectable: false,
         zIndex: edgeZ,
         data: {
@@ -336,7 +336,14 @@ function Key({ lens, icons, scaled }: { lens: boolean; icons: { icon: IconName; 
         writeKeyOpen(next);
       }}
     >
-      <summary>Key</summary>
+      <summary
+        onClick={(e) => {
+          // Remembered here, as the click lands: the toggle event comes a task later, and a reload can beat it.
+          writeKeyOpen(!(e.currentTarget.parentElement as HTMLDetailsElement).open);
+        }}
+      >
+        Key
+      </summary>
       {icons.length > 0 && (
         <ul className="arc-key-icons" aria-label="Icons">
           {icons.map(({ icon, label }) => (

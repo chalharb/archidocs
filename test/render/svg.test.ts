@@ -57,6 +57,13 @@ describe("renderSvg", () => {
     expect(seen).toContain("Datastore");
   });
 
+  it("orients arrowheads with plain `auto`, which every viewer supports", async () => {
+    // Some browsers ignore `auto-start-reverse` and point every head east, half hidden under the box it reaches.
+    const svg = await render(workspace, "c2/shop:checkout");
+
+    expect([...svg.matchAll(/<marker [^>]*orient="([^"]+)"/g)].map((m) => m[1])).toEqual(["auto"]);
+  });
+
   it("has a key for the Team stripe and code, External and broker", async () => {
     const svg = await render(workspace, "c1");
 
