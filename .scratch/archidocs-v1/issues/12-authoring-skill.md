@@ -70,3 +70,5 @@ The topic follows whatever that ticket decides.
 - The `create_project` write tool.
 - The `--workspace <path>` flag on `archidocs mcp`.
 - The CLI commands `archidocs guide [topic]` and `archidocs init --skill`.
+
+**Reopened 2026-11-26:** one skill became four, with reading flows (`consult`), `fill-gaps` split out, and `describe` from prose, all loaded through `get_guide`. See [Agent skills](../../agent-skills/spec.md).
