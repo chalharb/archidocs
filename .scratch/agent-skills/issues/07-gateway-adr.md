@@ -1,6 +1,6 @@
 # 07: Gateways and proxies ADR
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Agent skills](../spec.md)
 
