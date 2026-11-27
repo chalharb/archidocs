@@ -1,6 +1,7 @@
 <!--
 Title: a Conventional Commit, such as `feat(viewer): …` or `fix(cli): …`. The PR is squash-merged, so the title becomes the commit message and decides the release.
 Target `beta`, unless this is an urgent fix for `main`.
+Every PR closes an issue: if this work has none, open one first and put its number below. "None" is not an answer there.
 Delete these comments. A section with nothing to say keeps its heading, with "None." under it.
 -->
 
