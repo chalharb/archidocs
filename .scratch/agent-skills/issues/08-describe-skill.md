@@ -1,6 +1,6 @@
 # 08: `describe` skill
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01, 07
 Spec: [Agent skills](../spec.md)
 
