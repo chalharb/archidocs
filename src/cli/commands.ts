@@ -87,22 +87,23 @@ export const commands = {
   },
   init: {
     name: "init",
-    synopsis: ["init [--skill [--workspace <dir>]]"],
-    description: "Set up a Workspace in this repo and install the agent skill, or with `--skill` install only the skill in a code repo. Safe to re-run.",
+    synopsis: ["init [--skill [--workspace <dir>]] [--no-claude-skills]"],
+    description: "Set up a Workspace in this repo and install the four agent skills, or with `--skill` install only the skills in a code repo. Safe to re-run.",
     arguments: [],
     flags: {
-      skill: { type: "boolean", default: false, description: "Install only the agent skill and its pointers, for a code repo that has no Workspace of its own." },
+      skill: { type: "boolean", default: false, description: "Install only the agent skills and their pointers, for a code repo that has no Workspace of its own." },
+      "no-claude-skills": { type: "boolean", default: false, description: "Skip `.claude/skills/`, for teams that use the Claude Code plugin. The MCP server is still registered in `.mcp.json`, which other agents read." },
       workspace: { type: "string", value: "<dir>", description: "With `--skill`: the Workspace checkout that the printed MCP command points at." },
     },
     examples: [
-      { command: "archidocs init", description: "Write `archidocs/workspace.yaml` if the repo has no Workspace yet, and install the agent skill." },
+      { command: "archidocs init", description: "Write `archidocs/workspace.yaml` if the repo has no Workspace yet, and install the agent skills." },
       {
         command: "archidocs init --skill --workspace ../architecture/archidocs",
-        description: "In a code repo, install only the agent skill, and print the MCP command for the Workspace checked out beside it.",
+        description: "In a code repo, install only the agent skills, and print the MCP command for the Workspace checked out beside it.",
       },
     ],
     exitCodes: [
-      { code: EXIT.ok, meaning: "The Workspace and the agent skill are set up, or already were. Each file written or updated is printed." },
+      { code: EXIT.ok, meaning: "The Workspace and the agent skills are set up, or already were. Each file written or updated is printed." },
       { code: EXIT.couldNotRun, meaning: `It could not run: ${USAGE_ERROR}, \`--workspace\` without \`--skill\`, or a file it could not write.` },
     ],
   },

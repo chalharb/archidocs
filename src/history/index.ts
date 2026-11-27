@@ -132,6 +132,9 @@ export async function buildHistory(h: History, options: { since?: string } = {})
       changed = true;
     }
   }
+  // A cached entry whose commit left the branch (a reset or rebase) must be dropped, even when nothing was built.
+  const onBranch = new Set(all.map((r) => r.sha));
+  if ([...entries.keys()].some((sha) => !onBranch.has(sha))) changed = true;
   if (changed) {
     const order = new Map(all.map((r, i) => [r.sha, i]));
     const revisionsOut = [...entries.values()]

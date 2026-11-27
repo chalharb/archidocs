@@ -190,6 +190,16 @@ systems:
   });
 });
 
+describe("upsert_element file argument", () => {
+  it.each([".hidden.yaml", "../x.yaml"])("refuses %s and writes nothing", async (file) => {
+    const { call, read } = await setup();
+    const result = await call("upsert_element", { project: "shop", kind: "service", id: "ghost", file, fields: { name: "Ghost" } });
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toMatchObject({ code: "invalid_input" });
+    expect(await read(`shop/${file}`).then(() => true, () => false)).toBe(false);
+  });
+});
+
 describe("formatting", () => {
   it("keeps a file's own indent, sequence style, quoting, flow padding and long lines", async () => {
     const styled = `# Styled by hand.

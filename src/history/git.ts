@@ -80,17 +80,10 @@ export async function defaultBranch(repoRoot: string): Promise<string> {
  * their first parent. A merge counts by what it brought to the branch.
  */
 export async function firstParentCommitsTouching(repoRoot: string, branch: string, path: string): Promise<CommitInfo[]> {
-  const out = await git(repoRoot, "log", "--first-parent", "--diff-merges=first-parent", "--name-only", "-z", `--format=%x01${COMMIT_FORMAT}`, branch);
-  const prefix = path === "" ? "" : path.replace(/\/?$/, "/");
-  const commits: CommitInfo[] = [];
-  for (const record of out.split("\x01").slice(1)) {
-    // The header's four fields, then a newline, then NUL-separated file names.
-    const newline = record.indexOf("\n");
-    const header = newline < 0 ? record : record.slice(0, newline);
-    const files = newline < 0 ? [] : record.slice(newline + 1).split("\0").map((f) => f.replace(/^\n/, "")).filter(Boolean);
-    if (files.some((f) => f.startsWith(prefix))) commits.push(parseCommit(header.replace(/\0$/, "")));
-  }
-  return commits;
+  // `:(literal)` keeps spaces and glob characters in `path` literal; `--` keeps a path that is gone from the tip a path.
+  // The whole repo is still a pathspec ("."), so commits that change nothing drop out as they do for any folder.
+  const out = await git(repoRoot, "log", "--first-parent", `--format=${COMMIT_FORMAT}`, branch, "--", path === "" ? "." : `:(literal)${path}`);
+  return out.split("\n").filter(Boolean).map(parseCommit);
 }
 
 /** Tag names by the commit they point at. */

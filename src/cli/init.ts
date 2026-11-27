@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { findWorkspaceRoot, nodeFileSystem } from "../core/index.ts";
-import { SKILL_NAME, skillStub } from "../guide/index.ts";
+import { SKILL_NAME, skills, skillStub } from "../guide/index.ts";
 
 /** Where coding agents look for skills; the stub goes into each. */
 export const SKILL_DIRS = [".agents/skills", ".claude/skills", ".github/skills"] as const;
@@ -22,6 +22,8 @@ export interface InitOptions {
   cwd: string;
   /** `init --skill`: a code repo, so install only the stub and pointer. */
   skillOnly: boolean;
+  /** `--no-claude-skills`: leave `.claude/skills/` alone, for teams that use the Claude Code plugin. */
+  noClaudeSkills?: boolean;
   /** For `--skill`: the Workspace checkout to print in the MCP command. */
   workspace?: string;
   /** The environment init ran in, to tell a package runner from a global bin. */
@@ -59,10 +61,9 @@ async function listsArchidocs(path: string): Promise<boolean> {
  * and existing pointers are left alone, and the stub is rewritten as is.
  * Returns the lines to print.
  */
-export async function init({ repoRoot, cwd, skillOnly, workspace, env, version }: InitOptions): Promise<string[]> {
+export async function init({ repoRoot, cwd, skillOnly, noClaudeSkills, workspace, env, version }: InitOptions): Promise<string[]> {
   const out: string[] = [];
   const runner = await archidocsCommand(repoRoot, env, version);
-  const stub = skillStub("authoring", runner);
   const wrote = (path: string, what: string) => out.push(`${what} ${posix(relative(repoRoot, path))}`);
 
   let workspaceDir: string | undefined;
@@ -80,12 +81,16 @@ export async function init({ repoRoot, cwd, skillOnly, workspace, env, version }
   }
 
   for (const dir of SKILL_DIRS) {
-    const path = join(repoRoot, dir, SKILL_NAME, "SKILL.md");
-    const before = existsSync(path) ? await readFile(path, "utf8") : undefined;
-    if (before === stub) continue;
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, stub);
-    wrote(path, before === undefined ? "Wrote" : "Updated");
+    if (noClaudeSkills && dir === ".claude/skills") continue;
+    for (const skill of skills) {
+      const stub = skillStub(skill.id, runner);
+      const path = join(repoRoot, dir, skill.name, "SKILL.md");
+      const before = existsSync(path) ? await readFile(path, "utf8") : undefined;
+      if (before === stub) continue;
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, stub);
+      wrote(path, before === undefined ? "Wrote" : "Updated");
+    }
   }
 
   const where = workspaceDir === undefined ? undefined : posix(relative(repoRoot, workspaceDir)) || ".";
@@ -95,7 +100,7 @@ export async function init({ repoRoot, cwd, skillOnly, workspace, env, version }
     where === undefined
       ? "This code's architecture is declared in an Archidocs Workspace kept in another repo."
       : `This repo's architecture is declared in the Archidocs Workspace in \`${where}/\`.`,
-    `To edit it, use the \`${SKILL_NAME}\` skill: call the \`get_authoring_guide\` MCP tool, or run \`${runner} guide\` without MCP.`,
+    ...skills.map((skill) => `- \`${skill.name}\`: ${skill.description.split(". ")[0]}. Call \`get_guide("${skill.id}")\`, or run \`${runner} guide --skill ${skill.id}\` without MCP.`),
     "",
   ].join("\n");
   if (await writePointer(join(repoRoot, "AGENTS.md"), pointer, { create: true })) wrote(join(repoRoot, "AGENTS.md"), "Updated");

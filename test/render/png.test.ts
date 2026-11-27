@@ -1,7 +1,7 @@
 import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
 import { structuralView } from "../support/views.ts";
-import { layoutView, renderSvg } from "../../src/render/index.ts";
+import { layoutView, renderPng, renderSvg } from "../../src/render/index.ts";
 import { renderPngInNode } from "../../src/render/node.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
 import { loadWorkspace } from "../support/workspace.ts";
@@ -18,6 +18,15 @@ const sizeOf = (svg: string) => {
 };
 
 describe("PNG export", () => {
+  // Must stay first: resvg's wasm can be initialised once per process, so this failing load has to precede the successful ones below.
+  it("retries after the wasm fails to load, and rejects the failed call with its own error", async () => {
+    const failure = new Error("wasm failed to load");
+    await expect(renderPng(await svgOf("c1"), Promise.reject(failure))).rejects.toBe(failure);
+
+    const png = Buffer.from(await renderPngInNode(await svgOf("c1")));
+    expect(png.subarray(1, 4).toString()).toBe("PNG");
+  });
+
   it("decodes, at twice the SVG's size by default", async () => {
     const svg = await svgOf("c2/shop:checkout");
     const png = PNG.sync.read(Buffer.from(await renderPngInNode(svg)));

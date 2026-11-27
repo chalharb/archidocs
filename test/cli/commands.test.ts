@@ -24,7 +24,7 @@ describe("CLI command definitions", () => {
     expect(usageText()).toMatchInlineSnapshot(`
       "Usage:
         archidocs version [--format text|json]
-        archidocs init [--skill [--workspace <dir>]]
+        archidocs init [--skill [--workspace <dir>]] [--no-claude-skills]
         archidocs guide [topic] [--skill <id>]
         archidocs check [--format text|json|github] [--strict]
         archidocs gaps [--project <id>] [--owner <team>] [--json]

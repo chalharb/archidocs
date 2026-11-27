@@ -145,7 +145,7 @@ export function skillStub(id: SkillId, runner: string): string {
   const cli = (args: string) => `\`${runner} guide ${args}\``;
   const load =
     skill.id === "authoring"
-      ? `Before editing the Model, load the full guide: call \`get_guide("authoring")\` on the Archidocs MCP server (\`get_authoring_guide\` on a server older than \`get_guide\`), or run ${cli("--skill authoring")} when no Archidocs MCP server is connected. It lists the topics; load the one for the task with \`get_guide("authoring", topic)\` or ${cli("<topic> --skill authoring")}, and follow it.`
+      ? `Before editing the Model, load the full guide: call \`get_guide("authoring")\` on the Archidocs MCP server, or run ${cli("--skill authoring")} when no Archidocs MCP server is connected. It lists the topics; load the one for the task with \`get_guide("authoring", topic)\` or ${cli("<topic> --skill authoring")}, and follow it.`
       : `Before you start, load the full guide: call \`get_guide("${skill.id}")\` on the Archidocs MCP server, or run ${cli(`--skill ${skill.id}`)} when no Archidocs MCP server is connected, and follow it.`;
   return `---
 name: ${skill.name}

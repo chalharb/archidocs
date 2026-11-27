@@ -2,6 +2,7 @@ import { watch, type FSWatcher } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { createServer, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+import { localhostAllowedHostnames, validateHostHeader } from "@modelcontextprotocol/server";
 import { extname, join, normalize, sep } from "node:path";
 import type { Issue } from "../core/index.ts";
 import { formatText } from "./format.ts";
@@ -9,6 +10,9 @@ import { isWorkspaceFile, type Checkout } from "../workspace/index.ts";
 import { INDEX_PATH, INDEX_VERSION, LATEST_BUNDLE_PATH, serializeBundle, serializeIndex, serializeSiteFile, SITE_FILE_PATH } from "../revisions/index.ts";
 
 export const DEFAULT_DEV_PORT = 4321;
+
+/** Binds where only this machine can connect; the Host check applies there, and nowhere else. */
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1"]);
 
 /** The path the page listens on for reloads; under `__archidocs/` so it can't clash with a site file. */
 const EVENTS = "/__archidocs/events";
@@ -135,8 +139,14 @@ export async function serveDev({ checkout, viewerDir, host = "127.0.0.1", port =
   const site = serializeSiteFile(await checkout.name());
   const noHistory = serializeIndex({ schemaVersion: INDEX_VERSION, revisions: [] });
 
+  const allowedHosts = LOOPBACK.has(host) ? localhostAllowedHostnames() : undefined;
   const server = createServer((req, res) => {
     void (async () => {
+      // DNS rebinding: a page on another domain pointed at 127.0.0.1 sends its own Host.
+      if (allowedHosts && !validateHostHeader(req.headers.host, allowedHosts).ok) {
+        res.writeHead(403).end("Forbidden");
+        return;
+      }
       const path = decodeURIComponent(new URL(req.url ?? "/", "http://dev").pathname);
       const send = (body: string | Buffer, type: string) => {
         res.writeHead(200, { "content-type": type, "cache-control": "no-store" });

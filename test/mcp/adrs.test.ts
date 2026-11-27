@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { landscapeWorkspace } from "../support/fixtures.ts";
 import { connect } from "../support/mcp.ts";
 import type { Files } from "../support/workspace.ts";
@@ -23,7 +23,9 @@ async function setup(files: Files = workspace) {
   return { ...session, read };
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+/** `YYYY-MM-DD` of the local day at `d`, as `propose_adr` dates an ADR. */
+const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const today = () => localDay(new Date());
 
 describe("list_adrs", () => {
   it("lists the ADRs for an Element and its descendants, newest first, with matchedVia and superseded ones marked", async () => {
@@ -168,6 +170,26 @@ Chosen option: "{title of option 1}", because {justification}.
 
     await call("propose_adr", { project: "platform", title: "Run on EKS" });
     expect(await read("platform/adr/0001-run-on-eks.md")).toContain("\n# Run on EKS\n\nWorkspace template. Affects ; Views .\n");
+  });
+
+  it("dates a new ADR by the local day, not the UTC day", async () => {
+    // Each instant is 23:30 and 00:30 UTC. In any zone with a non-zero offset,
+    // one of them falls on a different local day from its UTC day. Under UTC
+    // both pass, so this proves the fix only where the runner's zone is not UTC.
+    const { call, read } = await setup();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      for (const [instant, title, path] of [
+        ["2026-11-27T23:30:00Z", "Late UTC", "shop/adr/0004-late-utc.md"],
+        ["2026-11-28T00:30:00Z", "After midnight UTC", "shop/adr/0005-after-midnight-utc.md"],
+      ] as const) {
+        vi.setSystemTime(new Date(instant));
+        await call("propose_adr", { project: "shop", title, body: "Text.\n" });
+        expect(await read(path)).toContain(`date: ${localDay(new Date(instant))}\n`);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("writes a given body under the title instead of the template", async () => {

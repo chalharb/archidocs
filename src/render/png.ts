@@ -15,7 +15,11 @@ let fonts: Uint8Array[] | undefined;
  * module or where to fetch it; it is used on the first call only.
  */
 export async function renderPng(svg: string, wasm: InitInput | Promise<InitInput>, options: PngOptions = {}): Promise<Uint8Array> {
-  await (initialised ??= initWasm(wasm));
+  // A failed load clears the cache so the next call retries; `wasm` rejecting is handled the same way, as initWasm awaits it.
+  await (initialised ??= initWasm(wasm).catch((error: unknown) => {
+    initialised = undefined;
+    throw error;
+  }));
   fonts ??= FONTS.map((f) => Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0)));
   const resvg = new Resvg(svg, {
     fitTo: { mode: "zoom", value: options.scale ?? 2 },

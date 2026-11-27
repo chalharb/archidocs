@@ -131,6 +131,14 @@ describe("create_project", () => {
     expect(escape.structuredContent).toMatchObject({ code: "invalid_input" });
   });
 
+  it("refuses a folder that Load skips", async () => {
+    const { call, exists } = await setup();
+    const result = await call("create_project", { id: "infra", name: "Infra", owner: "shop-team", folder: ".infra" });
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toMatchObject({ code: "invalid_input" });
+    expect(await exists(".infra/project.yaml")).toBe(false);
+  });
+
   it("refuses an unknown owner with the issue", async () => {
     const { call, exists } = await setup();
     const result = await call("create_project", { id: "search", name: "Search", owner: "nobody" });
