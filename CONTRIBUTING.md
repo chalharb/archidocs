@@ -82,13 +82,13 @@ Releases are made by [semantic-release](https://semantic-release.gitbook.io/) (`
 
 ## How work is tracked
 
-Bugs and requests from users arrive as GitHub issues. Planned work is tracked in the repo, as Markdown files under `.scratch/`:
+Bugs and requests from users arrive as GitHub issues. Planned work is tracked by the maintainer on a Notion board, not in the repo:
 
-- Each feature has a folder, `.scratch/<feature>/`, with its spec in `spec.md`.
-- The spec is split into tickets, one file each: `.scratch/<feature>/issues/<NN>-<slug>.md`.
-- A `Status:` line near the top of each ticket says where it stands.
-- Comments on a ticket go at the bottom of its file, under `## Comments`.
-- When a pull request implements a ticket, it sets the ticket's `Status: done` in the same change.
+- Each feature has a spec page, split into tickets, one card each, with an `ARC-<n>` id.
+- A card's `Status` says where it stands; the board's columns are the statuses.
+- A pull request that implements a ticket names its id in the branch, and the card moves to `Done` when it merges.
+
+Specs and tickets from before the move are archived in git at [`.scratch/` @ 2ada153](https://github.com/chalharb/archidocs/tree/2ada153523e46f6f5f9ce1700678f431c7b5cdb0/.scratch).
 
 The conventions are in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) and [docs/agents/triage-labels.md](docs/agents/triage-labels.md). Design and product notes are in [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md).
 

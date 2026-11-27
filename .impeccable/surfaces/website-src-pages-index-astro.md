@@ -7,7 +7,7 @@ related_targets: []
 
 # Surface: archidocs.dev landing page
 
-Mode: Persuade. Scope: the landing page at `/` of archidocs.dev (the docs under `/docs/` are a separate Read surface on Starlight's theme). Not built yet: the docs-site spec (`.scratch/docs-site/`) decides it; a later build effort makes it.
+Mode: Persuade. Scope: the landing page at `/` of archidocs.dev (the docs under `/docs/` are a separate Read surface on Starlight's theme). Not built yet: the [docs-site spec](https://github.com/chalharb/archidocs/blob/2ada153523e46f6f5f9ce1700678f431c7b5cdb0/.scratch/docs-site/spec.md) decides it; a later build effort makes it.
 
 Audience and job: people deciding whether to adopt Archidocs (platform, architecture and engineering leads). They should believe that people and agents get the same answer from one Model, then open the Big Bank demo. Secondary action: the quick start.
 

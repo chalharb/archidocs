@@ -198,7 +198,7 @@ finish() {
 # the whole file before the first prompt, so an edit mid-run can't break it.
 # ──────────────────────────────────────────────────────────────────────────
 
-# The one-time cutover to the beta channel (.scratch/beta-channel/spec.md, ticket 04;
+# The one-time cutover to the beta channel (beta-channel spec, archived in .scratch/ at 2ada153, ticket 04;
 # why in docs/adr/0002-beta-branch-with-semantic-release.md). Run it from the repo root,
 # signed in with `gh auth login` as a repository admin, after the beta-channel tickets
 # 01–03 have merged:

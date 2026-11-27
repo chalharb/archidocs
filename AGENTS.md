@@ -4,11 +4,11 @@
 
 ### Issue tracker
 
-Local markdown: specs and tickets live under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+Notion: specs and tickets live on the Archidocs Board, read and written with the Notion MCP tools. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five default triage roles, recorded as a `Status:` line in each ticket. See `docs/agents/triage-labels.md`.
+The five default triage roles, recorded in each ticket's `Status` property. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 

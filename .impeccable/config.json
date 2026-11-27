@@ -10,7 +10,7 @@
           "viewer/src/styles.css"
         ],
         "createdAt": "2026-11-23T18:59:18.318Z",
-        "reason": "Ticket 14 design decision (.scratch/archidocs-v1/issues/14-viewer-ux.md): Team colour is shown as a stripe always paired with the Team code; .arc-owner ports the Variant D prototype's .teamchip border-left"
+        "reason": "Ticket 14 design decision (https://github.com/chalharb/archidocs/blob/2ada153523e46f6f5f9ce1700678f431c7b5cdb0/.scratch/archidocs-v1/issues/14-viewer-ux.md): Team colour is shown as a stripe always paired with the Team code; .arc-owner ports the Variant D prototype's .teamchip border-left"
       }
     ]
   }
