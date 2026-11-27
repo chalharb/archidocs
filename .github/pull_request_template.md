@@ -22,7 +22,7 @@ Closes #
 - [ ] Tests cover the change
 - [ ] Generated files are regenerated and committed (`pnpm schemas`, `pnpm rules:catalogue`), if their sources changed
 - [ ] Docs are updated, if behaviour users see changed
-- [ ] Viewer or docs-site changes work by keyboard, and visual ones meet the contrast in [ACCESSIBILITY.md](../ACCESSIBILITY.md)
+- [ ] Viewer or docs-site changes work by keyboard, and visual ones meet the contrast in [ACCESSIBILITY.md](https://github.com/chalharb/archidocs/blob/beta/ACCESSIBILITY.md)
 - [ ] Checked by hand: <!-- what, and how -->
 
 ## For reviewers
