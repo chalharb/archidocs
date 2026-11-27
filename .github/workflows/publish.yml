@@ -21,7 +21,8 @@ name: Release
 #
 # npm authenticates with trusted publishing (OIDC), so the repo holds no npm token. The release job
 # runs in the `npm` environment; on npmjs.com the archidocs Trusted Publisher names repository
-# chalharb/archidocs, workflow publish.yml and that environment.
+# chalharb/archidocs, workflow publish.yml and that environment. Betas carry npm provenance;
+# stable releases don't (see the release step).
 #
 # RELEASE_TOKEN (a GitHub App token or fine-grained PAT with contents and pull-requests write) is
 # required: it pushes the release commit past `main`'s ruleset, and PRs it opens trigger CI,
@@ -105,6 +106,11 @@ jobs:
         run: GITHUB_REF="refs/heads/$BRANCH" GITHUB_REF_NAME="$BRANCH" pnpm exec semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          # npm builds its provenance statement from GITHUB_REF, but the OIDC token it is signed with
+          # names the ref the workflow_run ran from, always `beta`. On `main` the override above makes
+          # them disagree and the registry refuses the publish (E422), so `main` publishes without
+          # provenance; a statement naming `beta` and its head commit would be wrong for it anyway.
+          NPM_CONFIG_PROVENANCE: ${{ env.BRANCH == 'beta' }}
 
   smoke:
     # The package as users get it: installable from the registry, and reporting its own version.
