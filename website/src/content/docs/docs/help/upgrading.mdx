@@ -1,6 +1,6 @@
 ---
 title: Upgrading
-description: What an Archidocs version number promises, how to upgrade the CLI and CI together, how to try a beta, and how to read the Changelog.
+description: What an Archidocs version number promises, how to upgrade the CLI and CI together, how to try a beta, and how to read the release notes.
 sidebar:
   order: 3
 ---
@@ -32,7 +32,7 @@ Viewer URLs will drop `/#/` in a 1.x release, so the hash form, such as `#/view/
 
 ## What carries no promise
 
-The [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one file the viewer and MCP server read, has no promise. Its format and its `schemaVersion` are internal, and can change in any release. Sites and caches rebuild the Workspace Bundle from git, so a new format needs no action from you. The viewer and the MCP server's `--bundle` read a site built by an older Archidocs by migrating its Bundles, but not one built by a newer Archidocs. For that, rebuild the site, or use an `archidocs` at least as new as the one that built it. The Changelog says when the format changes.
+The [Workspace Bundle](/docs/reference/glossary/#term-workspace-bundle), the one file the viewer and MCP server read, has no promise. Its format and its `schemaVersion` are internal, and can change in any release. Sites and caches rebuild the Workspace Bundle from git, so a new format needs no action from you. The viewer and the MCP server's `--bundle` read a site built by an older Archidocs by migrating its Bundles, but not one built by a newer Archidocs. For that, rebuild the site, or use an `archidocs` at least as new as the one that built it. The release notes say when the format changes.
 
 ## The Action's tags
 
@@ -148,19 +148,19 @@ include:
 </TabItem>
 </Tabs>
 
-The docs for the betas are at [beta.archidocs.dev](https://beta.archidocs.dev). Each beta's notes are on [GitHub Releases](https://github.com/chalharb/archidocs/releases), marked as a pre-release. The Changelog lists only releases.
+The docs for the betas are at [beta.archidocs.dev](https://beta.archidocs.dev). Each beta's notes are on [GitHub Releases](https://github.com/chalharb/archidocs/releases), marked as a pre-release.
 
-## Read the Changelog
+## Read the release notes
 
-The [Changelog](/docs/reference/changelog/) lists every release, newest first. semantic-release writes it from the type of each commit message. The type decides the section and the version number:
+The [Changelog](/docs/reference/changelog/) points to [GitHub Releases](https://github.com/chalharb/archidocs/releases), which list every release, newest first. semantic-release writes each release's notes from the type of each commit message. The type decides the section and the version number:
 
-| Commit type | Changelog section | Release |
+| Commit type | Release notes section | Release |
 | --- | --- | --- |
 | A breaking change, marked `!` | ⚠ BREAKING CHANGES | Major |
 | `feat` | Features | Minor |
 | `fix` | Bug fixes | Patch |
 
-`perf` and `revert` commits get the Performance and Reverts sections. Other types, such as `docs`, `refactor` and `chore`, don't appear in the Changelog. Before a major upgrade, read its ⚠ BREAKING CHANGES section, which lists the breaking changes.
+`perf` and `revert` commits get the Performance and Reverts sections. Other types, such as `docs`, `refactor` and `chore`, don't appear in the release notes. Before a major upgrade, read its ⚠ BREAKING CHANGES section, which lists the breaking changes.
 
 ## Related
 

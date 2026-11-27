@@ -5,13 +5,14 @@ name: Release
 # semantic-release (release.config.mjs; why in docs/adr/0002-beta-branch-with-semantic-release.md)
 # reads the Conventional Commit titles since the branch's last release (fix → patch, feat → minor,
 # `!` or BREAKING CHANGE → major) and, if any calls for one, releases:
-#   - `beta`: X.Y.Z-beta.N to the npm `beta` dist-tag, a vX.Y.Z-beta.N tag and a GitHub
-#     prerelease. Nothing is committed back, `v1` stays put and no production site deploys.
-#   - `main`: X.Y.Z to `latest`, CHANGELOG.md and package.json committed back as
-#     `chore(release): X.Y.Z [skip ci]`, the vX.Y.Z tag on that commit and a GitHub Release.
-#     Once the published package passes the smoke check, `v1` moves to it (the docs tell people to
-#     use the Action as `chalharb/archidocs@v1` and the GitLab template from `v1`) and a PR merges
-#     `main` back into `beta`.
+#   - `beta`: X.Y.Z-beta.N to the npm `beta` dist-tag, package.json committed back as
+#     `chore(release): X.Y.Z-beta.N [skip ci]`, the vX.Y.Z-beta.N tag on that commit and a GitHub
+#     prerelease. `v1` stays put and no production site deploys.
+#   - `main`: X.Y.Z to `latest`, package.json committed back as `chore(release): X.Y.Z [skip ci]`,
+#     the vX.Y.Z tag on that commit and a GitHub Release. Once the published package passes the
+#     smoke check, `v1` moves to it (the docs tell people to use the Action as
+#     `chalharb/archidocs@v1` and the GitLab template from `v1`).
+# There is no changelog file: release notes live in GitHub Releases.
 # Every passing push to `main` deploys the docs and demo sites to production, from the release tag
 # when one was published (after its smoke check), otherwise from the commit CI tested.
 #
@@ -24,9 +25,8 @@ name: Release
 # chalharb/archidocs, workflow publish.yml and that environment. Betas carry npm provenance;
 # stable releases don't (see the release step).
 #
-# RELEASE_TOKEN (a GitHub App token or fine-grained PAT with contents and pull-requests write) is
-# required: it pushes the release commit past `main`'s ruleset, and PRs it opens trigger CI,
-# which GITHUB_TOKEN's don't.
+# RELEASE_TOKEN (a GitHub App token or fine-grained PAT with contents write) is required: it pushes
+# the release commits past the repo's rulesets.
 on:
   workflow_run:
     workflows: [CI]
@@ -42,7 +42,7 @@ concurrency:
 
 jobs:
   release:
-    # Only a push that passed CI: a PR's CI run (even one from `main`, the back-merge) never releases.
+    # Only a push that passed CI: a PR's CI run never releases.
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     environment: npm
@@ -223,30 +223,3 @@ jobs:
         run: pnpm "${{ matrix.build }}"
       - if: steps.credentials.outputs.ready == 'true'
         run: pnpm exec wrangler deploy --cwd "${{ matrix.dir }}"
-
-  back-merge:
-    # `main` now has commits `beta` lacks (the release commit, and any hotfix). A PR brings them over;
-    # it must be merged with a merge commit, or the next promotion from `beta` conflicts.
-    needs: [release, smoke]
-    if: github.event.workflow_run.head_branch == 'main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Open a PR from main into beta
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          REPO: ${{ github.repository }}
-          VERSION: ${{ needs.release.outputs.version }}
-        run: |
-          if ! gh api "repos/$REPO/branches/beta" --silent 2>/dev/null; then
-            echo "::notice::There is no beta branch yet, so there is nothing to merge main into."
-            exit 0
-          fi
-          if [ -n "$(gh pr list -R "$REPO" --base beta --head main --state open --json number -q '.[].number')" ]; then
-            echo "A PR from main into beta is already open."
-            exit 0
-          fi
-          gh pr create -R "$REPO" --base beta --head main \
-            --title "chore: merge main into beta after v$VERSION" \
-            --body "Brings the v$VERSION release commit (and any hotfixes) from \`main\` into \`beta\`.
-
-          **Merge this with a merge commit, not a squash**, so \`main\`'s commits stay ancestors of \`beta\` and the next promotion doesn't conflict."
