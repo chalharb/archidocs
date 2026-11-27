@@ -36,6 +36,7 @@ const WORKSPACE_SEARCH: Readonly<Record<CommandName, string | undefined>> = {
   init: "The current folder. If the search finds nothing, `init` does not fail: it writes `archidocs/workspace.yaml` at the root of the git repo, or in the current folder outside git. With `--skill` it does not search, and `--workspace <dir>` is only the path it prints in the MCP command.",
   guide: undefined,
   check: "The current folder.",
+  gaps: "The current folder.",
   build: "The current folder. With `--preview`, the Workspace must also be in a git repo.",
   dev: "The current folder, or `--workspace <dir>` when given.",
   export: "The current folder.",
@@ -70,6 +71,10 @@ export const SEE_ALSO: Readonly<Record<CommandName, readonly SeeAlso[]>> = {
     { href: "/docs/guides/model/rename-move-remove/", why: "uses it to find every reference to an id that changed" },
     { href: "/docs/guides/publish/github-pages/", why: "runs it in CI, so a failed check publishes nothing" },
     { href: "/docs/reference/rules/", title: "Check rules", why: "every rule it reports, with its fix" },
+  ],
+  gaps: [
+    { href: "/docs/guides/agents/fill-gaps/", why: "has an agent interview you about each gap it lists, with values proposed from the code" },
+    { href: "/docs/reference/mcp/list_gaps/", title: "list_gaps", why: "the same gaps over MCP" },
   ],
   build: [
     { href: "/docs/guides/publish/github-pages/", why: "builds and deploys the site with the Action" },

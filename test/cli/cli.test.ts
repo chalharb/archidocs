@@ -175,9 +175,9 @@ describe("the exit codes the command definitions list", () => {
     expect(listing(EXIT.couldNotRun)).toContain(name);
   });
 
-  it("check, build and export exit 1 on a Workspace with errors, and only they list 1", async () => {
+  it("check, gaps, build and export exit 1 on a Workspace with errors, and only they list 1", async () => {
     const { repoRoot } = await writeWorkspace(broken);
-    const runs = { check: ["check"], build: ["build", "--bundle-only", "--out", "out"], export: ["export", "c1"] };
+    const runs = { check: ["check"], gaps: ["gaps"], build: ["build", "--bundle-only", "--out", "out"], export: ["export", "c1"] };
 
     for (const args of Object.values(runs)) expect((await archidocs(repoRoot, ...args)).code, args.join(" ")).toBe(EXIT.foundErrors);
     expect(listing(EXIT.foundErrors)).toEqual(Object.keys(runs));

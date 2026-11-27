@@ -142,6 +142,27 @@ export const commands = {
       { code: EXIT.couldNotRun, meaning: `It could not run: ${USAGE_ERROR}, an unknown format, or no Workspace found.` },
     ],
   },
+  gaps: {
+    name: "gaps",
+    synopsis: ["gaps [--project <id>] [--owner <team>] [--json]"],
+    description: "List what the Model leaves empty, grouped by Project and Owner Team: the gaps an agent's fill-gaps interview works through.",
+    arguments: [],
+    flags: {
+      project: { type: "string", value: "<id>", description: "Only this Project's gaps." },
+      owner: { type: "string", value: "<team>", description: "Only the gaps of items this Team owns." },
+      json: { type: "boolean", default: false, description: "Print the gaps as JSON, in the shape the `list_gaps` MCP tool returns, instead of Markdown." },
+    },
+    examples: [
+      { command: "archidocs gaps", description: "Print every gap as Markdown: a heading per Project and Owner Team, then a line per Element, Relationship or Deployment naming its empty fields." },
+      { command: "archidocs gaps --owner payments-team", description: "Print only the gaps of what one Team owns, as a backlog to hand to that Team." },
+      { command: "archidocs gaps --project shop --json", description: "Print one Project's gaps as JSON, for a script." },
+    ],
+    exitCodes: [
+      { code: EXIT.ok, meaning: "The gaps were printed, or none were found. It exits 0 either way: a gap is incompleteness, not an error, and `check` never reports one." },
+      { code: EXIT.foundErrors, meaning: "The Workspace has errors. They are printed as `check` prints them, and no gaps are listed." },
+      { code: EXIT.couldNotRun, meaning: `It could not run: ${USAGE_ERROR}, an unknown Project or Team, or no Workspace found.` },
+    ],
+  },
   build: {
     name: "build",
     synopsis: ["build [--out <dir>] [--bundle-only] [--keep <n|all>]", "build --preview [--base <branch>] [--out <dir>]"],

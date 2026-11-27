@@ -1,6 +1,6 @@
 # 02: `list_gaps` and `archidocs gaps`
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Spec: [Agent skills](../spec.md)
 
@@ -22,8 +22,8 @@ The fill-gaps scan as a tool, replacing the jq script in `guide/topics/fill-gaps
 
 ## Acceptance criteria
 
-- [ ] `list_gaps` and `archidocs gaps` return the same gaps.
-- [ ] Every row of the gap table has a test.
-- [ ] Docs reference for the CLI and MCP tool is updated (`website/src/reference`).
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm docs:test` pass.
-- [ ] This ticket's `Status:` is set to `done` in the same PR.
+- [x] `list_gaps` and `archidocs gaps` return the same gaps.
+- [x] Every row of the gap table has a test.
+- [x] Docs reference for the CLI and MCP tool is updated (`website/src/reference`).
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint` and `pnpm docs:test` pass.
+- [x] This ticket's `Status:` is set to `done` in the same PR.

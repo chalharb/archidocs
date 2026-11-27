@@ -9,3 +9,4 @@ export { build, type BuildOptions, type BuildResult } from "./build.ts";
 export { exportViews, type ExportOptions, type ExportResult, type ExportedFile } from "./export.ts";
 export { diff, type DiffResult, type DiffSide } from "./diff.ts";
 export { buildHistory, type BuildHistoryOptions, type BuildHistoryResult } from "./history.ts";
+export { gaps, type GapsResult } from "./gaps.ts";
