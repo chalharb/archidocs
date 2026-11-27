@@ -58,8 +58,27 @@ export class YamlFile {
   }
 }
 
+/** Matches a line that opens a block scalar (`key: |`, `- >-`, …), whose more-indented lines are text, not YAML. */
+const BLOCK_SCALAR = /(^|[:-])\s*[|>][+-]?\d*[+-]?\s*(#.*)?$/;
+
+/** The file's lines that are YAML structure: no blank lines, comments or block scalar text (such as a Markdown `description: |`). */
+function structuralLines(text: string): string[] {
+  const out: string[] = [];
+  let blockAt = -1;
+  for (const line of text.split("\n")) {
+    if (line.trim() === "") continue;
+    const own = line.length - line.trimStart().length;
+    if (blockAt >= 0 && own > blockAt) continue;
+    blockAt = -1;
+    if (line.trim().startsWith("#")) continue;
+    out.push(line);
+    if (BLOCK_SCALAR.test(line)) blockAt = own;
+  }
+  return out;
+}
+
 function detectStyle(text: string): ToStringOptions {
-  const lines = text.split("\n").filter((l) => l.trim() !== "" && !l.trim().startsWith("#"));
+  const lines = structuralLines(text);
   let indent = 2;
   let indentFound = false;
   let indentSeq = true;

@@ -544,7 +544,7 @@
         "repository": {
           "type": "string",
           "format": "uri",
-          "description": "The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer."
+          "description": "The full URL of the source code repository the Element is built from. Shown as a link in the viewer."
         },
         "services": {
           "description": "The Services in the System, keyed by id.",
@@ -633,7 +633,7 @@
         "repository": {
           "type": "string",
           "format": "uri",
-          "description": "The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer."
+          "description": "The full URL of the source code repository the Element is built from. Shown as a link in the viewer."
         },
         "external": {
           "description": "`true` for a Service run outside the organization, such as a payment provider's API. An External Service can't declare Components. Default: `false`.",
@@ -722,7 +722,7 @@
         "repository": {
           "type": "string",
           "format": "uri",
-          "description": "The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer."
+          "description": "The full URL of the source code repository the Element is built from. Shown as a link in the viewer."
         },
         "in": {
           "description": "The Service this Component belongs to, as an id in this Project. Required for a Component under the top-level `components` key, and not allowed for one nested under a Service's `components`.",

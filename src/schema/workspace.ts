@@ -92,7 +92,7 @@ export const Metadata = z
   );
 
 /** A link to the source code repository of a System, Service or Component. */
-const Repository = z.url().describe("The source code repository the Element is built from, as a full URL such as `https://github.com/acme/checkout`. Shown as a link in the viewer.");
+const Repository = z.url().describe("The full URL of the source code repository the Element is built from. Shown as a link in the viewer.");
 
 /** The fields every kind of Element takes. */
 const elementFields = {
