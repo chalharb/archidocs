@@ -15,6 +15,8 @@ The issue types follow Azure DevOps' Epic → Feature → Task, with sub-issues 
 
 User stories aren't issues: they're listed in the `Feature`'s spec, and each `Task` delivers a thin end-to-end slice of them.
 
+Every issue's body follows its type's template in `.github/ISSUE_TEMPLATE/`, with the same headings in the same order: `epic.md`, `feature.md`, `task.md` and `map.md` (Markdown, for maintainers and agents), and the `bug_report.yml` and `feature_request.yml` forms (for users; the latter makes a `Request`). Write the body to a file from the template, fill each section, and delete the HTML comments. A section with nothing to say stays, with "None." under it. Children are listed by GitHub as sub-issues, so a body never lists them.
+
 When a skill says **spec** (or PRD), it means a `Feature` issue; **ticket** means a `Task` (or `Bug`).
 
 - **Labels**: only `research`, `prototype` and `grilling` (a map question's kind), plus the contributor labels `good first issue`, `help wanted`, `question` and `accessibility`. The kind of issue is its type and where it stands is `Status`, never a label.
@@ -44,8 +46,8 @@ An issue's project item id: `gh project item-list 8 --owner chalharb --format js
 
 ## When a skill says "publish to the issue tracker"
 
-- **A spec:** `gh issue create --title "Feature: <name>" --body-file spec.md`, then set its type to `Feature` (below). Add it to the project with `gh project item-add 8 --owner chalharb --url <issue url>`, and set `Model`, `Priority` and `Status` to `backlog`. If it belongs to an `Epic`, attach it as a sub-issue.
-- **Tickets:** one issue per ticket, never one combined issue. Create each with `gh issue create`, set its type to `Task`, attach it to its `Feature` as a sub-issue, add it to the project, and set `Model`, `Priority` and `Status`: `backlog`, unless the skill publishing it assigns a triage role, such as `ready-for-agent` for a ticket split from a finished spec. Create blockers first, then add the "blocked by" links.
+- **A spec:** fill `.github/ISSUE_TEMPLATE/feature.md` into `spec.md`, then `gh issue create --title "Feature: <name>" --body-file spec.md`, then set its type to `Feature` (below). Add it to the project with `gh project item-add 8 --owner chalharb --url <issue url>`, and set `Model`, `Priority` and `Status` to `backlog`. If it belongs to an `Epic`, attach it as a sub-issue.
+- **Tickets:** one issue per ticket, never one combined issue. Create each with `gh issue create --body-file`, its body filled from `task.md`, set its type to `Task`, attach it to its `Feature` as a sub-issue, add it to the project, and set `Model`, `Priority` and `Status`: `backlog`, unless the skill publishing it assigns a triage role, such as `ready-for-agent` for a ticket split from a finished spec. Create blockers first, then add the "blocked by" links.
 
 Setting a type (an issue's `node_id` comes from `gh api repos/chalharb/archidocs/issues/<n> -q .node_id`):
 
