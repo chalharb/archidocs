@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest something Archidocs should do.
-type: Feature
+type: Request
 body:
   - type: textarea
     id: problem

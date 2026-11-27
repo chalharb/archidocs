@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-GitHub: specs are issues of type `Spec`, tickets are their sub-issues, tracked on the Archidocs Project (user project 8), through the `gh` CLI. See `docs/agents/issue-tracker.md`.
+GitHub issues typed Epic → Feature → Task: a spec is a `Feature` issue and its tickets are `Task` sub-issues, tracked on the Archidocs Project (user project 8), through the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

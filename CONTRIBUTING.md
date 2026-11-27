@@ -84,10 +84,10 @@ Releases are made by [semantic-release](https://semantic-release.gitbook.io/) (`
 
 Everything is tracked in GitHub issues, on the [Archidocs Project](https://github.com/users/chalharb/projects/8):
 
-- Bugs and requests from users arrive as issues.
-- Planned work starts as an issue of type **Spec**, holding the feature's spec. Its tickets are sub-issues, one per piece of work.
-- A ticket's **Status** on the Project says where it stands; the board's columns are the statuses.
-- A pull request that implements a ticket says `Closes #<n>`, and the ticket closes when it merges.
+- Bugs and requests from users arrive as issues of type **Bug** and **Request**.
+- Planned work follows Epic → Feature → Task. A **Feature** issue holds the feature's spec, with its user stories; its **Tasks** are sub-issues, one per pull request. An **Epic** groups several Features.
+- An issue's **Status** on the Project says where it stands; the board's columns are the statuses.
+- A pull request that implements a Task says `Closes #<n>`, and the Task closes when it merges.
 
 Specs and tickets from before the move were Markdown files under `.scratch/`. They're in git at [`.scratch/` @ 2ada153](https://github.com/chalharb/archidocs/tree/2ada153/.scratch).
 
