@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { archidocs } from "../support/cli.ts";
 
 const skillDirs = [".agents/skills", ".claude/skills", ".github/skills"];
+const skillIds = ["authoring", "consult", "fill-gaps", "describe"];
 
 async function emptyRepo() {
   const repo = await mkdtemp(join(tmpdir(), "archidocs-init-"));
@@ -30,7 +31,7 @@ describe("archidocs init without a global install", () => {
     const runner = `npx -y archidocs@${version}`;
     expect(stdout).toContain(`  ${runner} mcp --workspace archidocs`);
     for (const dir of skillDirs) expect(await read(repo, `${dir}/archidocs-authoring/SKILL.md`)).toContain(`\`${runner} guide --skill authoring\``);
-    expect(await read(repo, "AGENTS.md")).toContain(`\`${runner} guide\``);
+    expect(await read(repo, "AGENTS.md")).toContain(`\`${runner} guide --skill authoring\``);
   });
 
   it("with archidocs in package.json, writes the local npx command even when run through a runner", async () => {
@@ -39,7 +40,7 @@ describe("archidocs init without a global install", () => {
     const { stdout } = await archidocs(repo, viaNpx, "init");
     expect(stdout).toContain("  npx archidocs mcp --workspace archidocs");
     expect(await read(repo, ".claude/skills/archidocs-authoring/SKILL.md")).toContain("`npx archidocs guide --skill authoring`");
-    expect(await read(repo, "AGENTS.md")).toContain("`npx archidocs guide`");
+    expect(await read(repo, "AGENTS.md")).toContain("`npx archidocs guide --skill authoring`");
   });
 
   it("re-run after the setup changes, replaces its pointer section in place and keeps the rest", async () => {
@@ -54,8 +55,8 @@ describe("archidocs init without a global install", () => {
     for (const file of ["AGENTS.md", "CLAUDE.md"]) {
       const text = await read(repo, file);
       expect(text.match(/## Architecture model/g)).toHaveLength(1);
-      expect(text).toContain("`npx archidocs guide`");
-      expect(text).not.toContain("`archidocs guide`");
+      expect(text).toContain("`npx archidocs guide --skill authoring`");
+      expect(text).not.toContain("`archidocs guide --skill");
       expect(text).toMatch(/\n## Later\n\nKept\.\n$/);
     }
     expect(await read(repo, "AGENTS.md")).toMatch(/^# My repo\n\nHouse rules\.\n\n## Architecture model\n/);
@@ -74,11 +75,10 @@ describe("archidocs init from a global bin", () => {
       const stub = await read(repo, `${dir}/archidocs-authoring/SKILL.md`);
       expect(stub).toMatch(/^---\nname: archidocs-authoring\ndescription: .+\n---\n/);
       expect(stub).toContain("get_guide");
-      expect(stub).toContain("get_authoring_guide");
       expect(stub).toContain("archidocs guide");
     }
     const agents = await read(repo, "AGENTS.md");
-    expect(agents).toContain("archidocs-authoring");
+    for (const id of skillIds) expect(agents).toContain(`get_guide("${id}")`);
     expect(agents).toContain("`archidocs/`");
     expect(existsSync(join(repo, "CLAUDE.md"))).toBe(false);
     expect(stdout).toContain("archidocs mcp --workspace archidocs");
@@ -109,7 +109,7 @@ describe("archidocs init from a global bin", () => {
     expect(await read(repo, "archidocs/workspace.yaml")).toBe("teams:\n  core:\n    name: Core\n");
 
     expect(first.agents).toMatch(/^# My repo\n\nHouse rules\.\n\n/);
-    expect(first.agents.match(/archidocs-authoring/g)).toHaveLength(1);
+    expect(first.agents.match(/## Architecture model/g)).toHaveLength(1);
     expect(first.claude).toContain("archidocs-authoring");
     expect(first.gitignore).toBe("node_modules/\n.archidocs/\n");
   });
@@ -139,6 +139,73 @@ describe("archidocs init from a global bin", () => {
     const repo = await emptyRepo();
     const { stdout } = await archidocs(repo, globalBin, "init", "--skill", "--workspace", "../architecture/archidocs");
     expect(stdout).toContain("archidocs mcp --workspace ../architecture/archidocs");
+  });
+});
+
+describe("archidocs init writes a stub for every skill", () => {
+  const stubPaths = (dirs: string[]) => dirs.flatMap((dir) => skillIds.map((id) => `${dir}/archidocs-${id}/SKILL.md`));
+
+  it("writes four stubs per folder, and one pointer line per skill that names get_guide, for init and init --skill", async () => {
+    for (const args of [["init"], ["init", "--skill"]]) {
+      const repo = await emptyRepo();
+      await writeFile(join(repo, "CLAUDE.md"), "# Claude\n");
+      expect((await archidocs(repo, globalBin, ...args)).code).toBe(0);
+      for (const id of skillIds) {
+        for (const dir of skillDirs) expect(await read(repo, `${dir}/archidocs-${id}/SKILL.md`)).toMatch(new RegExp(`^---\nname: archidocs-${id}\ndescription: .+\n---\n`));
+      }
+      for (const file of ["AGENTS.md", "CLAUDE.md"]) {
+        const lines = (await read(repo, file)).split("\n");
+        for (const id of skillIds) {
+          const line = lines.filter((l) => l.startsWith(`- \`archidocs-${id}\``));
+          expect(line, `${file} ${id}`).toHaveLength(1);
+          expect(line[0]).toContain(`get_guide("${id}")`);
+          expect(line[0]).toContain(`archidocs guide --skill ${id}`);
+        }
+      }
+    }
+  });
+
+  it("writes no mention of get_authoring_guide anywhere on a fresh init", async () => {
+    const repo = await emptyRepo();
+    await writeFile(join(repo, "CLAUDE.md"), "# Claude\n");
+    await archidocs(repo, globalBin, "init");
+    const files = [...stubPaths(skillDirs), "AGENTS.md", "CLAUDE.md", ".mcp.json"];
+    for (const file of files) expect(await read(repo, file), file).not.toContain("get_authoring_guide");
+  });
+
+  it("--no-claude-skills skips .claude/skills but still writes the other folders and .mcp.json", async () => {
+    const repo = await emptyRepo();
+    const { code } = await archidocs(repo, globalBin, "init", "--no-claude-skills");
+    expect(code).toBe(0);
+    expect(existsSync(join(repo, ".claude"))).toBe(false);
+    for (const path of stubPaths([".agents/skills", ".github/skills"])) expect(existsSync(join(repo, path)), path).toBe(true);
+    expect(existsSync(join(repo, ".mcp.json"))).toBe(true);
+  });
+
+  it("re-running changes nothing and prints no file", async () => {
+    const repo = await emptyRepo();
+    await archidocs(repo, globalBin, "init");
+    const files = [...stubPaths(skillDirs), "AGENTS.md", ".mcp.json"];
+    const before = await Promise.all(files.map((path) => read(repo, path)));
+    const again = await archidocs(repo, globalBin, "init");
+    expect(again.stdout).not.toMatch(/(Wrote|Updated) /);
+    expect(await Promise.all(files.map((path) => read(repo, path)))).toEqual(before);
+  });
+
+  it("upgrades an old single-skill install in place", async () => {
+    const repo = await emptyRepo();
+    await writeFile(join(repo, "AGENTS.md"), "# My repo\n\n## Architecture model\n\nThis repo's architecture is declared in the Archidocs Workspace in `archidocs/`.\nTo edit it, use the `archidocs-authoring` skill: call the `get_authoring_guide` MCP tool, or run `archidocs guide` without MCP.\n\n## Later\n\nKept.\n");
+    for (const dir of skillDirs) {
+      await mkdir(join(repo, dir, "archidocs-authoring"), { recursive: true });
+      await writeFile(join(repo, dir, "archidocs-authoring/SKILL.md"), "---\nname: archidocs-authoring\ndescription: old\n---\n\nuse `get_authoring_guide`\n");
+    }
+    await archidocs(repo, globalBin, "init");
+    for (const path of stubPaths(skillDirs)) expect(await read(repo, path), path).not.toContain("get_authoring_guide");
+    const agents = await read(repo, "AGENTS.md");
+    expect(agents).not.toContain("get_authoring_guide");
+    expect(agents.match(/## Architecture model/g)).toHaveLength(1);
+    for (const id of skillIds) expect(agents).toContain(`get_guide("${id}")`);
+    expect(agents).toMatch(/^# My repo\n\n## Architecture model\n[\s\S]*\n## Later\n\nKept\.\n$/);
   });
 });
 

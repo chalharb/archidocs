@@ -1,22 +1,28 @@
 ---
-title: Install the agent skill
-description: Point coding agents at the authoring guide that matches the installed CLI.
+title: Install the agent skills
+description: Point coding agents at the four skills whose guides match the installed CLI.
 sidebar:
   order: 2
 ---
 
-Install the `archidocs-authoring` skill, so a coding agent loads the authoring guide before it edits the Model.
+Install the four Archidocs skills, so a coding agent loads the right guide for the job. Each skill is a short stub that loads its full guide from the running CLI, so it never goes stale.
 
-Other skills build on authoring, each with a guide of its own. The `archidocs-fill-gaps` skill finds what the Model leaves empty and interviews you to fill it. An agent loads its guide with `get_guide("fill-gaps")`, and that guide has it load the authoring guide first. See [Fill documentation gaps](/docs/guides/agents/fill-gaps/).
+| Skill | The agent loads it when |
+| --- | --- |
+| `archidocs-authoring` | It sets out to edit the Model: bootstrapping a Project, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR. |
+| `archidocs-consult` | It changes code (a public API, a dependency, a Service's name or life, deployment config) or answers who calls, owns or deploys something. It reads the Model and never writes. See [Consult the Model while coding](/docs/guides/agents/consult-while-coding/). |
+| `archidocs-fill-gaps` | You ask what is missing or undocumented, or to audit or complete the Model. See [Fill documentation gaps](/docs/guides/agents/fill-gaps/). |
+| `archidocs-describe` | You explain your architecture in prose and want it turned into a Model, with no code needed. See [Describe an architecture in prose](/docs/guides/agents/describe-in-prose/). |
 
 ## Before you start
 
 - The Archidocs CLI is installed. See the [Quick start](/docs/start/quick-start/).
-- You know what the skill and the guide are for. See [Agents and MCP](/docs/concepts/agents-and-mcp/).
+- You know what the skills and the guides are for. See [Agents and MCP](/docs/concepts/agents-and-mcp/).
+- You pick one way to install them per repo: these repo stubs, or the Claude Code plugin. Using both shows every skill and every MCP tool twice.
 
-## 1. Install it in the Workspace repo
+## 1. Install them in the Workspace repo
 
-`archidocs init` installs the skill with the Workspace. From the repo root:
+`archidocs init` installs the skills with the Workspace. From the repo root:
 
 ```bash
 archidocs init
@@ -26,8 +32,17 @@ archidocs init
 Wrote archidocs/workspace.yaml
 Updated .gitignore
 Wrote .agents/skills/archidocs-authoring/SKILL.md
+Wrote .agents/skills/archidocs-consult/SKILL.md
+Wrote .agents/skills/archidocs-fill-gaps/SKILL.md
+Wrote .agents/skills/archidocs-describe/SKILL.md
 Wrote .claude/skills/archidocs-authoring/SKILL.md
+Wrote .claude/skills/archidocs-consult/SKILL.md
+Wrote .claude/skills/archidocs-fill-gaps/SKILL.md
+Wrote .claude/skills/archidocs-describe/SKILL.md
 Wrote .github/skills/archidocs-authoring/SKILL.md
+Wrote .github/skills/archidocs-consult/SKILL.md
+Wrote .github/skills/archidocs-fill-gaps/SKILL.md
+Wrote .github/skills/archidocs-describe/SKILL.md
 Updated AGENTS.md
 Wrote .mcp.json
 
@@ -36,20 +51,19 @@ Check the server your coding agent will start:
   archidocs mcp --workspace archidocs --check
 ```
 
-It writes the skill into each folder where coding agents look for skills. It adds an "Architecture model" section to `AGENTS.md`, and to `CLAUDE.md` if there is one. It registers the MCP server in `.mcp.json`, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/) explains.
+It writes the four skills into each folder where coding agents look for skills. It adds an "Architecture model" section to `AGENTS.md`, and to `CLAUDE.md` if there is one, with one line per skill. It registers the MCP server in `.mcp.json`, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/) explains.
 
 ## 2. Install it in a code repo
 
-Skip this step unless agents edit the Model from a repo that holds code, not the Workspace. Clone the Workspace repo beside it, then run this in the code repo:
+Skip this step unless agents work from a repo that holds code, not the Workspace. Clone the Workspace repo beside it, then run this in the code repo:
 
 ```bash
 archidocs init --skill --workspace ../architecture/archidocs
 ```
 
+It writes the same skill files and pointer lines as step 1, then the MCP entry:
+
 ```text
-Wrote .agents/skills/archidocs-authoring/SKILL.md
-Wrote .claude/skills/archidocs-authoring/SKILL.md
-Wrote .github/skills/archidocs-authoring/SKILL.md
 Updated AGENTS.md
 Wrote .mcp.json
 
@@ -62,13 +76,23 @@ Point --workspace at a local checkout of the Workspace repo, relative to where t
 
 `--workspace` is the path to the Workspace checkout, written into the code repo's `.mcp.json`. See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/#in-a-code-repo).
 
-## 3. Keep it current
+## 3. Skip the Claude Code folder
 
-Run `archidocs init` again after upgrading the CLI. It rewrites the skill files if they changed and leaves everything else alone.
+If your team installs the Claude Code plugin instead, add `--no-claude-skills`:
+
+```bash
+archidocs init --no-claude-skills
+```
+
+It writes no `.claude/skills/` folder. It still writes `.agents/skills/` and `.github/skills/`, the pointers, and the `.mcp.json` entry, because other agents read those.
+
+## 4. Keep them current
+
+Run `archidocs init` again after upgrading the CLI. It rewrites the skill files if they changed and leaves everything else alone. In a repo that has only the old `archidocs-authoring` skill, it adds the other three and replaces the "Architecture model" section with one line per skill, in place.
 
 ## Check it worked
 
-Ask the agent to add a Service. It loads the authoring guide first, with the MCP [`get_guide`](/docs/reference/mcp/get_guide/) tool or `archidocs guide --skill authoring`. Servers older than `get_guide` serve the same guide as [`get_authoring_guide`](/docs/reference/mcp/get_authoring_guide/), which the skill names as a fallback.
+Ask the agent to add a Service. It loads the authoring guide first, with the MCP [`get_guide`](/docs/reference/mcp/get_guide/) tool or `archidocs guide --skill authoring`.
 
 To read what it reads, run the same command:
 
@@ -77,15 +101,6 @@ archidocs guide --skill authoring
 ```
 
 `--skill` defaults to `authoring`, so `archidocs guide` prints the same.
-
-The first lines are the skill's name and description:
-
-```text
----
-name: archidocs-authoring
-description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.
----
-```
 
 `archidocs guide <topic>` prints one task, such as [`add-service`](/docs/reference/agent-guide/add-service/). `archidocs guide --skill fill-gaps` prints the [`fill-gaps`](/docs/reference/agent-guide/fill-gaps/) skill's guide, the same as `get_guide("fill-gaps")`. The guides for the latest release are also under [Authoring guide for agents](/docs/reference/agent-guide/).
 
