@@ -64,7 +64,7 @@ The other commands, the page templates and the style rules are in [website/READM
 2. Branch from `beta`, the default branch. Unreleased work lands there; `main` holds only what is released.
 3. Make one change per pull request, with tests for it.
 4. Run the checks above that cover what you changed.
-5. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and `CHANGELOG.md` are made from them. Don't edit the changelog by hand.
+5. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and their notes on [GitHub Releases](https://github.com/chalharb/archidocs/releases) are made from them.
 6. Open the pull request against `beta`, and fill in the [template](.github/pull_request_template.md): `Closes #<n>`, What changed, Why, Verification and For reviewers. It is squash-merged, so its title becomes the commit message.
 
 ## How releases work
@@ -72,8 +72,8 @@ The other commands, the page templates and the style rules are in [website/READM
 Releases are made by [semantic-release](https://semantic-release.gitbook.io/) (`release.config.mjs`, run by `.github/workflows/publish.yml` once CI passes on the pushed commit), from the commit types since the last release: `fix` makes a patch, `feat` a minor, and `!` or `BREAKING CHANGE` a major. The reasons for this setup are in [ADR 0002](docs/adr/0002-beta-branch-with-semantic-release.md) and [ADR 0003](docs/adr/0003-release-gated-on-ci.md).
 
 - **Every merge into `beta` publishes a beta**, such as `1.4.0-beta.1`, to the npm `beta` dist-tag, with a GitHub prerelease. It also deploys the docs and the demos to [beta.archidocs.dev](https://beta.archidocs.dev), [beta.big-bank.archidocs.dev](https://beta.big-bank.archidocs.dev) and [beta.kitchen-sink.archidocs.dev](https://beta.kitchen-sink.archidocs.dev). A beta never moves the Action's `v1` tag.
-- **A promotion releases it.** A pull request from `beta` into `main`, merged with a **merge commit**, publishes the stable version to `latest`, updates `CHANGELOG.md`, moves `v1` and deploys the production sites. Any other push to `main` that passes CI, such as a docs fix, deploys the production sites too.
-- **An urgent fix goes to `main` directly**, as a pull request into `main`. After each stable release, a bot opens a pull request that merges `main` back into `beta`. Merge it with a **merge commit** too, not a squash, so the next promotion doesn't conflict.
+- **A promotion releases it.** A pull request from `beta` into `main`, merged with a **merge commit**, publishes the stable version to `latest`, moves `v1` and deploys the production sites. Any other push to `main` that passes CI, such as a docs fix, deploys the production sites too.
+- **An urgent fix goes to `main` directly**, as a pull request into `main`.
 
 ### Try a beta
 

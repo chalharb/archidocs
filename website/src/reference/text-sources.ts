@@ -1,11 +1,10 @@
 /**
  * Pages rendered from Markdown kept elsewhere in the repo, as it is, with
  * only its links rewritten: the agent guide (`guide/`), the glossary
- * (`GLOSSARY.md`) and the changelog (`CHANGELOG.md`).
+ * (`GLOSSARY.md`).
  */
-import { existsSync } from "node:fs";
 import { skills, topics } from "../../../src/guide/index.ts";
-import { GITHUB_URL, readRepoFile, repoPath } from "../lib/repo.ts";
+import { GITHUB_URL, readRepoFile } from "../lib/repo.ts";
 import { blocks, splitTitle, stripFrontmatter, type GeneratedPage } from "./page.ts";
 
 const GUIDE = "docs/reference/agent-guide";
@@ -109,13 +108,12 @@ export function glossaryPage(): GeneratedPage {
 
 export function changelogPage(): GeneratedPage {
   const releases = `${GITHUB_URL}/releases`;
-  const exists = existsSync(repoPath("CHANGELOG.md"));
   return {
     id: "docs/reference/changelog",
     title: "Changelog",
     order: 2,
     description: "What changed in each release.",
-    source: exists ? "CHANGELOG.md" : "release.config.mjs",
-    body: exists ? rewriteLinks(splitTitle(readRepoFile("CHANGELOG.md")).rest, "CHANGELOG.md") : `Release notes are on [GitHub Releases](${releases}) until the changelog starts with the next release.\n`,
+    source: "release.config.mjs",
+    body: `Release notes are on [GitHub Releases](${releases}).\n`,
   };
 }
