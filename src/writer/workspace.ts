@@ -1,5 +1,6 @@
 import { isAbsolute, join, normalize, relative, sep } from "node:path";
 import type { Located } from "../core/model.ts";
+import { isWorkspaceFile } from "../core/workspace-files.ts";
 import { absolute, bareId, fail, present, setFields, type Edit, type Planned, type SourceRef } from "./edit.ts";
 
 export type DefinitionRequest =
@@ -45,8 +46,8 @@ export async function createProject(edit: Edit, request: ProjectRequest): Promis
   }
 
   const folder = normalize(request.folder ?? id.id);
-  if (isAbsolute(folder) || folder === "." || folder.startsWith("..")) {
-    return fail("invalid_input", `folder "${request.folder}" must be a folder inside the Workspace root, relative to it.`);
+  if (isAbsolute(folder) || folder === "." || folder.startsWith("..") || !isWorkspaceFile(`${folder}/project.yaml`)) {
+    return fail("invalid_input", `folder "${request.folder}" must be a folder inside the Workspace root, relative to it, with no part starting with "." or named node_modules (Load skips those).`);
   }
   const abs = join(edit.root, folder);
   const repoFolder = relative(edit.repoRoot, abs).split(sep).join("/");
