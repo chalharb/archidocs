@@ -1,6 +1,6 @@
-// semantic-release, run by .github/workflows/publish.yml once CI passes for a push to `main` or `beta`
+// semantic-release, run by .github/workflows/publish.yml as CI's last job for a push to `main` or `beta`
 // (docs/adr/0002-beta-branch-with-semantic-release.md, docs/adr/0003-release-gated-on-ci.md,
-// docs/adr/0006-promote-by-fast-forward.md).
+// docs/adr/0006-promote-by-fast-forward.md, docs/adr/0007-release-is-ci-last-job.md).
 //
 // - `beta` releases X.Y.Z-beta.N to the npm `beta` dist-tag. It commits package.json with that
 //   version as `chore(release): X.Y.Z-beta.N [skip ci]` and tags that commit.
@@ -33,7 +33,7 @@ const types = [
 ];
 const conventional = { preset: "conventionalcommits", presetConfig: { types } };
 
-// publish.yml sets it to the branch CI tested.
+// The pushed branch: the release runs in the CI run for that push.
 const branch = process.env.GITHUB_REF_NAME;
 
 // Tells the workflow what was released: its smoke check, `v1` tag and site deploys read these.
