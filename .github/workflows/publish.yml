@@ -1,7 +1,9 @@
 name: Release
 
-# Runs when CI passes for a push to `main` or `beta`, on the commit CI tested; why in
-# docs/adr/0003-release-gated-on-ci.md. CI is the gate, so this workflow only builds and releases.
+# CI's last job: ci.yml calls this workflow (`workflow_call`) for a push to `main` or `beta` once
+# every other CI job has passed, on the commit CI tested; why in docs/adr/0003-release-gated-on-ci.md
+# and docs/adr/0007-release-is-ci-last-job.md. CI is the gate, so this workflow only builds and
+# releases. It runs with the pushed branch's own ref: `github.ref_name` is the branch being released.
 # semantic-release (release.config.mjs; why in docs/adr/0002-beta-branch-with-semantic-release.md)
 # reads the Conventional Commit titles since the branch's last release (fix → patch, feat → minor,
 # `!` or BREAKING CHANGE → major) and, if any calls for one, releases:
@@ -20,34 +22,34 @@ name: Release
 # production, from the release tag when one was published (after its smoke check), otherwise from
 # the commit CI tested.
 #
-# A workflow_run workflow runs from the default branch's copy of this file (`beta`), and
-# `github.ref` is always `refs/heads/beta`, even for `main`: the branch being released is
-# `github.event.workflow_run.head_branch`.
-#
-# npm authenticates with trusted publishing (OIDC), so the repo holds no npm token. The release job
-# runs in the `npm` environment; on npmjs.com the archidocs Trusted Publisher names repository
-# chalharb/archidocs, workflow publish.yml and that environment. Betas carry npm provenance;
-# stable releases don't (see the release step).
+# npm authenticates with trusted publishing (OIDC), so the repo holds no npm token, and every
+# release, beta or stable, carries npm provenance. The release job runs in the `npm` environment.
+# npm checks the calling workflow, not this file: on npmjs.com the archidocs Trusted Publisher
+# names repository chalharb/archidocs, workflow ci.yml and that environment.
 #
 # RELEASE_TOKEN (a GitHub App token or fine-grained PAT with contents write) is required: it pushes
 # the beta version commits and the release tags past the repo's rulesets. promote.yml uses it too.
+# ci.yml passes it and the Cloudflare secrets in by name.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main, beta]
+  workflow_call:
+    secrets:
+      RELEASE_TOKEN:
+        required: false # the release job's first step checks it, with a clearer error
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
 
 permissions:
   contents: read
 
+# One release per branch at a time, never cancelled.
 concurrency:
-  group: release-${{ github.event.workflow_run.head_branch }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   release:
-    # Only a push that passed CI: a PR's CI run never releases.
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     environment: npm
     permissions:
@@ -56,8 +58,8 @@ jobs:
       pull-requests: write
       id-token: write # OIDC for trusted publishing and provenance
     env:
-      BRANCH: ${{ github.event.workflow_run.head_branch }}
-      SHA: ${{ github.event.workflow_run.head_sha }}
+      BRANCH: ${{ github.ref_name }}
+      SHA: ${{ github.sha }}
     outputs:
       current: ${{ steps.current.outputs.current }}
       published: ${{ steps.release.outputs.published }}
@@ -74,10 +76,12 @@ jobs:
       - uses: actions/checkout@v7
         with:
           # The branch, not the bare commit: semantic-release releases a branch, and pushes to it.
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ github.ref_name }}
           # semantic-release reads every tag and commit since the last release.
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN }}
+      # The checkout above is the branch's tip, which semantic-release would release whole, so a
+      # newer commit CI hasn't passed yet stops this run here; `sites` reads `current` too.
       - name: Check the branch is still at the commit CI tested
         id: current
         run: |
@@ -105,16 +109,9 @@ jobs:
         run: git tag -l | grep -E '^v[0-9]+$' | xargs -r git tag -d
       - id: release
         if: steps.current.outputs.current == 'true'
-        # semantic-release (through env-ci) and release.config.mjs read the branch from GITHUB_REF and
-        # GITHUB_REF_NAME, which say `beta` on every workflow_run: they're set here to the branch CI tested.
-        run: GITHUB_REF="refs/heads/$BRANCH" GITHUB_REF_NAME="$BRANCH" pnpm exec semantic-release
+        run: pnpm exec semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          # npm builds its provenance statement from GITHUB_REF, but the OIDC token it is signed with
-          # names the ref the workflow_run ran from, always `beta`. On `main` the override above makes
-          # them disagree and the registry refuses the publish (E422), so `main` publishes without
-          # provenance; a statement naming `beta` and its head commit would be wrong for it anyway.
-          NPM_CONFIG_PROVENANCE: ${{ env.BRANCH == 'beta' }}
 
   smoke:
     # The package as users get it: installable from the registry, and reporting its own version.
@@ -145,7 +142,7 @@ jobs:
   major-tag:
     # Moved only after the smoke check passed, so `@v1` never points at a release that doesn't install.
     needs: [release, smoke]
-    if: github.event.workflow_run.head_branch == 'main'
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -169,7 +166,7 @@ jobs:
     # wrangler.jsonc holds its Worker and Custom Domains.
     needs: [release, smoke]
     if: >-
-      always() && github.event.workflow_run.head_branch == 'main' && needs.release.result == 'success'
+      always() && github.ref_name == 'main' && needs.release.result == 'success'
       && needs.release.outputs.current == 'true'
       && (needs.smoke.result == 'success' || (needs.smoke.result == 'skipped' && needs.release.outputs.published != 'true'))
     runs-on: ubuntu-latest
@@ -197,7 +194,7 @@ jobs:
       - if: steps.credentials.outputs.ready == 'true'
         uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release.outputs.published == 'true' && format('v{0}', needs.release.outputs.version) || github.event.workflow_run.head_sha }}
+          ref: ${{ needs.release.outputs.published == 'true' && format('v{0}', needs.release.outputs.version) || github.sha }}
           # Full history: each docs page's "Last updated" date is the date of its file's last commit.
           fetch-depth: 0
       - if: steps.credentials.outputs.ready == 'true'
