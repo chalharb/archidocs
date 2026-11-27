@@ -176,8 +176,8 @@ describe("skillStub", () => {
     expect(skillStub("authoring", "archidocs")).not.toContain("In this repo");
   });
 
-  it("keeps get_authoring_guide in authoring's stub, for servers older than get_guide", () => {
-    expect(skillStub("authoring", "archidocs")).toContain("`get_authoring_guide`");
+  it("does not name the deprecated get_authoring_guide in any stub", () => {
+    for (const s of skills) expect(skillStub(s.id, "archidocs")).not.toContain("get_authoring_guide");
   });
 
   it("takes its name and description from the registry", () => {
