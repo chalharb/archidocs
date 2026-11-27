@@ -155,7 +155,7 @@ Both CI templates take a `version` input, the npm version of `archidocs` to run.
           version: 1.2.0
 ```
 
-When `version` is empty, the Action runs the version it was checked out at. See the [GitHub Action reference](/docs/reference/ci/github-action/).
+When `version` is empty, the Action installs the version of its own tag from npm, so `@v1` runs the newest 1.x and `@v1.4.0` runs 1.4.0. See the [GitHub Action reference](/docs/reference/ci/github-action/).
 
 </TabItem>
 <TabItem label="GitLab CI">

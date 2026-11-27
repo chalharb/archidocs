@@ -31,7 +31,7 @@ inputs:
     description: Deploy the site to GitHub Pages. It only ever deploys on a push to the default branch or a tag.
     default: "true"
   version:
-    description: The archidocs npm version to run, such as `1.2.0`. Empty runs the version this Action was checked out at.
+    description: The archidocs npm version to run, such as `1.2.0`. Empty runs the version of the Action's tag (`@v1` runs the newest 1.x, `@v1.4.0` runs 1.4.0), and builds from source at any other ref, such as a branch or sha.
     default: ""
   node-version:
     description: The Node.js version to set up.
@@ -56,7 +56,12 @@ runs:
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
+        ACTION_REF: ${{ github.action_ref }}
       run: |
+        # At a version tag (v1, v1.4.0) the Action runs that release from npm.
+        if [ -z "$VERSION" ] && [[ "$ACTION_REF" =~ ^v[0-9]+(\.[0-9]+){0,2}$ ]]; then
+          VERSION="${ACTION_REF#v}"
+        fi
         if [ -n "$VERSION" ]; then
           npm install --global "archidocs@$VERSION"
         else

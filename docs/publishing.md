@@ -58,7 +58,7 @@ Set the repository's Pages source to "GitHub Actions".
 | `preview` | `false` | Build a PR preview and upload it as a workflow artifact instead of deploying. |
 | `base` | the PR's base branch | The preview's base branch, read from `origin/<base>`. |
 | `deploy` | `true` | Deploy to GitHub Pages (only ever on a default-branch push or a tag). |
-| `version` | the Action's own | The archidocs npm version to run. |
+| `version` | the Action's tag | The archidocs npm version to run. Empty runs the Action's tag from npm (`@v1` the newest 1.x, `@v1.4.0` 1.4.0); at a branch or sha it builds from source. |
 | `node-version` | `24` | The Node.js version to set up. |
 
 Its outputs are `site` (the site folder's path) and `page-url`.
