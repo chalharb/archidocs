@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { QUIET_MS, serveDev, type DevServer } from "../../src/cli/dev.ts";
@@ -42,6 +43,17 @@ function countEvents(url: string, name: string): { count: () => number; stop: ()
     }
   })().catch(() => {});
   return { count: () => count, stop: () => controller.abort() };
+}
+
+/** A GET to `url` with its own Host header, which `fetch` won't let a caller set. */
+function getWithHost(url: string, path: string, host: string): Promise<{ status: number; body: string }> {
+  return new Promise((done, fail) => {
+    const { hostname, port } = new URL(url);
+    request({ hostname, port, path, headers: { Host: host } }, (res) => {
+      let body = "";
+      res.setEncoding("utf8").on("data", (c: string) => (body += c)).on("end", () => done({ status: res.statusCode!, body }));
+    }).on("error", fail).end();
+  });
 }
 
 describe("archidocs dev", () => {
@@ -135,5 +147,38 @@ describe("archidocs dev", () => {
     const md = nextLoad();
     await writeFile(join(root, "shop/notes.md"), "# Notes\n");
     await md;
+  });
+
+  it("refuses a request whose Host is not local, on every route, when bound to localhost", async () => {
+    const { url } = await start();
+    const { port } = new URL(url);
+    for (const path of ["/", "/workspace.bundle.json", "/site.json", "/__archidocs/events"]) {
+      const res = await getWithHost(url, path, "evil.example");
+      expect(res.status, path).toBe(403);
+      expect(res.body, path).not.toContain("shop:checkout");
+    }
+    for (const host of [`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`]) {
+      const res = await getWithHost(url, "/workspace.bundle.json", host);
+      expect(res.status, host).toBe(200);
+      expect(res.body, host).toContain("shop:checkout");
+    }
+  });
+
+  it("serves a foreign Host when bound beyond localhost, as the user chose", async () => {
+    const { root } = await writeWorkspace(landscapeWorkspace);
+    dev = await serveDev({ checkout: checkoutAt(root), viewerDir, host: "0.0.0.0", port: 0 });
+    const res = await getWithHost(dev.url, "/workspace.bundle.json", "evil.example");
+    expect(res.status).toBe(200);
+    expect(res.body).toContain("shop:checkout");
+  });
+
+  it("answers 404 to an encoded path that climbs out of the viewer directory", async () => {
+    const { url } = await start();
+    // URL parsing folds %2e%2e away; an encoded slash survives it, and dist/ holds only the viewer, so the repo package.json is two levels up.
+    for (const path of ["/%2e%2e/package.json", "/..%2f..%2fpackage.json"]) {
+      const res = await getWithHost(url, path, new URL(url).host);
+      expect(res.status, path).toBe(404);
+      expect(res.body, path).not.toContain('"name"');
+    }
   });
 });
