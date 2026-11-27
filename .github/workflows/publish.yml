@@ -215,7 +215,7 @@ jobs:
         run: |
           version="$RELEASED_VERSION"
           if [ -z "$version" ]; then
-            version=$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*')
+            version=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude '*-*')
             version="${version#v}"
           fi
           echo "ARCHIDOCS_DOCS_VERSION=$version" >> "$GITHUB_ENV"
