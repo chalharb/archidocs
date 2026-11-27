@@ -8,7 +8,7 @@ sidebar:
 Have a coding agent find the fields your Model leaves empty, such as repository links, API docs, technology and versions, and descriptions. It interviews you to fill them, one Element at a time. Before each question it looks in the code, so most answers are a "yes" to a value it has already found.
 
 :::note[For agents]
-The agent topic for this task is [`fill-gaps`](/docs/reference/agent-guide/fill-gaps/).
+The agent skill for this task is [`archidocs-fill-gaps`](/docs/reference/agent-guide/fill-gaps/). Load its guide with `get_guide("fill-gaps")`, or `archidocs guide --skill fill-gaps` without MCP.
 :::
 
 ## When to use it
@@ -20,7 +20,7 @@ The agent topic for this task is [`fill-gaps`](/docs/reference/agent-guide/fill-
 ## Before you start
 
 - The agent has the Archidocs MCP server over a writable [Workspace checkout](/docs/reference/glossary/#term-checkout). See [Connect an agent over MCP](/docs/guides/agents/connect-mcp/).
-- The skill is installed. See [Install the agent skill](/docs/guides/agents/install-skill/).
+- The agent skills are installed. See [Install the agent skill](/docs/guides/agents/install-skill/).
 - The agent can read the codebases the Workspace describes: the code repos are checked out, or the Workspace lives in the same repo. Without the code, the agent can still find the gaps, but every question comes without a proposed value.
 - `archidocs check` passes. The agent runs it first and fixes any errors before it looks for gaps.
 
@@ -32,11 +32,11 @@ Start the agent where it can see both the Workspace and the code, and name what 
 Fill the documentation gaps in the Archidocs Project "payments". The Services' code is in ../payments-service and ../fraud-detection.
 ```
 
-Leave the Project out to scan the whole Workspace. The skill sends the agent to the `fill-gaps` topic, which it follows from here.
+Leave the Project out to scan the whole Workspace. The request fires the `archidocs-fill-gaps` skill. The agent loads its guide with `get_guide("fill-gaps")`, loads the authoring guide it builds on, and follows the fill-gaps guide from here.
 
 ## 2. Agree the scope
 
-The agent lists every gap, grouped by Project and Owner Team:
+The agent calls the MCP [`list_gaps`](/docs/reference/mcp/list_gaps/) tool, or runs `archidocs gaps` without MCP. It shows you every gap, grouped by Project and Owner Team:
 
 ```text
 ## payments
@@ -94,13 +94,15 @@ Then run `archidocs diff main` to list every Element whose fields changed. In th
 
 ## If it didn't
 
+If the agent starts editing without the interview, it didn't load the skill. Ask it to load the guide with `get_guide("fill-gaps")` first.
+
 If every question comes without a proposed value, the agent can't see the code. Tell it where each Service's checkout is.
 
 If the agent edits YAML by hand instead of calling the write tools, it isn't connected to the MCP server. Check the server is registered, as [Connect an agent over MCP](/docs/guides/agents/connect-mcp/) shows.
 
 ## Related
 
-- [The `fill-gaps` topic](/docs/reference/agent-guide/fill-gaps/)
+- [The `fill-gaps` skill](/docs/reference/agent-guide/fill-gaps/)
 - [`archidocs gaps`](/docs/reference/cli/gaps/) and [`list_gaps`](/docs/reference/mcp/list_gaps/)
 - [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
 - [Agents and MCP](/docs/concepts/agents-and-mcp/)

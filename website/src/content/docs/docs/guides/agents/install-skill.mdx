@@ -7,6 +7,8 @@ sidebar:
 
 Install the `archidocs-authoring` skill, so a coding agent loads the authoring guide before it edits the Model.
 
+Other skills build on authoring, each with a guide of its own. The `archidocs-fill-gaps` skill finds what the Model leaves empty and interviews you to fill it. An agent loads its guide with `get_guide("fill-gaps")`, and that guide has it load the authoring guide first. See [Fill documentation gaps](/docs/guides/agents/fill-gaps/).
+
 ## Before you start
 
 - The Archidocs CLI is installed. See the [Quick start](/docs/start/quick-start/).
@@ -81,11 +83,11 @@ The first lines are the skill's name and description:
 ```text
 ---
 name: archidocs-authoring
-description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, proposing an ADR, or finding and filling documentation gaps.
+description: Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.
 ---
 ```
 
-`archidocs guide <topic>` prints one task, such as [`add-service`](/docs/reference/agent-guide/add-service/). The guide for the latest release is also under [Authoring guide for agents](/docs/reference/agent-guide/).
+`archidocs guide <topic>` prints one task, such as [`add-service`](/docs/reference/agent-guide/add-service/). `archidocs guide --skill fill-gaps` prints the [`fill-gaps`](/docs/reference/agent-guide/fill-gaps/) skill's guide, the same as `get_guide("fill-gaps")`. The guides for the latest release are also under [Authoring guide for agents](/docs/reference/agent-guide/).
 
 ## Related
 

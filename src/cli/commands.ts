@@ -112,12 +112,13 @@ export const commands = {
     description: "Print an agent skill's full guide, or one of its task topics. With no `--skill`, the authoring guide.",
     arguments: [{ name: "[topic]", description: "A task topic of the skill; with none, the guide and its list of topics." }],
     flags: {
-      skill: { type: "string", value: "<id>", default: "authoring", description: "The skill whose guide to print. `authoring` is the one there is today." },
+      skill: { type: "string", value: "<id>", default: "authoring", description: "The skill whose guide to print: `authoring`, or one that builds on it, such as `fill-gaps`. Only `authoring` has topics." },
     },
     examples: [
       { command: "archidocs guide", description: "Print the authoring guide: the Model in brief, the edit loop and the list of task topics." },
       { command: "archidocs guide add-service", description: "Print one task topic, here how to add a Service." },
       { command: "archidocs guide --skill authoring", description: "Name the skill, as a skill's stub does: the same as `archidocs guide`." },
+      { command: "archidocs guide --skill fill-gaps", description: "Print another skill's guide, here the interview that fills what the Model leaves empty." },
     ],
     exitCodes: [
       { code: EXIT.ok, meaning: "The guide or the topic was printed." },

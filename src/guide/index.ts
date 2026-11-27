@@ -18,12 +18,21 @@ export const topics = [
   { id: "dynamic-view", summary: "Draft a scenario as Steps over existing Relationships, adding missing ones." },
   { id: "saved-view", summary: "Save a structural or Deployment View with selectors and a Lens." },
   { id: "propose-adr", summary: "Propose an ADR linked to the Elements and Views it affects." },
-  { id: "fill-gaps", summary: "Interview the user about the fields the Model leaves empty, proposing each value from evidence in the code and writing it as it is confirmed." },
   { id: "change", summary: "Rename, move or remove, working through refused removals by their references." },
   { id: "rules", summary: "Every `check` rule id: what it means, a failing example and the fix." },
 ] as const;
 
 export type TopicId = (typeof topics)[number]["id"];
+
+/**
+ * Authoring topics that became skills of their own, by the skill that took
+ * each over. Asking authoring for one returns a short note naming the skill,
+ * so 1.3.x stubs and agents still find it. Drop these at the next major version.
+ */
+const movedTopics: ReadonlyMap<string, string> = new Map([["fill-gaps", "fill-gaps"]]);
+
+const movedNote = (topic: string, skill: string) =>
+  `# ${topic}\n\nThe \`${topic}\` topic moved to the \`archidocs-${skill}\` skill. Load it with \`get_guide("${skill}")\`, or \`archidocs guide --skill ${skill}\` without MCP, and follow it.\n`;
 
 /** A skill's topic: a reference file under its guide folder's `topics/`, or a generated one. */
 export interface Topic {
@@ -49,9 +58,16 @@ export const skills = [
     id: "authoring",
     name: "archidocs-authoring",
     description:
-      "Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, proposing an ADR, or finding and filling documentation gaps.",
+      "Edit the Archidocs architecture Model. Use when bootstrapping a Project from code, adding or changing Services, Relationships, Deployments or Views, or proposing an ADR.",
     dir: "",
     topics,
+  },
+  {
+    id: "fill-gaps",
+    name: "archidocs-fill-gaps",
+    description:
+      "Find and fill what the Archidocs Model leaves empty, by interviewing the user with values proposed from evidence in the code. Use when asked what's missing or undocumented in the architecture, to audit or complete the Model, or to prepare a Team's documentation backlog.",
+    dir: "fill-gaps/",
   },
 ] as const satisfies readonly Skill[];
 
@@ -89,6 +105,8 @@ export async function skillGuide(skill: Skill, topic?: string): Promise<GuideRes
   }
   if (!own.length) return { ok: false, message: `The skill "${skill.id}" has no topics; load it with no topic.` };
   const found = own.find((t) => t.id === topic);
+  const movedTo = skill.id === "authoring" ? movedTopics.get(topic) : undefined;
+  if (!found && movedTo) return { ok: true, skill: skill.id, topic, text: movedNote(topic, movedTo) };
   if (!found) {
     const suggestion = suggest(topic, own.map((t) => t.id));
     return { ok: false, message: `Unknown topic "${topic}"${suggestion ? `; did you mean "${suggestion}"?` : ""} Topics: ${own.map((t) => t.id).join(", ")}.`, ...(suggestion ? { suggestion } : {}) };

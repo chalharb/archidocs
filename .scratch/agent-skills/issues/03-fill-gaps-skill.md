@@ -1,6 +1,6 @@
 # 03: `fill-gaps` skill
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01, 02
 Spec: [Agent skills](../spec.md)
 

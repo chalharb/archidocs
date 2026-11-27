@@ -43,6 +43,16 @@ describe("archidocs guide --skill", () => {
     expect(topicFirst.stdout).toBe(topic.stdout);
   }, 30_000);
 
+  it("prints the fill-gaps skill, and the moved-topic note for the old authoring topic", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const [skill, moved] = await Promise.all([archidocs(tmpdir(), "guide", "--skill", "fill-gaps"), archidocs(tmpdir(), "guide", "fill-gaps")]);
+    expect(skill.code).toBe(0);
+    expect(skill.stdout).toBe(text(await call("get_guide", { skill: "fill-gaps" })));
+    expect(moved.code).toBe(0);
+    expect(moved.stdout).toBe(text(await call("get_authoring_guide", { topic: "fill-gaps" })));
+    expect(moved.stdout).toContain("archidocs-fill-gaps");
+  }, 30_000);
+
   it("exits 2 on an unknown skill, naming the closest one", async () => {
     const { code, stderr } = await archidocs(tmpdir(), "guide", "--skill", "authorng");
     expect(code).toBe(2);
