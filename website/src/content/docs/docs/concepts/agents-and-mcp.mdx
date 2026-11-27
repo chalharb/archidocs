@@ -53,6 +53,8 @@ The MCP tools say what they do. The authoring guide says how to model well with 
 
 It ships with the CLI, so it always matches it. The MCP tool `get_guide("authoring")` serves it, and `archidocs guide` prints it. `get_authoring_guide` serves the same and is deprecated, kept for skills installed by older versions. `archidocs init` installs a skill that points agents at it.
 
+Other skills build on the authoring guide, each with a guide of its own. [`fill-gaps`](/docs/reference/agent-guide/fill-gaps/) finds what the Model leaves empty and interviews you to fill it: `get_guide("fill-gaps")` serves it, and `archidocs guide --skill fill-gaps` prints it.
+
 The guides on this site cover the same tasks for people, and each links its agent topic.
 
 ## Describing an architecture in prose

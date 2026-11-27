@@ -1,11 +1,18 @@
-# Fill gaps
+---
+name: archidocs-fill-gaps
+description: Find and fill what the Archidocs Model leaves empty, by interviewing the user with values proposed from evidence in the code. Use when asked what's missing or undocumented in the architecture, to audit or complete the Model, or to prepare a Team's documentation backlog.
+---
+
+# Archidocs fill gaps
+
+Load `authoring` first: `get_guide("authoring")`, or `archidocs guide` without MCP. Its edit loop and its rules for the Model apply to every write here.
 
 Interview the user about what the Model leaves empty, one Element at a time. You do the legwork before every question: dig the value out of the code the Workspace describes and put it forward with its source, so the user mostly confirms or corrects. Each confirmed answer is written straight away, so stopping halfway still leaves real progress.
 
 ## Steps
 
-1. **Check.** Run `check` (or `archidocs check`) and fix its errors first: the gap scan reads the Bundle, which a failing Workspace doesn't build.
-2. **Gap scan.** Build the Bundle with `archidocs build --bundle-only --out <tmp>` and run the query under Gap query over `<tmp>/workspace.bundle.json`. It prints every gap, grouped by Project and Owner Team. Over MCP alone, walk `list_owned` for each Team from `list_teams` and `get_element` each item, applying the same tests. Show the scan and agree with the user which Projects or Teams to work through.
+1. **Check.** Run `check` (or `archidocs check`) and fix its errors first: the gap scan lists nothing while the Workspace has errors.
+2. **Gap scan.** Call `list_gaps`, or run `archidocs gaps` without MCP. It lists every gap, grouped by Project and Owner Team; pass `project` or `owner` (`--project`, `--owner`) to narrow it. What it counts is under What counts as a gap. Show the scan and agree with the user which Projects or Teams to work through.
 3. **Codebases.** For each Project, find the checkout behind each Service: an existing `repository`, a `links` entry, the Workspace's own repo, or a path the user names. Ask once for any you can't find.
 4. **Interview**, one round per Element, Services that others call first, then the rest of the Services, then Components. Within a round, ask that Element's gaps in this order: `repository`, API docs, `technology` and version, `description`, Owner, then its Relationships and Deployments. For each round:
    - **Legwork first.** Look where the table under Evidence points before you ask anything. Finding facts is your job; deciding them is the user's.
@@ -14,7 +21,7 @@ Interview the user about what the Model leaves empty, one Element at a time. You
    - **Accept** `skip` and `unknown`: record the gap as open and move on.
    - **Write** the round's confirmed answers at once (see Writing), then run `check`. The round is done when every gap of the Element is written, skipped or unknown, and `check` passes.
 5. **Metadata.** Once per Project, ask whether its Teams record facts the Model has no field for (`tier`, `on-call`, `pci-scope`). If they do, fill them Element by Element in the same way.
-6. **Decisions.** An answer that is a decision rather than a fact ("it's External because a vendor runs it", "we deploy only to prod on purpose") goes to the user as a proposed ADR, following the `propose-adr` topic.
+6. **Decisions.** An answer that is a decision rather than a fact ("it's External because a vendor runs it", "we deploy only to prod on purpose") goes to the user as a proposed ADR, following authoring's `propose-adr` topic.
 7. **Summary.** End with two lists: what was filled, each with its source, and what is still open, grouped by Owner Team so each list can go to its Team. Then the edit loop's finish: `check`, a branch name, a PR title, and a PR body that carries both lists.
 
 ## Writing
@@ -24,6 +31,8 @@ Write with `upsert_element`, `upsert_relationship` and `upsert_deployment`, pass
 Sources belong in the summary and the PR body, never in the Model: no evidence fields, no `inferred` tags, no source comments in the YAML.
 
 ## What counts as a gap
+
+What `list_gaps` and `archidocs gaps` report:
 
 | Where | Field | A gap when |
 | --- | --- | --- |
@@ -51,37 +60,3 @@ Fields such as `tags`, `links`, `metadata` and `instances` are left out on purpo
 
 Versions finer than `technology` carries (a pinned patch version, a runtime image tag) go in `metadata`, keyed by what they are: `node: 22.11.0`. Other facts without a field, such as an API style or a spec version, go there too.
 
-## Gap query
-
-Needs `jq`. Prints Markdown: a `##` heading per Project, a `###` heading per Owner Team, and one line per Element, Relationship or Deployment naming its empty fields.
-
-```jq
-. as $b
-| (reduce $b.elements[] as $e ({}; .[$e.id] = $e)) as $by
-| def app: .kind == "service" and .external == false and .type == "app";
-  def runs($id): [$b.deployments[] | select(.service == $id)];
-  def called($id): [$b.relationships[] | select(.to == $id and $by[.from].kind != "person")] | length > 0;
-  def gap($p; $o; $item; $m): select($m | length > 0) | {project: $p, owner: $o, item: $item, missing: $m};
-  [ ( $b.elements[] as $e
-      | gap($e.id | split(":")[0]; $e.owner; "\($e.kind) \($e.id)";
-          [ if $e.description == null then "description" else empty end,
-            if ($e.kind == "service" or $e.kind == "component") and $e.technology == null then "technology" else empty end,
-            if ($e | app) and $e.repository == null then "repository" else empty end,
-            if $e.kind == "service" and $e.external == false and (runs($e.id) | length) == 0 then "deployments" else empty end,
-            if ($e | app) and called($e.id)
-               and ([$e.links[].label, runs($e.id)[].endpoints[].name] | map(select(test("api|openapi|swagger"; "i"))) | length) == 0
-            then "api-docs" else empty end ]) ),
-    ( $b.relationships[] as $r
-      | gap($r.from | split(":")[0]; $by[$r.from].owner; "relationship \($r.from) -> \($r.to)";
-          [ if $r.description == null then "description" else empty end,
-            if $r.technology == null then "technology" else empty end,
-            if $r.interaction == "async" and $r.channel == null then "channel" else empty end ]) ),
-    ( $b.deployments[] as $d
-      | select($by[$d.service] | app)
-      | gap($d.service | split(":")[0]; $d.owner; "deployment \($d.service) in \($d.environment) on \($d.target)";
-          [ if $d.url == null then "url" else empty end ]) ) ]
-| group_by(.project)[]
-| "## \(.[0].project)", (group_by(.owner)[] | "### \(.[0].owner)", (.[] | "- \(.item): \(.missing | join(", "))"))
-```
-
-Save it as `gaps.jq` outside the Workspace and run `jq -r -f gaps.jq <tmp>/workspace.bundle.json`.
