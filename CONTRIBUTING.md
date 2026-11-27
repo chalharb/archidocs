@@ -69,11 +69,12 @@ The other commands, the page templates and the style rules are in [website/READM
 
 ## How releases work
 
-Releases are made by [semantic-release](https://semantic-release.gitbook.io/) (`release.config.mjs`, run by `.github/workflows/publish.yml` once CI passes on the pushed commit), from the commit types since the last release: `fix` makes a patch, `feat` a minor, and `!` or `BREAKING CHANGE` a major. The reasons for this setup are in [ADR 0002](docs/adr/0002-beta-branch-with-semantic-release.md) and [ADR 0003](docs/adr/0003-release-gated-on-ci.md).
+Releases are made by [semantic-release](https://semantic-release.gitbook.io/) (`release.config.mjs`, run by `.github/workflows/publish.yml` once CI passes on the pushed commit), from the commit types since the last release: `fix` makes a patch, `feat` a minor, and `!` or `BREAKING CHANGE` a major. The reasons for this setup are in [ADR 0002](docs/adr/0002-beta-branch-with-semantic-release.md), [ADR 0003](docs/adr/0003-release-gated-on-ci.md) and [ADR 0006](docs/adr/0006-promote-by-fast-forward.md).
 
-- **Every merge into `beta` publishes a beta**, such as `1.4.0-beta.1`, to the npm `beta` dist-tag, with a GitHub prerelease. It also deploys the docs and the demos to [beta.archidocs.dev](https://beta.archidocs.dev), [beta.big-bank.archidocs.dev](https://beta.big-bank.archidocs.dev) and [beta.kitchen-sink.archidocs.dev](https://beta.kitchen-sink.archidocs.dev). A beta never moves the Action's `v1` tag.
-- **A promotion releases it.** A pull request from `beta` into `main`, merged with a **merge commit**, publishes the stable version to `latest`, moves `v1` and deploys the production sites. Any other push to `main` that passes CI, such as a docs fix, deploys the production sites too.
-- **An urgent fix goes to `main` directly**, as a pull request into `main`.
+- **Every merge into `beta` that calls for a release publishes a beta**, such as `1.5.0-beta.1`, to the npm `beta` dist-tag, with a GitHub prerelease. The release commits `package.json` with that version to `beta` and tags the commit. It also deploys the docs and the demos to [beta.archidocs.dev](https://beta.archidocs.dev), [beta.big-bank.archidocs.dev](https://beta.big-bank.archidocs.dev) and [beta.kitchen-sink.archidocs.dev](https://beta.kitchen-sink.archidocs.dev). A beta never moves the Action's `v1` tag.
+- **The maintainer promotes the newest beta** by running the **Promote** workflow (Actions → Promote → Run workflow). It commits `package.json` with the stable version, `1.5.0` for `1.5.0-beta.N`, to `beta`, then moves `main` forward to that same commit. CI runs on `main`, and the release publishes the stable version to `latest` without committing anything, moves `v1` and deploys the production sites. Promote refuses when that version is already released, or when a commit after the newest beta would itself release: let its beta publish first.
+- **There is no pull request into `main`, and nothing is merged back.** `main` only ever moves to a commit of `beta`, so it is always behind or level with `beta`.
+- **An urgent fix goes through `beta` too**: a pull request into `beta`, then a promotion once its beta has published. If `beta` holds something that can't ship, revert it on `beta` first.
 
 ### Try a beta
 
