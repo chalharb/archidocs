@@ -1,5 +1,6 @@
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { randomBytes } from "node:crypto";
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 
 export interface DirEntry {
   name: string;
@@ -17,7 +18,7 @@ export interface FileSystem {
   exists(path: string): Promise<boolean>;
 }
 
-/** A FileSystem the YAML writer can also write through. `writeFile` creates missing folders. */
+/** A FileSystem the YAML writer can also write through. `writeFile` creates missing folders and replaces a file whole, never leaving it half written. */
 export interface WritableFileSystem extends FileSystem {
   writeFile(path: string, text: string): Promise<void>;
 }
@@ -26,7 +27,15 @@ export function nodeFileSystem(): WritableFileSystem {
   return {
     writeFile: async (path, text) => {
       await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, text);
+      // A hidden temp file beside it, which Load skips, then a rename over it.
+      const temp = join(dirname(path), `.${basename(path)}.${randomBytes(6).toString("hex")}.tmp`);
+      try {
+        await writeFile(temp, text);
+        await rename(temp, path);
+      } catch (error) {
+        await rm(temp, { force: true });
+        throw error;
+      }
     },
     readFile: (path) => readFile(path, "utf8"),
     readDir: async (path) =>

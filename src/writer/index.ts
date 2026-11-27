@@ -1,4 +1,4 @@
-import { join, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import type { WritableFileSystem } from "../core/fs.ts";
 import { loadDetailed } from "../core/load.ts";
 import type { ElementDecl, Issue, LoadedWorkspace, Project, RelationshipDecl } from "../core/model.ts";
@@ -56,13 +56,35 @@ export type WriteResult =
     }
   | Failure;
 
+/** The tail of each Workspace root's queue of writes, so one write's load, check and file writes never interleave with another's. */
+const queues = new Map<string, Promise<unknown>>();
+
 /**
  * The YAML writer. Applies one edit to the Model's YAML files in memory,
  * keeping comments and formatting, checks the whole Workspace with the edit
  * applied through Load, and writes the changed files only if the edit
  * introduces no error and this is not a dry run. Never touches git.
+ *
+ * Writes to one Workspace root run one at a time within this process: two
+ * MCP calls that overlap would otherwise each pass the check against the
+ * files as they were, and the later file write would undo the earlier one.
+ * See .claude/skills/concurrent-model-writes.
  */
-export async function write(options: WriterOptions, request: WriteRequest, { dryRun = false } = {}): Promise<WriteResult> {
+export function write(options: WriterOptions, request: WriteRequest, settings: { dryRun?: boolean } = {}): Promise<WriteResult> {
+  const key = resolve(options.root);
+  const result = (queues.get(key) ?? Promise.resolve()).then(() => writeNow(options, request, settings));
+  const tail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  queues.set(key, tail);
+  void tail.then(() => {
+    if (queues.get(key) === tail) queues.delete(key);
+  });
+  return result;
+}
+
+async function writeNow(options: WriterOptions, request: WriteRequest, { dryRun = false }: { dryRun?: boolean }): Promise<WriteResult> {
   const { fs, root } = options;
   const before = await loadDetailed({ fs, root, ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}) });
   const { workspace: ws, repoRoot } = before;
