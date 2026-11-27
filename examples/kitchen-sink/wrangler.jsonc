@@ -15,6 +15,14 @@
   "preview_urls": true,
   // Worker Previews (`wrangler preview`) need this block; an empty one keeps the production settings.
   "previews": {},
+  // Workers Logs: keep request and console logs in the dashboard. Environments inherit it.
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
   "env": {
     // The demo at the beta branch, ahead of the release: a Worker of its own on beta.kitchen-sink.archidocs.dev.
     "staging": {
