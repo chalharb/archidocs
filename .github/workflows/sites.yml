@@ -164,16 +164,6 @@ jobs:
         with:
           header: previews
           path: comment.md
-      # The per-site comments that docs.yml and demos.yml used to post.
-      - name: Remove the old per-site comments
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          gh api --paginate "repos/$REPO/issues/$PR/comments" \
-            --jq '.[] | select(.body | test("<!-- Sticky Pull Request Comment(docs|demo-big-bank|demo-kitchen-sink) -->")) | .id' |
-            while read -r id; do gh api -X DELETE "repos/$REPO/issues/comments/$id"; done
 
   cleanup:
     needs: credentials
