@@ -8,7 +8,7 @@ import { collectionOf, kindOfCollection, Ref, parentKindOf, type ElementKind } f
 import { removeDeployment, removeTarget, upsertDeployment, upsertTarget, type DeploymentRequest, type TargetRequest } from "./deployments.ts";
 import { unifiedDiff } from "./diff.ts";
 import { YamlFile } from "./document.ts";
-import { byPlace, fail, findProject, local, modelFile, projectFile, type Edit, type Failure, type Planned, type SourceRef, type WriteItem } from "./edit.ts";
+import { byPlace, fail, findProject, local, managedFields, modelFile, present, projectFile, setFields, type Edit, type Failure, type Planned, type SourceRef, type WriteItem } from "./edit.ts";
 import { overlayFileSystem } from "./overlay.ts";
 import { createProject, upsertDefinition, type DefinitionRequest, type ProjectRequest } from "./workspace.ts";
 import { removeView, upsertView, type ViewRequest } from "./views.ts";
@@ -187,10 +187,8 @@ async function upsertElement(edit: Edit, project: Project, request: Extract<Writ
   if (!id.ok) return id;
   const parentId = request.parent === undefined ? undefined : local(request.parent, project);
   if (parentId && !parentId.ok) return parentId;
-  const managed = Object.keys(request.fields).filter((k) => managedKeys.has(k));
-  if (managed.length > 0) {
-    return fail("invalid_input", `fields may not set ${managed.map((k) => `"${k}"`).join(", ")}: use upsert_relationship for Relationships, and parent for nesting.`);
-  }
+  const managed = managedFields(request.fields, [...managedKeys], "use upsert_relationship for Relationships, and parent for nesting.");
+  if (managed) return managed;
   const subject = { id: `${project.id}:${id.id}` };
   const abs = (repoPath: string) => join(edit.repoRoot, ...repoPath.split("/"));
 
@@ -201,16 +199,13 @@ async function upsertElement(edit: Edit, project: Project, request: Extract<Writ
       return fail("invalid_input", `${subject.id} is ${existing.parent ? `in ${project.id}:${existing.parent.id}` : "top-level"}; moving an Element is not supported. Remove it and add it again.`);
     }
     const file = await edit.open(abs(existing.file.path));
-    for (const [key, value] of Object.entries(request.fields)) {
-      if (value === null) file.delete([...existing.path, key]);
-      else file.set([...existing.path, key], value);
-    }
+    setFields(file, existing.path, request.fields);
     return { ok: true, action: "updated", item: "element", subject };
   }
 
   const collection = collectionOf[request.kind];
   const { name, ...rest } = request.fields;
-  const fields = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== null));
+  const fields = present(rest);
   const named = name === undefined || name === null ? {} : { name };
 
   const target = request.file === undefined ? undefined : projectFile(edit, project, request.file);
@@ -240,19 +235,16 @@ async function upsertRelationship(edit: Edit, project: Project, request: Extract
   const found = await findRelationship(edit, project, request);
   if (!found.ok) return found;
   const { consumer, to, id, match, subject } = found;
-  const managed = Object.keys(request.fields).filter((k) => k === "to" || k === "id");
-  if (managed.length > 0) return fail("invalid_input", `fields may not set ${managed.map((k) => `"${k}"`).join(", ")}: pass them as arguments.`);
+  const managed = managedFields(request.fields, ["to", "id"], "pass them as arguments.");
+  if (managed) return managed;
 
   const file = await edit.open(join(edit.repoRoot, ...consumer.file.path.split("/")));
   if (match) {
     if (qualify(match.data.to, project) !== qualify(to, project)) file.set([...match.path, "to"], to);
-    for (const [key, value] of Object.entries(request.fields)) {
-      if (value === null) file.delete([...match.path, key]);
-      else file.set([...match.path, key], value);
-    }
+    setFields(file, match.path, request.fields);
     return { ok: true, action: "updated", item: "relationship", subject };
   }
-  const fields = Object.fromEntries(Object.entries(request.fields).filter(([, v]) => v !== null));
+  const fields = present(request.fields);
   file.append([...consumer.path, "relationships"], { to, ...(id === undefined ? {} : { id }), ...fields });
   return { ok: true, action: "created", item: "relationship", subject };
 }
