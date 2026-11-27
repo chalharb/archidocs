@@ -1,0 +1,94 @@
+name: Promote
+
+# Promotes `beta` to a stable release, run by hand (Actions → Promote → Run workflow); why in
+# docs/adr/0006-promote-by-fast-forward.md. It commits package.json with the stable version X.Y.Z
+# to `beta` as `chore(release): X.Y.Z`, then moves `main` forward to that same commit. CI then runs
+# on `main`, and publish.yml releases X.Y.Z from it without committing anything, so `main` is always
+# an ancestor of `beta` and nothing is merged back.
+#
+# X.Y.Z is the newest vX.Y.Z-beta.N tag on `beta` without its `-beta.N`. It refuses when there's no
+# such tag, when vX.Y.Z already exists, when a commit after that beta would itself release (let that
+# beta publish first), or when `main` can't fast-forward to `beta`.
+#
+# The commit has no `[skip ci]`: a push whose head commit says it runs no CI, so nothing would release.
+# Both pushes are plain pushes, never forced: they fail unless they fast-forward. Running it again
+# after a failure is safe: if package.json already holds X.Y.Z it commits nothing and pushes again.
+#
+# RELEASE_TOKEN (the token publish.yml uses) is required: it pushes to `beta` and `main` past their
+# rulesets, and needs workflow write too, since `main` takes every workflow change made on `beta`.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for RELEASE_TOKEN
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::The RELEASE_TOKEN secret is not set. Promotion needs it to push to beta and main (see the comment at the top of promote.yml)."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+        with:
+          ref: beta
+          # Every tag and branch: the beta tags and `main` are read below.
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+      # test/ci/promote.test.ts runs this step against throwaway repos.
+      - name: Work out the stable version
+        id: version
+        run: |
+          set -euo pipefail
+          if ! beta=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*-beta.[0-9]*' HEAD 2>/dev/null); then
+            echo "::error::No vX.Y.Z-beta.N tag is reachable from beta, so there is no beta to promote."
+            exit 1
+          fi
+          stable="${beta%-beta.*}"
+          if git rev-parse -q --verify "refs/tags/$stable" >/dev/null; then
+            echo "::error::$stable already exists: nothing on beta since it has been released as a beta ($beta is the newest)."
+            exit 1
+          fi
+          # The types release.config.mjs releases: feat, fix, perf, revert, and any breaking change.
+          releasing=""
+          for commit in $(git rev-list "$beta..HEAD"); do
+            message=$(git log -1 --format=%B "$commit")
+            if grep -qE '^((feat|fix|perf|revert)(\([^)]*\))?!?|[A-Za-z0-9_]*(\([^)]*\))?!): |^Revert "' <<<"${message%%$'\n'*}" \
+              || grep -qE '^BREAKING[ -]CHANGE: ' <<<"$message"; then
+              releasing+="  $(git log -1 --format='%h %s' "$commit")"$'\n'
+            fi
+          done
+          if [ -n "$releasing" ]; then
+            echo "::error::These commits after $beta would release on their own; let their beta publish, then promote:"
+            printf '%s' "$releasing"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "::error::main is not an ancestor of beta, so it can't fast-forward to it. main must never have a commit of its own."
+            exit 1
+          fi
+          echo "Promoting $beta as ${stable#v}"
+          echo "version=${stable#v}" >> "$GITHUB_OUTPUT"
+      - name: Commit the version to beta and fast-forward main to it
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Edits package.json only; semantic-release makes the vX.Y.Z tag when it publishes.
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "chore(release): $VERSION"
+          fi
+          git push origin HEAD:refs/heads/beta
+          git push origin HEAD:refs/heads/main

@@ -8,13 +8,17 @@ name: Release
 #   - `beta`: X.Y.Z-beta.N to the npm `beta` dist-tag, package.json committed back as
 #     `chore(release): X.Y.Z-beta.N [skip ci]`, the vX.Y.Z-beta.N tag on that commit and a GitHub
 #     prerelease. `v1` stays put and no production site deploys.
-#   - `main`: X.Y.Z to `latest`, package.json committed back as `chore(release): X.Y.Z [skip ci]`,
-#     the vX.Y.Z tag on that commit and a GitHub Release. Once the published package passes the
-#     smoke check, `v1` moves to it (the docs tell people to use the Action as
-#     `chalharb/archidocs@v1` and the GitLab template from `v1`).
+#   - `main`: X.Y.Z to `latest`, the vX.Y.Z tag on the commit CI tested and a GitHub Release. It
+#     commits nothing: `main` only moves when promote.yml fast-forwards it to its
+#     `chore(release): X.Y.Z` commit on `beta`, which already holds the version, and the release
+#     refuses to publish unless package.json says X.Y.Z (why in
+#     docs/adr/0006-promote-by-fast-forward.md). Once the published package passes the smoke check,
+#     `v1` moves to it (the docs tell people to use the Action as `chalharb/archidocs@v1` and the
+#     GitLab template from `v1`).
 # There is no changelog file: release notes live in GitHub Releases.
-# Every passing push to `main` deploys the docs and demo sites to production, from the release tag
-# when one was published (after its smoke check), otherwise from the commit CI tested.
+# Every passing push to `main` (each one a promotion) deploys the docs and demo sites to
+# production, from the release tag when one was published (after its smoke check), otherwise from
+# the commit CI tested.
 #
 # A workflow_run workflow runs from the default branch's copy of this file (`beta`), and
 # `github.ref` is always `refs/heads/beta`, even for `main`: the branch being released is
@@ -26,7 +30,7 @@ name: Release
 # stable releases don't (see the release step).
 #
 # RELEASE_TOKEN (a GitHub App token or fine-grained PAT with contents write) is required: it pushes
-# the release commits past the repo's rulesets.
+# the beta version commits and the release tags past the repo's rulesets. promote.yml uses it too.
 on:
   workflow_run:
     workflows: [CI]
@@ -208,7 +212,8 @@ jobs:
       # The docs build takes its screenshots of the viewer in Chromium (website/src/lib/screenshots.ts).
       - if: steps.credentials.outputs.ready == 'true' && matrix.site == 'docs'
         run: pnpm exec playwright install --with-deps chromium
-      # The docs name the release they document; `package.json` may lag it, so the build is told.
+      # The docs name the release they document; on a commit that didn't release, `package.json`
+      # names a version that isn't out, so the build is told.
       - if: steps.credentials.outputs.ready == 'true'
         env:
           RELEASED_VERSION: ${{ needs.release.outputs.published == 'true' && needs.release.outputs.version || '' }}
