@@ -26,3 +26,26 @@ describe("archidocs guide", () => {
     expect(stderr).toContain('Unknown topic "bootstrp"; did you mean "bootstrap"?');
   });
 });
+
+describe("archidocs guide --skill", () => {
+  it("prints what get_guide serves, and defaults to authoring", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const [plain, skill, topic, topicFirst] = await Promise.all([
+      archidocs(tmpdir(), "guide"),
+      archidocs(tmpdir(), "guide", "--skill", "authoring"),
+      archidocs(tmpdir(), "guide", "--skill", "authoring", "relationships"),
+      archidocs(tmpdir(), "guide", "relationships", "--skill", "authoring"),
+    ]);
+    expect(skill.code).toBe(0);
+    expect(skill.stdout).toBe(text(await call("get_guide", { skill: "authoring" })));
+    expect(plain.stdout).toBe(skill.stdout);
+    expect(topic.stdout).toBe(text(await call("get_guide", { skill: "authoring", topic: "relationships" })));
+    expect(topicFirst.stdout).toBe(topic.stdout);
+  }, 30_000);
+
+  it("exits 2 on an unknown skill, naming the closest one", async () => {
+    const { code, stderr } = await archidocs(tmpdir(), "guide", "--skill", "authorng");
+    expect(code).toBe(2);
+    expect(stderr).toContain('Unknown skill "authorng"; did you mean "authoring"?');
+  });
+});

@@ -89,7 +89,7 @@ export default defineConfig({
         starlightLlmsTxt({
           projectName: "Archidocs",
           details: [
-            "If you can run Archidocs, prefer its own guide: `archidocs guide` (or the MCP `get_authoring_guide` tool) serves the authoring guide that matches the installed version. This site documents the latest release only.",
+            "If you can run Archidocs, prefer its own guide: the MCP `get_guide` tool (or `archidocs guide`) serves the authoring guide that matches the installed version. This site documents the latest release only.",
             "Every page is also available as Markdown at its URL with `.md` appended, such as https://archidocs.dev/docs/reference/cli/check.md.",
           ].join("\n\n"),
           // One set per part of the docs, so llms.txt indexes them all. A group's index page has its folder's

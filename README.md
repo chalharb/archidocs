@@ -163,7 +163,7 @@ The terms (Workspace, Project, Element, Relationship, Team, Environment, Deploym
 | `archidocs export <view-id>` | Render a View to SVG or PNG, styled like the viewer; `--all-saved` renders every Saved View, `--theme dark` draws it in the viewer's dark palette and `--label <text>` replaces the source line. |
 | `archidocs diff <from> [<to>]` | Show what changed in the Model between two refs. |
 | `archidocs mcp` | Run the MCP server over a Workspace checkout or a published Bundle. |
-| `archidocs guide [topic]` | Print the authoring guide for agents. |
+| `archidocs guide [topic] [--skill <id>]` | Print an agent skill's guide; `--skill` defaults to `authoring`. |
 | `archidocs version` | Print the CLI and Bundle schema versions. |
 
 ## Publishing

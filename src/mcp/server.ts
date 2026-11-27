@@ -31,7 +31,7 @@ import { pastOf, type Past } from "./history.ts";
 import type { ErrorCode } from "./errors.ts";
 import { registerWriteTools } from "./writes.ts";
 import { callLine, type Log } from "./announce.ts";
-import { authoringGuide, topics } from "../guide/index.ts";
+import { authoringGuide, guide as skillGuide, skills, topics, type GuideResult } from "../guide/index.ts";
 
 export interface ServerOptions {
   source: Source;
@@ -828,28 +828,53 @@ export function createServer(options: ServerOptions): McpServer {
     },
   );
 
-  const GuideInput = z.object({
-    topic: z.string().min(1).optional().describe(`One topic's reference file: ${topics.map((t) => t.id).join(", ")}`),
-    // Taken like every read tool's, but the guide ships with this Archidocs, so it is the same at every point.
+  // Taken like every read tool's, but the guides ship with this Archidocs, so they are the same at every point.
+  const topicArg = (of: string) => z.string().min(1).optional().describe(`One topic's reference file${of}`);
+  const GuideOutput = z.object({ topic: z.string().nullable(), topics: z.array(z.object({ id: z.string(), summary: z.string() })), text: z.string() });
+  /** A guide as a tool result: the ids of what was served, the skill's topics and the text. */
+  const guideResult = (served: GuideResult, extra: (g: Extract<GuideResult, { ok: true }>) => Record<string, unknown>): CallToolResult => {
+    if (!served.ok) return toResult(fail("not_found", served.message, served.suggestion ? [served.suggestion] : undefined));
+    return toResult(ok({ ...extra(served), topic: served.topic, topics: [...(skills.find((s) => s.id === served.skill)?.topics ?? [])].map((t) => ({ ...t })), text: served.text }, served.text));
+  };
+
+  const GetGuideInput = z.object({
+    skill: z.string().min(1).describe(`The skill: ${skills.map((s) => s.id).join(", ")}`),
+    topic: topicArg(`, for a skill that has topics; authoring's are ${topics.map((t) => t.id).join(", ")}`),
     at: At.optional(),
   });
   server.registerTool(
-    "get_authoring_guide",
+    "get_guide",
     {
-      title: "Authoring guide",
+      title: "Skill guide",
       description:
-        "How to edit the Model with the write tools. With no topic: the archidocs-authoring skill (the Model, the edit loop) and its list of topics. With a topic: that flow's reference file; `rules` is the catalog of every check rule. Load it before writing.",
-      inputSchema: advertise(GuideInput),
-      outputSchema: z.object({ topic: z.string().nullable(), topics: z.array(z.object({ id: z.string(), summary: z.string() })), text: z.string() }),
+        "Load an Archidocs agent skill's full guide, from this version. With no topic: the skill's SKILL.md, and for `authoring` (the Model, the edit loop) its list of topics. With a topic: that flow's reference file; authoring's `rules` is the catalog of every check rule. Load `authoring` before writing.",
+      inputSchema: advertise(GetGuideInput),
+      outputSchema: GuideOutput.extend({ skill: z.string() }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    // The guide ships with this version, so it answers whatever the state of the source.
+    // The guides ship with this version, so they answer whatever the state of the source.
+    async (raw: unknown): Promise<CallToolResult> => {
+      const args = GetGuideInput.safeParse(raw ?? {});
+      if (!args.success) return toResult(fail("invalid_input", z.prettifyError(args.error)));
+      return guideResult(await skillGuide(args.data.skill, args.data.topic), (g) => ({ skill: g.skill }));
+    },
+  );
+
+  const GuideInput = z.object({ topic: topicArg(`: ${topics.map((t) => t.id).join(", ")}`), at: At.optional() });
+  server.registerTool(
+    "get_authoring_guide",
+    {
+      title: "Authoring guide (deprecated)",
+      description:
+        "Deprecated in favour of `get_guide`, which serves every skill: this returns the same as `get_guide(\"authoring\", topic)`. With no topic: the archidocs-authoring skill (the Model, the edit loop) and its list of topics. With a topic: that flow's reference file; `rules` is the catalog of every check rule.",
+      inputSchema: advertise(GuideInput),
+      outputSchema: GuideOutput,
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
     async (raw: unknown): Promise<CallToolResult> => {
       const args = GuideInput.safeParse(raw ?? {});
       if (!args.success) return toResult(fail("invalid_input", z.prettifyError(args.error)));
-      const guide = await authoringGuide(args.data.topic);
-      if (!guide.ok) return toResult(fail("not_found", guide.message, guide.suggestion ? [guide.suggestion] : undefined));
-      return toResult(ok({ topic: guide.topic, topics: topics.map((t) => ({ ...t })), text: guide.text }, guide.text));
+      return guideResult(await authoringGuide(args.data.topic), () => ({}));
     },
   );
 

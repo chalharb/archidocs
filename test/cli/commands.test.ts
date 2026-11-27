@@ -25,7 +25,7 @@ describe("CLI command definitions", () => {
       "Usage:
         archidocs version [--format text|json]
         archidocs init [--skill [--workspace <dir>]]
-        archidocs guide [topic]
+        archidocs guide [topic] [--skill <id>]
         archidocs check [--format text|json|github] [--strict]
         archidocs build [--out <dir>] [--bundle-only] [--keep <n|all>]
         archidocs build --preview [--base <branch>] [--out <dir>]

@@ -62,7 +62,7 @@ async function listsArchidocs(path: string): Promise<boolean> {
 export async function init({ repoRoot, cwd, skillOnly, workspace, env, version }: InitOptions): Promise<string[]> {
   const out: string[] = [];
   const runner = await archidocsCommand(repoRoot, env, version);
-  const stub = skillStub(runner);
+  const stub = skillStub("authoring", runner);
   const wrote = (path: string, what: string) => out.push(`${what} ${posix(relative(repoRoot, path))}`);
 
   let workspaceDir: string | undefined;
