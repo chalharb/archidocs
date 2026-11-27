@@ -208,6 +208,17 @@ jobs:
       # The docs build takes its screenshots of the viewer in Chromium (website/src/lib/screenshots.ts).
       - if: steps.credentials.outputs.ready == 'true' && matrix.site == 'docs'
         run: pnpm exec playwright install --with-deps chromium
+      # The docs name the release they document; `package.json` may lag it, so the build is told.
+      - if: steps.credentials.outputs.ready == 'true'
+        env:
+          RELEASED_VERSION: ${{ needs.release.outputs.published == 'true' && needs.release.outputs.version || '' }}
+        run: |
+          version="$RELEASED_VERSION"
+          if [ -z "$version" ]; then
+            version=$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*')
+            version="${version#v}"
+          fi
+          echo "ARCHIDOCS_DOCS_VERSION=$version" >> "$GITHUB_ENV"
       - if: steps.credentials.outputs.ready == 'true'
         run: pnpm "${{ matrix.build }}"
       - if: steps.credentials.outputs.ready == 'true'
