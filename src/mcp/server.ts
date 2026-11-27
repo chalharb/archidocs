@@ -10,7 +10,10 @@ import {
   diff,
   filterChanges,
   findPaths,
+  formatGaps,
+  gapNames,
   getImpact,
+  listGaps,
   levelOf,
   listOwned,
   resolveScope,
@@ -561,6 +564,36 @@ export function createServer(options: ServerOptions): McpServer {
           ]),
         ].join("\n"),
       );
+    },
+  );
+
+  tool(
+    "list_gaps",
+    {
+      title: "List gaps",
+      description:
+        "What the Model leaves empty, grouped by Project and Owner Team: an Element's `description`; a Service's or Component's `technology`; for a Service you run (`type: app`, not external) its `repository`, its `deployments` when it has none (any non-external Service), and `api-docs` when a non-Person calls it and no `links` label or Deployment `endpoints` name mentions api, openapi or swagger; a Relationship's `description` and `technology`, and an async one's `channel`; a Deployment `url` of a Service you run. Tags, links, metadata and Owners are never gaps. Use it to find what to fill.",
+      input: z.object({
+        project: z.string().min(1).optional().describe("Only this Project's gaps"),
+        owner: z.string().min(1).optional().describe("Only the gaps of items this Team owns"),
+      }),
+      output: z.object({
+        total: z.number(),
+        gaps: z.array(
+          z.object({
+            project: z.string(),
+            owner: z.string(),
+            item: z.object({ kind: z.enum(["element", "relationship", "deployment"]), id: z.string() }),
+            missing: z.array(z.enum(gapNames)),
+          }),
+        ),
+      }),
+    },
+    ({ project, owner }, { bundle }) => {
+      if (project !== undefined && !bundle.projects.some((p) => p.id === project)) return notFound("Project", project, bundle.projects.map((p) => p.id));
+      if (owner !== undefined && !bundle.teams.some((t) => t.id === owner)) return notFound("Team", owner, bundle.teams.map((t) => t.id));
+      const gaps = listGaps(bundle, { ...(project === undefined ? {} : { project }), ...(owner === undefined ? {} : { owner }) });
+      return ok({ total: gaps.length, gaps }, gaps.length ? `${count(gaps.length, "item")} with gaps.\n${formatGaps(gaps, bundle)}` : "No gaps.");
     },
   );
 

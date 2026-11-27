@@ -241,6 +241,7 @@ describe("tool surface", () => {
       "get_workspace_info",
       "list_adrs",
       "list_environments",
+      "list_gaps",
       "list_history",
       "list_owned",
       "list_teams",

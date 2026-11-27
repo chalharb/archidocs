@@ -62,6 +62,7 @@ export const EXAMPLES: Readonly<Record<string, ToolExample>> = {
   find_paths: { arguments: { from: "sink:customer", to: "sink:orders-db" } },
   get_impact: { arguments: { id: "sink:orders-db", direction: "upstream" } },
   list_owned: { arguments: { team: "data" } },
+  list_gaps: { arguments: { project: "sink", owner: "data" } },
   list_adrs: { arguments: { element: "sink:mailer" } },
   get_adr: { arguments: { id: "sink:0001" } },
   // The first commit with the Kitchen sink in it: the changes since then.

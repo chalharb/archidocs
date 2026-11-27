@@ -36,7 +36,7 @@ Leave the Project out to scan the whole Workspace. The skill sends the agent to 
 
 ## 2. Agree the scope
 
-The agent builds the Bundle and lists every gap, grouped by Project and Owner Team:
+The agent lists every gap, grouped by Project and Owner Team:
 
 ```text
 ## payments
@@ -48,6 +48,8 @@ The agent builds the Bundle and lists every gap, grouped by Project and Owner Te
 ```
 
 The agent flags empty descriptions, technology, repository links, API docs and Deployments. It also flags a Relationship's technology and channel, and a Deployment's URL. Tags, links, metadata and Owners aren't counted as gaps. Tell the agent which Projects or Teams to work through.
+
+To see the same list yourself, without an agent, run [`archidocs gaps`](/docs/reference/cli/gaps/) in the Workspace checkout. Add `--owner <team>` for one Team's list, or `--project <id>` for one Project's.
 
 ## 3. Answer the interview
 
@@ -99,5 +101,6 @@ If the agent edits YAML by hand instead of calling the write tools, it isn't con
 ## Related
 
 - [The `fill-gaps` topic](/docs/reference/agent-guide/fill-gaps/)
+- [`archidocs gaps`](/docs/reference/cli/gaps/) and [`list_gaps`](/docs/reference/mcp/list_gaps/)
 - [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
 - [Agents and MCP](/docs/concepts/agents-and-mcp/)

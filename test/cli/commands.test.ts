@@ -27,6 +27,7 @@ describe("CLI command definitions", () => {
         archidocs init [--skill [--workspace <dir>]]
         archidocs guide [topic] [--skill <id>]
         archidocs check [--format text|json|github] [--strict]
+        archidocs gaps [--project <id>] [--owner <team>] [--json]
         archidocs build [--out <dir>] [--bundle-only] [--keep <n|all>]
         archidocs build --preview [--base <branch>] [--out <dir>]
         archidocs dev [--workspace <dir>] [--port <n>] [--host <host>]

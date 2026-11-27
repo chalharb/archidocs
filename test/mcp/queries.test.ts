@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { listGaps } from "../../src/core/index.ts";
 import { landscapeWorkspace } from "../support/fixtures.ts";
+import { loadWorkspace } from "../support/workspace.ts";
 import { connect } from "../support/mcp.ts";
 
 type Rel = { id: string | null; description: string | null };
@@ -103,5 +105,40 @@ describe("get_element Relationships", () => {
     expect(text(cart)).toContain("- uses: shop:cart-db (Reads and writes carts)");
     expect(text(cart)).toContain("- used by: shop:web (Manages the cart)");
     expect(text(cart)).toContain("- derived: → payments:payments-api (2 Relationships)");
+  });
+});
+
+describe("list_gaps", () => {
+  it("returns the same gaps as the core scan, with the Markdown list as text", async () => {
+    const { call, text } = await connect(landscapeWorkspace);
+    const { bundle } = await loadWorkspace(landscapeWorkspace);
+
+    const result = await call("list_gaps", {});
+
+    const expected = listGaps(bundle);
+    expect(result.structuredContent).toEqual({ total: expected.length, gaps: expected });
+    expect(text(result)).toContain("## shop\n### payments-team\n- service shop:fraud-check: description, technology, repository, deployments\n");
+  });
+
+  it("narrows to a Project and an Owner Team", async () => {
+    const { call } = await connect(landscapeWorkspace);
+    const { bundle } = await loadWorkspace(landscapeWorkspace);
+
+    const result = await call("list_gaps", { project: "shop", owner: "payments-team" });
+
+    expect((result.structuredContent as { gaps: unknown[] }).gaps).toEqual(listGaps(bundle, { project: "shop", owner: "payments-team" }));
+  });
+
+  it("says so when there are no gaps", async () => {
+    const { call, text } = await connect(landscapeWorkspace);
+    const result = await call("list_gaps", { project: "platform" });
+    expect(result.structuredContent).toEqual({ total: 0, gaps: [] });
+    expect(text(result)).toBe("No gaps.");
+  });
+
+  it("gives not_found for an unknown Project or Team", async () => {
+    const { call } = await connect(landscapeWorkspace);
+    expect((await call("list_gaps", { project: "shp" })).structuredContent).toMatchObject({ code: "not_found", suggestions: ["shop"] });
+    expect((await call("list_gaps", { owner: "payment-team" })).structuredContent).toMatchObject({ code: "not_found", suggestions: ["payments-team"] });
   });
 });
