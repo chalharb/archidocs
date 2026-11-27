@@ -43,7 +43,7 @@ Give the worker a self-contained brief:
 
 - The issue number and URL, and an instruction to read the issue, its parent `Feature`'s spec, and `docs/agents/issue-tracker.md` "Working a ticket".
 - The branch name: the issue number and a slug, such as `161-init-stubs`, branched from `beta`.
-- What done means: the acceptance criteria met, the checks in `CONTRIBUTING.md` passing, and a PR into `beta` whose body says `Closes #<n>`.
+- What done means: the acceptance criteria met, the checks in `CONTRIBUTING.md` passing, and a PR into `beta` whose body follows `.github/pull_request_template.md` and starts `Closes #<n>`.
 - Progress notes and questions go in issue comments; it doesn't change `Status`, `Model` or `Priority`.
 
 A harness that can't choose a worker's model falls back to the parent doing the work, and its claim comment says which model did it and that the recommendation was `<model>`.
@@ -54,4 +54,4 @@ Don't hand a parent issue to one worker. Work its open sub-issues instead, each 
 
 ## 7. Check the result
 
-When the worker finishes, check its PR exists, targets `beta`, says `Closes #<n>`, and that CI is running. Set `Status` to `in-review`. Report the PR link to the user. Don't report the issue as done until the PR is merged.
+When the worker finishes, check its PR exists, targets `beta`, follows the PR template with `Closes #<n>`, and that CI is running. Set `Status` to `in-review`. Report the PR link to the user. Don't report the issue as done until the PR is merged.
