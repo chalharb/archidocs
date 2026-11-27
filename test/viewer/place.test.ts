@@ -101,6 +101,13 @@ describe("what existing URLs mean", () => {
     expect(parsePlace("#/view/")).toEqual(HOME);
   });
 
+  it("lands a View id cut off mid-escape on the C1 Landscape, and still reads the query", () => {
+    expect(parsePlace("#/view/c2%").view).toBe(HOME.view);
+    expect(parsePlace("#/view/%E0%A4%A").view).toBe(HOME.view);
+    expect(parsePlace("#/view/c2%?open=a").open).toEqual(["a"]);
+    expect(parsePlace("#/view/c2%2Fshop%3Acheckout").view).toBe("c2/shop:checkout");
+  });
+
   it("reads an Impact Lens with no way as both ways, and an unknown way as both", () => {
     expect(parsePlace("#/view/c2?impact=shop:cart").lens).toEqual({ impact: "shop:cart", direction: "both" });
     expect(parsePlace("#/view/c2?impact=shop:cart&way=sideways").lens).toEqual({ impact: "shop:cart", direction: "both" });

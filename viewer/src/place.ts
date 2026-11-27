@@ -128,7 +128,7 @@ export function parsePlace(hash: string): Place {
   const list = (name: UrlParameterName) => [...new Set((get(name) ?? "").split(",").filter(Boolean))];
   const dir = get("dir") as Direction | null;
   return {
-    view: decodeURIComponent(match[1]!) || HOME.view,
+    view: decodeView(match[1]!) || HOME.view,
     open: list("open"),
     closed: list("closed"),
     selected: get("sel") || null,
@@ -143,6 +143,15 @@ export function parsePlace(hash: string): Place {
     vs: get("vs") || null,
     adr: get("adr") || null,
   };
+}
+
+/** A View id cut off mid-escape (`c2%`) is unreadable: it lands on HOME, as an unreadable hash does. */
+function decodeView(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return HOME.view;
+  }
 }
 
 function parseEdge(s: string | null): EdgeRef | null {
