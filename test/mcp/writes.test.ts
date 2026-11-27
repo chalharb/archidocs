@@ -264,6 +264,19 @@ describe("every write", () => {
     expect(await read("shop/systems.yaml")).toBe(before);
   });
 
+  it("runs overlapping writes one at a time, so neither undoes the other", async () => {
+    const { call, read } = await setup();
+    const results = await Promise.all(
+      ["search", "wishlist", "reviews"].map((id) => call("upsert_element", { project: "shop", kind: "service", id, fields: { name: id } })),
+    );
+    expect(results.map((r) => r.structuredContent?.action)).toEqual(["created", "created", "created"]);
+    const model = await read("shop/model.yaml");
+    for (const id of ["search", "wishlist", "reviews"]) expect(model).toContain(`  ${id}:\n    name: ${id}\n`);
+
+    const adrs = await Promise.all(["Use Postgres", "Cache search"].map((title) => call("propose_adr", { project: "shop", title, body: "Why." })));
+    expect(adrs.map((r) => r.structuredContent?.id).sort()).toEqual(["shop:0001", "shop:0002"]);
+  });
+
   it("reports an unknown Project or parent as not_found with suggestions", async () => {
     const { call } = await setup();
     expect((await call("upsert_element", { project: "shopp", kind: "person", id: "x", fields: { name: "X" } })).structuredContent).toMatchObject({ code: "not_found", suggestions: ["shop"] });
