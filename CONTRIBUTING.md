@@ -8,6 +8,7 @@ To report a security problem, don't open an issue. Follow [SECURITY.md](SECURITY
 
 - **A question:** open an [issue](https://github.com/chalharb/archidocs/issues/new). Check [Troubleshooting](https://archidocs.dev/docs/help/troubleshooting/) and the [FAQ](https://archidocs.dev/docs/help/faq/) first.
 - **A bug:** open a [bug report](https://github.com/chalharb/archidocs/issues/new?template=bug_report.yml). Say which CLI version you ran, the command, and what it printed.
+- **An accessibility barrier:** open a [bug report](https://github.com/chalharb/archidocs/issues/new?template=bug_report.yml&labels=accessibility) with the `accessibility` label. [ACCESSIBILITY.md](ACCESSIBILITY.md) says what we aim for and what we know falls short.
 - **An idea:** open a [feature request](https://github.com/chalharb/archidocs/issues/new?template=feature_request.yml). Say what you were trying to do before how Archidocs should do it. It's filed as a **Request** and triaged: planned as a Feature, made into a Task, or closed with the reason why.
 
 ## Set up
