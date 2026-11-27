@@ -7,7 +7,7 @@ Specs and tickets are GitHub issues in `chalharb/archidocs`, tracked on the [Arc
 - **Ticket**: an issue of type `Task` (or `Bug`, or `Feature` for an untriaged idea), added as a **sub-issue** of its spec.
 - **Labels**: only `research`, `prototype` and `grilling` (a map question's kind), plus the contributor labels `good first issue`, `help wanted`, `question` and `accessibility`. The kind of issue is its type and where it stands is `Status`, never a label.
 - **Blocking**: GitHub's issue dependencies ("blocked by"), not text in the body.
-- **Board**: the Project's `Status` field holds the triage role or progress (see `triage-labels.md`). Every new spec, map and issue starts in `backlog`. `Feature` (single select) names the feature and `Model` recommends the model tier for the work.
+- **Board**: the Project's `Status` field holds the triage role or progress (see `triage-labels.md`). Every new spec, map and issue starts in `backlog`. `Feature` (single select) names the feature, `Priority` (`P0`–`P2`) orders the work, and `Model` recommends the model tier for the work.
 
 Before 2026-11-27, specs and tickets were Markdown files under `.scratch/`, then briefly a Notion board. Open work and every spec moved to GitHub issues. Finished tickets and research notes weren't moved: they're in git at [`.scratch/` @ 2ada153](https://github.com/chalharb/archidocs/tree/2ada153/.scratch). Spec bodies still link there; a ticket's old number survives only in those links, and every live reference uses the issue number.
 
@@ -21,8 +21,11 @@ Before 2026-11-27, specs and tickets were Markdown files under `.scratch/`, then
 | `Status` field   | `PVTSSF_lAHOAFfac84BtfmBzhro1A0` |
 | `Feature` field  | `PVTSSF_lAHOAFfac84BtfmBzhro2OE` |
 | `Model` field    | `PVTSSF_lAHOAFfac84BtfmBzhro7Tk` |
+| `Priority` field | `PVTSSF_lAHOAFfac84BtfmBzhro1VA` |
 
 `Status` options: `backlog` `36c02995`, `needs-triage` `0c545800`, `ready-for-agent` `496af898`, `needs-human` `40466873`, `in-progress` `45445147`, `in-review` `98078e5a`, `done` `6d11c6fb`, `wontfix` `baa62b9e`.
+
+`Priority` options: `P0` `79628723` (blocks a release or other work now), `P1` `0a877460` (next up), `P2` `da944a9c` (when there's time). An open spec takes its most urgent open ticket's priority.
 
 `Model` options: `fable` `c02e5f28` (strongest judgment: architecture, ambiguous specs, hard trade-offs), `opus` `52f568ac` (bugs with an unknown cause, performance, changes across modules), `sonnet` `96f1cf36` (well-specified features and refactors), `haiku` `ef7387b3` (mechanical edits: renames, copy changes, config).
 
