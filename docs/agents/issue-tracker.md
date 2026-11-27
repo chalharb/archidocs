@@ -5,9 +5,9 @@ Specs and tickets are GitHub issues in `chalharb/archidocs`, tracked on the [Arc
 - **Spec**: an issue of type `Spec`, holding the feature's spec in its body. A wayfinding map is also a `Spec` issue, with the `map` label.
 - **Ticket**: an issue of type `Task` (or `Bug`, or `Feature` for an untriaged idea), added as a **sub-issue** of its spec.
 - **Blocking**: GitHub's issue dependencies ("blocked by"), not text in the body.
-- **Board**: the Project's `Status` field holds the triage role or progress (see `triage-labels.md`). `Feature` (single select) names the feature, `Number` orders tickets within it, and `Model` recommends the model tier for the work.
+- **Board**: the Project's `Status` field holds the triage role or progress (see `triage-labels.md`). `Feature` (single select) names the feature and `Model` recommends the model tier for the work.
 
-Before 2026-11-27, specs and tickets were Markdown files under `.scratch/`, then briefly a Notion board. Open work and every spec moved to GitHub issues. Finished tickets and research notes weren't moved: they're in git at [`.scratch/` @ 2ada153](https://github.com/chalharb/archidocs/tree/2ada153/.scratch). Spec bodies still link there.
+Before 2026-11-27, specs and tickets were Markdown files under `.scratch/`, then briefly a Notion board. Open work and every spec moved to GitHub issues. Finished tickets and research notes weren't moved: they're in git at [`.scratch/` @ 2ada153](https://github.com/chalharb/archidocs/tree/2ada153/.scratch). Spec bodies still link there; a ticket's old number survives only in those links, and every live reference uses the issue number.
 
 ## Project ids
 
@@ -18,7 +18,6 @@ Before 2026-11-27, specs and tickets were Markdown files under `.scratch/`, then
 | Project          | `PVT_kwHOAFfac84BtfmB`           |
 | `Status` field   | `PVTSSF_lAHOAFfac84BtfmBzhro1A0` |
 | `Feature` field  | `PVTSSF_lAHOAFfac84BtfmBzhro2OE` |
-| `Number` field   | `PVTF_lAHOAFfac84BtfmBzhro2OI`   |
 | `Model` field    | `PVTSSF_lAHOAFfac84BtfmBzhro7Tk` |
 
 `Status` options: `needs-triage` `0c545800`, `needs-info` `dbada91e`, `ready-for-agent` `496af898`, `ready-for-human` `40466873`, `in-progress` `45445147`, `in-review` `98078e5a`, `done` `6d11c6fb`, `wontfix` `baa62b9e`.
@@ -32,7 +31,7 @@ An issue's project item id: `gh project item-list 8 --owner chalharb --format js
 ## When a skill says "publish to the issue tracker"
 
 - **A spec:** `gh issue create --title "Spec: <feature>" --body-file spec.md`, then set its type to `Spec` (below). Add it to the project with `gh project item-add 8 --owner chalharb --url <issue url>`, and set `Feature`. Add the feature as a `Feature` option first if it's new.
-- **Tickets:** one issue per ticket, never one combined issue. Create each with `gh issue create`, set its type to `Task`, attach it to the spec as a sub-issue, add it to the project, and set `Status`, `Feature`, `Number` (counting up from 1 within the feature) and `Model`. Create blockers first, then add the "blocked by" links.
+- **Tickets:** one issue per ticket, never one combined issue. Create each with `gh issue create`, set its type to `Task`, attach it to the spec as a sub-issue, add it to the project, and set `Status`, `Feature` and `Model`. Create blockers first, then add the "blocked by" links.
 
 Setting a type (an issue's `node_id` comes from `gh api repos/chalharb/archidocs/issues/<n> -q .node_id`):
 
@@ -69,6 +68,6 @@ Used by `/wayfinder`. The **map** is a `Spec` issue with the `map` label, and ea
 - **Map**: the issue body holds the Notes, Decisions-so-far and Fog sections. Edit it with `gh issue edit <n> --body-file`.
 - **Child ticket**: a sub-issue whose `Type` is `Task`, with a label for its kind: `research`, `prototype` or `grilling`. The question goes in the body. Open means open, resolved means closed as completed.
 - **Blocking**: "blocked by" dependencies. A ticket is unblocked when every issue blocking it is closed.
-- **Frontier**: the map's open sub-issues with no assignee and no open blocker. Lowest `Number` wins.
+- **Frontier**: the map's open sub-issues with no assignee and no open blocker. Lowest issue number wins.
 - **Claim**: assign it before any work. An open ticket with no assignee is unclaimed.
 - **Resolve**: post the answer as a comment headed `## Answer`, and close the issue. Then add a context pointer (the gist and a link to the issue) to the map's Decisions-so-far.
