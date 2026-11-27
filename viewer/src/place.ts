@@ -47,6 +47,7 @@ export const URL_PARAMETERS = [
   { name: "open", values: "Element ids, separated by commas", does: "Opens these boxes to show what is inside them, in the order they were opened." },
   { name: "closed", values: "System ids, separated by commas", does: "Closes these Systems on the C2 Landscape, which opens every other System. Read on no other View." },
   { name: "sel", values: "An Element id", does: "Selects this node and shows it in the Element panel." },
+  { name: "rel", values: "Two node ids, separated by a comma", does: "Selects the edge from the first node to the second and shows its Relationships in the Relationship panel. Read only without `sel`." },
   { name: "dir", values: oneOf(directions), does: "Lays the View out in this direction. Left out, the View's own direction." },
   { name: "impact", values: "An Element id", does: "Turns on the Impact Lens around this Element." },
   { name: "way", values: oneOf(ways), does: "Which way the Impact Lens looks. Left out, `both`. Read only with `impact`." },
@@ -81,6 +82,8 @@ export interface Place {
   /** Systems closed on the C2 Landscape, which opens every other System; read on no other View. */
   closed: string[];
   selected: string | null;
+  /** The selected edge, by its two nodes; never set with `selected`. */
+  edge: EdgeRef | null;
   direction: Direction | null;
   lens: Lens | null;
   picks: string[];
@@ -98,8 +101,14 @@ export interface Place {
   adr: string | null;
 }
 
+/** An edge of a View, by the nodes at its two ends. */
+export interface EdgeRef {
+  from: string;
+  to: string;
+}
+
 /** Where an empty or unreadable hash lands: the top-most View, the C1 Landscape. */
-export const HOME: Place = { view: "c1", open: [], closed: [], selected: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
+export const HOME: Place = { view: "c1", open: [], closed: [], selected: null, edge: null, direction: null, lens: null, picks: [], step: null, graph: false, brokers: false, at: null, vs: null, adr: null };
 
 /** The route, then the View id up to the first `?`, then the query. */
 const ROUTE_PATTERN = new RegExp(`^${ROUTE_PREFIX}([^?]*)(?:\\?(.*))?$`);
@@ -123,6 +132,7 @@ export function parsePlace(hash: string): Place {
     open: list("open"),
     closed: list("closed"),
     selected: get("sel") || null,
+    edge: get("sel") ? null : parseEdge(get("rel")),
     direction: dir !== null && directions.includes(dir) ? dir : null,
     lens: parseLens(get),
     picks: list("picks"),
@@ -133,6 +143,11 @@ export function parsePlace(hash: string): Place {
     vs: get("vs") || null,
     adr: get("adr") || null,
   };
+}
+
+function parseEdge(s: string | null): EdgeRef | null {
+  const [from, to, ...rest] = (s ?? "").split(",");
+  return from && to && rest.length === 0 ? { from, to } : null;
 }
 
 function positive(s: string | null): number | null {
@@ -172,6 +187,7 @@ export function formatPlace(place: Place): string {
   if (place.open.length > 0) query.push(pair("open", place.open.map(encode).join(",")));
   if (place.closed.length > 0) query.push(pair("closed", place.closed.map(encode).join(",")));
   if (place.selected !== null) query.push(pair("sel", encode(place.selected)));
+  if (place.edge !== null && place.selected === null) query.push(pair("rel", `${encode(place.edge.from)},${encode(place.edge.to)}`));
   if (place.direction !== null) query.push(pair("dir", place.direction));
   if (place.lens !== null) query.push(...formatLens(place.lens));
   if (place.picks.length > 0) query.push(pair("picks", place.picks.map(encode).join(",")));
@@ -196,6 +212,7 @@ export const viewPlace = (view: string, selected: string | null = null, lens: Le
   open: [],
   closed: [],
   selected,
+  edge: null,
   direction: null,
   lens,
   picks: [],

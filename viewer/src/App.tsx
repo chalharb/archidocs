@@ -7,12 +7,13 @@ import { AdrReader } from "./AdrReader.tsx";
 import { Canvas } from "./Canvas.tsx";
 import { DynamicScreen } from "./DynamicScreen.tsx";
 import { ElementPanel } from "./ElementPanel.tsx";
+import { RelationshipPanel } from "./RelationshipPanel.tsx";
 import { fileName, picture, save, type ExportFormat } from "./export.ts";
 import { Find } from "./Find.tsx";
 import { go, usePlace } from "./history.ts";
 import { useLayout, type LaidOut } from "./layout.ts";
 import { LocationBar } from "./LocationBar.tsx";
-import { HOME, formatPlace, isPlaceHash, viewPlace, type Direction, type Lens, type Place } from "./place.ts";
+import { HOME, formatPlace, isPlaceHash, viewPlace, type Direction, type EdgeRef, type Lens, type Place } from "./place.ts";
 import { Rail } from "./Rail.tsx";
 import { acceptLiveBundles } from "./live.ts";
 import { AtBanner, ChangesList, Unavailable, useTimes } from "./History.tsx";
@@ -173,9 +174,18 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   const select = useCallback(
     (id: string | null) => {
       if (connectFrom !== null && id !== null) return connect(id);
-      go({ ...place, selected: id }, { replace: true });
+      go({ ...place, selected: id, edge: null }, { replace: true });
     },
     [place, connectFrom, connect],
+  );
+
+  /** Selects an edge, which shows its Relationships in place of the Element panel; ignored while Connect to… waits for a node. */
+  const selectEdge = useCallback(
+    (edge: EdgeRef) => {
+      if (connectFrom !== null) return;
+      go({ ...place, selected: null, edge }, { replace: true });
+    },
+    [place, connectFrom],
   );
 
   const pick = useCallback((id: string) => go({ ...place, picks: place.picks.includes(id) ? place.picks.filter((p) => p !== id) : [...place.picks, id] }, { replace: true }), [place]);
@@ -234,7 +244,7 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   const focus = useCallback(
     (id: string) => {
       const boxes = opening(workspace, place, id);
-      if (boxes) return go({ ...place, ...boxes, selected: id, adr: null }, { replace: boxes.open.length === place.open.length && boxes.closed.length === place.closed.length });
+      if (boxes) return go({ ...place, ...boxes, selected: id, edge: null, adr: null }, { replace: boxes.open.length === place.open.length && boxes.closed.length === place.closed.length });
       const element = workspace.byId.get(id);
       const home = element?.kind === "component" ? ownViewId(workspace.bundle, element.parent!) : element?.kind === "person" ? "c1" : ownViewId(workspace.bundle, id);
       // An Element outside any System has no View of its own; it sits on the C2 Landscape, which C1 (home) leaves out.
@@ -290,6 +300,9 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
   // The panel shows the selected node's Element: a Deployment's is its Service.
   const selectedElement = place.selected === null ? undefined : (view?.nodes.find((n) => n.id === place.selected)?.element ?? place.selected);
   const panelFor = useOpensAfterDoubleClick(selectedElement !== undefined && workspace.byId.has(selectedElement) ? selectedElement : undefined);
+  // The selected edge, while the View on screen still draws it.
+  const edge = place.edge === null ? undefined : view?.edges.find((e) => e.from === place.edge!.from && e.to === place.edge!.to);
+  const nodeName = (id: string) => view?.nodes.find((n) => n.id === id)?.name ?? workspace.name(id);
 
   if (dynamic) {
     return (
@@ -369,12 +382,14 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               workspace={workspace}
               laidOut={laidOut}
               selected={place.selected}
+              selectedEdge={edge ? place.edge : null}
               open={closable}
               fitKey={fitKey!}
               lensed={lensed}
               picks={place.picks}
               ring={place.lens !== null && "team" in place.lens}
               onSelect={select}
+              onSelectEdge={selectEdge}
               onPick={pick}
               onToggle={toggle}
               onOpenView={openView}
@@ -397,11 +412,23 @@ function Screen({ workspace, plain, comparison, timeline, at, loading }: ScreenP
               onClose={() => select(null)}
             />
           )}
+          {edge && panelFor === undefined && (
+            <RelationshipPanel
+              key={`${edge.from}>${edge.to}`}
+              workspace={workspace}
+              edge={edge}
+              fromName={nodeName(edge.from)}
+              toName={nodeName(edge.to)}
+              onSelectNode={select}
+              onFocus={focus}
+              onClose={() => go({ ...place, edge: null }, { replace: true })}
+            />
+          )}
           {place.adr !== null && (
             <AdrReader
               workspace={workspace}
               id={place.adr}
-              beside={panelFor !== undefined}
+              beside={panelFor !== undefined || edge !== undefined}
               onClose={() => openAdr(null)}
               onOpenAdr={openAdr}
               onFocus={focus}

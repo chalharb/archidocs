@@ -24,6 +24,7 @@ import { targetStep } from "../../src/render/tokens.ts";
 import { Icon, type IconName } from "./Icon.tsx";
 import { useReducedMotion } from "./motion.ts";
 import type { Workspace } from "./workspace.ts";
+import type { EdgeRef } from "./place.ts";
 import { CtrlWheelZoom } from "./wheel.tsx";
 
 /** The sub-label under a box's name, as the Variant D prototype writes it: "System · 4 Services", "datastore · Postgres", "External System". */
@@ -82,6 +83,8 @@ export interface CanvasProps {
   workspace: Workspace;
   laidOut: LaidOut;
   selected: string | null;
+  /** The selected edge, shown in the Relationship panel. */
+  selectedEdge: EdgeRef | null;
   open: readonly string[];
   /** Changes when the screen should fit the drawing again, such as a new View or direction. */
   fitKey: string;
@@ -92,6 +95,7 @@ export interface CanvasProps {
   /** Ringed rather than badged: a Team Lens. */
   ring: boolean;
   onSelect: (id: string | null) => void;
+  onSelectEdge: (edge: EdgeRef) => void;
   /** Shift-click: picks or unpicks a node. */
   onPick: (id: string) => void;
   onToggle: (id: string, open: boolean) => void;
@@ -132,6 +136,8 @@ interface BoxData extends Record<string, unknown> {
 interface RouteData extends Record<string, unknown> {
   points: { x: number; y: number }[];
   faded: boolean;
+  /** The edge is the one shown in the Relationship panel. */
+  picked: boolean;
   /** Set while a Lens is on: whether it lights this edge. */
   lit: boolean | undefined;
   change: CompareMark | undefined;
@@ -152,7 +158,7 @@ export function Canvas(props: CanvasProps) {
   );
 }
 
-function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring, onSelect, onPick, onToggle, onOpenView, onSettled }: CanvasProps) {
+function Flow({ workspace, laidOut, selected, selectedEdge, open, fitKey, lensed, picks, ring, onSelect, onSelectEdge, onPick, onToggle, onOpenView, onSettled }: CanvasProps) {
   const { view, layout } = laidOut;
   const reducedMotion = useReducedMotion();
   const animate = !reducedMotion && view.nodes.length <= ANIMATE_MAX_NODES;
@@ -237,6 +243,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
     const names = new Map(view.nodes.map((n) => [n.id, n.name]));
     return new Map(view.edges.map((e) => [`${e.from}>${e.to}`, edgeTooltip(names.get(e.from) ?? e.from, names.get(e.to) ?? e.to, e.relationships)]));
   }, [view]);
+  const pickedEdge = selectedEdge ? `${selectedEdge.from}>${selectedEdge.to}` : null;
   const edges = useMemo<Edge<RouteData>[]>(() => {
     const drawn = layout.edges.map(
       (e): Edge<RouteData> => ({
@@ -249,7 +256,8 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
         zIndex: edgeZ,
         data: {
           points: e.points,
-          faded: selected !== null && e.from !== selected && e.to !== selected,
+          faded: pickedEdge !== null ? `${e.from}>${e.to}` !== pickedEdge : selected !== null && e.from !== selected && e.to !== selected,
+          picked: `${e.from}>${e.to}` === pickedEdge,
           lit: hovered ? e === hovered : litEdges?.get(`${e.from}>${e.to}`),
           change: edgeChanges.get(`${e.from}>${e.to}`),
           from: e.from,
@@ -261,7 +269,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
     );
     // The hovered edge draws last, over the others.
     return hovered ? [...drawn.filter((e) => e.data!.lit !== true), ...drawn.filter((e) => e.data!.lit === true)] : drawn;
-  }, [layout, selected, litEdges, edgeChanges, tooltips, hovered, onHover, edgeZ]);
+  }, [layout, selected, pickedEdge, litEdges, edgeChanges, tooltips, hovered, onHover, edgeZ]);
 
   return (
     <ReactFlow
@@ -286,6 +294,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       proOptions={{ hideAttribution: true }}
       onNodeClick={(event, node) => (event.shiftKey ? onPick(node.id) : onSelect(node.id))}
       onNodeDoubleClick={(_, node) => onOpenView(node.id)}
+      onEdgeClick={(_, edge) => onSelectEdge({ from: edge.source, to: edge.target })}
       onPaneClick={() => onSelect(null)}
     >
       <Panel position="bottom-left" className="arc-key-panel">
@@ -293,7 +302,7 @@ function Flow({ workspace, laidOut, selected, open, fitKey, lensed, picks, ring,
       </Panel>
       {view.nodes.length > MINIMAP_MIN_NODES && <MiniMap position="top-right" className="arc-minimap" pannable zoomable ariaLabel="Overview" nodeStrokeWidth={0} />}
       <Controls position="bottom-right" showInteractive={false} />
-      <Fitter laidOut={laidOut} fitKey={fitKey} selected={selected} animate={animate} onSettled={onSettled} />
+      <Fitter laidOut={laidOut} fitKey={fitKey} selected={selected ?? (selectedEdge ? "edge" : null)} animate={animate} onSettled={onSettled} />
       <KeepBesidePanel selected={selected} animate={animate} drawingWidth={layout.width} />
       <CtrlWheelZoom />
     </ReactFlow>
@@ -649,9 +658,9 @@ const Box = memo(function Box({ data, selected }: NodeProps<Node<BoxData>>) {
 
 function Route({ data, markerEnd }: EdgeProps<Edge<RouteData>>) {
   const d = data!.points.map((p, i) => `${i === 0 ? "M" : "L"}${round(p.x)} ${round(p.y)}`).join(" ");
-  const { faded, lit, change, from, to, tooltip, onHover } = data!;
-  // While a Lens is on it decides which edges stand out; selection fades edges only without one.
-  const classes = ["arc-edge", (lit === undefined ? faded : !lit) ? "arc-faded" : "", lit ? "arc-lit" : "", change ? `arc-${change}` : ""];
+  const { faded, picked, lit, change, from, to, tooltip, onHover } = data!;
+  // While a Lens is on it decides which edges stand out; selection fades edges only without one. A picked edge always stands out.
+  const classes = ["arc-edge", !picked && (lit === undefined ? faded : !lit) ? "arc-faded" : "", lit ? "arc-lit" : "", picked ? "arc-edge-picked" : "", change ? `arc-${change}` : ""];
   const path = (
     <path
       className={classes.filter(Boolean).join(" ")}

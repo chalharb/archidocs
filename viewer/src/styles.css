@@ -1237,6 +1237,21 @@ select.arc-tool option {
   pointer-events: stroke;
 }
 
+/* Clicking an edge opens its Relationships. */
+.arc-flow .arc-edge-hit {
+  cursor: pointer;
+}
+
+.arc-edge.arc-edge-picked {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.arc-flow .react-flow__edge:has(.arc-edge-picked) .react-flow__arrowhead polyline {
+  stroke: var(--ink);
+  fill: var(--ink);
+}
+
 .arc-edge.arc-faded {
   stroke: var(--edge-faint);
 }
@@ -1421,6 +1436,7 @@ select.arc-tool option {
 }
 
 .arc-panel-head {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1455,7 +1471,9 @@ select.arc-tool option {
   text-transform: none;
 }
 
+/* Never squeezed by a long tab body: the body scrolls instead. */
 .arc-tabs {
+  flex-shrink: 0;
   display: flex;
   border-top: 1px solid var(--rule);
   border-bottom: 1.5px solid var(--ink);
@@ -1494,6 +1512,8 @@ select.arc-tool option {
 }
 
 .arc-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 12px 20px 24px;
   overflow: auto;
 }
@@ -3364,4 +3384,113 @@ button.arc-change:focus-visible {
 .arc-find .arc-flyout-head p {
   flex: 1;
   min-width: 0;
+}
+
+/* The Element panel's Links: the arrow and the other end on one row, what the Relationship does under it. */
+.arc-link-row {
+  display: grid;
+  grid-template-columns: 1.25em 1fr;
+  align-items: baseline;
+  row-gap: 4px;
+}
+
+.arc-link-row > .arc-link {
+  justify-self: start;
+}
+
+.arc-link-row > .arc-link-what {
+  grid-column: 2;
+  font-size: 13px;
+}
+
+/* Relationship panel: the selected edge's declared Relationships. */
+.arc-panel-head h2.arc-rel-title {
+  font-size: 18px;
+}
+
+.arc-rel-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.arc-rel-end {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule);
+  cursor: pointer;
+}
+
+.arc-rel-end:hover {
+  text-decoration-color: currentColor;
+}
+
+.arc-rel-arrow {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.arc-rel-note {
+  margin: 4px 0 12px;
+  font-size: 13px;
+}
+
+.arc-rel-change {
+  margin: 4px 0 12px;
+  font-weight: 700;
+}
+
+.arc-panel-body .arc-rel-list > li {
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.arc-panel-body .arc-rel-list > li:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.arc-panel-body .arc-rel-ends {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.arc-rel .arc-facts {
+  font-size: 13px;
+}
+
+.arc-rel .arc-facts dt {
+  white-space: nowrap;
+}
+
+.arc-rel .arc-facts dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.arc-rel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.arc-rel-tag {
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  font: 400 12px var(--mono);
 }
