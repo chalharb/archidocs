@@ -55,7 +55,7 @@ export default {
           ],
         ]
       : []),
-    ["@semantic-release/github", { successComment: false, failComment: false, releasedLabels: false }],
+    ["@semantic-release/github", { successComment: false, releasedLabels: false }],
     outputs,
   ],
 };
