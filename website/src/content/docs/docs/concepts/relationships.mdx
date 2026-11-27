@@ -34,6 +34,34 @@ A Relationship is a call by default: `interaction: sync`, which waits for an ans
 
 Impact and path questions count the broker as a hop, and as something both sides depend on. An async Relationship with no broker, such as a webhook, leaves out `via`.
 
+## Gateways and proxies
+
+An API gateway or reverse proxy, such as Apigee, Kong or nginx, is a Service like any other. By default it sits in the path: the consumer depends on the gateway, and the gateway on the API. It is owned by the Team that runs it.
+
+```yaml
+# web, in the shop Project
+relationships:
+  - to: platform:apigee
+    description: Places orders through
+    technology: HTTPS
+
+# apigee, in the platform Project
+apigee:
+  name: API Gateway
+  technology: Apigee
+  owner: platform-team
+  relationships:
+    - to: shop:api
+      description: Routes order requests to
+      technology: HTTPS
+```
+
+Impact and path questions then see the hop: if the gateway is down, everything behind it is unreachable, and its Team is the one to tell.
+
+When the gateway is shared infrastructure nobody needs to see, leave it out. The consumer points `to` the API directly, and the Relationship's `technology` names the gateway: `HTTPS via Apigee`. Impact and paths skip the hop.
+
+Either way, the gateway's URL is the [Deployment](/docs/concepts/deployments/) `url` of the API consumers reach.
+
 ## Several Relationships on one pair
 
 A consumer can depend on the same provider in two ways, such as reading over HTTPS and subscribing to events. Give each Relationship an `id` then, so Dynamic View Steps and agents can tell them apart.
@@ -43,6 +71,7 @@ A consumer can depend on the same provider in two ways, such as reading over HTT
 - **Consumer to provider, so impact questions have an answer.** Every edge points the same way, so "what breaks if the mainframe is down?" is everything upstream of it. A model that mixed directions couldn't say.
 - **The consumer declares it, because the consumer knows.** A Team knows what its Service calls, but rarely everything that calls it. Declaring under the consumer means each Team writes down what it depends on, in its own Project. Nobody edits another Team's files to add a Relationship that points at them, and a Relationship belongs to its consumer's Owner.
 - **The Subscriber declares an event for the same reason.** The Subscriber depends on the events, so the edge points from it to the Publisher, like any other Relationship. A Publisher doesn't need to know who listens.
+- **A gateway is a Service, not a new kind of thing.** It runs, fails and has an owner like any Service, so modeling it as one keeps impact questions honest without a new field. Leaving it out is allowed when the hop doesn't matter to anyone reading the Model.
 - **Higher-level edges are derived, so they can't drift.** Each derived edge carries every Relationship beneath it. If the C2 edge were declared separately, it could say something the Components don't, and nothing would catch it.
 
 ## Related
