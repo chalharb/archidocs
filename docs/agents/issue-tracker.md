@@ -2,8 +2,10 @@
 
 Specs and tickets are GitHub issues in `chalharb/archidocs`, tracked on the [Archidocs Project](https://github.com/users/chalharb/projects/8) (user project 8). Use the `gh` CLI.
 
-- **Spec**: an issue of type `Spec`, holding the feature's spec in its body. A wayfinding map is also a `Spec` issue, with the `map` label.
+- **Spec**: an issue of type `Spec`, holding the feature's spec in its body.
+- **Map**: an issue of type `Map`, for wayfinding: the destination is known but the decisions aren't. Its sub-issues are questions. Once they're answered, a `Spec` states the result.
 - **Ticket**: an issue of type `Task` (or `Bug`, or `Feature` for an untriaged idea), added as a **sub-issue** of its spec.
+- **Labels**: only `research`, `prototype` and `grilling` (a map question's kind), plus the contributor labels `good first issue`, `help wanted`, `question` and `accessibility`. The kind of issue is its type and where it stands is `Status`, never a label.
 - **Blocking**: GitHub's issue dependencies ("blocked by"), not text in the body.
 - **Board**: the Project's `Status` field holds the triage role or progress (see `triage-labels.md`). `Feature` (single select) names the feature and `Model` recommends the model tier for the work.
 
@@ -39,7 +41,7 @@ Setting a type (an issue's `node_id` comes from `gh api repos/chalharb/archidocs
 gh api graphql -f query='mutation($i:ID!,$t:ID!){updateIssueIssueType(input:{issueId:$i,issueTypeId:$t}){issue{number}}}' -f i=<node_id> -f t=<type id>
 ```
 
-Type ids: `Spec` `IT_kwDOAFfac844yjMy`, `Task` `IT_kwDOAFfac84DGIHd`, `Bug` `IT_kwDOAFfac84DGIHe`, `Feature` `IT_kwDOAFfac84DGIHf`.
+Type ids: `Spec` `IT_kwDOAFfac844yjMy`, `Map` `IT_kwDOAFfac844y4Dr`, `Task` `IT_kwDOAFfac84DGIHd`, `Bug` `IT_kwDOAFfac84DGIHe`, `Feature` `IT_kwDOAFfac84DGIHf`.
 
 Sub-issues and blockers take the issue's numeric `id` (`gh api repos/chalharb/archidocs/issues/<n> -q .id`), not its number:
 
@@ -63,7 +65,7 @@ The user normally passes an issue number or URL: `gh issue view <n> --comments`.
 
 ## Wayfinding operations
 
-Used by `/wayfinder`. The **map** is a `Spec` issue with the `map` label, and each **child** ticket is a sub-issue of it.
+Used by `/wayfinder`. The **map** is an issue of type `Map`, and each **child** ticket is a sub-issue of it.
 
 - **Map**: the issue body holds the Notes, Decisions-so-far and Fog sections. Edit it with `gh issue edit <n> --body-file`.
 - **Child ticket**: a sub-issue whose `Type` is `Task`, with a label for its kind: `research`, `prototype` or `grilling`. The question goes in the body. Open means open, resolved means closed as completed.
