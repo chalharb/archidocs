@@ -30,8 +30,17 @@ systems:
             technology: JSON/HTTPS
       api:
         name: API
-        description: An app Service with Components.
+        description: |
+          An app Service with Components. Its description is **Markdown**:
+
+          - `orders` takes and charges orders
+          - `catalogue` searches the catalog
         technology: Node.js
+        repository: https://github.com/sink-example/api
+        metadata:
+          tier: 1
+          on-call: core-oncall
+          pci-scope: true
         components:
           orders:
             name: Orders

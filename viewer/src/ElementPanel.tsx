@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { listAdrs } from "../../src/core/adrs.ts";
 import { getDeployments } from "../../src/core/deployments.ts";
 import { scopeMatcher } from "../../src/core/history-scope.ts";
@@ -13,6 +13,7 @@ import type { Lens, Place } from "./place.ts";
 import { pointLabel, type Timeline } from "./revisions.ts";
 import type { Workspace } from "./workspace.ts";
 import { Icon } from "./Icon.tsx";
+import { Markdown } from "./markdown.tsx";
 
 type Tab = "Overview" | "URLs" | "ADRs" | "Links" | "History";
 const TABS: readonly Tab[] = ["Overview", "URLs", "ADRs", "Links", "History"];
@@ -49,6 +50,9 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
   if (!element) return null;
   const team = workspace.teams.get(element.owner);
   const technology = "technology" in element ? element.technology : null;
+  const repository = "repository" in element ? element.repository : null;
+  const metadata = Object.entries(element.metadata);
+  const hasFacts = technology || repository || element.links.length > 0 || element.tags.length > 0;
   const kindLabel = (element.kind === "system" || element.kind === "service") && element.external ? `External ${element.kind}` : element.kind[0]!.toUpperCase() + element.kind.slice(1);
 
   return (
@@ -82,11 +86,65 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
         {tab === "Overview" && (
           <>
             {comparison && <Compared comparison={comparison} id={id} />}
-            {(element.description || technology) && (
-              <p className="arc-description">
-                {element.description}
-                {technology && <span className="arc-technology"> {technology}</span>}
-              </p>
+            {element.description && (
+              <section className="arc-markdown arc-description" role="region" aria-label="Description">
+                <Markdown source={element.description} shift={2} />
+              </section>
+            )}
+            {hasFacts && (
+              <dl className="arc-facts" aria-label="Details">
+                {technology && (
+                  <>
+                    <dt>Technology</dt>
+                    <dd>{technology}</dd>
+                  </>
+                )}
+                {repository && (
+                  <>
+                    <dt>Repository</dt>
+                    <dd>
+                      <a className="arc-fact-link" href={repository} target="_blank" rel="noreferrer">
+                        {repositoryLabel(repository)}
+                      </a>
+                    </dd>
+                  </>
+                )}
+                {element.links.length > 0 && (
+                  <>
+                    <dt>Links</dt>
+                    <dd>
+                      <ul className="arc-fact-list">
+                        {element.links.map((l) => (
+                          <li key={l.url}>
+                            <a className="arc-fact-link" href={l.url} target="_blank" rel="noreferrer">
+                              {l.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </>
+                )}
+                {element.tags.length > 0 && (
+                  <>
+                    <dt>Tags</dt>
+                    <dd>{element.tags.join(", ")}</dd>
+                  </>
+                )}
+              </dl>
+            )}
+            {metadata.length > 0 && (
+              <section role="region" aria-label="Metadata">
+                <h3>Metadata</h3>
+                <dl className="arc-facts">
+                  {metadata.map(([key, value]) => (
+                    <Fragment key={key}>
+                      <dt>{key}</dt>
+                      <dd>{value}</dd>
+                    </Fragment>
+                  ))}
+                </dl>
+              </section>
             )}
             <section className="arc-actions" aria-label="Ask">
               <button type="button" className="arc-action" aria-label="Both ways impact" onClick={() => onLens({ impact: id, direction: "both" })}>
@@ -114,6 +172,11 @@ export function ElementPanel({ workspace, id, onLens, onConnect, onFocus, onOpen
       </div>
     </aside>
   );
+}
+
+/** A repository URL without its scheme, such as `github.com/acme/checkout`: short enough to sit in the panel, long enough to know where it goes. */
+function repositoryLabel(url: string): string {
+  return url.replace(/^[a-z+]+:\/\//i, "").replace(/\.git$/, "").replace(/\/$/, "");
 }
 
 /** "Where is it deployed?": one button per Environment the Service runs in, opening its Deployment View with the Service's Deployments marked. */

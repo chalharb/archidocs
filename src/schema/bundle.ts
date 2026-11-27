@@ -14,6 +14,8 @@ const elementFields = {
   owner: z.string(),
   tags: z.array(z.string()),
   links: z.array(Link),
+  /** Free-form facts, values as written in YAML turned to strings, in declared order. */
+  metadata: z.record(z.string(), z.string()),
 };
 
 /**
@@ -27,9 +29,9 @@ const element = <K extends string, F extends z.ZodRawShape>(kind: K, fields: F) 
 
 export const BundleElement = z.discriminatedUnion("kind", [
   element("person", {}),
-  element("system", { external: z.boolean() }),
-  element("service", { type: z.enum(["app", "datastore", "broker"]), technology: z.string().nullable(), external: z.boolean() }),
-  element("component", { technology: z.string().nullable() }),
+  element("system", { external: z.boolean(), repository: z.string().nullable() }),
+  element("service", { type: z.enum(["app", "datastore", "broker"]), technology: z.string().nullable(), external: z.boolean(), repository: z.string().nullable() }),
+  element("component", { technology: z.string().nullable(), repository: z.string().nullable() }),
 ]);
 
 /** A Deployment Target: qualified id, parent Target (qualified id or null) and its effective Owner. */

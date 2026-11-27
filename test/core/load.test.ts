@@ -40,7 +40,7 @@ describe("Bundle stability", () => {
       "schemaVersion", "commit", "builtAt", "teams", "environments", "projects", "elements", "relationships", "targets", "deployments", "views", "adrs",
     ]);
     expect(Object.keys(json.elements[0])).toEqual([
-      "id", "kind", "parent", "name", "description", "owner", "tags", "links", "type", "technology", "external", "source",
+      "id", "kind", "parent", "name", "description", "owner", "tags", "links", "metadata", "type", "technology", "external", "repository", "source",
     ]);
   });
 });
