@@ -60,11 +60,12 @@ The other commands, the page templates and the style rules are in [website/READM
 
 ## Open a pull request
 
-1. Branch from `beta`, the default branch. Unreleased work lands there; `main` holds only what is released.
-2. Make one change per pull request, with tests for it.
-3. Run the checks above that cover what you changed.
-4. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and `CHANGELOG.md` are made from them. Don't edit the changelog by hand.
-5. Open the pull request against `beta`, and fill in the [template](.github/pull_request_template.md): `Closes #<n>`, What changed, Why, Verification and For reviewers. It is squash-merged, so its title becomes the commit message.
+1. Start from an issue. Every pull request closes one, however small the change: if there is none for your work, open a [bug report](https://github.com/chalharb/archidocs/issues/new?template=bug_report.yml) or a [feature request](https://github.com/chalharb/archidocs/issues/new?template=feature_request.yml) first.
+2. Branch from `beta`, the default branch. Unreleased work lands there; `main` holds only what is released.
+3. Make one change per pull request, with tests for it.
+4. Run the checks above that cover what you changed.
+5. Write commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/): `fix(cli): …`, `feat(viewer): …`, `docs(guides): …`. Releases and `CHANGELOG.md` are made from them. Don't edit the changelog by hand.
+6. Open the pull request against `beta`, and fill in the [template](.github/pull_request_template.md): `Closes #<n>`, What changed, Why, Verification and For reviewers. It is squash-merged, so its title becomes the commit message.
 
 ## How releases work
 

@@ -28,7 +28,9 @@ Stop and tell the user, without claiming it, when:
 
 ## 3. Pick the model
 
-Use the `Model` value. If it's empty, choose one from the option meanings in `issue-tracker.md`, set it on the issue, and tell the user which you chose and why before going on.
+Use the `Model` value. If it's empty, use `sonnet`, set it on the issue, and tell the user before going on; don't pick a tier yourself.
+
+`fable` is used only when the issue's `Model` field says `fable`. Never choose it for an empty field, and never let a worker reach it by inheriting the parent's model.
 
 ## 4. Claim it, in the parent
 
@@ -36,7 +38,7 @@ Assign it and set `Status` to `in-progress` (ids in `issue-tracker.md`), so no o
 
 ## 5. Hand it off
 
-- **A subagent** (default): in Claude Code, call the `Agent` tool with `model` set to the field's value. `fable`, `opus`, `sonnet` and `haiku` are all valid values.
+- **A subagent** (default): in Claude Code, call the `Agent` tool with `model` set to the field's value. `fable`, `opus`, `sonnet` and `haiku` are all valid values. Always pass `model`: a spawn without it runs on the parent's model.
 - **A new session**, when the user wants to follow or steer the work separately: start it on that model (`claude --model <value>`, or the app's session tool with its model setting).
 
 Give the worker a self-contained brief:
@@ -46,7 +48,7 @@ Give the worker a self-contained brief:
 - What done means: the acceptance criteria met, the checks in `CONTRIBUTING.md` passing, and a PR into `beta` whose body follows `.github/pull_request_template.md` and starts `Closes #<n>`.
 - Progress notes and questions go in issue comments; it doesn't change `Status`, `Model` or `Priority`.
 
-A harness that can't choose a worker's model falls back to the parent doing the work, and its claim comment says which model did it and that the recommendation was `<model>`.
+A harness that can't choose a worker's model falls back to the parent doing the work, and its claim comment says which model did it and that the recommendation was `<model>`. A parent running on `fable` doesn't fall back, unless the issue's `Model` is `fable`: it stops and asks the user.
 
 ## 6. A Feature or an Epic
 
