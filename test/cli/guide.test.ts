@@ -43,6 +43,13 @@ describe("archidocs guide --skill", () => {
     expect(topicFirst.stdout).toBe(topic.stdout);
   }, 30_000);
 
+  it("prints consult's guide as get_guide serves it", async () => {
+    const { call, text } = await connect(validWorkspace);
+    const consult = await archidocs(tmpdir(), "guide", "--skill", "consult");
+    expect(consult.code).toBe(0);
+    expect(consult.stdout).toBe(text(await call("get_guide", { skill: "consult" })));
+  }, 30_000);
+
   it("exits 2 on an unknown skill, naming the closest one", async () => {
     const { code, stderr } = await archidocs(tmpdir(), "guide", "--skill", "authorng");
     expect(code).toBe(2);

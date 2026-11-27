@@ -1,6 +1,6 @@
 # 04: `consult` skill
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01
 Spec: [Agent skills](../spec.md)
 

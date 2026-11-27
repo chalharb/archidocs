@@ -34,7 +34,7 @@ import { pastOf, type Past } from "./history.ts";
 import type { ErrorCode } from "./errors.ts";
 import { registerWriteTools } from "./writes.ts";
 import { callLine, type Log } from "./announce.ts";
-import { authoringGuide, guide as skillGuide, skills, topics, type GuideResult } from "../guide/index.ts";
+import { authoringGuide, guide as skillGuide, skills, topics, type GuideResult, type Skill } from "../guide/index.ts";
 
 export interface ServerOptions {
   source: Source;
@@ -867,7 +867,7 @@ export function createServer(options: ServerOptions): McpServer {
   /** A guide as a tool result: the ids of what was served, the skill's topics and the text. */
   const guideResult = (served: GuideResult, extra: (g: Extract<GuideResult, { ok: true }>) => Record<string, unknown>): CallToolResult => {
     if (!served.ok) return toResult(fail("not_found", served.message, served.suggestion ? [served.suggestion] : undefined));
-    return toResult(ok({ ...extra(served), topic: served.topic, topics: [...(skills.find((s) => s.id === served.skill)?.topics ?? [])].map((t) => ({ ...t })), text: served.text }, served.text));
+    return toResult(ok({ ...extra(served), topic: served.topic, topics: [...((skills as readonly Skill[]).find((s) => s.id === served.skill)?.topics ?? [])].map((t) => ({ ...t })), text: served.text }, served.text));
   };
 
   const GetGuideInput = z.object({

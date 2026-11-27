@@ -55,6 +55,10 @@ It ships with the CLI, so it always matches it. The MCP tool `get_guide("authori
 
 The guides on this site cover the same tasks for people, and each links its agent topic.
 
+## Consulting the Model while coding
+
+The `consult` skill is for an agent changing a Service's code, not the Model. Before a change that reaches past the Service, such as a public API, a dependency or deployment config, it reads the Model and reports the Service's consumers, the Teams to tell, its Deployments and its ADRs. It stops only when an accepted ADR contradicts the change or the change breaks another Team's consumer. It never writes the Model; when the code and the Model drift apart, it hands off to the authoring guide. `get_guide("consult")` serves it, and `archidocs guide --skill consult` prints it. See [Consult the Model while coding](/docs/guides/agents/consult-while-coding/).
+
 ## Why it works this way
 
 - **Same answers for people and agents.** The viewer and the MCP server read the same Bundle, so an agent can't tell you something the diagram contradicts.
@@ -70,4 +74,5 @@ The guides on this site cover the same tasks for people, and each links its agen
 - [Install the agent skill](/docs/guides/agents/install-skill/)
 - [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
 - [Fill documentation gaps](/docs/guides/agents/fill-gaps/)
+- [Consult the Model while coding](/docs/guides/agents/consult-while-coding/)
 - [`archidocs mcp`](/docs/reference/cli/mcp/)
