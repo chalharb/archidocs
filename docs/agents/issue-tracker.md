@@ -70,7 +70,7 @@ The user normally passes an issue number or URL: `gh issue view <n> --comments`.
 
 ## Working a ticket
 
-- **Model:** a ticket's `Model` is the tier its author recommends. An orchestrating agent spawns the worker on that model; one working the ticket itself on a weaker model says so in its claim comment. Empty means no recommendation. An open `Feature`'s (or `Epic`'s) `Model` is the strongest among its open sub-issues, the tier an orchestrator needs to run them; a closed one has none.
+- **Model:** a ticket's `Model` is the tier its author recommends. The session asked to work an issue doesn't work it: it claims the issue and hands it to a subagent or new session on that model, as `.claude/skills/work-issue/SKILL.md` describes. Only a harness that can't choose a worker's model works it in place, and says so in its claim comment. Empty means no recommendation. An open `Feature`'s (or `Epic`'s) `Model` is the strongest among its open sub-issues, the tier an orchestrator needs to run them; a closed one has none.
 - **Claim:** assign yourself or the user (`gh issue edit <n> --add-assignee @me`) and set `Status` to `in-progress` before any other work. An agent with no GitHub account of its own posts a comment saying which session claimed it.
 - **Branch and PR:** put the issue number in the branch name (`161-init-stubs`). The PR body says `Closes #<n>`.
 - **Comments:** progress notes, manual-check results and questions go in issue comments.
