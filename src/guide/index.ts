@@ -69,6 +69,13 @@ export const skills = [
       "Find and fill what the Archidocs Model leaves empty, by interviewing the user with values proposed from evidence in the code. Use when asked what's missing or undocumented in the architecture, to audit or complete the Model, or to prepare a Team's documentation backlog.",
     dir: "fill-gaps/",
   },
+  {
+    id: "describe",
+    name: "archidocs-describe",
+    description:
+      "Build the Archidocs Model from the user's own explanation of their architecture, iteratively, with no code needed. Use when the user describes how their systems fit together in prose, wants to talk through or sketch an architecture, or is documenting something whose code isn't available.",
+    dir: "describe/",
+  },
 ] as const satisfies readonly Skill[];
 
 export type SkillId = (typeof skills)[number]["id"];

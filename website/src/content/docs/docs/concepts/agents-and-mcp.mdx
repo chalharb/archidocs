@@ -57,6 +57,10 @@ Other skills build on the authoring guide, each with a guide of its own. [`fill-
 
 The guides on this site cover the same tasks for people, and each links its agent topic.
 
+## Describing an architecture in prose
+
+An agent doesn't need code to build a Model. The `describe` skill, served by `get_guide("describe")`, has it work from your own explanation: you describe how your systems fit together, and it plays back a draft and asks only what is ambiguous, round by round. It never makes up Environments, URLs or Owners, and writes nothing until you approve the first draft. See [Describe an architecture in prose](/docs/guides/agents/describe-in-prose/).
+
 ## Why it works this way
 
 - **Same answers for people and agents.** The viewer and the MCP server read the same Bundle, so an agent can't tell you something the diagram contradicts.
@@ -72,4 +76,5 @@ The guides on this site cover the same tasks for people, and each links its agen
 - [Install the agent skill](/docs/guides/agents/install-skill/)
 - [Bootstrap a Project from code](/docs/guides/agents/bootstrap-from-code/)
 - [Fill documentation gaps](/docs/guides/agents/fill-gaps/)
+- [Describe an architecture in prose](/docs/guides/agents/describe-in-prose/)
 - [`archidocs mcp`](/docs/reference/cli/mcp/)
