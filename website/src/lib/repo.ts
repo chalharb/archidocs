@@ -28,8 +28,11 @@ export const repoPath = (path: string): string => fileURLToPath(new URL(path, RE
 
 export const readRepoFile = (path: string): string => readFileSync(repoPath(path), "utf8");
 
-/** The version in the root `package.json`: the release the site documents. */
-export const VERSION: string = (JSON.parse(readRepoFile("package.json")) as { version: string }).version;
+/**
+ * The release the site documents: `ARCHIDOCS_DOCS_VERSION` when set (the publish workflow sets it, since a
+ * stable release no longer commits `package.json`), else the version in the root `package.json`.
+ */
+export const VERSION: string = process.env.ARCHIDOCS_DOCS_VERSION || (JSON.parse(readRepoFile("package.json")) as { version: string }).version;
 
 /** The GitHub repository, for links to source files and releases. */
 export const GITHUB_URL = "https://github.com/chalharb/archidocs";

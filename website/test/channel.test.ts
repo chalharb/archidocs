@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { isBeta, releaseLine } from "../src/lib/channel.ts";
 
 describe("the footer's release line", () => {
@@ -21,5 +22,24 @@ describe("the beta badge beside the site title", () => {
     expect(isBeta("beta")).toBe(true);
     expect(isBeta(undefined)).toBe(false);
     expect(isBeta("")).toBe(false);
+  });
+});
+
+describe("the documented version", () => {
+  const load = async () => {
+    vi.resetModules();
+    return (await import("../src/lib/repo.ts")).VERSION;
+  };
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("comes from ARCHIDOCS_DOCS_VERSION when set", async () => {
+    vi.stubEnv("ARCHIDOCS_DOCS_VERSION", "9.8.7");
+    expect(await load()).toBe("9.8.7");
+  });
+
+  it("falls back to the root package.json", async () => {
+    vi.stubEnv("ARCHIDOCS_DOCS_VERSION", "");
+    const { version } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
+    expect(await load()).toBe(version);
   });
 });
