@@ -139,7 +139,14 @@ async function writeNow(options: WriterOptions, request: WriteRequest, { dryRun 
   if (introduced.length > 0) {
     return fail("validation_failed", `The write would introduce ${introduced.length} error${introduced.length === 1 ? "" : "s"}; nothing was written.`, { issues: introduced });
   }
-  if (!dryRun) for (const abs of ordered) await fs.writeFile(abs, changed.get(abs)!);
+  if (dryRun) return result;
+  // shortcut: another process can still write between this re-read and the rename, so upgrade to a lock file if that is ever seen.
+  for (const abs of ordered) {
+    if (((await fs.exists(abs)) ? await fs.readFile(abs) : null) !== originals.get(abs)) {
+      return fail("validation_failed", `${rel(abs)} changed while this write was being checked, so nothing was written. The Workspace changed underneath you: call again.`);
+    }
+  }
+  for (const abs of ordered) await fs.writeFile(abs, changed.get(abs)!);
   return result;
 }
 
