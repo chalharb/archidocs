@@ -9,6 +9,8 @@
 
 <p align="center">Git-native architecture as code. Each Team declares its slice of the architecture as YAML; Archidocs validates it, combines it into one Model, and publishes a diagram viewer for people and an MCP server for agents.</p>
 
+<p align="center"><a href="https://archidocs.dev/docs/">Read the docs at archidocs.dev</a></p>
+
 ---
 
 ## Why
@@ -32,15 +34,15 @@ The questions it's built to answer:
 
 ## Quick start
 
-From an empty repo to your first System in the viewer, in about five minutes. Archidocs needs Node.js 22.18 or later.
+From an empty repo to your first System in the viewer, in about five minutes. Archidocs needs Node.js 22.18 or later. There is nothing to install: `npx` runs the CLI.
 
-**1. Create a Workspace.** There is nothing to install: `npx` runs the CLI. In the repo that will hold the Workspace (a new, empty one is fine):
+**1. Create a Workspace** in the repo that will hold it (a new, empty one is fine):
 
 ```bash
 npx archidocs init
 ```
 
-This writes a starter `archidocs/workspace.yaml`, adds the `.archidocs/` cache to `.gitignore`, and installs an authoring skill for coding agents. The skill and the MCP command it prints use the same `npx` form, so agents never need a global install. To keep a version in the repo, run `npm install --save-dev archidocs` first; to use a bare `archidocs` anywhere, run `npm install --global archidocs`. Run `init` again after either, and it updates the commands it wrote.
+`init` writes a starter `archidocs/workspace.yaml` and installs an authoring skill for coding agents.
 
 **2. Add three files.** Replace `archidocs/workspace.yaml`, which defines Teams and Environments, with:
 
@@ -102,111 +104,14 @@ npx archidocs check
 npx archidocs dev
 ```
 
-Open <http://localhost:4321>. The viewer starts on the C1 Landscape, which shows the Shopper and the Online Shop. Choose **Go deeper › C2 Landscape** and select the arrow button on the Online Shop box to see the two Services inside it. The viewer reloads as you edit the files.
+Open <http://localhost:4321>. The viewer starts on the C1 Landscape, which shows the Shopper and the Online Shop. Choose **Go deeper › C2 Landscape** and select the arrow button on the Online Shop box to see the two Services inside it. The finished Workspace is in [examples/quick-start](examples/quick-start).
 
-The finished Workspace is in [examples/quick-start](examples/quick-start).
+## More
 
-## The Model
-
-A Workspace is one repo. `workspace.yaml` defines Teams and Environments; each Project folder, marked by a `project.yaml`, declares one Team's Elements, Relationships, Deployments and Saved Views.
-
-```text
-archidocs/
-├── workspace.yaml        # Teams and Environments
-├── payments/
-│   ├── project.yaml      # id, name, owner Team
-│   ├── model.yaml        # Systems, Services, Components, Relationships
-│   ├── deployments.yaml  # which Service runs where, and its URL
-│   └── views.yaml        # Saved Views
-└── core/
-    └── ...
-```
-
-```yaml
-# payments/model.yaml
-systems:
-  payments:
-    name: Payments
-    services:
-      payments-service:
-        name: Payments Service
-        technology: Java, Spring Boot
-        relationships:
-          - to: payments-db
-            description: Stores payment state in
-          - to: core:mainframe            # another Project's Element
-            description: Posts payments to the ledger in
-      payments-db:
-        name: Payments DB
-        type: datastore
-```
-
-```yaml
-# payments/deployments.yaml
-deployments:
-  - service: payments-service
-    environment: prod
-    target: platform:eks-prod
-    url: https://payments.bigbank.example
-```
-
-The terms (Workspace, Project, Element, Relationship, Team, Environment, Deployment Target and more) are defined in [GLOSSARY.md](GLOSSARY.md). Every check rule is listed in [docs/rules.md](docs/rules.md).
-
-## CLI
-
-| Command | What it does |
-| --- | --- |
-| `archidocs init [--skill]` | Set up a Workspace, or with `--skill` install only the agent skill in a code repo. |
-| `archidocs check [--strict]` | Validate the Workspace. Formats: `text`, `json`, `github`. |
-| `archidocs dev` | Serve the viewer locally with live reload. |
-| `archidocs build [--out <dir>]` | Build the static viewer site with past Revisions. `--preview` builds a PR preview. |
-| `archidocs export <view-id>` | Render a View to SVG or PNG, styled like the viewer; `--all-saved` renders every Saved View, `--theme dark` draws it in the viewer's dark palette and `--label <text>` replaces the source line. |
-| `archidocs diff <from> [<to>]` | Show what changed in the Model between two refs. |
-| `archidocs mcp` | Run the MCP server over a Workspace checkout or a published Bundle. |
-| `archidocs guide [topic] [--skill <id>]` | Print an agent skill's guide; `--skill` defaults to `authoring`. |
-| `archidocs version` | Print the CLI and Bundle schema versions. |
-
-## Publishing
-
-`archidocs build` writes a fully static site with relative URLs and hash routing, so any static host can serve it. The GitHub Action checks, builds and deploys to GitHub Pages:
-
-```yaml
-# .github/workflows/architecture.yml
-on:
-  push:
-    branches: [main]
-    tags: ["*"]
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.archidocs.outputs.page-url }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: chalharb/archidocs@v1
-        id: archidocs
-```
-
-A failed check deploys nothing, so the last good site stays up. GitLab Pages, PR previews, Saved View images for wikis, and other hosts are covered in [docs/publishing.md](docs/publishing.md); the GitLab template is in [templates/gitlab](templates/gitlab).
-
-## Agents and MCP
-
-`archidocs mcp` serves the Model to AI agents. Read tools answer the same questions as the viewer; write tools (`upsert_element`, `upsert_relationship`, `upsert_deployment`, `upsert_view`, `propose_adr` and more) edit the YAML in place, keep comments and formatting, return a diff, and refuse any change that would fail `archidocs check`.
-
-```bash
-archidocs mcp --workspace ./archidocs
-```
-
-`archidocs init` registers that server in the repo's `.mcp.json`, which Claude Code, VS Code and Copilot read, and prints a `--check` command that runs the server once and reports what it serves. Once running, the server prints one line to stderr saying what it loaded, and logs each write. `init` also installs the authoring skill into `.agents/skills`, `.claude/skills` and `.github/skills`. The full guide is in [guide/SKILL.md](guide/SKILL.md) with task topics in [guide/topics](guide/topics).
+- **The Model.** A Workspace holds one Project folder per Team, each declaring its Elements, Relationships, Deployments and Saved Views. See [Workspace and Projects](https://archidocs.dev/docs/concepts/workspace-and-projects/) and the [Glossary](https://archidocs.dev/docs/reference/glossary/).
+- **CLI.** `init`, `check`, `dev`, `build`, `export`, `diff`, `mcp`, `guide` and `version`: see the [CLI reference](https://archidocs.dev/docs/reference/cli/). Each `check` issue links to its [rule](https://archidocs.dev/docs/reference/rules/).
+- **Publishing.** `archidocs build` writes a static site for any host, and a GitHub Action deploys it: see [Publish to GitHub Pages](https://archidocs.dev/docs/guides/publish/github-pages/), [GitLab Pages](https://archidocs.dev/docs/guides/publish/gitlab-pages/) and [other hosts](https://archidocs.dev/docs/guides/publish/other-hosts/).
+- **Agents and MCP.** `archidocs mcp` serves the Model to agents and can edit it in place: see [Agents and MCP](https://archidocs.dev/docs/concepts/agents-and-mcp/).
 
 ## Examples
 

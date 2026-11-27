@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { ruleCatalogue, rules } from "../../src/core/index.ts";
 
@@ -20,10 +19,5 @@ describe("rule catalogue", () => {
     expect(section).toContain("`shop/services.yaml`:\n\n```yaml\nservices:\n  web:\n    name: Web\n    owner: cor\n```");
     expect(section).toContain("```yaml\nservices:\n  web:\n    name: Web\n    owner: core\n```");
     expect(section).not.toContain("teams:");
-  });
-
-  it("is published in docs/rules.md, regenerated with `pnpm rules:catalogue`", async () => {
-    const published = await readFile(new URL("../../docs/rules.md", import.meta.url), "utf8");
-    expect(published).toBe(catalogue);
   });
 });

@@ -29,7 +29,6 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "rules:catalogue": "node scripts/rule-catalogue.ts",
     "formal:writes": "node scripts/formal/concurrent-writes.ts",
     "schemas": "node scripts/generate-schemas.ts",
     "build:viewer": "vite build --config viewer/vite.config.ts",

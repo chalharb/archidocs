@@ -279,8 +279,8 @@ describe("generated reference pages", () => {
   });
 
   it("rewrites the repo's relative links for the site", () => {
-    expect(rewriteLinks("See [x](topics/saved-view.md#steps), [g](../GLOSSARY.md) and [a](../docs/publishing.md).", "guide/SKILL.md")).toBe(
-      "See [x](/docs/reference/agent-guide/saved-view/#steps), [g](/docs/reference/glossary/) and [a](https://github.com/chalharb/archidocs/blob/main/docs/publishing.md).",
+    expect(rewriteLinks("See [x](topics/saved-view.md#steps), [g](../GLOSSARY.md) and [a](../CONTRIBUTING.md).", "guide/SKILL.md")).toBe(
+      "See [x](/docs/reference/agent-guide/saved-view/#steps), [g](/docs/reference/glossary/) and [a](https://github.com/chalharb/archidocs/blob/main/CONTRIBUTING.md).",
     );
     expect(rewriteLinks("See [f](fill-gaps/SKILL.md).", "guide/SKILL.md")).toBe("See [f](/docs/reference/agent-guide/fill-gaps/).");
     expect(rewriteLinks("as the `rules` topic explains", "guide/SKILL.md")).toBe("as the [`rules` topic](/docs/reference/rules/) explains");

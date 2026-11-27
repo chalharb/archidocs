@@ -7,7 +7,8 @@ branding:
 
 # Use it from a workflow that checks out with full history (`fetch-depth: 0`):
 # past Bundles are rebuilt from git and the cache, never fetched from the live site.
-# See docs/publishing.md for the workflows and the permissions Pages needs.
+# See https://archidocs.dev/docs/guides/publish/github-pages/ for the workflow and the permissions Pages needs;
+# PR previews and other hosts are under https://archidocs.dev/docs/guides/publish/.
 inputs:
   working-directory:
     description: Where to run Archidocs; the Workspace is found from here, as `archidocs check` finds it.

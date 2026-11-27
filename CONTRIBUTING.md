@@ -50,7 +50,6 @@ Some files are generated from the source. Run these after you change it, and com
 | Command | When to run it |
 | --- | --- |
 | `pnpm schemas` | After you change the Model's schema in `src/schema/`. It writes `schemas/`. |
-| `pnpm rules:catalogue` | After you add or change a check rule in `src/core/rules.ts`. It writes `docs/rules.md`. |
 
 ## Work on the docs site
 
