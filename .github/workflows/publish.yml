@@ -126,14 +126,18 @@ jobs:
         env:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
-          # The registry can take a minute to serve a new version.
+          # The registry can take a minute to serve a new version, and until it does the install fails
+          # (ETARGET), so the install itself is retried. A failing attempt must not end the step.
+          errfile="$(mktemp)"
           for attempt in $(seq 1 30); do
-            if [ "$(npm view "archidocs@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then break; fi
-            echo "archidocs@$VERSION is not on the registry yet (attempt $attempt)"
+            if actual="$(npx -y "archidocs@$VERSION" version --format json 2>"$errfile" | jq -r .version)" && [ "$actual" = "$VERSION" ]; then
+              break
+            fi
+            echo "archidocs@$VERSION is not installable yet (attempt $attempt)"
             sleep 10
           done
-          actual="$(npx -y "archidocs@$VERSION" version --format json | jq -r .version)"
           if [ "$actual" != "$VERSION" ]; then
+            cat "$errfile"
             echo "::error::archidocs@$VERSION version reported '$actual'"
             exit 1
           fi
